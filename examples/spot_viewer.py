@@ -666,6 +666,17 @@ class HabitatSimInteractiveViewer(Application):
                 for composite_file in sim_settings["composite_files"]:
                     self.replay_renderer.preload_file(composite_file)
 
+        # check that clearing joint positions on save won't corrupt the content
+        for ao in (
+            self.sim.get_articulated_object_manager()
+            .get_objects_by_handle_substring()
+            .values()
+        ):
+            for joint_val in ao.joint_positions:
+                assert (
+                    joint_val == 0
+                ), "If this fails, there are non-zero joint positions in the scene_instance or default pose. Export with 'i' will clear these."
+
         # add the robot to the world via the wrapper
         robot_path = "data/robots/hab_spot_arm/urdf/hab_spot_arm.urdf"
         agent_config = DictConfig({"articulated_agent_urdf": robot_path})
@@ -892,7 +903,16 @@ class HabitatSimInteractiveViewer(Application):
             #    f.write(json.dumps(self.modified_objects_buffer, indent=2))
             aom = self.sim.get_articulated_object_manager()
             aom.remove_object_by_handle(self.spot.sim_obj.handle)
-            # aom.remove_all_objects()
+
+            # clear furniture joint positions before saving
+            for ao in (
+                self.sim.get_articulated_object_manager()
+                .get_objects_by_handle_substring()
+                .values()
+            ):
+                j_pos = ao.joint_positions
+                ao.joint_positions = [0.0 for _ in range(len(j_pos))]
+
             self.sim.save_current_scene_config(overwrite=True)
             print("Saved modified scene instance JSON to original location.")
             # de-duplicate and save clutter list
