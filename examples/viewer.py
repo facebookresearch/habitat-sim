@@ -628,7 +628,6 @@ class HabitatSimInteractiveViewer(Application):
         """
         Additional draw commands to be called during draw_event.
         """
-        self.sim.get_rigid_object_manager()
         if self.debug_bullet_draw:
             render_cam = self.render_camera.render_camera
             proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
@@ -1042,6 +1041,32 @@ class HabitatSimInteractiveViewer(Application):
         gravity: mn.Vector3 = self.sim.get_gravity() * -1
         self.sim.set_gravity(gravity)
 
+    def cycleScene(self, change_scene: bool, shift_pressed: bool):
+        if change_scene:
+            # cycle the active scene from the set available in MetadataMediator
+            inc = -1 if shift_pressed else 1
+            scene_ids = self.sim.metadata_mediator.get_scene_handles()
+            cur_scene_index = 0
+            if self.sim_settings["scene"] not in scene_ids:
+                matching_scenes = [
+                    (ix, x)
+                    for ix, x in enumerate(scene_ids)
+                    if self.sim_settings["scene"] in x
+                ]
+                if not matching_scenes:
+                    logger.warning(
+                        f"The current scene, '{self.sim_settings['scene']}', is not in the list, starting cycle at index 0."
+                    )
+                else:
+                    cur_scene_index = matching_scenes[0][0]
+            else:
+                cur_scene_index = scene_ids.index(self.sim_settings["scene"])
+
+            next_scene_index = min(max(cur_scene_index + inc, 0), len(scene_ids) - 1)
+            self.sim_settings["scene"] = scene_ids[next_scene_index]
+        self.reconfigure_sim()
+        logger.info(f"Reconfigured simulator for scene: {self.sim_settings['scene']}")
+
     def key_press_event(self, event: Application.KeyEvent) -> None:
         """
         Handles `Application.KeyEvent` on a key press by performing the corresponding functions.
@@ -1061,48 +1086,13 @@ class HabitatSimInteractiveViewer(Application):
             self.exit_event(Application.ExitEvent)
             return
 
-        elif key == pressed.H:
-            self.print_help_text()
-        elif key == pressed.J:
-            new_state_idx = (self.semantic_region_debug_draw_state + 1) % len(
-                self.semantic_region_debug_draw_choices
-            )
-            logger.info(
-                f"Change Region Draw from {self.semantic_region_debug_draw_choices[self.semantic_region_debug_draw_state]} to {self.semantic_region_debug_draw_choices[new_state_idx]}"
-            )
-            # Increment visualize semantic bboxes. Currently only regions supported
-            self.semantic_region_debug_draw_state = new_state_idx
+        elif key == pressed.SIX:
+            # Reset mouse wheel FOV zoom
+            self.render_camera.reset_zoom()
 
         elif key == pressed.TAB:
-            # NOTE: (+ALT) - reconfigure without cycling scenes
-            if not alt_pressed:
-                # cycle the active scene from the set available in MetadataMediator
-                inc = -1 if shift_pressed else 1
-                scene_ids = self.sim.metadata_mediator.get_scene_handles()
-                cur_scene_index = 0
-                if self.sim_settings["scene"] not in scene_ids:
-                    matching_scenes = [
-                        (ix, x)
-                        for ix, x in enumerate(scene_ids)
-                        if self.sim_settings["scene"] in x
-                    ]
-                    if not matching_scenes:
-                        logger.warning(
-                            f"The current scene, '{self.sim_settings['scene']}', is not in the list, starting cycle at index 0."
-                        )
-                    else:
-                        cur_scene_index = matching_scenes[0][0]
-                else:
-                    cur_scene_index = scene_ids.index(self.sim_settings["scene"])
-
-                next_scene_index = min(
-                    max(cur_scene_index + inc, 0), len(scene_ids) - 1
-                )
-                self.sim_settings["scene"] = scene_ids[next_scene_index]
-            self.reconfigure_sim()
-            logger.info(
-                f"Reconfigured simulator for scene: {self.sim_settings['scene']}"
-            )
+            # Cycle through scenes
+            self.cycleScene(True, shift_pressed=shift_pressed)
 
         elif key == pressed.SPACE:
             if not self.sim.config.sim_cfg.enable_physics:
@@ -1136,6 +1126,123 @@ class HabitatSimInteractiveViewer(Application):
                 self.sim.perform_discrete_collision_detection()
                 self.contact_debug_draw = True
                 # TODO: add a nice log message with concise contact pair naming.
+
+        elif key == pressed.F:
+            # toggle, load(+ALT), or save(+SHIFT) filtering
+            if shift_pressed and self.rec_filter_data is not None:
+                self.export_filtered_recs(self.rec_filter_path)
+            elif alt_pressed:
+                self.load_filtered_recs(self.rec_filter_path)
+            else:
+                self.show_filtered = not self.show_filtered
+                print(f"self.show_filtered = {self.show_filtered}")
+
+        elif key == pressed.H:
+            self.print_help_text()
+
+        elif key == pressed.J:
+            new_state_idx = (self.semantic_region_debug_draw_state + 1) % len(
+                self.semantic_region_debug_draw_choices
+            )
+            logger.info(
+                f"Change Region Draw from {self.semantic_region_debug_draw_choices[self.semantic_region_debug_draw_state]} to {self.semantic_region_debug_draw_choices[new_state_idx]}"
+            )
+            # Increment visualize semantic bboxes. Currently only regions supported
+            self.semantic_region_debug_draw_state = new_state_idx
+
+        elif key == pressed.M:
+            self.cycle_mouse_mode()
+            logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
+
+        elif key == pressed.N:
+            # (default) - toggle navmesh visualization
+            # NOTE: (+ALT) - re-sample the agent position on the NavMesh
+            # NOTE: (+SHIFT) - re-compute the NavMesh
+            if alt_pressed:
+                logger.info("Command: resample agent state from navmesh")
+                if self.sim.pathfinder.is_loaded:
+                    new_agent_state = habitat_sim.AgentState()
+                    largest_island_ix = get_largest_island_index(
+                        pathfinder=self.sim.pathfinder,
+                        sim=self.sim,
+                        allow_outdoor=False,
+                    )
+                    print(f"Largest indoor island index = {largest_island_ix}")
+                    new_agent_state.position = (
+                        self.sim.pathfinder.get_random_navigable_point(
+                            island_index=largest_island_ix
+                        )
+                    )
+                    new_agent_state.rotation = quat_from_angle_axis(
+                        self.sim.random.uniform_float(0, 2.0 * np.pi),
+                        np.array([0, 1, 0]),
+                    )
+                    self.default_agent.set_state(new_agent_state)
+                else:
+                    logger.warning(
+                        "NavMesh is not initialized. Cannot sample new agent state."
+                    )
+            elif shift_pressed:
+                logger.info("Command: recompute navmesh")
+                self.navmesh_config_and_recompute()
+            else:
+                if self.sim.pathfinder.is_loaded:
+                    self.sim.navmesh_visualization = not self.sim.navmesh_visualization
+                    logger.info("Command: toggle navmesh")
+                else:
+                    logger.warn("Warning: recompute navmesh first")
+
+        elif key == pressed.O:
+            if shift_pressed:
+                # move non-proxy objects in/out of visible space
+                self.original_objs_visible = not self.original_objs_visible
+                print(f"self.original_objs_visible = {self.original_objs_visible}")
+                if not self.original_objs_visible:
+                    for _obj_handle, obj in (
+                        self.sim.get_rigid_object_manager()
+                        .get_objects_by_handle_substring()
+                        .items()
+                    ):
+                        if self.proxy_obj_postfix not in obj.creation_attributes.handle:
+                            obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+                            obj.translation = obj.translation + mn.Vector3(200, 0, 0)
+                            obj.motion_type = habitat_sim.physics.MotionType.STATIC
+                else:
+                    for _obj_handle, obj in (
+                        self.sim.get_rigid_object_manager()
+                        .get_objects_by_handle_substring()
+                        .items()
+                    ):
+                        if self.proxy_obj_postfix not in obj.creation_attributes.handle:
+                            obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+                            obj.translation = obj.translation - mn.Vector3(200, 0, 0)
+                            obj.motion_type = habitat_sim.physics.MotionType.STATIC
+            else:
+                if self.col_proxy_objs is None:
+                    self.col_proxy_objs = []
+                    for _obj_handle, obj in (
+                        self.sim.get_rigid_object_manager()
+                        .get_objects_by_handle_substring()
+                        .items()
+                    ):
+                        if self.proxy_obj_postfix not in obj.creation_attributes.handle:
+                            # add a new proxy object
+                            self.col_proxy_objs.append(self.add_col_proxy_object(obj))
+                else:
+                    self.col_proxies_visible = not self.col_proxies_visible
+                    print(f"self.col_proxies_visible = {self.col_proxies_visible}")
+
+                    # make the proxies visible or not by moving them
+                    if not self.col_proxies_visible:
+                        for obj in self.col_proxy_objs:
+                            obj.translation = obj.translation + mn.Vector3(200, 0, 0)
+                    else:
+                        for obj in self.col_proxy_objs:
+                            obj.translation = obj.translation - mn.Vector3(200, 0, 0)
+
+        elif key == pressed.R:
+            # Reload current scene
+            self.cycleScene(False, shift_pressed=shift_pressed)
 
         elif key == pressed.T:
             self.modify_param_from_term()
@@ -1182,35 +1289,6 @@ class HabitatSimInteractiveViewer(Application):
             #     ao.create_all_motors(joint_motor_settings)
             # else:
             #     logger.warn("Load URDF: input file not found. Aborting.")
-
-        elif key == pressed.M:
-            self.cycle_mouse_mode()
-            logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
-
-        elif key == pressed.V:
-            # load receptacles and toggle visibilty or color mode (+SHIFT)
-            if self.receptacles is None:
-                self.load_receptacles()
-
-            if shift_pressed:
-                self.rec_color_mode = RecColorMode(
-                    (self.rec_color_mode.value + 1) % len(RecColorMode)
-                )
-                print(f"self.rec_color_mode = {self.rec_color_mode}")
-                self.display_receptacles = True
-            else:
-                self.display_receptacles = not self.display_receptacles
-                print(f"self.display_receptacles = {self.display_receptacles}")
-
-        elif key == pressed.F:
-            # toggle, load(+ALT), or save(+SHIFT) filtering
-            if shift_pressed and self.rec_filter_data is not None:
-                self.export_filtered_recs(self.rec_filter_path)
-            elif alt_pressed:
-                self.load_filtered_recs(self.rec_filter_path)
-            else:
-                self.show_filtered = not self.show_filtered
-                print(f"self.show_filtered = {self.show_filtered}")
 
         elif key == pressed.U:
             rom = self.sim.get_rigid_object_manager()
@@ -1278,92 +1356,20 @@ class HabitatSimInteractiveViewer(Application):
                 else:
                     print("No object selected, cannot sample clutter.")
 
-        elif key == pressed.O:
+        elif key == pressed.V:
+            # load receptacles and toggle visibilty or color mode (+SHIFT)
+            if self.receptacles is None:
+                self.load_receptacles()
+
             if shift_pressed:
-                # move non-proxy objects in/out of visible space
-                self.original_objs_visible = not self.original_objs_visible
-                print(f"self.original_objs_visible = {self.original_objs_visible}")
-                if not self.original_objs_visible:
-                    for _obj_handle, obj in (
-                        self.sim.get_rigid_object_manager()
-                        .get_objects_by_handle_substring()
-                        .items()
-                    ):
-                        if self.proxy_obj_postfix not in obj.creation_attributes.handle:
-                            obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
-                            obj.translation = obj.translation + mn.Vector3(200, 0, 0)
-                            obj.motion_type = habitat_sim.physics.MotionType.STATIC
-                else:
-                    for _obj_handle, obj in (
-                        self.sim.get_rigid_object_manager()
-                        .get_objects_by_handle_substring()
-                        .items()
-                    ):
-                        if self.proxy_obj_postfix not in obj.creation_attributes.handle:
-                            obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
-                            obj.translation = obj.translation - mn.Vector3(200, 0, 0)
-                            obj.motion_type = habitat_sim.physics.MotionType.STATIC
-
+                self.rec_color_mode = RecColorMode(
+                    (self.rec_color_mode.value + 1) % len(RecColorMode)
+                )
+                print(f"self.rec_color_mode = {self.rec_color_mode}")
+                self.display_receptacles = True
             else:
-                if self.col_proxy_objs is None:
-                    self.col_proxy_objs = []
-                    for _obj_handle, obj in (
-                        self.sim.get_rigid_object_manager()
-                        .get_objects_by_handle_substring()
-                        .items()
-                    ):
-                        if self.proxy_obj_postfix not in obj.creation_attributes.handle:
-                            # add a new proxy object
-                            self.col_proxy_objs.append(self.add_col_proxy_object(obj))
-                else:
-                    self.col_proxies_visible = not self.col_proxies_visible
-                    print(f"self.col_proxies_visible = {self.col_proxies_visible}")
-
-                    # make the proxies visible or not by moving them
-                    if not self.col_proxies_visible:
-                        for obj in self.col_proxy_objs:
-                            obj.translation = obj.translation + mn.Vector3(200, 0, 0)
-                    else:
-                        for obj in self.col_proxy_objs:
-                            obj.translation = obj.translation - mn.Vector3(200, 0, 0)
-
-        elif key == pressed.N:
-            # (default) - toggle navmesh visualization
-            # NOTE: (+ALT) - re-sample the agent position on the NavMesh
-            # NOTE: (+SHIFT) - re-compute the NavMesh
-            if alt_pressed:
-                logger.info("Command: resample agent state from navmesh")
-                if self.sim.pathfinder.is_loaded:
-                    new_agent_state = habitat_sim.AgentState()
-                    largest_island_ix = get_largest_island_index(
-                        pathfinder=self.sim.pathfinder,
-                        sim=self.sim,
-                        allow_outdoor=False,
-                    )
-                    print(f"Largest indoor island index = {largest_island_ix}")
-                    new_agent_state.position = (
-                        self.sim.pathfinder.get_random_navigable_point(
-                            island_index=largest_island_ix
-                        )
-                    )
-                    new_agent_state.rotation = quat_from_angle_axis(
-                        self.sim.random.uniform_float(0, 2.0 * np.pi),
-                        np.array([0, 1, 0]),
-                    )
-                    self.default_agent.set_state(new_agent_state)
-                else:
-                    logger.warning(
-                        "NavMesh is not initialized. Cannot sample new agent state."
-                    )
-            elif shift_pressed:
-                logger.info("Command: recompute navmesh")
-                self.navmesh_config_and_recompute()
-            else:
-                if self.sim.pathfinder.is_loaded:
-                    self.sim.navmesh_visualization = not self.sim.navmesh_visualization
-                    logger.info("Command: toggle navmesh")
-                else:
-                    logger.warn("Warning: recompute navmesh first")
+                self.display_receptacles = not self.display_receptacles
+                print(f"self.display_receptacles = {self.display_receptacles}")
 
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
