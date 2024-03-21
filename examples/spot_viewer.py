@@ -630,8 +630,8 @@ class HabitatSimInteractiveViewer(Application):
             self.cfg.sim_cfg.create_renderer = False
             self.cfg.sim_cfg.enable_gfx_replay_save = True
 
-        if self.sim_settings["stage_requires_lighting"]:
-            logger.info("Setting synthetic lighting override for stage.")
+        if self.sim_settings["use_default_lighting"]:
+            logger.info("Setting default lighting override for scene.")
             self.cfg.sim_cfg.override_scene_light_defaults = True
             self.cfg.sim_cfg.scene_light_setup = habitat_sim.gfx.DEFAULT_LIGHTING_KEY
 
@@ -729,7 +729,7 @@ class HabitatSimInteractiveViewer(Application):
             return
 
         key = Application.KeyEvent.Key
-        press: Dict[key.key, bool] = self.pressed
+        press: Dict[Application.KeyEvent.Key.key, bool] = self.pressed
 
         inc = 0.02
         min_val = 0.1
@@ -1118,6 +1118,13 @@ class HabitatSimInteractiveViewer(Application):
         exit(0)
 
     def draw_text(self, sensor_spec):
+        # make magnum text background transparent for text
+        mn.gl.Renderer.enable(mn.gl.Renderer.Feature.BLENDING)
+        mn.gl.Renderer.set_blend_function(
+            mn.gl.Renderer.BlendFunction.ONE,
+            mn.gl.Renderer.BlendFunction.ONE_MINUS_SOURCE_ALPHA,
+        )
+
         self.shader.bind_vector_texture(self.glyph_cache.texture)
         self.shader.transformation_projection_matrix = self.window_text_transform
         self.shader.color = [1.0, 1.0, 1.0]
@@ -1127,11 +1134,15 @@ class HabitatSimInteractiveViewer(Application):
         self.window_text.render(
             f"""
 {self.fps} FPS
+Scene ID : {os.path.split(self.cfg.sim_cfg.scene_id)[1].split('.scene_instance')[0]}
 Sensor Type: {sensor_type_string}
 Sensor Subtype: {sensor_subtype_string}
             """
         )
         self.shader.draw(self.window_text.mesh)
+
+        # Disable blending for text
+        mn.gl.Renderer.disable(mn.gl.Renderer.Feature.BLENDING)
 
     def print_help_text(self) -> None:
         """
@@ -1254,9 +1265,14 @@ if __name__ == "__main__":
         help="disable physics simulation (default: False)",
     )
     parser.add_argument(
-        "--stage-requires-lighting",
+        "--use-default-lighting",
         action="store_true",
-        help="Override configured lighting to use synthetic lighting for the stage.",
+        help="Override configured lighting to use default lighting for the stage.",
+    )
+    parser.add_argument(
+        "--hbao",
+        action="store_true",
+        help="Enable horizon-based ambient occlusion, which provides soft shadows in corners and crevices.",
     )
     parser.add_argument(
         "--enable-batch-renderer",
@@ -1302,14 +1318,14 @@ if __name__ == "__main__":
     sim_settings["scene"] = args.scene
     sim_settings["scene_dataset_config_file"] = args.dataset
     sim_settings["enable_physics"] = not args.disable_physics
-    sim_settings["stage_requires_lighting"] = args.stage_requires_lighting
+    sim_settings["use_default_lighting"] = args.use_default_lighting
     sim_settings["enable_batch_renderer"] = args.enable_batch_renderer
     sim_settings["num_environments"] = args.num_environments
     sim_settings["composite_files"] = args.composite_files
     sim_settings["window_width"] = args.width
     sim_settings["window_height"] = args.height
     sim_settings["sensor_height"] = 0
-    sim_settings["enable_hbao"] = True
+    sim_settings["enable_hbao"] = args.hbao
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()
