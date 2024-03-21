@@ -1104,7 +1104,6 @@ class HabitatSimInteractiveViewer(Application):
         self.sim.recompute_navmesh(self.sim.pathfinder, self.navmesh_settings)
 
         # reset AO motion types from cache
-        ao_motion_types = {}
         for ao in (
             self.sim.get_articulated_object_manager()
             .get_objects_by_handle_substring()
