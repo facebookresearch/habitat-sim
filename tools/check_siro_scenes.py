@@ -1,6 +1,8 @@
 import os
 from typing import Any, Dict, List
 
+import magnum as mn
+import numpy as np
 from habitat.sims.habitat_simulator.debug_visualizer import DebugVisualizer
 
 from habitat_sim import Simulator
@@ -9,6 +11,9 @@ from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
 # TODO: get metadata for semantics
 # from habitat_llm.dataset_generation.templated.generate_episodes import MetadataInterface
+
+
+rand_colors = [mn.Color4(mn.Vector3(np.random.random(3))) for _ in range(100)]
 
 
 def get_labels_from_dict(results_dict: Dict[str, Dict[str, Any]]) -> List[str]:
@@ -100,6 +105,44 @@ def check_joint_popping(
     return unstable_aos, cumulative_errors
 
 
+def draw_region_debug(sim: Simulator, region_ix: int) -> None:
+    """
+    Draw a wireframe for the semantic region at index region_ix.
+    """
+    region = sim.semantic_scene.regions[region_ix]
+    color = rand_colors[region_ix]
+    for edge in region.volume_edges:
+        sim.get_debug_line_render().draw_transformed_line(
+            edge[0],
+            edge[1],
+            color,
+        )
+
+
+def draw_all_regions_debug(sim: Simulator) -> None:
+    for reg_ix in range(len(sim.semantic_scene.regions)):
+        draw_region_debug(sim, reg_ix)
+
+
+def save_region_visualizations(
+    sim: Simulator, out_dir: str, dbv: DebugVisualizer
+) -> None:
+    """
+    Save top-down images focused on each region with debug lines.
+    """
+
+    os.makedirs(out_dir, exist_ok=True)
+
+    draw_all_regions_debug(sim)
+    dbv.peek("stage").save(output_path=os.path.join(out_dir), prefix="all_regions_")
+
+    for rix, region in enumerate(sim.semantic_scene.regions):
+        draw_region_debug(sim, rix)
+        aabb = mn.Range3D.from_center(region.aabb.center, region.aabb.sizes / 2.0)
+        reg_obs = dbv._peek_bb(aabb, cam_local_pos=mn.Vector3(0, 1, 0))
+        reg_obs.save(output_path=os.path.join(out_dir), prefix=f"{region.id}_")
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -169,6 +212,27 @@ if __name__ == "__main__":
                     scene_test_results[sim.curr_scene_name][
                         "unstable_aos"
                     ] += f"{ao_handle}({joint_errors[ix]}) | "
+
+            ############################################
+            # analyze and visualize regions
+            save_region_visualizations(
+                sim, os.path.join(scene_out_dir, "regions/"), dbv
+            )
+            expected_regions = ["kitchen", "living room", "bedroom"]
+            all_region_cats = [
+                region.category.name() for region in sim.semantic_scene.regions
+            ]
+            missing_expected_regions = [
+                expected_region
+                for expected_region in expected_regions
+                if expected_region not in all_region_cats
+            ]
+            if len(missing_expected_regions) > 0:
+                scene_test_results[sim.curr_scene_name]["missing_expected_regions"] = ""
+                for expected_region in missing_expected_regions:
+                    scene_test_results[sim.curr_scene_name][
+                        "missing_expected_regions"
+                    ] += f"{expected_region} | "
 
     csv_filepath = os.path.join(args.out_dir, "siro_scene_test_results.csv")
     export_results_csv(csv_filepath, scene_test_results)
