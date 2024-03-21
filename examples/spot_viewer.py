@@ -931,7 +931,11 @@ class HabitatSimInteractiveViewer(Application):
             with open("removed_clutter.txt", "a") as f:
                 for obj_name in self.removed_clutter:
                     f.write(obj_name + "\n")
-            exit()
+            # only exit if shift pressed
+            if shift_pressed:
+                event.accepted = True
+                self.exit_event(Application.ExitEvent)
+                return
 
         elif key == pressed.T:
             self.remove_outdoor_objects()
@@ -1013,6 +1017,7 @@ class HabitatSimInteractiveViewer(Application):
             ray = render_camera.unproject(self.get_mouse_position(event.position))
             mouse_cast_results = self.sim.cast_ray(ray=ray)
             if mouse_cast_results.has_hits():
+                # find first non-stage object
                 hit_idx = 0
                 obj_found = False
                 while hit_idx < len(mouse_cast_results.hits) and not obj_found:
