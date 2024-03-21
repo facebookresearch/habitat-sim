@@ -1013,15 +1013,22 @@ class HabitatSimInteractiveViewer(Application):
             ray = render_camera.unproject(self.get_mouse_position(event.position))
             mouse_cast_results = self.sim.cast_ray(ray=ray)
             if mouse_cast_results.has_hits():
-                self.last_hit_details = mouse_cast_results.hits[0]
-                hit_id = mouse_cast_results.hits[0].object_id
-                self.selected_object = sutils.get_obj_from_id(self.sim, hit_id)
-                if self.selected_object is None:
-                    print("This is the stage.")
-                else:
+                hit_idx = 0
+                obj_found = False
+                while hit_idx < len(mouse_cast_results.hits) and not obj_found:
+                    self.last_hit_details = mouse_cast_results.hits[hit_idx]
+                    hit_obj_id = mouse_cast_results.hits[hit_idx].object_id
+                    self.selected_object = sutils.get_obj_from_id(self.sim, hit_obj_id)
+                    if self.selected_object is None:
+                        hit_idx += 1
+                    else:
+                        obj_found = True
+                if obj_found:
                     print(
                         f"Object: {self.selected_object.handle} is {type(self.selected_object)}"
                     )
+                else:
+                    print("This is the stage.")
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
