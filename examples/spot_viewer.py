@@ -691,6 +691,12 @@ class HabitatSimInteractiveViewer(Application):
                     joint_val == 0
                 ), "If this fails, there are non-zero joint positions in the scene_instance or default pose. Export with 'i' will clear these."
 
+        self.init_spot()
+
+        Timer.start()
+        self.step = -1
+
+    def init_spot(self):
         # add the robot to the world via the wrapper
         robot_path = "data/robots/hab_spot_arm/urdf/hab_spot_arm.urdf"
         agent_config = DictConfig({"articulated_agent_urdf": robot_path})
@@ -698,9 +704,6 @@ class HabitatSimInteractiveViewer(Application):
         self.spot.reconfigure()
         self.spot.update()
         self.spot_action = ExtractedBaseVelNonCylinderAction(self.sim, self.spot)
-
-        Timer.start()
-        self.step = -1
 
     def render_batch(self):
         """
@@ -919,6 +922,7 @@ class HabitatSimInteractiveViewer(Application):
             # with open("scene_mod_buffer.json", "w") as f:
             #    f.write(json.dumps(self.modified_objects_buffer, indent=2))
             aom = self.sim.get_articulated_object_manager()
+            spot_loc = self.spot.sim_obj.rigid_state
             aom.remove_object_by_handle(self.spot.sim_obj.handle)
 
             # clear furniture joint positions before saving
@@ -936,6 +940,10 @@ class HabitatSimInteractiveViewer(Application):
                 event.accepted = True
                 self.exit_event(Application.ExitEvent)
                 return
+            # rebuild spot
+            self.init_spot()
+            # put em back
+            self.spot.sim_obj.rigid_state = spot_loc
 
         elif key == pressed.T:
             self.remove_outdoor_objects()
