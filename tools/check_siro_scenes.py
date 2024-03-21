@@ -1,19 +1,41 @@
 import os
 from typing import Any, Dict, List
 
+# NOTE: (requires habitat-lab) get metadata for semantics
+import habitat.sims.habitat_simulator.sim_utilities as sutils
 import magnum as mn
 import numpy as np
+
+# NOTE: (requires habitat-llm) get metadata for semantics
+from dataset_generation.benchmark_generation.generate_episodes import (
+    MetadataInterface,
+    default_metadata_dict,
+)
 from habitat.sims.habitat_simulator.debug_visualizer import DebugVisualizer
 
 from habitat_sim import Simulator
 from habitat_sim.metadata import MetadataMediator
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
-# TODO: get metadata for semantics
-# from habitat_llm.dataset_generation.templated.generate_episodes import MetadataInterface
-
-
 rand_colors = [mn.Color4(mn.Vector3(np.random.random(3))) for _ in range(100)]
+
+
+def to_str_csv(data: Any) -> str:
+    """
+    Format some data element as a string for csv such that it fits nicely into a cell.
+    """
+
+    if isinstance(data, str):
+        return data
+    if isinstance(data, (int, float)):
+        return str(data)
+    if isinstance(data, list):
+        list_str = ""
+        for elem in data:
+            list_str += f"{elem} |"
+        return list_str
+
+    raise NotImplementedError(f"Data type {type(data)} is not supported in csv string.")
 
 
 def get_labels_from_dict(results_dict: Dict[str, Dict[str, Any]]) -> List[str]:
@@ -46,7 +68,7 @@ def export_results_csv(filepath: str, results_dict: Dict[str, Dict[str, Any]]) -
             f.write(f"{scene_handle},")
             for label in col_labels:
                 if label in scene_dict:
-                    f.write(f"{scene_dict[label]},")
+                    f.write(f"{to_str_csv(scene_dict[label])},")
                 else:
                     f.write(",")
             f.write("\n")
@@ -181,6 +203,8 @@ if __name__ == "__main__":
     mm.active_dataset = args.dataset
     cfg.metadata_mediator = mm
 
+    mi = MetadataInterface(default_metadata_dict)
+
     # keyed by scene handle
     scene_test_results: Dict[str, Dict[str, Any]] = {}
 
@@ -190,6 +214,8 @@ if __name__ == "__main__":
         cfg.sim_cfg.scene_id = scene_handle
         with Simulator(cfg) as sim:
             dbv = DebugVisualizer(sim)
+
+            mi.refresh_scene_caches(sim)
 
             scene_test_results[sim.curr_scene_name] = {}
             scene_test_results[sim.curr_scene_name][
@@ -203,6 +229,7 @@ if __name__ == "__main__":
 
             ##########################################
             # Check for joint popping
+            print(" - check joint popping")
             unstable_aos, joint_errors = check_joint_popping(
                 sim, out_dir=scene_out_dir if args.save_images else None, dbv=dbv
             )
@@ -215,6 +242,7 @@ if __name__ == "__main__":
 
             ############################################
             # analyze and visualize regions
+            print(" - check and visualize regions")
             save_region_visualizations(
                 sim, os.path.join(scene_out_dir, "regions/"), dbv
             )
@@ -233,6 +261,23 @@ if __name__ == "__main__":
                     scene_test_results[sim.curr_scene_name][
                         "missing_expected_regions"
                     ] += f"{expected_region} | "
+
+            ##############################################
+            # analyze semantics
+            print(" - check and visualize semantics")
+            scene_test_results[sim.curr_scene_name][
+                "objects_missing_semantic_class"
+            ] = []
+            missing_semantics_output = os.path.join(scene_out_dir, "missing_semantics/")
+            for obj in sutils.get_all_objects(sim):
+                if mi.get_object_instance_category(obj) is None:
+                    scene_test_results[sim.curr_scene_name][
+                        "objects_missing_semantic_class"
+                    ].append(obj.handle)
+                    os.makedirs(missing_semantics_output, exist_ok=True)
+                    dbv.peek(obj, peek_all_axis=True).save(
+                        missing_semantics_output, f"{obj.handle}__"
+                    )
 
     csv_filepath = os.path.join(args.out_dir, "siro_scene_test_results.csv")
     export_results_csv(csv_filepath, scene_test_results)
