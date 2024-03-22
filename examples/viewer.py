@@ -1067,6 +1067,18 @@ class HabitatSimInteractiveViewer(Application):
         self.reconfigure_sim()
         logger.info(f"Reconfigured simulator for scene: {self.sim_settings['scene']}")
 
+    def clear_furniture_joint_states(self):
+        """
+        Clear all furniture object joint states.
+        """
+        for ao in (
+            self.sim.get_articulated_object_manager()
+            .get_objects_by_handle_substring()
+            .values()
+        ):
+            j_pos = ao.joint_positions
+            ao.joint_positions = [0.0 for _ in range(len(j_pos))]
+
     def key_press_event(self, event: Application.KeyEvent) -> None:
         """
         Handles `Application.KeyEvent` on a key press by performing the corresponding functions.
@@ -1141,6 +1153,9 @@ class HabitatSimInteractiveViewer(Application):
             self.print_help_text()
 
         elif key == pressed.J:
+            self.clear_furniture_joint_states()
+
+        elif key == pressed.K:
             new_state_idx = (self.semantic_region_debug_draw_state + 1) % len(
                 self.semantic_region_debug_draw_choices
             )
@@ -1798,7 +1813,8 @@ Key Commands:
     ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep).
     'c':        Run a discrete collision detection pass and render a debug wireframe overlay showing active contact points and normals (yellow=fixed length normals, red=collision distances).
                 (+SHIFT) Toggle the contact point debug render overlay on/off.
-    'j'         Toggle Semantic visualization bounds (currently only Semantic Region annotations)
+    'j'         Clear the joint states of all articulated objects.
+    'k'         Toggle Semantic visualization bounds (currently only Semantic Region annotations)
 
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
