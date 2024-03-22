@@ -915,6 +915,7 @@ class HabitatSimInteractiveViewer(Application):
 
         elif key == pressed.J:
             self.clear_furniture_joint_states()
+            self.navmesh_config_and_recompute()
 
         elif key == pressed.I:
             # dump the modified object states buffer to JSON.
