@@ -104,6 +104,22 @@ class AbstractAttributes
   }
 
   /**
+   * @brief Set the fully qualified filename of the file used to create or most
+   * recently save this ManagedObject.
+   */
+  void setActualFilename(const std::string& fullFileName) override {
+    set("actualFilename", fullFileName);
+  }
+
+  /**
+   * @brief Get the fully qualified filename of the file used to create or most
+   * recently save this ManagedObject.
+   */
+  std::string getActualFilename() const override {
+    return get<std::string>("actualFilename");
+  }
+
+  /**
    *  @brief Unique ID referencing attributes
    */
   void setID(int ID) override { set("ID", ID); }
