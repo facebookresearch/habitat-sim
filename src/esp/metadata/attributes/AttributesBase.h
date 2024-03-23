@@ -88,13 +88,35 @@ class AbstractAttributes
   std::string getHandle() const override { return get<std::string>("handle"); }
 
   /**
-   * @brief directory where files used to construct attributes can be found.
+   * @brief Set the directory where files used to construct ManagedObject can be
+   * found.
    */
   void setFileDirectory(const std::string& fileDirectory) override {
     set("fileDirectory", fileDirectory);
   }
+
+  /**
+   * @brief Get directory where files used to construct ManagedObject can be
+   * found.
+   */
   std::string getFileDirectory() const override {
     return get<std::string>("fileDirectory");
+  }
+
+  /**
+   * @brief Set the fully qualified filename of the file used to create or most
+   * recently save this ManagedObject.
+   */
+  void setActualFilename(const std::string& fullFileName) override {
+    set("actualFilename", fullFileName);
+  }
+
+  /**
+   * @brief Get the fully qualified filename of the file used to create or most
+   * recently save this ManagedObject.
+   */
+  std::string getActualFilename() const override {
+    return get<std::string>("actualFilename");
   }
 
   /**

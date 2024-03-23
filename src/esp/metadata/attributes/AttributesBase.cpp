@@ -37,6 +37,7 @@ AbstractAttributes::AbstractAttributes(const std::string& attributesClassKey,
   // set initial vals, will be overwritten when registered
   set("ID", 0);
   set("fileDirectory", "");
+  set("actualFilename", "");
 }
 
 }  // namespace attributes
