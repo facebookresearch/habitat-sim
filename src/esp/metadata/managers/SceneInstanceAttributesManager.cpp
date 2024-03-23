@@ -525,18 +525,6 @@ std::string SceneInstanceAttributesManager::getTranslationOriginVal(
   return transOrigin;
 }  // SceneInstanceAttributesManager::getTranslationOriginVal
 
-int SceneInstanceAttributesManager::registerObjectFinalize(
-    SceneInstanceAttributes::ptr sceneInstanceAttributes,
-    const std::string& sceneInstanceAttributesHandle,
-    bool) {
-  // adds template to library, and returns either the ID of the existing
-  // template referenced by sceneInstanceAttributesHandle, or the next
-  // available ID if not found.
-  int datasetTemplateID = this->addObjectToLibrary(
-      std::move(sceneInstanceAttributes), sceneInstanceAttributesHandle);
-  return datasetTemplateID;
-}  // SceneInstanceAttributesManager::registerObjectFinalize
-
 }  // namespace managers
 }  // namespace metadata
 }  // namespace esp
