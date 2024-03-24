@@ -8,6 +8,7 @@ import os
 import string
 import sys
 import time
+from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 flags = sys.getdlopenflags()
@@ -26,6 +27,34 @@ import habitat_sim
 from habitat_sim import ReplayRenderer, ReplayRendererConfiguration
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
+
+
+# Describe edit type
+class EditMode(Enum):
+    MOVE = 0
+    ROTATE = 1
+    NUM_VALS = 2
+
+
+EDIT_MODE_NAMES = ["Move object", "Rotate object"]
+
+
+# Describe edit distance values
+class DistanceMode(Enum):
+    VERY_SMALL = 0
+    SMALL = 1
+    MEDIUM = 2
+    LARGE = 3
+    HUGE = 4
+    NUM_VALS = 5
+
+
+# distance values in m
+DISTANCE_MODE_VALS = [0.01, 0.02, 0.05, 0.1, 0.5]
+# angle value multipliers (in degrees) - multiplied by conversion
+ROTATION_MULT_VALS = [1.0, 15.0, 45.0, 60.0, 90.0]
+# 1 radian
+BASE_EDIT_ROT_AMT = math.pi / 180.0
 
 
 class ExtractedBaseVelNonCylinderAction:
@@ -275,6 +304,15 @@ class HabitatSimInteractiveViewer(Application):
         # variables that track app data and CPU/GPU usage
         self.num_frames_to_track = 60
 
+        # Editing
+        # Edit mode
+        self.curr_edit_mode = EditMode.MOVE
+        # Edit distance/amount
+        self.curr_edit_multiplier = DistanceMode.VERY_SMALL
+
+        # Initialize base edit changes
+        self.set_edit_vals()
+
         self.previous_mouse_point = None
 
         # toggle physics simulation on/off
@@ -300,8 +338,7 @@ class HabitatSimInteractiveViewer(Application):
             habitat_sim.physics.ManagedRigidObject, mn.Matrix4
         ] = {}
         self.removed_clutter = []
-        self.translation_speed = 0.05
-        self.rotation_speed = math.pi / 180.0
+
         self.navmesh_dirty = False
         self.removed_objects_debug_frames = []
 
@@ -323,6 +360,15 @@ class HabitatSimInteractiveViewer(Application):
         LoggingContext.reinitialize_from_env()
         logger.setLevel("INFO")
         self.print_help_text()
+
+    def set_edit_vals(self):
+        # Set current scene object edit values for translation and rotation
+        # 1 cm * multiplier
+        self.edit_translation_dist = DISTANCE_MODE_VALS[self.curr_edit_multiplier.value]
+        # 1 radian * multiplier
+        self.edit_rotation_amt = (
+            BASE_EDIT_ROT_AMT * ROTATION_MULT_VALS[self.curr_edit_multiplier.value]
+        )
 
     def draw_removed_objects_debug_frames(self):
         """
@@ -816,15 +862,6 @@ class HabitatSimInteractiveViewer(Application):
         alt_pressed = bool(event.modifiers & mod.ALT)
         # warning: ctrl doesn't always pass through with other key-presses
 
-        obj_translation_speed = (
-            self.translation_speed
-            if not shift_pressed
-            else self.translation_speed * 2.0
-        )
-        obj_rotation_speed = (
-            self.rotation_speed if not shift_pressed else self.rotation_speed * 4.0
-        )
-
         if key == pressed.ESC:
             event.accepted = True
             self.exit_event(Application.ExitEvent)
@@ -855,45 +892,87 @@ class HabitatSimInteractiveViewer(Application):
             logger.info(f"Command: toggle Bullet debug draw: {self.debug_bullet_draw}")
 
         elif key == pressed.LEFT:
-            if alt_pressed:
+            # if movement mode
+            if self.curr_edit_mode == EditMode.MOVE:
                 self.move_selected_object(
-                    rotation=mn.Quaternion.rotation(
-                        mn.Rad(obj_rotation_speed), mn.Vector3.y_axis()
-                    )
+                    translation=mn.Vector3.x_axis() * self.edit_translation_dist
                 )
+            # if rotation mode : rotate around y axis
             else:
                 self.move_selected_object(
-                    translation=mn.Vector3.x_axis() * obj_translation_speed
+                    rotation=mn.Quaternion.rotation(
+                        mn.Rad(self.edit_rotation_amt), mn.Vector3.y_axis()
+                    )
                 )
         elif key == pressed.RIGHT:
-            if alt_pressed:
+            # if movement mode
+            if self.curr_edit_mode == EditMode.MOVE:
+                self.move_selected_object(
+                    translation=-mn.Vector3.x_axis() * self.edit_translation_dist
+                )
+            # if rotation mode : rotate around y axis
+            else:
                 self.move_selected_object(
                     rotation=mn.Quaternion.rotation(
-                        -mn.Rad(obj_rotation_speed), mn.Vector3.y_axis()
+                        -mn.Rad(self.edit_rotation_amt), mn.Vector3.y_axis()
                     )
                 )
-            else:
-                self.move_selected_object(
-                    translation=-mn.Vector3.x_axis() * obj_translation_speed
-                )
         elif key == pressed.UP:
-            if alt_pressed:
-                self.move_selected_object(
-                    translation=mn.Vector3.y_axis() * obj_translation_speed
-                )
+            # if movement mode
+            if self.curr_edit_mode == EditMode.MOVE:
+                if alt_pressed:
+                    self.move_selected_object(
+                        translation=mn.Vector3.y_axis() * self.edit_translation_dist
+                    )
+                else:
+                    self.move_selected_object(
+                        translation=mn.Vector3.z_axis() * self.edit_translation_dist
+                    )
+            # if rotation mode : rotate around x or z axis
             else:
-                self.move_selected_object(
-                    translation=mn.Vector3.z_axis() * obj_translation_speed
-                )
+                if alt_pressed:
+                    # rotate around x axis
+                    self.move_selected_object(
+                        rotation=mn.Quaternion.rotation(
+                            mn.Rad(self.edit_rotation_amt), mn.Vector3.x_axis()
+                        )
+                    )
+                else:
+                    # rotate around z axis
+                    self.move_selected_object(
+                        rotation=mn.Quaternion.rotation(
+                            mn.Rad(self.edit_rotation_amt), mn.Vector3.z_axis()
+                        )
+                    )
+
         elif key == pressed.DOWN:
-            if alt_pressed:
-                self.move_selected_object(
-                    translation=-mn.Vector3.y_axis() * obj_translation_speed
-                )
+            # if movement mode
+            if self.curr_edit_mode == EditMode.MOVE:
+                if alt_pressed:
+                    self.move_selected_object(
+                        translation=-mn.Vector3.y_axis() * self.edit_translation_dist
+                    )
+                else:
+                    self.move_selected_object(
+                        translation=-mn.Vector3.z_axis() * self.edit_translation_dist
+                    )
+            # if rotation mode : rotate around x or z axis
             else:
-                self.move_selected_object(
-                    translation=-mn.Vector3.z_axis() * obj_translation_speed
-                )
+                if alt_pressed:
+                    # rotate around x axis
+                    self.move_selected_object(
+                        rotation=mn.Quaternion.rotation(
+                            -mn.Rad(self.edit_rotation_amt), mn.Vector3.x_axis()
+                        )
+                    )
+                else:
+                    # rotate around z axis
+                    self.move_selected_object(
+                        rotation=mn.Quaternion.rotation(
+                            -mn.Rad(self.edit_rotation_amt), mn.Vector3.z_axis()
+                        )
+                    )
+
         elif key == pressed.BACKSPACE or key == pressed.C:
             if self.selected_object is not None:
                 if key == pressed.C:
@@ -912,10 +991,27 @@ class HabitatSimInteractiveViewer(Application):
                     )
                 self.selected_object = None
                 self.navmesh_config_and_recompute()
+        elif key == pressed.B:
+            # cycle through edit dist/amount multiplier
+            mod_val = -1 if shift_pressed else 1
+            self.curr_edit_multiplier = DistanceMode(
+                (
+                    self.curr_edit_multiplier.value
+                    + DistanceMode.NUM_VALS.value
+                    + mod_val
+                )
+                % DistanceMode.NUM_VALS.value
+            )
+            # update the edit values
+            self.set_edit_vals()
 
-        elif key == pressed.J:
-            self.clear_furniture_joint_states()
-            self.navmesh_config_and_recompute()
+        elif key == pressed.G:
+            # toggle edit mode
+            mod_val = -1 if shift_pressed else 1
+            self.curr_edit_mode = EditMode(
+                (self.curr_edit_mode.value + EditMode.NUM_VALS.value + mod_val)
+                % EditMode.NUM_VALS.value
+            )
 
         elif key == pressed.I:
             # dump the modified object states buffer to JSON.
@@ -946,13 +1042,9 @@ class HabitatSimInteractiveViewer(Application):
             # put em back
             self.spot.sim_obj.rigid_state = spot_loc
 
-        elif key == pressed.T:
-            self.remove_outdoor_objects()
-            pass
-
-        elif key == pressed.V:
-            self.invert_gravity()
-            logger.info("Command: gravity inverted")
+        elif key == pressed.J:
+            self.clear_furniture_joint_states()
+            self.navmesh_config_and_recompute()
 
         elif key == pressed.N:
             # (default) - toggle navmesh visualization
@@ -970,6 +1062,14 @@ class HabitatSimInteractiveViewer(Application):
                     logger.info("Command: toggle navmesh")
                 else:
                     logger.warn("Warning: recompute navmesh first")
+
+        elif key == pressed.T:
+            self.remove_outdoor_objects()
+            pass
+
+        elif key == pressed.V:
+            self.invert_gravity()
+            logger.info("Command: gravity inverted")
 
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
@@ -1151,12 +1251,22 @@ class HabitatSimInteractiveViewer(Application):
 
         sensor_type_string = str(sensor_spec.sensor_type.name)
         sensor_subtype_string = str(sensor_spec.sensor_subtype.name)
+        edit_mode_string = EDIT_MODE_NAMES[self.curr_edit_mode.value]
+
+        dist_mode_substr = (
+            f"Translation: {self.edit_translation_dist}m"
+            if self.curr_edit_mode == EditMode.MOVE
+            else f"Rotation:{ROTATION_MULT_VALS[self.curr_edit_multiplier.value]} deg "
+        )
+        edit_distance_mode_string = f"{dist_mode_substr}"
         self.window_text.render(
             f"""
 {self.fps} FPS
 Scene ID : {os.path.split(self.cfg.sim_cfg.scene_id)[1].split('.scene_instance')[0]}
 Sensor Type: {sensor_type_string}
 Sensor Subtype: {sensor_subtype_string}
+Edit Mode: {edit_mode_string}
+Edit Value: {edit_distance_mode_string}
             """
         )
         self.shader.draw(self.window_text.mesh)
@@ -1193,14 +1303,21 @@ Key Commands:
 
     Scene Object Modification UI:
     'SHIFT+right-click': Select an object to modify.
+    'G' : Change Edit mode to either Move or Rotate the selected object
+    'B' (+ SHIFT) : Increment (Decrement) the current edit amounts.
         - With an object selected:
+            When Move Object mode is selected :
             - LEFT/RIGHT arrow keys: move the object along global X axis.
-                (+ALT): rotate the object around Y axis
             - UP/DOWN arrow keys: move the object along global Z axis.
                 (+ALT): move the object up/down (global Y axis)
+            When Rotate Object mode is selected :
+            - LEFT/RIGHT arrow keys: rotate the object around global Y axis.
+            - UP/DOWN arrow keys: rotate the object around global Z axis.
+                (+ALT): rotate the object around global X axis.
             - BACKSPACE: delete the selected object
             - 'c': delete the selected object and record it as clutter.
-    'i': save the current, modified, scene_instance file and close the viewer. Also save removed_clutter.txt containing object names of all removed clutter objects.
+    'i': save the current, modified, scene_instance file. Also save removed_clutter.txt containing object names of all removed clutter objects.
+         - With Shift : also close the viewer.
 
     Utilities:
     'r':        Reset the simulator with the most recently loaded scene.
