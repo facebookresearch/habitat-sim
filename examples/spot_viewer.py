@@ -28,6 +28,11 @@ from habitat_sim import ReplayRenderer, ReplayRendererConfiguration
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
+SPOT_DIR = "data/robots/hab_spot_arm/urdf/hab_spot_arm.urdf"
+if not os.path.isfile(SPOT_DIR):
+    # support other layout
+    SPOT_DIR = "data/scene_datasets/robots/hab_spot_arm/urdf/hab_spot_arm.urdf"
+
 
 # Describe edit type
 class EditMode(Enum):
@@ -744,7 +749,7 @@ class HabitatSimInteractiveViewer(Application):
 
     def init_spot(self):
         # add the robot to the world via the wrapper
-        robot_path = "data/robots/hab_spot_arm/urdf/hab_spot_arm.urdf"
+        robot_path = SPOT_DIR
         agent_config = DictConfig({"articulated_agent_urdf": robot_path})
         self.spot = spot_robot.SpotRobot(agent_config, self.sim, fixed_base=True)
         self.spot.reconfigure()
@@ -1303,8 +1308,8 @@ Key Commands:
 
     Scene Object Modification UI:
     'SHIFT+right-click': Select an object to modify.
-    'G' : Change Edit mode to either Move or Rotate the selected object
-    'B' (+ SHIFT) : Increment (Decrement) the current edit amounts.
+    'g' : Change Edit mode to either Move or Rotate the selected object
+    'b' (+ SHIFT) : Increment (Decrement) the current edit amounts.
         - With an object selected:
             When Move Object mode is selected :
             - LEFT/RIGHT arrow keys: move the object along global X axis.
