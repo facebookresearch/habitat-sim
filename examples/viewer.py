@@ -1078,6 +1078,8 @@ class HabitatSimInteractiveViewer(Application):
         ):
             j_pos = ao.joint_positions
             ao.joint_positions = [0.0 for _ in range(len(j_pos))]
+            j_vel = ao.joint_velocities
+            ao.joint_velocities = [0.0 for _ in range(len(j_vel))]
 
     def key_press_event(self, event: Application.KeyEvent) -> None:
         """

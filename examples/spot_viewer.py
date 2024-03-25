@@ -448,6 +448,8 @@ class HabitatSimInteractiveViewer(Application):
             if "hab_spot" not in ao.handle:
                 j_pos = ao.joint_positions
                 ao.joint_positions = [0.0 for _ in range(len(j_pos))]
+                j_vel = ao.joint_velocities
+                ao.joint_velocities = [0.0 for _ in range(len(j_vel))]
 
     def draw_contact_debug(self):
         """
