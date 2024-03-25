@@ -80,6 +80,17 @@ def run_armature_urdf_conversion(blend_file: str, export_path: str, script_path:
     )
 
 
+def get_dirs_in_dir(dirpath: str) -> List[str]:
+    """
+    Get the directory names inside a directory path.
+    """
+    return [
+        entry.split(".glb")[0]
+        for entry in os.listdir(dirpath)
+        if os.path.isdir(os.path.join(dirpath, entry))
+    ]
+
+
 # -----------------------------------------
 # Batches blender converter calls over a directory of blend files
 # e.g. python tools/batched_armature_to_urdf.py --root-dir ~/Downloads/OneDrive_1_9-27-2023/ --out-dir tools/armature_out_test/ --converter-script-path tools/blender_armature_to_urdf.py
@@ -125,6 +136,13 @@ def main():
         help="Substrings which indicate scenes which should be converted. Must be provided with a scene map file. When provided, only these scenes are converted.",
         default=None,
     )
+    parser.add_argument(
+        "--no-replace",
+        default=False,
+        action="store_true",
+        help="If specified, cull candidate .blend files if there already exists a matching output directory for the asset.",
+    )
+
     args = parser.parse_args()
     root_dir = args.root_dir
     assert os.path.isdir(root_dir), "directory must exist."
@@ -142,6 +160,19 @@ def main():
             if skip_str in path
         ]
         blend_paths = list(set(blend_paths) - set(skipped_strings))
+
+    if args.no_replace:
+        out_dir_dirs = get_dirs_in_dir(args.out_dir)
+        remaining_blend_paths = [
+            blend
+            for blend in blend_paths
+            if blend.split("/")[-1].split(".")[0] not in out_dir_dirs
+        ]
+        print(f"original blends = {len(blend_paths)}")
+        print(f"existing dirs = {len(out_dir_dirs)}")
+        print(f"remaining_blend_paths = {len(remaining_blend_paths)}")
+        print(f"remaining_blend_paths = {remaining_blend_paths}")
+        blend_paths = remaining_blend_paths
 
     if args.scene_map_file is not None and args.scenes is not None:
         # load the scene map file and limit the object set by scenes
