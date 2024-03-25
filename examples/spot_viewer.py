@@ -46,18 +46,19 @@ EDIT_MODE_NAMES = ["Move object", "Rotate object"]
 
 # Describe edit distance values
 class DistanceMode(Enum):
-    VERY_SMALL = 0
-    SMALL = 1
-    MEDIUM = 2
-    LARGE = 3
-    HUGE = 4
-    NUM_VALS = 5
+    TINY = 0
+    VERY_SMALL = 1
+    SMALL = 2
+    MEDIUM = 3
+    LARGE = 4
+    HUGE = 5
+    NUM_VALS = 6
 
 
 # distance values in m
-DISTANCE_MODE_VALS = [0.01, 0.02, 0.05, 0.1, 0.5]
+DISTANCE_MODE_VALS = [0.001, 0.01, 0.02, 0.05, 0.1, 0.5]
 # angle value multipliers (in degrees) - multiplied by conversion
-ROTATION_MULT_VALS = [1.0, 15.0, 45.0, 60.0, 90.0]
+ROTATION_MULT_VALS = [1.0, 10.0, 30.0, 45.0, 60.0, 90.0]
 # 1 radian
 BASE_EDIT_ROT_AMT = math.pi / 180.0
 
