@@ -679,6 +679,7 @@ def export(
     export_urdf: bool = True,
     export_meshes: bool = True,
     export_ao_config: bool = True,
+    fix_materials: bool = True,
     **kwargs,
 ):
     """
@@ -695,6 +696,21 @@ def export(
     counter = 0
     links = []
     joints = []
+
+    # fixes a gltf export error caused by 1.0 ior values
+    if fix_materials:
+        for material in bpy.data.materials:
+            if material.node_tree is not None:
+                for node in material.node_tree.nodes:
+                    if (
+                        node.type == "BSDF_PRINCIPLED"
+                        and "IOR" in node.inputs
+                        and node.inputs["IOR"].default_value == 1.000
+                    ):
+                        node.inputs["IOR"].default_value = 0.000
+                        print(f"Changed IOR value for material '{material.name}'")
+
+        bpy.context.view_layer.update()
 
     # check poll() to avoid exception.
     if bpy.ops.object.mode_set.poll():
@@ -886,6 +902,7 @@ if __name__ == "__main__":
     export_ao_config = False
     round_collision_scales = False
     fix_collision_scales = False
+    fix_materials = False
 
     # visual shape export flags for debugging
     link_visuals = True
@@ -971,6 +988,12 @@ if __name__ == "__main__":
         default=fix_collision_scales,
         help="Flip all negative scale elements for collision shapes.",
     )
+    parser.add_argument(
+        "--fix-materials",
+        action="store_true",
+        default=fix_materials,
+        help="Fixes materials with ior==1.0 which cause glTF export failure.",
+    )
 
     args = parser.parse_args(py_argv)
     export_urdf = args.export_urdf
@@ -1000,6 +1023,7 @@ if __name__ == "__main__":
         export_urdf=export_urdf,
         export_meshes=export_meshes,
         export_ao_config=export_ao_config,
+        fix_materials=args.fix_materials,
         link_visuals=not args.no_link_visuals,
         collision_visuals=args.collision_visuals,
         joint_visuals=args.joint_visuals,

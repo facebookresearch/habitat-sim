@@ -72,11 +72,11 @@ def run_armature_urdf_conversion(blend_file: str, export_path: str, script_path:
     os.makedirs(export_path, exist_ok=True)
     base_command = f"blender {blend_file} --background --python {script_path} -- --export-path {export_path}"
     # first export the meshes
-    os.system(base_command + " --export-meshes")
+    os.system(base_command + " --export-meshes --fix-materials")
     # then export the URDF
     os.system(
         base_command
-        + " --export-ao-config --round-collision-scales --fix-collision-scales"
+        + " --export-urdf --export-ao-config --round-collision-scales --fix-collision-scales"
     )
 
 
