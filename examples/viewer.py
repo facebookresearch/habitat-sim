@@ -723,9 +723,9 @@ class HabitatSimInteractiveViewer(Application):
                     if ix > 0:
                         r_pos = rec_obj.transformation.transform_point(key_point)
                     c_to_r = r_pos - c_pos
-                    # only display receptacles within 4 meters centered in view
+                    # only display receptacles within 8 meters centered in view
                     if (
-                        c_to_r.length() < 4
+                        c_to_r.length() < 8
                         and mn.math.dot((c_to_r).normalized(), c_forward) > 0.7
                     ):
                         in_view = True
