@@ -91,6 +91,29 @@ def get_dirs_in_dir(dirpath: str) -> List[str]:
     ]
 
 
+def get_dirs_in_dir_complete(dirpath: str) -> List[str]:
+    """
+    Get the directory names inside a directory path for directories which contain:
+    - urdf
+    - ao_config.json
+    - at least 2 .glb files (for articulation)
+    TODO: check the urdf contents for all .glbs
+    """
+    relevant_entries = []
+    for entry in os.listdir(dirpath):
+        entry_path = os.path.join(dirpath, entry)
+        entry_name = entry.split(".glb")[0]
+        if os.path.isdir(entry_path):
+            contents = os.listdir(entry_path)
+            urdfs = [file for file in contents if file.endswith(".urdf")]
+            configs = [file for file in contents if file.endswith(".ao_config.json")]
+            glbs = [file for file in contents if file.endswith(".glb")]
+            if len(urdfs) > 0 and len(configs) > 0 and len(glbs) > 2:
+                relevant_entries.append(entry_name)
+
+    return relevant_entries
+
+
 # -----------------------------------------
 # Batches blender converter calls over a directory of blend files
 # e.g. python tools/batched_armature_to_urdf.py --root-dir ~/Downloads/OneDrive_1_9-27-2023/ --out-dir tools/armature_out_test/ --converter-script-path tools/blender_armature_to_urdf.py
@@ -162,7 +185,8 @@ def main():
         blend_paths = list(set(blend_paths) - set(skipped_strings))
 
     if args.no_replace:
-        out_dir_dirs = get_dirs_in_dir(args.out_dir)
+        # out_dir_dirs = get_dirs_in_dir(args.out_dir)
+        out_dir_dirs = get_dirs_in_dir_complete(args.out_dir)
         remaining_blend_paths = [
             blend
             for blend in blend_paths
@@ -171,8 +195,13 @@ def main():
         print(f"original blends = {len(blend_paths)}")
         print(f"existing dirs = {len(out_dir_dirs)}")
         print(f"remaining_blend_paths = {len(remaining_blend_paths)}")
-        print(f"remaining_blend_paths = {remaining_blend_paths}")
+        remaining_hashes = [
+            blend_path.split("/")[-1] for blend_path in remaining_blend_paths
+        ]
+        print(f"remaining_hashes = {remaining_hashes}")
         blend_paths = remaining_blend_paths
+        # use this to check, but not commit to trying again
+        # exit()
 
     if args.scene_map_file is not None and args.scenes is not None:
         # load the scene map file and limit the object set by scenes
