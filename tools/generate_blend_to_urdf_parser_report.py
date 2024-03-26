@@ -169,7 +169,7 @@ def main():
 
             # NOTE: there could be missing assets here, but without parsing the blend file again, we wouldn't know. Heuristic is to expect at least one.
             num_rec_meshes = len(
-                find_files(folder_path, file_endswith, "_receptacle.glb")
+                find_files(folder_path, file_endswith, "_receptacle_mesh.glb")
             )
             one_receptacle_exists = num_rec_meshes > 0
 
