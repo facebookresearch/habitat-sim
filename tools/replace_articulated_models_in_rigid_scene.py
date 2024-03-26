@@ -52,7 +52,11 @@ scenes_without_filters = []
 
 
 def find_and_replace_articulated_models_for_config(
-    filepath: str, top_dir: str, urdf_names: str
+    filepath: str,
+    top_dir: str,
+    urdf_names: str,
+    src_dir: str = "scenes-uncluttered",
+    dest_dir: str = "scenes-articulated-uncluttered",
 ) -> None:
     """
     For a given scene config, try to find a matching articulated objects for each rigid object. If found, add them to the config, replacing the rigid objects.
@@ -109,11 +113,7 @@ def find_and_replace_articulated_models_for_config(
         scene_conf["articulated_object_instances"] = ao_instance_data
 
     if file_is_modified:
-        filepath = (
-            filepath.split("scenes-uncluttered")[0]
-            + "scenes-articulated-uncluttered"
-            + filepath.split("scenes-uncluttered")[-1]
-        )
+        filepath = filepath.split(src_dir)[0] + dest_dir + filepath.split(src_dir)[-1]
         with open(filepath, "w") as f:
             json.dump(scene_conf, f)
 
@@ -128,6 +128,18 @@ def main():
         help="path to HSSD SceneDataset root directory containing 'fphab-uncluttered.scene_dataset_config.json'.",
     )
     parser.add_argument(
+        "--src-dir",
+        type=str,
+        default="scenes-uncluttered",
+        help="Name of the source scene config directory within root-dir.",
+    )
+    parser.add_argument(
+        "--dest-dir",
+        type=str,
+        default="scenes-articulated-uncluttered",
+        help="Name of the destination scene config directory within root-dir. Will be created if doesn't exist.",
+    )
+    parser.add_argument(
         "--scenes",
         nargs="+",
         type=str,
@@ -136,15 +148,15 @@ def main():
     )
     args = parser.parse_args()
     fp_root_dir = args.dataset_root_dir
-    config_root_dir = os.path.join(fp_root_dir, "scenes-uncluttered")
+    src_dir = args.src_dir
+    dest_dir = args.dest_dir
+    config_root_dir = os.path.join(fp_root_dir, src_dir)
     configs = find_files(config_root_dir, file_is_scene_config)
     urdf_dir = os.path.join(fp_root_dir, "urdf/")
     urdf_files = find_files(urdf_dir, file_is_urdf)
 
     # create scene output directory
-    os.makedirs(
-        os.path.join(fp_root_dir, "scenes-articulated-uncluttered"), exist_ok=True
-    )
+    os.makedirs(os.path.join(fp_root_dir, dest_dir), exist_ok=True)
 
     invalid_urdf_files = []
 
@@ -186,7 +198,11 @@ def main():
 
     for _ix, filepath in enumerate(configs):
         find_and_replace_articulated_models_for_config(
-            filepath, urdf_names=urdf_names, top_dir=fp_root_dir
+            filepath,
+            urdf_names=urdf_names,
+            top_dir=fp_root_dir,
+            src_dir=src_dir,
+            dest_dir=dest_dir,
         )
 
     print(
