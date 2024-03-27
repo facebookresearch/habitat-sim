@@ -958,6 +958,10 @@ class HabitatSimInteractiveViewer(Application):
                     self.tiled_sims[i].config.sim_cfg.scene_id = "NONE"
                 self.tiled_sims[i].reconfigure(self.cfg)
 
+        # #resave scene instance
+        # self.sim.save_current_scene_config(overwrite=True)
+        # sys. exit()
+
         # post reconfigure
         self.default_agent = self.sim.get_agent(self.agent_id)
         self.render_camera = self.default_agent.scene_node.node_sensor_suite.get(
