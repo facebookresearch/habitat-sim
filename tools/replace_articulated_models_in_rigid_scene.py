@@ -115,7 +115,7 @@ def find_and_replace_articulated_models_for_config(
     if file_is_modified:
         filepath = filepath.split(src_dir)[0] + dest_dir + filepath.split(src_dir)[-1]
         with open(filepath, "w") as f:
-            json.dump(scene_conf, f)
+            json.dump(scene_conf, f, indent=4)
 
 
 def main():
