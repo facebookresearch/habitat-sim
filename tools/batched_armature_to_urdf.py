@@ -165,6 +165,13 @@ def main():
         action="store_true",
         help="If specified, cull candidate .blend files if there already exists a matching output directory for the asset.",
     )
+    parser.add_argument(
+        "--assets",
+        nargs="+",
+        type=str,
+        help="Asset name substrings which indicate the subset of assets which should be converted. When provided, only these assets are converted.",
+        default=None,
+    )
 
     args = parser.parse_args()
     root_dir = args.root_dir
@@ -213,6 +220,12 @@ def main():
                     if object_id in blend_path:
                         limited_object_paths.append(blend_path)
         blend_paths = list(set(limited_object_paths))
+
+    if args.assets is not None:
+        asset_blend_paths = []
+        for name_str in args.assets:
+            asset_blend_paths.extend([path for path in blend_paths if name_str in path])
+        blend_paths = asset_blend_paths
 
     for blend_path in blend_paths:
         run_armature_urdf_conversion(
