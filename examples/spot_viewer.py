@@ -338,6 +338,7 @@ class HabitatSimInteractiveViewer(Application):
 
         # object selection and manipulation interface
         self.selected_object = None
+        self.selected_object_orig_transform = mn.Matrix4().identity_init()
         self.last_hit_details = None
         # cache modified states of any objects moved by the interface.
         self.modified_objects_buffer: Dict[
@@ -1075,6 +1076,22 @@ class HabitatSimInteractiveViewer(Application):
             self.remove_outdoor_objects()
             pass
 
+        elif key == pressed.U:
+            # if an object is selected, restore its last transformation state - UNDO of edits since last selected
+            print("Undo selected")
+            if self.selected_object is not None:
+                print(
+                    f"Sel Obj : {self.selected_object.handle} : Current object transformation : \n{self.selected_object.transformation}\n Being replaced by saved transformation : \n{self.selected_object.transformation}"
+                )
+                orig_mt = self.selected_object.motion_type
+                self.selected_object.motion_type = (
+                    habitat_sim.physics.MotionType.KINEMATIC
+                )
+                self.selected_object.transformation = (
+                    self.selected_object_orig_transform
+                )
+                self.selected_object.motion_type = orig_mt
+
         elif key == pressed.V:
             self.invert_gravity()
             logger.info("Command: gravity inverted")
@@ -1151,6 +1168,11 @@ class HabitatSimInteractiveViewer(Application):
                     )
                 else:
                     print("This is the stage.")
+            # record current selected object's transformation, to restore if undo is pressed
+            if self.selected_object is not None:
+                self.selected_object_orig_transform = (
+                    self.selected_object.transformation
+                )
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
