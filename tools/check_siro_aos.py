@@ -4,10 +4,19 @@ from typing import Any, Dict, List
 # NOTE: (requires habitat-lab) get metadata for semantics
 import magnum as mn
 import numpy as np
+
+# NOTE: (requires habitat-llm) get metadata for semantics
+from dataset_generation.benchmark_generation.generate_episodes import (
+    MetadataInterface,
+    default_metadata_dict,
+    object_hash_from_handle,
+)
+from habitat.datasets.rearrange.samplers.receptacle import find_receptacles
 from habitat.sims.habitat_simulator.debug_visualizer import DebugVisualizer
 
 from habitat_sim import Simulator
 from habitat_sim.metadata import MetadataMediator
+from habitat_sim.physics import ManagedArticulatedObject
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
 rand_colors = [mn.Color4(mn.Vector3(np.random.random(3))) for _ in range(100)]
@@ -121,6 +130,16 @@ def check_joint_popping(
     return unstable_aos, cumulative_errors
 
 
+def recompute_ao_bbs(ao: ManagedArticulatedObject) -> None:
+    """
+    Recomputes the link SceneNode bounding boxes for all ao links.
+    NOTE: Gets around an observed loading bug. Call before trying to peek an AO.
+    """
+    for link_ix in range(-1, ao.num_links):
+        link_node = ao.get_link_scene_node(link_ix)
+        link_node.compute_cumulative_bb()
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -158,6 +177,8 @@ if __name__ == "__main__":
     mm = MetadataMediator()
     mm.active_dataset = args.dataset
     cfg.metadata_mediator = mm
+
+    mi = MetadataInterface(default_metadata_dict)
 
     # keyed by ao handle
     ao_test_results: Dict[str, Dict[str, Any]] = {}
@@ -210,6 +231,27 @@ if __name__ == "__main__":
                 ###########################################
                 # produce a gif of actuation
                 # TODO:
+
+                ###########################################
+                # load the receptacles
+                try:
+                    recs = find_receptacles(sim)
+                except Exception as e:
+                    print(f"Failed to load receptacles for {ao_handle}. '{repr(e)}'")
+                    asset_failure_message = repr(e)
+
+                ###########################################
+                # snap an image and sort into category subfolder
+                recompute_ao_bbs(ao)
+                hash_name = object_hash_from_handle(ao_handle)
+                cat = mi.get_object_category(hash_name)
+                if cat is None:
+                    cat = "None"
+
+                ao_peek = dbv.peek(ao.handle, peek_all_axis=True)
+                cat_dir = os.path.join(args.out_dir, f"ao_categories/{cat}/")
+                os.makedirs(cat_dir, exist_ok=True)
+                ao_peek.save(cat_dir, prefix=hash_name)
 
                 #############################################
                 # DONE: clear the scene for next iteration

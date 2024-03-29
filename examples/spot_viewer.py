@@ -1093,8 +1093,30 @@ class HabitatSimInteractiveViewer(Application):
                 self.selected_object.motion_type = orig_mt
 
         elif key == pressed.V:
-            self.invert_gravity()
-            logger.info("Command: gravity inverted")
+            # inject a new AO by handle substring in front of the agent
+
+            # get user input
+            ao_substring = input(
+                "Load ArticulatedObject. Enter an AO handle substring, first match will be added:"
+            ).strip()
+
+            aotm = self.sim.metadata_mediator.ao_template_manager
+            aom = self.sim.get_articulated_object_manager()
+            ao_handles = aotm.get_template_handles(ao_substring)
+            if len(ao_handles) == 0:
+                print(f"No AO found matching substring: '{ao_substring}'")
+            elif len(ao_handles) > 1:
+                print(f"Multiple AOs found matching substring: '{ao_substring}'.")
+            matching_ao_handle = ao_handles[0]
+            print(f"Adding AO: '{matching_ao_handle}'")
+            aot = aotm.get_template_by_handle(matching_ao_handle)
+            aot.base_type = "FIXED"
+            aotm.register_template(aot)
+            ao = aom.add_articulated_object_by_template_handle(matching_ao_handle)
+            in_front_of_spot = self.spot.base_transformation.transform_point(
+                [1.5, 0.0, 0.0]
+            )
+            ao.translation = in_front_of_spot
 
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
