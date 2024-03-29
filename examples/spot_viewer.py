@@ -187,6 +187,16 @@ class ExtractedBaseVelNonCylinderAction:
             self.update_base(ang_vel != 0.0)
 
 
+def recompute_ao_bbs(ao: habitat_sim.physics.ManagedArticulatedObject) -> None:
+    """
+    Recomputes the link SceneNode bounding boxes for all ao links.
+    NOTE: Gets around an observed loading bug. Call before trying to peek an AO.
+    """
+    for link_ix in range(-1, ao.num_links):
+        link_node = ao.get_link_scene_node(link_ix)
+        link_node.compute_cumulative_bb()
+
+
 class HabitatSimInteractiveViewer(Application):
     # the maximum number of chars displayable in the app window
     # using the magnum text module. These chars are used to
@@ -1052,8 +1062,19 @@ class HabitatSimInteractiveViewer(Application):
             self.spot.sim_obj.rigid_state = spot_loc
 
         elif key == pressed.J:
-            self.clear_furniture_joint_states()
-            self.navmesh_config_and_recompute()
+            if shift_pressed and isinstance(
+                self.selected_object, habitat_sim.physics.ManagedArticulatedObject
+            ):
+                # open the selected receptacle
+                for link_ix in self.selected_object.get_link_ids():
+                    if self.selected_object.get_link_joint_type(link_ix) in [
+                        habitat_sim.physics.JointType.Prismatic,
+                        habitat_sim.physics.JointType.Revolute,
+                    ]:
+                        sutils.open_link(self.selected_object, link_ix)
+            else:
+                self.clear_furniture_joint_states()
+                self.navmesh_config_and_recompute()
 
         elif key == pressed.N:
             # (default) - toggle navmesh visualization
@@ -1105,6 +1126,7 @@ class HabitatSimInteractiveViewer(Application):
             ao_handles = aotm.get_template_handles(ao_substring)
             if len(ao_handles) == 0:
                 print(f"No AO found matching substring: '{ao_substring}'")
+                return
             elif len(ao_handles) > 1:
                 print(f"Multiple AOs found matching substring: '{ao_substring}'.")
             matching_ao_handle = ao_handles[0]
@@ -1113,10 +1135,14 @@ class HabitatSimInteractiveViewer(Application):
             aot.base_type = "FIXED"
             aotm.register_template(aot)
             ao = aom.add_articulated_object_by_template_handle(matching_ao_handle)
-            in_front_of_spot = self.spot.base_transformation.transform_point(
-                [1.5, 0.0, 0.0]
-            )
-            ao.translation = in_front_of_spot
+            if ao is not None:
+                recompute_ao_bbs(ao)
+                in_front_of_spot = self.spot.base_transformation.transform_point(
+                    [1.5, 0.0, 0.0]
+                )
+                ao.translation = in_front_of_spot
+            else:
+                print("Failed to load AO.")
 
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:

@@ -239,6 +239,9 @@ if __name__ == "__main__":
                 except Exception as e:
                     print(f"Failed to load receptacles for {ao_handle}. '{repr(e)}'")
                     asset_failure_message = repr(e)
+                    ao_test_results[ao_short_handle]["failure_log"] = to_str_csv(
+                        asset_failure_message
+                    )
 
                 ###########################################
                 # snap an image and sort into category subfolder
@@ -251,7 +254,7 @@ if __name__ == "__main__":
                 ao_peek = dbv.peek(ao.handle, peek_all_axis=True)
                 cat_dir = os.path.join(args.out_dir, f"ao_categories/{cat}/")
                 os.makedirs(cat_dir, exist_ok=True)
-                ao_peek.save(cat_dir, prefix=hash_name)
+                ao_peek.save(cat_dir, prefix=hash_name + "__")
 
                 #############################################
                 # DONE: clear the scene for next iteration
