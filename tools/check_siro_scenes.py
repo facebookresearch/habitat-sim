@@ -1,4 +1,5 @@
 import os
+from collections import defaultdict
 from typing import Any, Dict, List
 
 # NOTE: (requires habitat-lab) get metadata for semantics
@@ -168,6 +169,32 @@ def save_region_visualizations(
         )
 
 
+def get_region_counts(sim: Simulator) -> Dict[str, int]:
+    """
+    Count all the region categories in the active scene.
+    """
+
+    region_counts = defaultdict(lambda: 0)
+    for region in sim.semantic_scene.regions:
+        region_counts[region.category.name()] += 1
+    return region_counts
+
+
+def save_region_counts_csv(region_counts: Dict[str, int], filepath: str) -> None:
+    """
+    Save the region counts to a csv file.
+    """
+
+    assert filepath.endswith(".csv")
+
+    with open(filepath, "w") as f:
+        f.write("region_name, count\n")
+        for region_name, count in region_counts.items():
+            f.write(f"{region_name}, {count}, \n")
+
+    print(f"Wrote region counts csv to {filepath}")
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -211,10 +238,19 @@ if __name__ == "__main__":
     # keyed by scene handle
     scene_test_results: Dict[str, Dict[str, Any]] = {}
 
+    # count all region category names in all scenes
+    region_counts: Dict[str, int] = defaultdict(lambda: 0)
+
+    num_scenes = len(mm.get_scene_handles())
+
     # for each scene, initialize a fresh simulator and run tests
-    for scene_handle in mm.get_scene_handles():
-        print(f"Setting up scene for {scene_handle}")
+    for s_ix, scene_handle in enumerate(mm.get_scene_handles()):
+        print("=================================================================")
+        print(
+            f"Setting up scene for {scene_handle} ({s_ix}|{num_scenes} = {s_ix/float(num_scenes)*100}%)"
+        )
         cfg.sim_cfg.scene_id = scene_handle
+        print(" - init")
         with Simulator(cfg) as sim:
             dbv = DebugVisualizer(sim)
 
@@ -229,6 +265,13 @@ if __name__ == "__main__":
             ] = sim.get_articulated_object_manager().get_num_objects()
 
             scene_out_dir = os.path.join(args.out_dir, f"{sim.curr_scene_name}/")
+
+            ##########################################
+            # Check region counts
+            print(" - region counts")
+            scene_region_counts = get_region_counts(sim)
+            for region_name, count in scene_region_counts.items():
+                region_counts[region_name] += count
 
             ##########################################
             # Check for joint popping
@@ -246,9 +289,10 @@ if __name__ == "__main__":
             ############################################
             # analyze and visualize regions
             print(" - check and visualize regions")
-            save_region_visualizations(
-                sim, os.path.join(scene_out_dir, "regions/"), dbv
-            )
+            if args.save_images:
+                save_region_visualizations(
+                    sim, os.path.join(scene_out_dir, "regions/"), dbv
+                )
             expected_regions = ["kitchen", "living room", "bedroom"]
             all_region_cats = [
                 region.category.name() for region in sim.semantic_scene.regions
@@ -277,10 +321,13 @@ if __name__ == "__main__":
                     scene_test_results[sim.curr_scene_name][
                         "objects_missing_semantic_class"
                     ].append(obj.handle)
-                    os.makedirs(missing_semantics_output, exist_ok=True)
-                    dbv.peek(obj, peek_all_axis=True).save(
-                        missing_semantics_output, f"{obj.handle}__"
-                    )
+                    if args.save_images:
+                        os.makedirs(missing_semantics_output, exist_ok=True)
+                        dbv.peek(obj, peek_all_axis=True).save(
+                            missing_semantics_output, f"{obj.handle}__"
+                        )
 
     csv_filepath = os.path.join(args.out_dir, "siro_scene_test_results.csv")
     export_results_csv(csv_filepath, scene_test_results)
+    region_count_csv_filepath = os.path.join(args.out_dir, "region_counts.csv")
+    save_region_counts_csv(region_counts, region_count_csv_filepath)
