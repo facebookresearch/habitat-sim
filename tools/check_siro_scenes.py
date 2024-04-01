@@ -159,10 +159,13 @@ def save_region_visualizations(
     dbv.peek("stage").save(output_path=os.path.join(out_dir), prefix="all_regions_")
 
     for rix, region in enumerate(sim.semantic_scene.regions):
+        normalized_region_id = region.id.replace("/", "|").replace(" ", "_")
         draw_region_debug(sim, rix)
         aabb = mn.Range3D.from_center(region.aabb.center, region.aabb.sizes / 2.0)
         reg_obs = dbv._peek_bb(aabb, cam_local_pos=mn.Vector3(0, 1, 0))
-        reg_obs.save(output_path=os.path.join(out_dir), prefix=f"{region.id}_")
+        reg_obs.save(
+            output_path=os.path.join(out_dir), prefix=f"{normalized_region_id}_"
+        )
 
 
 if __name__ == "__main__":
