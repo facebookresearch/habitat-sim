@@ -280,7 +280,7 @@ def semantic_to_rgb(semantic_image: np.ndarray) -> Image.Image:
         "P", (semantic_image.shape[1], semantic_image.shape[0])
     )
     semantic_image_rgb.putpalette(d3_40_colors_rgb.flatten())
-    semantic_image_rgb.putdata((semantic_image.flatten() % 40).astype(np.uint8))
+    semantic_image_rgb.putdata((semantic_image.flatten() % 40).astype(np.uint8))  # type: ignore[arg-type]
     semantic_image_rgb = semantic_image_rgb.convert("RGBA")
     return semantic_image_rgb
 
@@ -295,7 +295,8 @@ def get_island_colored_map(island_top_down_map_data: np.ndarray) -> Image.Image:
     """
 
     white = int("0xffffff", base=16)
-    island_map = Image.new("RGB", island_top_down_map_data.shape, color=white)
+    image_size: Tuple[int, int] = island_top_down_map_data.shape  # type: ignore[assignment]
+    island_map = Image.new("RGB", image_size, color=white)
     pixels = island_map.load()
     extra_colors: List[int] = []
     r = lambda: random.randint(0, 255)
