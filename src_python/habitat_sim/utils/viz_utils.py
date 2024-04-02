@@ -107,7 +107,7 @@ def observation_to_image(
     observation_image: np.ndarray,
     observation_type: str,
     depth_clip: Optional[float] = 10.0,
-):
+) -> Image.Image:
     """Generate an rgb image from a sensor observation. Supported types are: "color", "depth", "semantic"
 
     :param observation_image: Raw observation image from sensor output.
@@ -116,7 +116,7 @@ def observation_to_image(
 
     :return: PIL Image object or None if fails.
     """
-    rgb_image = None
+    rgb_image: Image.Image = None
     if observation_type == "color":
         rgb_image = Image.fromarray(np.uint8(observation_image))
     elif observation_type == "depth":
@@ -162,8 +162,8 @@ def make_video_frame(
     video_dims,
     overlay_settings=None,
     observation_to_image=observation_to_image,
-):
-    image_frame = observation_to_image(ob[primary_obs], primary_obs_type)
+) -> Image.Image:
+    image_frame: Image.Image = observation_to_image(ob[primary_obs], primary_obs_type)
     if image_frame is None:
         raise RuntimeError(
             "make_video_new : Aborting, primary image processing failed."
@@ -269,7 +269,7 @@ def depth_to_rgb(depth_image: np.ndarray, clip_max: float = 10.0) -> np.ndarray:
     return np.asarray(rgb_d_im)
 
 
-def semantic_to_rgb(semantic_image: np.ndarray) -> np.ndarray:
+def semantic_to_rgb(semantic_image: np.ndarray) -> Image.Image:
     """Map semantic ids to colors and genereate an rgb image
 
     :param semantic_image: Raw semantic observation image from sensor output.
@@ -280,12 +280,12 @@ def semantic_to_rgb(semantic_image: np.ndarray) -> np.ndarray:
         "P", (semantic_image.shape[1], semantic_image.shape[0])
     )
     semantic_image_rgb.putpalette(d3_40_colors_rgb.flatten())
-    semantic_image_rgb.putdata((semantic_image.flatten() % 40).astype(np.uint8))
+    semantic_image_rgb.putdata((semantic_image.flatten() % 40).astype(np.uint8))  # type: ignore[arg-type]
     semantic_image_rgb = semantic_image_rgb.convert("RGBA")
     return semantic_image_rgb
 
 
-def get_island_colored_map(island_top_down_map_data: np.ndarray):
+def get_island_colored_map(island_top_down_map_data: np.ndarray) -> Image.Image:
     """
     Get the topdown map for a scene with island colors.
 
@@ -295,7 +295,8 @@ def get_island_colored_map(island_top_down_map_data: np.ndarray):
     """
 
     white = int("0xffffff", base=16)
-    island_map = Image.new("RGB", island_top_down_map_data.shape, color=white)
+    image_size: Tuple[int, int] = island_top_down_map_data.shape  # type: ignore[assignment]
+    island_map = Image.new("RGB", image_size, color=white)
     pixels = island_map.load()
     extra_colors: List[int] = []
     r = lambda: random.randint(0, 255)
