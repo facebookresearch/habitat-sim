@@ -135,9 +135,9 @@
 #   globals unique even across different shared libraries
 #  MAGNUM_TARGET_GL             - Defined if compiled with OpenGL interop
 #  MAGNUM_TARGET_GLES           - Defined if compiled for OpenGL ES
-#  MAGNUM_TARGET_GLES2          - Defined if compiled for OpenGL ES 2.0
-#  MAGNUM_TARGET_GLES3          - Defined if compiled for OpenGL ES 3.0
 #  MAGNUM_TARGET_WEBGL          - Defined if compiled for WebGL
+#  MAGNUM_TARGET_GLES2          - Defined if compiled for OpenGL ES 2.0 / WebGL
+#   1 instead of OpenGL ES 3.0+ / WebGL 2
 #  MAGNUM_TARGET_EGL            - Defined if compiled for EGL instead of a
 #   platform-specific OpenGL support library like CGL, EAGL, GLX or WGL
 #  MAGNUM_TARGET_VK             - Defined if compiled with Vulkan interop
@@ -152,6 +152,8 @@
 #   Android, Emscripten or Windows RT. Use MAGNUM_TARGET_EGL instead.
 #  MAGNUM_TARGET_DESKTOP_GLES`  - Defined if compiled for OpenGL ES but
 #   GLX / WGL is used instead of EGL. Use MAGNUM_TARGET_EGL instead.
+#  MAGNUM_TARGET_GLES3          - Defined if compiled for OpenGL ES 3.0+ /
+#   WebGL 2. Use an inverse of the MAGNUM_TARGET_GLES2 variable instead.
 #
 # Additionally these variables are defined for internal usage:
 #
@@ -162,6 +164,7 @@
 #  MAGNUM_*_LIBRARY             - Component libraries (w/o dependencies)
 #  MAGNUM_*_LIBRARY_DEBUG       - Debug version of given library, if found
 #  MAGNUM_*_LIBRARY_RELEASE     - Release version of given library, if found
+#  MAGNUM_PLATFORM_JS           - Path to MagnumPlatform.js file
 #  MAGNUM_BINARY_INSTALL_DIR    - Binary installation directory
 #  MAGNUM_LIBRARY_INSTALL_DIR   - Library installation directory
 #  MAGNUM_DATA_INSTALL_DIR      - Data installation directory
@@ -205,7 +208,7 @@
 #   This file is part of Magnum.
 #
 #   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019,
-#               2020, 2021, 2022 Vladimír Vondruš <mosra@centrum.cz>
+#               2020, 2021, 2022, 2023 Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
 #   copy of this software and associated documentation files (the "Software"),
@@ -226,18 +229,37 @@
 #   DEALINGS IN THE SOFTWARE.
 #
 
+# CMake policies used by FindMagnum are popped again at the end.
+cmake_policy(PUSH)
+# Prefer GLVND when finding OpenGL. If this causes problems (known to fail with
+# NVidia drivers in Debian Buster, reported on 2019-04-09), users can override
+# this by setting OpenGL_GL_PREFERENCE to LEGACY.
+if(POLICY CMP0072)
+    cmake_policy(SET CMP0072 NEW)
+endif()
+
 # Corrade library dependencies
 set(_MAGNUM_CORRADE_DEPENDENCIES )
-foreach(_component ${Magnum_FIND_COMPONENTS})
-    string(TOUPPER ${_component} _COMPONENT)
+foreach(_magnum_component ${Magnum_FIND_COMPONENTS})
+    set(_MAGNUM_${_magnum_component}_CORRADE_DEPENDENCIES )
 
     # Unrolling the transitive dependencies here so this doesn't need to be
     # after resolving inter-component dependencies. Listing also all plugins.
-    if(_component MATCHES "^(Audio|DebugTools|MeshTools|Primitives|SceneTools|ShaderTools|Text|TextureTools|Trade|.+Importer|.+ImageConverter|.+Font|.+ShaderConverter)$")
-        set(_MAGNUM_${_COMPONENT}_CORRADE_DEPENDENCIES PluginManager)
+    if(_magnum_component MATCHES "^(Audio|DebugTools|MeshTools|Primitives|SceneTools|ShaderTools|Text|TextureTools|Trade|.+Importer|.+ImageConverter|.+Font|.+ShaderConverter)$")
+        list(APPEND _MAGNUM_${_magnum_component}_CORRADE_DEPENDENCIES PluginManager)
+    endif()
+    if(_magnum_component STREQUAL DebugTools)
+        # DebugTools depends on TestSuite optionally, so if it's not there
+        # assume it wasn't compiled against it. Also, all variables from the
+        # FindCorrade module overwrite the local variables here (in particular
+        # _component, _COMPONENT and such), so we need to prefix extensively.
+        find_package(Corrade QUIET COMPONENTS TestSuite)
+        if(Corrade_TestSuite_FOUND)
+            list(APPEND _MAGNUM_${_magnum_component}_CORRADE_DEPENDENCIES TestSuite)
+        endif()
     endif()
 
-    list(APPEND _MAGNUM_CORRADE_DEPENDENCIES ${_MAGNUM_${_COMPONENT}_CORRADE_DEPENDENCIES})
+    list(APPEND _MAGNUM_CORRADE_DEPENDENCIES ${_MAGNUM_${_magnum_component}_CORRADE_DEPENDENCIES})
 endforeach()
 find_package(Corrade REQUIRED Utility ${_MAGNUM_CORRADE_DEPENDENCIES})
 
@@ -271,7 +293,6 @@ set(_magnumFlags
     TARGET_GL
     TARGET_GLES
     TARGET_GLES2
-    TARGET_GLES3
     TARGET_WEBGL
     TARGET_EGL
     TARGET_VK)
@@ -296,14 +317,9 @@ if(MAGNUM_BUILD_DEPRECATED)
             set(MAGNUM_TARGET_DESKTOP_GLES 1)
         endif()
     endif()
-endif()
-
-# OpenGL library preference. Prefer to use GLVND, since that's the better
-# approach nowadays, but allow the users to override it from outside in case
-# it is broken for some reason (Nvidia drivers in Debian's testing (Buster) --
-# reported on 2019-04-09).
-if(NOT CMAKE_VERSION VERSION_LESS 3.10 AND NOT OpenGL_GL_PREFERENCE)
-    set(OpenGL_GL_PREFERENCE GLVND)
+    if(MAGNUM_TARGET_GLES AND NOT MAGNUM_TARGET_GLES2)
+        set(MAGNUM_TARGET_GLES3 1)
+    endif()
 endif()
 
 # Base Magnum library
@@ -686,7 +702,17 @@ foreach(_component ${Magnum_FIND_COMPONENTS})
                 set_property(TARGET Magnum::${_component} APPEND PROPERTY
                     INTERFACE_LINK_LIBRARIES android EGL::EGL)
 
-            # EmscriptenApplication has no additional dependencies
+            # Emscripten application dependencies
+            elseif(_component STREQUAL EmscriptenApplication)
+                # Emscripten has various stuff implemented in JS
+                if(CORRADE_TARGET_EMSCRIPTEN)
+                    find_file(MAGNUM_PLATFORM_JS MagnumPlatform.js
+                        PATH_SUFFIXES lib)
+                    set_property(TARGET Magnum::${_component} APPEND PROPERTY
+                        # TODO switch to INTERFACE_LINK_OPTIONS and SHELL: once
+                        #   we require CMake 3.13 unconditionally
+                        INTERFACE_LINK_LIBRARIES "--js-library ${MAGNUM_PLATFORM_JS}")
+                endif()
 
             # GLFW application dependencies
             elseif(_component STREQUAL GlfwApplication)
@@ -705,7 +731,7 @@ foreach(_component ${Magnum_FIND_COMPONENTS})
                         INTERFACE_LINK_LIBRARIES ${CMAKE_DL_LIBS})
                 endif()
 
-                # With GLVND (since CMake 3.11) we need to explicitly link to
+                # With GLVND (since CMake 3.10) we need to explicitly link to
                 # GLX/EGL because libOpenGL doesn't provide it. For EGL we have
                 # our own EGL find module, which makes things simpler. The
                 # upstream FindOpenGL is anything but simple. Also can't use
@@ -742,9 +768,17 @@ foreach(_component ${Magnum_FIND_COMPONENTS})
                 elseif(CORRADE_TARGET_UNIX)
                     set_property(TARGET Magnum::${_component} APPEND PROPERTY
                         INTERFACE_LINK_LIBRARIES ${CMAKE_DL_LIBS})
+                # Emscripten has various stuff implemented in JS
+                elseif(CORRADE_TARGET_EMSCRIPTEN)
+                    find_file(MAGNUM_PLATFORM_JS MagnumPlatform.js
+                        PATH_SUFFIXES lib)
+                    set_property(TARGET Magnum::${_component} APPEND PROPERTY
+                        # TODO switch to INTERFACE_LINK_OPTIONS and SHELL: once
+                        #   we require CMake 3.13 unconditionally
+                        INTERFACE_LINK_LIBRARIES "--js-library ${MAGNUM_PLATFORM_JS}")
                 endif()
 
-                # With GLVND (since CMake 3.11) we need to explicitly link to
+                # With GLVND (since CMake 3.10) we need to explicitly link to
                 # GLX/EGL because libOpenGL doesn't provide it. For EGL we have
                 # our own EGL find module, which makes things simpler. The
                 # upstream FindOpenGL is anything but simple. Also can't use
@@ -774,12 +808,19 @@ foreach(_component ${Magnum_FIND_COMPONENTS})
                 set_property(TARGET Magnum::${_component} APPEND PROPERTY
                     INTERFACE_LINK_LIBRARIES ${X11_LIBRARIES})
 
-                # With GLVND (since CMake 3.11) we need to explicitly link to
+                # With GLVND (since CMake 3.10) we need to explicitly link to
                 # GLX because libOpenGL doesn't provide it. Also can't use
                 # OpenGL_OpenGL_FOUND, because that one is set also if GLVND is
                 # *not* found. WTF. Also can't just check for
                 # OPENGL_opengl_LIBRARY because that's set even if
                 # OpenGL_GL_PREFERENCE is explicitly set to LEGACY.
+                #
+                # If MAGNUM_TARGET_GLES and MAGNUM_TARGET_EGL is set, these
+                # applications can be built only if GLVND is available as
+                # otherwise there would be a conflict between libGL and
+                # libGLES. Thus, if GLVND is not available, it won't link
+                # libGLX here, but that shouldn't be a problem since the
+                # application library won't exist either.
                 find_package(OpenGL)
                 if(OPENGL_opengl_LIBRARY AND OpenGL_GL_PREFERENCE STREQUAL GLVND)
                     set_property(TARGET Magnum::${_component} APPEND PROPERTY
@@ -822,7 +863,7 @@ foreach(_component ${Magnum_FIND_COMPONENTS})
 
             # GLX context dependencies
             if(_component STREQUAL GlxContext)
-                # With GLVND (since CMake 3.11) we need to explicitly link to
+                # With GLVND (since CMake 3.10) we need to explicitly link to
                 # GLX because libOpenGL doesn't provide it. Also can't use
                 # OpenGL_OpenGL_FOUND, because that one is set also if GLVND is
                 # *not* found. If GLVND is not used, link to X11 instead. Also
@@ -854,14 +895,14 @@ foreach(_component ${Magnum_FIND_COMPONENTS})
         elseif(_component STREQUAL Audio)
             find_package(OpenAL)
             set_property(TARGET Magnum::${_component} APPEND PROPERTY
-                INTERFACE_LINK_LIBRARIES Corrade::PluginManager OpenAL::OpenAL)
+                INTERFACE_LINK_LIBRARIES OpenAL::OpenAL)
 
         # No special setup for DebugTools library
 
         # GL library
         elseif(_component STREQUAL GL)
             if(NOT MAGNUM_TARGET_GLES OR (MAGNUM_TARGET_GLES AND NOT MAGNUM_TARGET_EGL AND NOT CORRADE_TARGET_IOS))
-                # If the GLVND library (CMake 3.11+) was found, link to the
+                # If the GLVND library (CMake 3.10+) was found, link to the
                 # imported target. Otherwise (and also on all systems except
                 # Linux) link to the classic libGL. Can't use
                 # OpenGL_OpenGL_FOUND, because that one is set also if GLVND is
@@ -880,7 +921,7 @@ foreach(_component ${Magnum_FIND_COMPONENTS})
                 find_package(OpenGLES2 REQUIRED)
                 set_property(TARGET Magnum::${_component} APPEND PROPERTY
                     INTERFACE_LINK_LIBRARIES OpenGLES2::OpenGLES2)
-            elseif(MAGNUM_TARGET_GLES3)
+            else()
                 find_package(OpenGLES3 REQUIRED)
                 set_property(TARGET Magnum::${_component} APPEND PROPERTY
                     INTERFACE_LINK_LIBRARIES OpenGLES3::OpenGLES3)
@@ -912,26 +953,15 @@ foreach(_component ${Magnum_FIND_COMPONENTS})
         elseif(_component STREQUAL SceneTools)
             set(_MAGNUM_${_COMPONENT}_INCLUDE_PATH_NAMES Hierarchy.h)
 
-        # ShaderTools library
-        elseif(_component STREQUAL ShaderTools)
-            set_property(TARGET Magnum::${_component} APPEND PROPERTY
-                INTERFACE_LINK_LIBRARIES Corrade::PluginManager)
-
+        # No special setup for ShaderTools library
         # No special setup for Shaders library
-
-        # Text library
-        elseif(_component STREQUAL Text)
-            set_property(TARGET Magnum::${_component} APPEND PROPERTY
-                INTERFACE_LINK_LIBRARIES Corrade::PluginManager)
+        # No special setup for Text library
 
         # TextureTools library
         elseif(_component STREQUAL TextureTools)
             set(_MAGNUM_${_COMPONENT}_INCLUDE_PATH_NAMES Atlas.h)
 
-        # Trade library
-        elseif(_component STREQUAL Trade)
-            set_property(TARGET Magnum::${_component} APPEND PROPERTY
-                INTERFACE_LINK_LIBRARIES Corrade::PluginManager)
+        # No special setup for Trade library
 
         # Vk library
         elseif(_component STREQUAL Vk)
@@ -980,9 +1010,13 @@ foreach(_component ${Magnum_FIND_COMPONENTS})
         # are optional dependencies, defer adding them to later once we know if
         # they were found or not.
         if(_component IN_LIST _MAGNUM_LIBRARY_COMPONENTS OR _component IN_LIST _MAGNUM_PLUGIN_COMPONENTS)
+            foreach(_dependency ${_MAGNUM_${_component}_CORRADE_DEPENDENCIES})
+                set_property(TARGET Magnum::${_component} APPEND PROPERTY
+                    INTERFACE_LINK_LIBRARIES Corrade::${_dependency})
+            endforeach()
             set_property(TARGET Magnum::${_component} APPEND PROPERTY
                 INTERFACE_LINK_LIBRARIES Magnum::Magnum)
-            set(_MAGNUM_${component}_OPTIONAL_DEPENDENCIES_TO_ADD )
+            set(_MAGNUM_${_component}_OPTIONAL_DEPENDENCIES_TO_ADD )
             foreach(_dependency ${_MAGNUM_${_component}_DEPENDENCIES})
                 if(NOT _MAGNUM_${_component}_${_dependency}_DEPENDENCY_IS_OPTIONAL)
                     set_property(TARGET Magnum::${_component} APPEND PROPERTY
@@ -1044,24 +1078,6 @@ if(CORRADE_TARGET_EMSCRIPTEN)
         MAGNUM_EMSCRIPTENAPPLICATION_JS
         MAGNUM_WINDOWLESSEMSCRIPTENAPPLICATION_JS
         MAGNUM_WEBAPPLICATION_CSS)
-
-    # If we are on CMake 3.13 and up, `-s USE_WEBGL2=1` linker option is
-    # propagated from FindOpenGLES3.cmake already. If not (and the GL library
-    # is used), we need to modify the global CMAKE_EXE_LINKER_FLAGS. Do it here
-    # instead of in FindOpenGLES3.cmake so it works also for CMake subprojects
-    # (in which case find_package(OpenGLES3) is called in (and so
-    # CMAKE_EXE_LINKER_FLAGS would be modified in) Magnum's root CMakeLists.txt
-    # and thus can't affect the variable in the outer project). CMake supports
-    # IN_LIST as an operator since 3.1 (Emscripten needs at least 3.7), but
-    # it's behind a policy, so enable that one as well.
-    cmake_policy(SET CMP0057 NEW)
-    # TODO since 1.39.19 it's possible to use `-sUSE_WEBGL2=1`, which can be
-    #   then passed via target_link_libraries() etc. without requiring CMake
-    #   3.13: https://github.com/emscripten-core/emscripten/blob/main/ChangeLog.md#13919-07072020
-    #   -- change to that once we drop support for older Emscripten versions
-    if(CMAKE_VERSION VERSION_LESS 3.13 AND GL IN_LIST Magnum_FIND_COMPONENTS AND NOT MAGNUM_TARGET_GLES2 AND NOT CMAKE_EXE_LINKER_FLAGS MATCHES "-s USE_WEBGL2=1")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s USE_WEBGL2=1")
-    endif()
 endif()
 
 # For CMake 3.16+ with REASON_FAILURE_MESSAGE, provide additional potentially
@@ -1288,3 +1304,6 @@ if(MAGNUM_PLUGINS_RELEASE_DIR)
     set(MAGNUM_PLUGINS_SCENECONVERTER_RELEASE_DIR ${MAGNUM_PLUGINS_RELEASE_DIR}/sceneconverters)
     set(MAGNUM_PLUGINS_AUDIOIMPORTER_RELEASE_DIR ${MAGNUM_PLUGINS_RELEASE_DIR}/audioimporters)
 endif()
+
+# Resets CMake policies set at the top of the file to not affect other code.
+cmake_policy(POP)

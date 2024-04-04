@@ -17,7 +17,7 @@
 #   This file is part of Magnum.
 #
 #   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019,
-#               2020, 2021, 2022 Vladimír Vondruš <mosra@centrum.cz>
+#               2020, 2021, 2022, 2023 Vladimír Vondruš <mosra@centrum.cz>
 #   Copyright © 2017 Jonathan Hale <squareys@googlemail.com>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -137,6 +137,11 @@ if((TARGET assimp OR TARGET assimp::assimp) AND NOT _ASSIMP_HAS_USELESS_CONFIG)
     # doesn't define any usable INTERFACE_INCLUDE_DIRECTORIES for some reason
     # (the $<BUILD_INTERFACE:> in there doesn't get expanded), so let's extract
     # that from the SOURCE_DIR property instead.
+    #
+    # TODO this could be probably fixable by using target_link_libraries()
+    # instead of set_target_properties() because it evaluates generator
+    # expressions, but that needs CMake 3.10+, before that
+    # target_link_libraries() can't be called on INTERFACE targets.
     if(_ASSIMP_INTERFACE_INCLUDE_DIRECTORIES MATCHES "<BUILD_INTERFACE:")
         get_target_property(_ASSIMP_INTERFACE_INCLUDE_DIRECTORIES assimp SOURCE_DIR)
         get_filename_component(_ASSIMP_INTERFACE_INCLUDE_DIRECTORIES ${_ASSIMP_INTERFACE_INCLUDE_DIRECTORIES} DIRECTORY)

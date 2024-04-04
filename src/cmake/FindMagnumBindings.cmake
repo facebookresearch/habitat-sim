@@ -35,7 +35,7 @@
 #   This file is part of Magnum.
 #
 #   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019,
-#               2020, 2021, 2022 Vladimír Vondruš <mosra@centrum.cz>
+#               2020, 2021, 2022, 2023 Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
 #   copy of this software and associated documentation files (the "Software"),
@@ -58,9 +58,15 @@
 
 find_package(Magnum REQUIRED)
 
-# Global bindings include dir
-find_path(MAGNUMBINDINGS_INCLUDE_DIR Magnum
-    HINTS ${MAGNUMBINDINGS_INCLUDE_DIR})
+# Global include dir that's unique to Magnum Bindings. Often they will be
+# installed alongside Magnum, which is why the hint, but if not, it shouldn't
+# just pick MAGNUM_INCLUDE_DIR because then _MAGNUMBINDINGS_*_INCLUDE_DIR will
+# fail to be found. In case of CMake subprojects the versionBindings.h is
+# generated inside the build dir so this won't find it, instead
+# src/CMakeLists.txt forcibly sets MAGNUMBINDINGS_INCLUDE_DIR as an internal
+# cache value to make that work.
+find_path(MAGNUMBINDINGS_INCLUDE_DIR Magnum/versionBindings.h
+    HINTS ${MAGNUM_INCLUDE_DIR})
 mark_as_advanced(MAGNUMBINDINGS_INCLUDE_DIR)
 
 # Component distinction (listing them explicitly to avoid mistakes with finding

@@ -17,7 +17,7 @@
 #   This file is part of Magnum.
 #
 #   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019,
-#               2020, 2021, 2022 Vladimír Vondruš <mosra@centrum.cz>
+#               2020, 2021, 2022, 2023 Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
 #   copy of this software and associated documentation files (the "Software"),
@@ -38,10 +38,10 @@
 #   DEALINGS IN THE SOFTWARE.
 #
 
-# Under Emscripten, GL is linked implicitly. With MINIMAL_RUNTIME you need to
-# specify -lGL. Simply set the library name to that.
+# Under Emscripten, EGL is linked implicitly. With MINIMAL_RUNTIME you need to
+# specify -lEGL. Simply set the library name to that.
 if(CORRADE_TARGET_EMSCRIPTEN)
-    set(EGL_LIBRARY GL CACHE STRING "Path to a library." FORCE)
+    set(EGL_LIBRARY EGL CACHE STRING "Path to a library." FORCE)
 else()
     find_library(EGL_LIBRARY NAMES
         EGL
@@ -69,7 +69,7 @@ if(NOT TARGET EGL::EGL)
     # Work around BUGGY framework support on macOS. Do this also in case of
     # Emscripten, since there we don't have a location either.
     # http://public.kitware.com/pipermail/cmake/2016-April/063179.html
-    if((APPLE AND ${EGL_LIBRARY} MATCHES "\\.framework$") OR CORRADE_TARGET_EMSCRIPTEN)
+    if((APPLE AND EGL_LIBRARY MATCHES "\\.framework$") OR CORRADE_TARGET_EMSCRIPTEN)
         add_library(EGL::EGL INTERFACE IMPORTED)
         set_property(TARGET EGL::EGL APPEND PROPERTY
             INTERFACE_LINK_LIBRARIES ${EGL_LIBRARY})
