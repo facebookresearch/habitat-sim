@@ -19,8 +19,12 @@ import habitat.datasets.rearrange.samplers.receptacle as hab_receptacle
 import habitat.sims.habitat_simulator.sim_utilities as sutils
 import magnum as mn
 import numpy as np
-from habitat.datasets.rearrange.navmesh_utils import get_largest_island_index
+from habitat.datasets.rearrange.navmesh_utils import (
+    get_largest_island_index,
+    unoccluded_navmesh_snap,
+)
 from habitat.datasets.rearrange.samplers.object_sampler import ObjectSampler
+from habitat.sims.habitat_simulator.debug_visualizer import DebugVisualizer
 from magnum import shaders, text
 from magnum.platform.glfw import Application
 
@@ -280,6 +284,9 @@ class HabitatSimInteractiveViewer(Application):
         self.selected_rec = None
         self.ao_link_map = None
 
+        # index of the largest indoor island
+        self.largest_island_ix = -1
+
         # Sim reconfigure
         self.reconfigure_sim(mm)
         # load appropriate filter file for scene
@@ -307,6 +314,7 @@ class HabitatSimInteractiveViewer(Application):
         self.sim.metadata_mediator.object_template_manager.load_configs(
             "data/objects/ycb/configs/"
         )
+        self.initialize_clutter_object_set()
         # -----------------------------------------
 
         # compute NavMesh if not already loaded by the scene.
@@ -382,15 +390,6 @@ class HabitatSimInteractiveViewer(Application):
                 f"WARNING: No rec filter file configured for scene {self.sim.curr_scene_name}."
             )
 
-    def get_rec_instance_name(self, receptacle: hab_receptacle.Receptacle) -> str:
-        """
-        Gets a unique string name for the Receptacle instance.
-        Multiple Receptacles can share a name (e.g. if the object has multiple instances in the scene).
-        The unique name is constructed as '<object instance name>|<receptacle name>'.
-        """
-        rec_unique_name = receptacle.parent_object_handle + "|" + receptacle.name
-        return rec_unique_name
-
     def get_closest_tri_receptacle(
         self, pos: mn.Vector3, max_dist: float = 3.5
     ) -> Optional[hab_receptacle.TriangleMeshReceptacle]:
@@ -457,7 +456,7 @@ class HabitatSimInteractiveViewer(Application):
             }
 
         for rec in self.receptacles:
-            rec_unique_name = self.get_rec_instance_name(rec)
+            rec_unique_name = rec.unique_name
             # respect already marked receptacles
             if rec_unique_name not in self.rec_filter_data["manually_filtered"]:
                 rec_dat = self._cpo.gt_data[self.rec_to_poh[rec]]["receptacles"][
@@ -657,7 +656,7 @@ class HabitatSimInteractiveViewer(Application):
                 )
             )
             for receptacle in self.receptacles:
-                rec_unique_name = self.get_rec_instance_name(receptacle)
+                rec_unique_name = receptacle.unique_name
                 # filter all non-active receptacles
                 if (
                     self.rec_filter_data is not None
@@ -755,7 +754,8 @@ class HabitatSimInteractiveViewer(Application):
                         ):
                             rec_color = mn.Color4.magenta()
                         elif rec_unique_name in self.rec_filter_data["height_filtered"]:
-                            rec_color = mn.Color4.blue()
+                            # orange
+                            rec_color = mn.Color4(1.0, 0.66, 0.0, 1.0)
                     elif (
                         self.cpo_initialized
                         and self.rec_color_mode != RecColorMode.DEFAULT
@@ -919,6 +919,23 @@ class HabitatSimInteractiveViewer(Application):
         )
         return agent_config
 
+    def initialize_clutter_object_set(self) -> None:
+        """
+        Get the template handles for configured clutter objects.
+        """
+
+        self.clutter_object_handles = []
+        for obj_name in self.clutter_object_set:
+            matching_handles = (
+                self.sim.metadata_mediator.object_template_manager.get_template_handles(
+                    obj_name
+                )
+            )
+            assert (
+                len(matching_handles) > 0
+            ), f"No matching template for '{obj_name}' in the dataset."
+            self.clutter_object_handles.append(matching_handles[0])
+
     def reconfigure_sim(
         self, mm: Optional[habitat_sim.metadata.MetadataMediator] = None
     ) -> None:
@@ -993,6 +1010,8 @@ class HabitatSimInteractiveViewer(Application):
                     self.replay_renderer.preload_file(composite_file)
 
         self.ao_link_map = sutils.get_ao_link_id_map(self.sim)
+
+        self.dbv = DebugVisualizer(self.sim)
 
         Timer.start()
         self.step = -1
@@ -1084,6 +1103,130 @@ class HabitatSimInteractiveViewer(Application):
             ao.joint_positions = [0.0 for _ in range(len(j_pos))]
             j_vel = ao.joint_velocities
             ao.joint_velocities = [0.0 for _ in range(len(j_vel))]
+
+    def check_rec_accessibility(
+        self, rec: hab_receptacle.Receptacle, max_height: float = 1.2, clean_up=True
+    ) -> Tuple[bool, str]:
+        """
+        Use unoccluded navmesh snap to check whether a Receptacle is accessible.
+        """
+        print(f"Checking Receptacle accessibility for {rec.unique_name}")
+
+        # first check if the receptacle is close enough to the navmesh
+        rec_global_keypoints = sutils.get_global_keypoints_from_bb(
+            rec.bounds, rec.get_global_transform(self.sim)
+        )
+        floor_point = None
+        for keypoint in rec_global_keypoints:
+            floor_point = self.sim.pathfinder.snap_point(
+                keypoint, island_index=self.largest_island_ix
+            )
+            if not np.isnan(floor_point[0]):
+                break
+        if np.isnan(floor_point[0]):
+            print(" - Receptacle too far from active navmesh boundary.")
+            return False, "access_filtered"
+
+        # then check that the height is acceptable
+        rec_min = min(rec_global_keypoints, key=lambda x: x[1])
+        if rec_min[1] - floor_point[1] > max_height:
+            print(
+                f" - Receptacle exceeds maximum height {rec_min[1]-floor_point[1]} vs {max_height}."
+            )
+            return False, "height_filtered"
+
+        # try to sample 10 objects on the receptacle
+        target_number = 10
+        obj_samp = ObjectSampler(
+            self.clutter_object_handles,
+            ["rec set"],
+            orientation_sample="up",
+            num_objects=(1, target_number),
+        )
+        obj_samp.max_sample_attempts = len(self.clutter_object_handles)
+        obj_samp.max_placement_attempts = 10
+        obj_samp.target_objects_number = target_number
+        rec_set_unique_names = [rec.unique_name]
+        rec_set_obj = hab_receptacle.ReceptacleSet(
+            "rec set", [""], [], rec_set_unique_names, []
+        )
+        recep_tracker = hab_receptacle.ReceptacleTracker(
+            {},
+            {"rec set": rec_set_obj},
+        )
+        new_objs = obj_samp.sample(self.sim, recep_tracker, [], snap_down=True)
+
+        # if we can't sample objects, this receptacle is out
+        if len(new_objs) == 0:
+            print(" - failed to sample any objects.")
+            return False, "access_filtered"
+        print(f" - sampled {len(new_objs)} / {target_number} objects.")
+
+        for obj, _rec in new_objs:
+            self.clutter_object_instances.append(obj)
+            self.clutter_object_initial_states.append((obj.translation, obj.rotation))
+
+        # now try unoccluded navmesh snapping to the objects to test accessibility
+        obj_positions = [obj.translation for obj, _ in new_objs]
+        for obj, _ in new_objs:
+            obj.translation += mn.Vector3(100, 0, 0)
+        failure_count = 0
+
+        for o_ix, (obj, _) in enumerate(new_objs):
+            obj.translation = obj_positions[o_ix]
+            snap_point = unoccluded_navmesh_snap(
+                obj.translation,
+                1.3,
+                self.sim.pathfinder,
+                self.sim,
+                obj.object_id,
+                self.largest_island_ix,
+            )
+            # self.dbv.look_at(look_at=obj.translation, look_from=snap_point)
+            # self.dbv.get_observation().show()
+            if snap_point is None:
+                failure_count += 1
+            obj.translation += mn.Vector3(100, 0, 0)
+        for o_ix, (obj, _) in enumerate(new_objs):
+            obj.translation = obj_positions[o_ix]
+        failure_rate = (float(failure_count) / len(new_objs)) * 100
+        print(f" - failure_rate = {failure_rate}")
+        print(
+            f" - accessibility rate = {len(new_objs)-failure_count}|{len(new_objs)} ({100-failure_rate}%)"
+        )
+
+        accessible = failure_rate < 20  # 80% accessibility required
+
+        if clean_up:
+            # removing all clutter objects currently
+            rom = self.sim.get_rigid_object_manager()
+            print(f"Removing {len(self.clutter_object_instances)} clutter objects.")
+            for obj in self.clutter_object_instances:
+                rom.remove_object_by_handle(obj.handle)
+            self.clutter_object_initial_states.clear()
+            self.clutter_object_instances.clear()
+
+        if not accessible:
+            return False, "access_filtered"
+
+        return True, "active"
+
+    def set_filter_status_for_rec(
+        self, rec: hab_receptacle.Receptacle, filter_status: str
+    ) -> None:
+        filter_types = [
+            "access_filtered",
+            "stability_filtered",
+            "height_filtered",
+            "manually_filtered",
+            "active",
+        ]
+        assert filter_status in filter_types
+        filtered_rec_name = rec.unique_name
+        for filter_type in filter_types:
+            if filtered_rec_name in self.rec_filter_data[filter_type]:
+                self.rec_filter_data[filter_type].remove(filtered_rec_name)
+        self.rec_filter_data[filter_status].append(filtered_rec_name)
 
     def key_press_event(self, event: Application.KeyEvent) -> None:
         """
@@ -1183,15 +1326,11 @@ class HabitatSimInteractiveViewer(Application):
                 logger.info("Command: resample agent state from navmesh")
                 if self.sim.pathfinder.is_loaded:
                     new_agent_state = habitat_sim.AgentState()
-                    largest_island_ix = get_largest_island_index(
-                        pathfinder=self.sim.pathfinder,
-                        sim=self.sim,
-                        allow_outdoor=False,
-                    )
-                    print(f"Largest indoor island index = {largest_island_ix}")
+
+                    print(f"Largest indoor island index = {self.largest_island_ix}")
                     new_agent_state.position = (
                         self.sim.pathfinder.get_random_navigable_point(
-                            island_index=largest_island_ix
+                            island_index=self.largest_island_ix
                         )
                     )
                     new_agent_state.rotation = quat_from_angle_axis(
@@ -1266,7 +1405,31 @@ class HabitatSimInteractiveViewer(Application):
             self.cycleScene(False, shift_pressed=shift_pressed)
 
         elif key == pressed.T:
-            self.modify_param_from_term()
+            if shift_pressed:
+                # open all the AO default links
+                all_objects = sutils.get_all_objects(self.sim)
+                aos = [
+                    obj
+                    for obj in all_objects
+                    if isinstance(obj, habitat_sim.physics.ManagedArticulatedObject)
+                ]
+                for ao in aos:
+                    default_link = sutils.get_ao_default_link(ao, True)
+                    sutils.open_link(ao, default_link)
+                # compute and set the receptacle filters
+                for rix, rec in enumerate(self.receptacles):
+                    rec_accessible, filter_type = self.check_rec_accessibility(rec)
+                    self.set_filter_status_for_rec(rec, filter_type)
+                    print(f"-- progress = {rix}/{len(self.receptacles)} --")
+            else:
+                if self.selected_rec is not None:
+                    rec_accessible, filter_type = self.check_rec_accessibility(
+                        self.selected_rec, clean_up=False
+                    )
+                    self.set_filter_status_for_rec(self.selected_rec, filter_type)
+                else:
+                    print("No selected receptacle, can't test accessibility.")
+            # self.modify_param_from_term()
 
             # load URDF
             # fixed_base = alt_pressed
@@ -1340,16 +1503,6 @@ class HabitatSimInteractiveViewer(Application):
                         if self.selected_object.handle == rec.parent_object_handle
                     ]
                 if rec_set is not None:
-                    if len(self.clutter_object_handles) == 0:
-                        for obj_name in self.clutter_object_set:
-                            matching_handles = self.sim.metadata_mediator.object_template_manager.get_template_handles(
-                                obj_name
-                            )
-                            assert (
-                                len(matching_handles) > 0
-                            ), f"No matching template for '{obj_name}' in the dataset."
-                            self.clutter_object_handles.append(matching_handles[0])
-
                     rec_set_unique_names = [rec.unique_name for rec in rec_set]
                     obj_samp = ObjectSampler(
                         self.clutter_object_handles,
@@ -1360,9 +1513,8 @@ class HabitatSimInteractiveViewer(Application):
                     rec_set_obj = hab_receptacle.ReceptacleSet(
                         "rec set", [""], [], rec_set_unique_names, []
                     )
-                    obj_count_dict = {rec.unique_name: 200 for rec in rec_set}
                     recep_tracker = hab_receptacle.ReceptacleTracker(
-                        obj_count_dict,
+                        {},
                         {"rec set": rec_set_obj},
                     )
                     new_objs = obj_samp.sample(
@@ -1565,7 +1717,7 @@ class HabitatSimInteractiveViewer(Application):
                         self.mouse_cast_results.hits[0].point
                     )
                     if filtered_rec is not None:
-                        filtered_rec_name = self.get_rec_instance_name(filtered_rec)
+                        filtered_rec_name = filtered_rec.unique_name
                         print(f"Modified Receptacle Filter State: {filtered_rec_name}")
                         if (
                             filtered_rec_name
@@ -1605,6 +1757,16 @@ class HabitatSimInteractiveViewer(Application):
                             self.rec_filter_data["manually_filtered"].append(
                                 filtered_rec_name
                             )
+                elif isinstance(obj, habitat_sim.physics.ManagedArticulatedObject):
+                    # get the default link
+                    default_link = sutils.get_ao_default_link(obj, True)
+                    if default_link is None:
+                        print("Selected AO has no default link.")
+                    else:
+                        if sutils.link_is_open(obj, default_link, 0.05):
+                            sutils.close_link(obj, default_link)
+                        else:
+                            sutils.open_link(obj, default_link)
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
@@ -1722,6 +1884,11 @@ class HabitatSimInteractiveViewer(Application):
         self.sim.recompute_navmesh(
             self.sim.pathfinder,
             self.navmesh_settings,
+        )
+        self.largest_island_ix = get_largest_island_index(
+            pathfinder=self.sim.pathfinder,
+            sim=self.sim,
+            allow_outdoor=False,
         )
 
     def exit_event(self, event: Application.ExitEvent):

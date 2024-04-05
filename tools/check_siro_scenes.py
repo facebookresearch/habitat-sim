@@ -1,6 +1,9 @@
+import json
 import os
 from collections import defaultdict
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
+
+import habitat.datasets.rearrange.samplers.receptacle as hab_receptacle
 
 # NOTE: (requires habitat-lab) get metadata for semantics
 import habitat.sims.habitat_simulator.sim_utilities as sutils
@@ -12,10 +15,16 @@ from dataset_generation.benchmark_generation.generate_episodes import (
     MetadataInterface,
     default_metadata_dict,
 )
+from habitat.datasets.rearrange.navmesh_utils import (
+    get_largest_island_index,
+    unoccluded_navmesh_snap,
+)
+from habitat.datasets.rearrange.samplers.object_sampler import ObjectSampler
 from habitat.sims.habitat_simulator.debug_visualizer import DebugVisualizer
 
-from habitat_sim import Simulator
+from habitat_sim import NavMeshSettings, Simulator
 from habitat_sim.metadata import MetadataMediator
+from habitat_sim.physics import ManagedArticulatedObject
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
 rand_colors = [mn.Color4(mn.Vector3(np.random.random(3))) for _ in range(100)]
@@ -195,6 +204,288 @@ def save_region_counts_csv(region_counts: Dict[str, int], filepath: str) -> None
     print(f"Wrote region counts csv to {filepath}")
 
 
+def check_rec_accessibility(
+    sim,
+    rec: hab_receptacle.Receptacle,
+    clutter_object_handles: List[str],
+    max_height: float = 1.2,
+    clean_up=True,
+    island_index: int = -1,
+) -> Tuple[bool, str]:
+    """
+    Use unoccluded navmesh snap to check whether a Receptacle is accessible.
+    """
+
+    assert len(clutter_object_handles) > 0
+
+    print(f"Checking Receptacle accessibility for {rec.unique_name}")
+
+    # first check if the receptacle is close enough to the navmesh
+    rec_global_keypoints = sutils.get_global_keypoints_from_bb(
+        rec.bounds, rec.get_global_transform(sim)
+    )
+    floor_point = None
+    for keypoint in rec_global_keypoints:
+        floor_point = sim.pathfinder.snap_point(keypoint, island_index=island_index)
+        if not np.isnan(floor_point[0]):
+            break
+    if np.isnan(floor_point[0]):
+        print(" - Receptacle too far from active navmesh boundary.")
+        return False, "access_filtered"
+
+    # then check that the height is acceptable
+    rec_min = min(rec_global_keypoints, key=lambda x: x[1])
+    if rec_min[1] - floor_point[1] > max_height:
+        print(
+            f" - Receptacle exceeds maximum height {rec_min[1]-floor_point[1]} vs {max_height}."
+        )
+        return False, "height_filtered"
+
+    # try to sample 10 objects on the receptacle
+    target_number = 10
+    obj_samp = ObjectSampler(
+        clutter_object_handles,
+        ["rec set"],
+        orientation_sample="up",
+        num_objects=(1, target_number),
+    )
+    obj_samp.max_sample_attempts = len(clutter_object_handles)
+    obj_samp.max_placement_attempts = 10
+    obj_samp.target_objects_number = target_number
+    rec_set_unique_names = [rec.unique_name]
+    rec_set_obj = hab_receptacle.ReceptacleSet(
+        "rec set", [""], [], rec_set_unique_names, []
+    )
+    recep_tracker = hab_receptacle.ReceptacleTracker(
+        {},
+        {"rec set": rec_set_obj},
+    )
+
+    new_objs = []
+    try:
+        new_objs = obj_samp.sample(sim, recep_tracker, [], snap_down=True)
+    except Exception as e:
+        print(f" - generation failed with internal exception {repr(e)}")
+
+    # if we can't sample objects, this receptacle is out
+    if len(new_objs) == 0:
+        print(" - failed to sample any objects.")
+        return False, "access_filtered"
+    print(f" - sampled {len(new_objs)} / {target_number} objects.")
+
+    # now try unoccluded navmesh snapping to the objects to test accessibility
+    obj_positions = [obj.translation for obj, _ in new_objs]
+    for obj, _ in new_objs:
+        obj.translation += mn.Vector3(100, 0, 0)
+    failure_count = 0
+
+    for o_ix, (obj, _) in enumerate(new_objs):
+        obj.translation = obj_positions[o_ix]
+        snap_point = unoccluded_navmesh_snap(
+            obj.translation, 1.3, sim.pathfinder, sim, obj.object_id, island_index
+        )
+        # self.dbv.look_at(look_at=obj.translation, look_from=snap_point)
+        # self.dbv.get_observation().show()
+        if snap_point is None:
+            failure_count += 1
+        obj.translation += mn.Vector3(100, 0, 0)
+    for o_ix, (obj, _) in enumerate(new_objs):
+        obj.translation = obj_positions[o_ix]
+    failure_rate = (float(failure_count) / len(new_objs)) * 100
+    print(f" - failure_rate = {failure_rate}")
+    print(
+        f" - accessibility rate = {len(new_objs)-failure_count}|{len(new_objs)} ({100-failure_rate}%)"
+    )
+
+    accessible = failure_rate < 20  # 80% accessibility required
+
+    if clean_up:
+        # removing all clutter objects currently
+        rom = sim.get_rigid_object_manager()
+        for obj, _ in new_objs:
+            rom.remove_object_by_handle(obj.handle)
+
+    if not accessible:
+        return False, "access_filtered"
+
+    return True, "active"
+
+
+def init_rec_filter_data_dict() -> Dict[str, Any]:
+    """
+    Get an empty rec_filter_data dictionary.
+    """
+    return {
+        "active": [],
+        "manually_filtered": [],
+        "access_filtered": [],
+        "access_threshold": -1,  # set in filter procedure
+        "stability_filtered": [],
+        "stability threshold": -1,  # set in filter procedure
+        "height_filtered": [],
+        "max_height": 1.2,
+        "min_height": 0,
+    }
+
+
+def write_rec_filter_json(filepath: str, json_dict: Dict[str, Any]) -> None:
+    """
+    Write the receptacle filter json dict.
+    """
+
+    assert filepath.endswith(".json")
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    with open(filepath, "w") as f:
+        f.write(json.dumps(json_dict, indent=2))
+
+
+def set_filter_status_for_rec(
+    rec: hab_receptacle.Receptacle,
+    filter_status: str,
+    rec_filter_data: Dict[str, Any],
+    ignore_existing_status: Optional[List[str]] = None,
+) -> None:
+    """
+    Set the filter status of a Receptacle in the filter dictionary.
+
+    :param rec: The Receptacle instance.
+    :param filter_status: The status to assign.
+    :param rec_filter_data: The current filter dictionary to modify.
+    :param ignore_existing_status: An optional list of filter types to lock, preventing re-assignment.
+    """
+
+    if ignore_existing_status is None:
+        ignore_existing_status = []
+    filter_types = [
+        "access_filtered",
+        "stability_filtered",
+        "height_filtered",
+        "manually_filtered",
+        "active",
+    ]
+    assert filter_status in filter_types
+    filtered_rec_name = rec.unique_name
+    for filter_type in filter_types:
+        if filtered_rec_name in rec_filter_data[filter_type]:
+            if filter_type in ignore_existing_status:
+                print(
+                    f"Trying to assign filter status {filter_status} but existing status {filter_type} in ignore list. Aborting assignment."
+                )
+                return
+            else:
+                rec_filter_data[filter_type].remove(filtered_rec_name)
+    rec_filter_data[filter_status].append(filtered_rec_name)
+
+
+def navmesh_config_and_recompute(sim) -> None:
+    """
+    Re-compute the navmesh with specific settings.
+    """
+
+    navmesh_settings = NavMeshSettings()
+    navmesh_settings.set_defaults()
+    navmesh_settings.agent_height = 1.3  # spot
+    navmesh_settings.agent_radius = 0.3  # human || spot
+    navmesh_settings.include_static_objects = True
+    sim.recompute_navmesh(
+        sim.pathfinder,
+        navmesh_settings,
+    )
+
+
+def initialize_clutter_object_set(sim) -> None:
+    """
+    Get the template handles for configured clutter objects.
+    """
+    clutter_object_set = [
+        "002_master_chef_can",
+        "003_cracker_box",
+        "004_sugar_box",
+        "005_tomato_soup_can",
+        "007_tuna_fish_can",
+        "008_pudding_box",
+        "009_gelatin_box",
+        "010_potted_meat_can",
+        "024_bowl",
+    ]
+    clutter_object_handles = []
+    for obj_name in clutter_object_set:
+        matching_handles = (
+            sim.metadata_mediator.object_template_manager.get_template_handles(obj_name)
+        )
+        assert (
+            len(matching_handles) > 0
+        ), f"No matching template for '{obj_name}' in the dataset."
+        clutter_object_handles.append(matching_handles[0])
+    return clutter_object_handles
+
+
+def run_rec_filter_analysis(
+    sim, out_dir: str, open_default_links: bool = True, keep_manual_filters: bool = True
+) -> None:
+    """
+    Collect all receptacles for the scene and run an accessibility check, saving the resulting filter file.
+    """
+
+    rec_filter_dict = init_rec_filter_data_dict()
+
+    # load the clutter objects
+    sim.metadata_mediator.object_template_manager.load_configs(
+        "data/objects/ycb/configs/"
+    )
+    clutter_object_handles = initialize_clutter_object_set(sim)
+
+    # recompute the navmesh with expect parameters
+    navmesh_config_and_recompute(sim)
+
+    # get the largest indoor island
+    largest_island = get_largest_island_index(sim.pathfinder, sim, allow_outdoor=False)
+
+    # open default links
+    if open_default_links:
+        all_objects = sutils.get_all_objects(sim)
+        aos = [obj for obj in all_objects if isinstance(obj, ManagedArticulatedObject)]
+        for ao in aos:
+            default_link = sutils.get_ao_default_link(ao, True)
+            if default_link is not None:
+                sutils.open_link(ao, default_link)
+
+    # keep manually filtered receptacles
+    ignore_existing_status = []
+    if keep_manual_filters:
+        existing_scene_filter_file = hab_receptacle.get_scene_rec_filter_filepath(
+            sim.metadata_mediator, sim.curr_scene_name
+        )
+        if existing_scene_filter_file is not None:
+            filter_strings = hab_receptacle.get_excluded_recs_from_filter_file(
+                existing_scene_filter_file, filter_types=["manually_filtered"]
+            )
+            rec_filter_dict["manually_filtered"] = filter_strings
+        ignore_existing_status.append("manually_filtered")
+
+    recs = hab_receptacle.find_receptacles(
+        sim, exclude_filter_strings=rec_filter_dict["manually_filtered"]
+    )
+
+    # compute and set the receptacle filters
+    for rix, rec in enumerate(recs):
+        rec_accessible, filter_type = check_rec_accessibility(
+            sim, rec, clutter_object_handles, island_index=largest_island
+        )
+        set_filter_status_for_rec(
+            rec,
+            filter_type,
+            rec_filter_dict,
+            ignore_existing_status=ignore_existing_status,
+        )
+        print(f"-- progress = {rix}/{len(recs)} --")
+
+    filter_filepath = os.path.join(
+        out_dir, f"scene_filter_files/{sim.curr_scene_name}.rec_filter.json"
+    )
+    write_rec_filter_json(filter_filepath, rec_filter_dict)
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -218,6 +509,12 @@ if __name__ == "__main__":
         default=False,
         action="store_true",
         help="save images during tests into the output directory.",
+    )
+    parser.add_argument(
+        "--recompute-filter-files",
+        default=False,
+        action="store_true",
+        help="Run a full accessibility check on all receptacles in the scene and save a set of filter files.",
     )
     args = parser.parse_args()
 
@@ -265,6 +562,14 @@ if __name__ == "__main__":
             ] = sim.get_articulated_object_manager().get_num_objects()
 
             scene_out_dir = os.path.join(args.out_dir, f"{sim.curr_scene_name}/")
+
+            ##########################################
+            # receptacle filter computation
+            if args.recompute_filter_files:
+                run_rec_filter_analysis(
+                    sim, args.out_dir, open_default_links=True, keep_manual_filters=True
+                )
+                continue
 
             ##########################################
             # Check region counts
@@ -327,6 +632,9 @@ if __name__ == "__main__":
                             missing_semantics_output, f"{obj.handle}__"
                         )
 
+    # short circuit other functionality for now
+    if args.recompute_filter_files:
+        exit()
     csv_filepath = os.path.join(args.out_dir, "siro_scene_test_results.csv")
     export_results_csv(csv_filepath, scene_test_results)
     region_count_csv_filepath = os.path.join(args.out_dir, "region_counts.csv")
