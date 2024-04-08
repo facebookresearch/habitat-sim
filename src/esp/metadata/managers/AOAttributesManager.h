@@ -105,9 +105,9 @@ class AOAttributesManager
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
   /**
-   * @brief Add a copy of the @ref
-   * esp::metadata::attributes::ArticulatedObjectAttributes shared_ptr object to
-   * the @ref objectLibrary_.
+   * @brief This method will perform any essential updating to the managed
+   * object before registration is performed. If this updating fails,
+   * registration will also fail.
    *
    * @param AOAttributesTemplate The attributes template.
    * @param AOAttributesHandle The key for referencing the template in the
@@ -124,7 +124,9 @@ class AOAttributesManager
       CORRADE_UNUSED bool) override;
 
   /**
-   * @brief This method will perform any final manager-related handling after
+   * @brief Not required for this manager.
+   *
+   * This method will perform any final manager-related handling after
    * successfully registering an object.
    *
    * See @ref esp::attributes::managers::ObjectAttributesManager for an example.

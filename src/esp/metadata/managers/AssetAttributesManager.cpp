@@ -202,6 +202,8 @@ AssetAttributesManager::preRegisterObjectFinalize(
         << "`, so Primitive asset attributes NOT registered.";
     return core::managedContainers::ManagedObjectPreregistration::Failed;
   }
+  // Ignore any handle being passed for registration, and use the object's
+  // handle instead
   return core::managedContainers::ManagedObjectPreregistration::
       Success_Use_Object_Handle;
 }  // AssetAttributesManager::registerObjectFinalize

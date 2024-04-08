@@ -19,7 +19,12 @@ namespace managedContainers {
 
 /**
  * @brief This enum describes the return status from preregistration
- * conditioning of attributes.
+ * conditioning of attributes. Preregistration is performed by
+ * @ref preRegisterObjectFinalize , which will conduct any type-specific
+ * initialization and/or validation that might be required before an object
+ * is registered (i.e. saved in the @ref ManagedContainer). The return status
+ * of this preregistration specifies how the registration proceess should
+ * proceed.
  */
 enum class ManagedObjectPreregistration {
   /**
@@ -733,7 +738,7 @@ class ManagedContainer : public ManagedContainerBase {
     // template referenced by stageAttributesHandle, or the next available
     // ID if not found.
     int objectID = this->addObjectToLibrary(std::move(object), handleToUse);
-
+    // If registration succeeded then perform post-registration handling
     if (objectID != ID_UNDEFINED) {
       // post registration manager-specific processing.
       postRegisterObjectHandling(objectID, objectHandle);

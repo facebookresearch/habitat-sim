@@ -157,7 +157,9 @@ class StageAttributesManager
       bool forceRegistration) override;
 
   /**
-   * @brief This method will perform any final manager-related handling after
+   * @brief Not required for this manager.
+   *
+   * This method will perform any final manager-related handling after
    * successfully registering an object.
    *
    * See @ref esp::attributes::managers::ObjectAttributesManager for an example.

@@ -229,8 +229,6 @@ class ObjectAttributesManager
    * @brief This method will perform any final manager-related handling after
    * successfully registering an object.
    *
-   * See @ref esp::attributes::managers::ObjectAttributesManager for an example.
-   *
    * @param objectID the ID of the successfully registered managed object
    * @param objectHandle The name of the managed objbect
    */

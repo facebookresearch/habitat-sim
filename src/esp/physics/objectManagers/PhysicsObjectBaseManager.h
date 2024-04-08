@@ -115,7 +115,7 @@ class PhysicsObjectBaseManager
   }  // RigidObjectManager::initNewObjectInternal(
 
   /**
-   * @brief Not used for this manager.
+   * @brief Not required for this manager.
    *
    * This method will perform any essential updating to the managed object
    * before registration is performed. If this updating fails, registration will
@@ -137,7 +137,9 @@ class PhysicsObjectBaseManager
   }
 
   /**
-   * @brief This method will perform any final manager-related handling after
+   * @brief Not required for this manager.
+   *
+   * This method will perform any final manager-related handling after
    * successfully registering an object.
    *
    * See @ref esp::attributes::managers::ObjectAttributesManager for an example.
