@@ -52,6 +52,7 @@
 #  StbVorbisAudioImporter       - OGG audio importer using stb_vorbis
 #  StlImporter                  - STL importer
 #  UfbxImporter                 - FBX and OBJ importer using ufbx
+#  WebPImageConverter           - WebP image converter
 #  WebPImporter                 - WebP importer
 #
 # If Magnum is built with MAGNUM_BUILD_DEPRECATED enabled, these additional
@@ -94,7 +95,7 @@
 #   This file is part of Magnum.
 #
 #   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019,
-#               2020, 2021, 2022 Vladimír Vondruš <mosra@centrum.cz>
+#               2020, 2021, 2022, 2023 Vladimír Vondruš <mosra@centrum.cz>
 #   Copyright © 2019 Jonathan Hale <squareys@googlemail.com>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -155,8 +156,14 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
 endforeach()
 find_package(Magnum REQUIRED ${_MAGNUMPLUGINS_DEPENDENCIES})
 
-# Global plugin include dir
-find_path(MAGNUMPLUGINS_INCLUDE_DIR MagnumPlugins
+# Global include dir that's unique to Magnum Plugins. Often they will be
+# installed alongside Magnum, which is why the hint, but if not, it shouldn't
+# just pick MAGNUM_INCLUDE_DIR because then _MAGNUMPLUGINS_*_INCLUDE_DIR will
+# fail to be found. In case of CMake subprojects the versionPlugins.h is
+# generated inside the build dir so this won't find it, instead
+# src/CMakeLists.txt forcibly sets MAGNUMPLUGINS_INCLUDE_DIR as an internal
+# cache value to make that work.
+find_path(MAGNUMPLUGINS_INCLUDE_DIR Magnum/versionPlugins.h
     HINTS ${MAGNUM_INCLUDE_DIR})
 mark_as_advanced(MAGNUMPLUGINS_INCLUDE_DIR)
 
@@ -175,7 +182,8 @@ set(_MAGNUMPLUGINS_PLUGIN_COMPONENTS
     SpirvToolsShaderConverter SpngImporter StanfordImporter
     StanfordSceneConverter StbDxtImageConverter StbImageConverter
     StbImageImporter StbResizeImageConverter StbTrueTypeFont
-    StbVorbisAudioImporter StlImporter UfbxImporter WebPImporter)
+    StbVorbisAudioImporter StlImporter UfbxImporter WebPImageConverter
+    WebPImporter)
 # Nothing is enabled by default right now
 set(_MAGNUMPLUGINS_IMPLICITLY_ENABLED_COMPONENTS )
 
@@ -339,12 +347,30 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
             if(basisu_FOUND AND NOT BASIS_UNIVERSAL_DIR)
                 set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
                     INTERFACE_LINK_LIBRARIES basisu_encoder)
+            else()
+                # Our own build may depend on Zstd, as we replace the bundled
+                # files with an external library. Include it if present,
+                # otherwise assume it's compiled without.
+                find_package(Zstd)
+                if(Zstd_FOUND)
+                    set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
+                        INTERFACE_LINK_LIBRARIES Zstd::Zstd)
+                endif()
             endif()
         elseif(_component STREQUAL BasisImporter)
             find_package(basisu CONFIG QUIET)
             if(basisu_FOUND AND NOT BASIS_UNIVERSAL_DIR)
                 set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
                     INTERFACE_LINK_LIBRARIES basisu_transcoder)
+            else()
+                # Our own build may depend on Zstd, as we replace the bundled
+                # files with an external library. Include it if present,
+                # otherwise assume it's compiled without.
+                find_package(Zstd)
+                if(Zstd_FOUND)
+                    set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
+                        INTERFACE_LINK_LIBRARIES Zstd::Zstd)
+                endif()
             endif()
 
         # BcDecImageConverter has no dependencies
@@ -447,6 +473,16 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
             find_package(OpenEXR REQUIRED MODULE)
             set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
                 INTERFACE_LINK_LIBRARIES OpenEXR::OpenEXR)
+            # OpenEXR uses exceptions, which need an explicit flag on
+            # Emscripten. This is most likely not propagated through its CMake
+            # config file, so doing that explicitly here.
+            if(CORRADE_TARGET_EMSCRIPTEN)
+                if(CMAKE_VERSION VERSION_LESS 3.13)
+                    message(FATAL_ERROR "CMake 3.13+ is required in order to specify Emscripten linker options")
+                endif()
+                set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
+                    INTERFACE_LINK_OPTIONS "SHELL:-s DISABLE_EXCEPTION_CATCHING=0")
+            endif()
 
         # No special setup for the OpenDdl library
         # OpenGexImporter has no dependencies
@@ -487,16 +523,38 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
         # StanfordSceneConverter has no dependencies
         # StbDxtImageConverter has no dependencies
         # StbImageConverter has no dependencies
-        # StbImageImporter has no dependencies
+
+        # StbImageImporter plugin dependencies
+        elseif(_component STREQUAL StbImageImporter)
+            # To solve a LTO-specific linker error. See StbImageImporter's
+            # CMakeLists.txt for details.
+            if(CORRADE_TARGET_EMSCRIPTEN AND NOT EMSCRIPTEN_VERSION VERSION_LESS 3.1.42 AND EMSCRIPTEN_VERSION VERSION_LESS 3.1.46)
+                if(CMAKE_VERSION VERSION_LESS 3.13)
+                    message(FATAL_ERROR "CMake 3.13+ is required in order to specify Emscripten linker options")
+                endif()
+                target_link_options(MagnumPlugins::${_component} INTERFACE $<$<CONFIG:Release>:-Wl,-u,scalbnf>)
+            endif()
+
         # StbResizeImageConverter has no dependencies
         # StbTrueTypeFont has no dependencies
-        # StbVorbisAudioImporter has no dependencies
+
+        # StbVorbisAudioImporter plugin dependencies
+        elseif(_component STREQUAL StbVorbisAudioImporter)
+            # To solve a LTO-specific linker error. See StbVorbisAudioImporter's
+            # CMakeLists.txt for details.
+            if(CORRADE_TARGET_EMSCRIPTEN AND NOT EMSCRIPTEN_VERSION VERSION_LESS 3.1.42 AND EMSCRIPTEN_VERSION VERSION_LESS 3.1.46)
+                if(CMAKE_VERSION VERSION_LESS 3.13)
+                    message(FATAL_ERROR "CMake 3.13+ is required in order to specify Emscripten linker options")
+                endif()
+                target_link_options(MagnumPlugins::${_component} INTERFACE $<$<CONFIG:Release>:-Wl,-u,scalbnf>)
+            endif()
+
         # StlImporter has no dependencies
         # UfbxImporter has no dependencies
         # TinyGltfImporter has no dependencies
 
-        # WebPImporter plugin dependencies
-        elseif(_component STREQUAL WebPImporter)
+        # WebPImageConverter / WebPImporter plugin dependencies
+        elseif(_component STREQUAL WebPImageConverter OR _component STREQUAL WebPImporter)
             find_package(WebP REQUIRED)
             set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
                 INTERFACE_LINK_LIBRARIES WebP::WebP)
