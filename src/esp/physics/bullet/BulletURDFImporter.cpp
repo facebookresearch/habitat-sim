@@ -222,7 +222,22 @@ void BulletURDFImporter::computeParentIndices(URDFToBulletCached& bulletCache,
   }
 }
 
-void BulletURDFImporter::initURDFToBulletCache() {
+void BulletURDFImporter::initURDFToBulletCache(
+    const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
+        artObjAttributes) {
+  setFixedBase(artObjAttributes->getBaseType() ==
+               metadata::attributes::ArticulatedObjectBaseType::Fixed);
+
+  flags = 0;
+  if (artObjAttributes->getLinkOrder() ==
+      metadata::attributes::ArticulatedObjectLinkOrder::URDFOrder) {
+    flags |= CUF_MAINTAIN_LINK_ORDER;
+  }
+  if (artObjAttributes->getInertiaSource() ==
+      metadata::attributes::ArticulatedObjectInertiaSource::URDF) {
+    flags |= CUF_USE_URDF_INERTIA;
+  }
+
   // compute the number of links, and compute parent indices array (and possibly
   // other cached ?)
   cache = std::make_shared<URDFToBulletCached>();
@@ -287,6 +302,49 @@ void processContactParameters(
                            btCollisionObject::CF_HAS_FRICTION_ANCHOR);
   }
 }
+
+void BulletURDFImporter::convertURDFToBullet(
+    const Mn::Matrix4& parentTransformInWorldSpace,
+    btMultiBodyDynamicsWorld* world1,
+    std::map<int, std::unique_ptr<btCompoundShape>>& linkCompoundShapes,
+    std::map<int, std::vector<std::unique_ptr<btCollisionShape>>>&
+        linkChildShapes) {
+  int urdfLinkIndex = getRootLinkIndex();
+
+  bool recursive = (flags & CUF_MAINTAIN_LINK_ORDER) == 0;
+
+  if (recursive) {
+    // NOTE: recursive path only
+    convertURDFToBulletInternal(urdfLinkIndex, parentTransformInWorldSpace,
+                                world1, linkCompoundShapes, linkChildShapes,
+                                recursive);
+  } else {
+    std::vector<Mn::Matrix4> parentTransforms;
+    parentTransforms.resize(urdfLinkIndex + 1);
+    parentTransforms[urdfLinkIndex] = parentTransformInWorldSpace;
+    std::vector<childParentIndex> allIndices;
+
+    getAllIndices(urdfLinkIndex, -1, allIndices);
+    std::sort(allIndices.begin(), allIndices.end(),
+              [](const childParentIndex& a, const childParentIndex& b) {
+                return a.m_index < b.m_index;
+              });
+
+    if (allIndices.size() + 1 > parentTransforms.size()) {
+      parentTransforms.resize(allIndices.size() + 1);
+    }
+    for (size_t i = 0; i < allIndices.size(); ++i) {
+      int urdfLinkIndex = allIndices[i].m_index;
+      int parentIndex = allIndices[i].m_parentIndex;
+      Mn::Matrix4 parentTr = parentIndex >= 0 ? parentTransforms[parentIndex]
+                                              : parentTransformInWorldSpace;
+      Mn::Matrix4 tr = convertURDFToBulletInternal(urdfLinkIndex, parentTr,
+                                                   world1, linkCompoundShapes,
+                                                   linkChildShapes, recursive);
+      parentTransforms[urdfLinkIndex] = tr;
+    }
+  }
+}  // BulletURDFImporter::convertURDFToBullet
 
 Mn::Matrix4 BulletURDFImporter::convertURDFToBulletInternal(
     int urdfLinkIndex,

@@ -88,17 +88,17 @@ class BulletURDFImporter : public URDFImporter {
 
   //! Initialize the temporary Bullet cache for multibody construction from the
   //! active URDF::Model
-  void initURDFToBulletCache();
+  void initURDFToBulletCache(
+      const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
+          artObjAttributes);
 
-  //! Traverse the kinematic chain recursively constructing the btMultiBody
-  Magnum::Matrix4 convertURDFToBulletInternal(
-      int urdfLinkIndex,
+  //! Traverse the kinematic chain constructing the btMultiBody
+  void convertURDFToBullet(
       const Magnum::Matrix4& parentTransformInWorldSpace,
       btMultiBodyDynamicsWorld* world1,
       std::map<int, std::unique_ptr<btCompoundShape>>& linkCompoundShapes,
       std::map<int, std::vector<std::unique_ptr<btCollisionShape>>>&
-          linkChildShapes,
-      bool recursive = false);
+          linkChildShapes);
 
   //! The temporary Bullet multibody cache initialized by
   //! convertURDFToBulletInternal and cleared after instancing the object
@@ -111,6 +111,16 @@ class BulletURDFImporter : public URDFImporter {
                      std::vector<childParentIndex>& allIndices);
 
  protected:
+  //! Traverse the kinematic chain recursively constructing the btMultiBody
+  Magnum::Matrix4 convertURDFToBulletInternal(
+      int urdfLinkIndex,
+      const Magnum::Matrix4& parentTransformInWorldSpace,
+      btMultiBodyDynamicsWorld* world1,
+      std::map<int, std::unique_ptr<btCompoundShape>>& linkCompoundShapes,
+      std::map<int, std::vector<std::unique_ptr<btCollisionShape>>>&
+          linkChildShapes,
+      bool recursive = false);
+
   //! Construct a set of Bullet collision shapes from the URDF::CollisionShape
   //! metadata
   btCollisionShape* convertURDFToCollisionShape(

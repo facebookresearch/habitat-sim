@@ -125,9 +125,10 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
     // acquire context if available
     simulator_->getRenderGLContext();
   }
-  ESP_CHECK(
-      urdfImporter_->loadURDF(artObjAttributes, forceReload),
-      "failed to parse/load URDF file" << artObjAttributes->getURDFPath());
+  const std::string urdfFilepath = artObjAttributes->getURDFPath();
+  // Load model and set active
+  ESP_CHECK(urdfImporter_->loadURDF(urdfFilepath, forceReload),
+            "failed to parse/load URDF file" << urdfFilepath);
 
   int articulatedObjectID = allocateObjectID();
 
@@ -139,28 +140,18 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
                                       collisionObjToObjIds_);
 
   // before initializing the URDF, import all necessary assets in advance
-  urdfImporter_->importURDFAssets();
+  // TODO pass attributes so that loaded assets can be scaled/modified as
+  // appropriate
+  urdfImporter_->importURDFAssets(artObjAttributes);
 
   BulletURDFImporter* u2b =
       static_cast<BulletURDFImporter*>(urdfImporter_.get());
 
-  u2b->setFixedBase(artObjAttributes->getBaseType() ==
-                    metadata::attributes::ArticulatedObjectBaseType::Fixed);
+  u2b->initURDFToBulletCache(artObjAttributes);
 
-  u2b->flags = 0;
-  if (artObjAttributes->getLinkOrder() ==
-      metadata::attributes::ArticulatedObjectLinkOrder::URDFOrder) {
-    u2b->flags |= CUF_MAINTAIN_LINK_ORDER;
-  }
-  if (artObjAttributes->getInertiaSource() ==
-      metadata::attributes::ArticulatedObjectInertiaSource::URDF) {
-    u2b->flags |= CUF_USE_URDF_INERTIA;
-  }
-  u2b->initURDFToBulletCache();
+  articulatedObject->initializeFromURDF(artObjAttributes, *urdfImporter_, {},
+                                        physicsNode_);
 
-  articulatedObject->node().setSemanticId(artObjAttributes->getSemanticId());
-
-  articulatedObject->initializeFromURDF(*urdfImporter_, {}, physicsNode_);
   auto model = u2b->getModel();
 
   // if the AO attributes specifies a render asset, load and link it

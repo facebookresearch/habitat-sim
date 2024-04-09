@@ -18,11 +18,7 @@ namespace Mn = Magnum;
 namespace esp {
 namespace physics {
 
-bool URDFImporter::loadURDF(
-    const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
-        artObjAttributes,
-    bool forceReload) {
-  const std::string urdfFilepath = artObjAttributes->getURDFPath();
+bool URDFImporter::loadURDF(const std::string& urdfFilepath, bool forceReload) {
   auto modelCacheIter = modelCache_.find(urdfFilepath);
   // if map not found or forcing reload
   if ((modelCacheIter == modelCache_.end()) || forceReload) {
@@ -56,11 +52,6 @@ bool URDFImporter::loadURDF(
   }
 
   activeModel_ = modelCacheIter->second;
-  // Set the creation attributes
-  activeModel_->setModelInitAttributes(artObjAttributes);
-  // re-scale the cached model
-  activeModel_->setGlobalScaling(artObjAttributes->getUniformScale());
-  activeModel_->setMassScaling(artObjAttributes->getMassScale());
 
   return true;
 }
@@ -248,12 +239,18 @@ bool URDFImporter::getLinkContactInfo(
   return true;
 }
 
-void URDFImporter::importURDFAssets() {
+void URDFImporter::importURDFAssets(
+    const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
+        artObjAttributes) {
   if (activeModel_ == nullptr) {
     ESP_DEBUG()
         << "URDFImporter::importURDFAssets - No URDF::Model loaded, aborting.";
     return;
   }
+  // re-scale the cached model
+  activeModel_->setGlobalScaling(artObjAttributes->getUniformScale());
+  activeModel_->setMassScaling(artObjAttributes->getMassScale());
+
   for (size_t linkIx = 0; linkIx < activeModel_->m_links.size(); ++linkIx) {
     auto link = activeModel_->getLink(linkIx);
     // load collision shapes

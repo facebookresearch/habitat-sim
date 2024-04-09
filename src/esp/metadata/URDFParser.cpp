@@ -103,12 +103,6 @@ void Model::setMassScaling(float massScaling) {
   m_massScaling = massScaling;
 }
 
-void Model::setModelInitAttributes(
-    metadata::attributes::ArticulatedObjectAttributes::ptr artObjAttributes) {
-  initializationAttributes_ = std::move(artObjAttributes);
-
-}  // Model::setModelInitAttributes
-
 bool Parser::parseURDF(const std::string& filename,
                        std::shared_ptr<Model>& urdfModel) {
   // override the previous model with a fresh one

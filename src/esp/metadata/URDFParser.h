@@ -370,37 +370,7 @@ class Model {
   void setModelInitAttributes(
       metadata::attributes::ArticulatedObjectAttributes::ptr artObjAttributes);
 
-  /**
-   * @brief Gets a smart pointer reference to a copy of the user-specified
-   * configuration data from a config file. Habitat does not parse or
-   * process this data, but it will be available to the user via python
-   * bindings for each object.
-   */
-  std::shared_ptr<core::config::Configuration> getUserConfiguration() const {
-    return initializationAttributes_->getUserConfiguration();
-  }
-
-  /**
-   * @brief Get a copy of the template used to initialize this object.
-   *
-   * @return A copy of the @ref metadata::attributes::ArticulatedObjectAttributes
-   * template used to create this object.
-   */
-  std::shared_ptr<metadata::attributes::ArticulatedObjectAttributes>
-  getInitializationAttributes() const {
-    return initializationAttributes_;
-  };
-
  protected:
-  /**
-   * @brief Json-based attributes defining characteristics of this model not
-   * specified in the source XML/URDF. Primarily to support default user-defined
-   * attributes. This data is read in from a json file with the same base name
-   * as the source XML/URDF for this model but the extension ".ao_config.json".
-   */
-  metadata::attributes::ArticulatedObjectAttributes::ptr
-      initializationAttributes_ = nullptr;
-
   // scaling values which can be applied to the model after parsing
   //! Global euclidean scaling applied to the model's transforms, asset scales,
   //! and prismatic joint limits. Does not affect mass.

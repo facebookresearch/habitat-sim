@@ -82,17 +82,19 @@ class BulletArticulatedObject : public ArticulatedObject {
    * @brief Initialize this ArticulatedObject from a parsed URDF stored in a
    * URDFImporter. Creates a btMultiBody.
    *
+   * @param initAttributes The ArticulatedObjectAttributes used to build this
+   * ArticulatedObject.
    * @param u2b The BulletURDFImporter which will initialize this object from a
    * parsed URDF file.
    * @param worldTransform Desired global root state of the ArticulatedObject.
-   * @param drawables DrawableGroup to which this object's visual shapes will be
-   * added.
    * @param physicsNode The parent node of this object.
-   * @param fixedBase Whether or not the root link should be fixed or free.
    */
-  void initializeFromURDF(URDFImporter& u2b,
-                          const Magnum::Matrix4& worldTransform,
-                          scene::SceneNode* physicsNode) override;
+  void initializeFromURDF(
+      std::shared_ptr<metadata::attributes::ArticulatedObjectAttributes>
+          initAttributes,
+      URDFImporter& u2b,
+      const Magnum::Matrix4& worldTransform,
+      scene::SceneNode* physicsNode) override;
 
   /**
    * @brief Construct a Static btRigidObject to act as a proxy collision object
@@ -459,7 +461,7 @@ class BulletArticulatedObject : public ArticulatedObject {
       articulatedSphericalJointMotors;
 
   //! maps local link id to parent joint's limit constraint
-  std::unordered_map<int, JointLimitConstraintInfo> jointLimitConstraints;
+  std::unordered_map<int, JointLimitConstraintInfo> jointLimitConstraints_;
 
   // scratch data structures for updateKinematicState
   btAlignedObjectArray<btQuaternion> scratch_q_;
