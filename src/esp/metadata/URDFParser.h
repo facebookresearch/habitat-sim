@@ -421,7 +421,7 @@ class Model {
   /**
    * @brief Get a copy of the template used to initialize this object.
    *
-   * @return A copy of the @ref esp::metadata::attributes::ArticulatedObjectAttributes
+   * @return A copy of the @ref metadata::attributes::ArticulatedObjectAttributes
    * template used to create this object.
    */
   std::shared_ptr<metadata::attributes::ArticulatedObjectAttributes>

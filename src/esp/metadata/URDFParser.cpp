@@ -122,8 +122,7 @@ void Model::setModelInitAttributes(
 }  // Model::setModelInitAttributes
 
 bool Parser::parseURDF(
-    const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
-        artObjAttributes,
+    const attributes::ArticulatedObjectAttributes::ptr& artObjAttributes,
     std::shared_ptr<Model>& urdfModel) {
   auto filename = artObjAttributes->getURDFPath();
   // override the previous model with a fresh one
