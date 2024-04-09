@@ -163,7 +163,7 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
   articulatedObject->initializeFromURDF(*urdfImporter_, {}, physicsNode_);
   auto model = u2b->getModel();
 
-  // if the URDF model specifies a render asset, load and link it
+  // if the AO attributes specifies a render asset, load and link it
   const auto renderAssetPath = artObjAttributes->getRenderAssetHandle();
   if (renderAssetPath != "") {
     instantiateSkinnedModel(articulatedObject, artObjAttributes,
@@ -180,7 +180,7 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
   }
 
   // render visual shapes if either no skinned mesh is present or if the config
-  // specifies to render link visuals
+  // explicitly specifies rendering link visuals
   auto renderMode = artObjAttributes->getRenderMode();
 
   bool renderVisualShapes =

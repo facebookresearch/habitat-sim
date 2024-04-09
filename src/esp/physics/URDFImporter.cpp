@@ -35,7 +35,7 @@ bool URDFImporter::loadURDF(
 
     // parse the URDF from file
     std::shared_ptr<metadata::URDF::Model> urdfModel;
-    bool success = urdfParser_.parseURDF(artObjAttributes, urdfModel);
+    bool success = urdfParser_.parseURDF(urdfFilepath, urdfModel);
     if (!success) {
       ESP_DEBUG() << "Failed to parse URDF:" << urdfFilepath << ", aborting.";
       return false;
@@ -54,8 +54,10 @@ bool URDFImporter::loadURDF(
     // register the new model and set to iterator
     modelCacheIter = modelCache_.emplace(urdfFilepath, urdfModel).first;
   }
-  activeModel_ = modelCacheIter->second;
 
+  activeModel_ = modelCacheIter->second;
+  // Set the creation attributes
+  activeModel_->setModelInitAttributes(artObjAttributes);
   // re-scale the cached model
   activeModel_->setGlobalScaling(artObjAttributes->getUniformScale());
   activeModel_->setMassScaling(artObjAttributes->getMassScale());

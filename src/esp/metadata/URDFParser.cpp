@@ -109,10 +109,8 @@ void Model::setModelInitAttributes(
 
 }  // Model::setModelInitAttributes
 
-bool Parser::parseURDF(
-    const attributes::ArticulatedObjectAttributes::ptr& artObjAttributes,
-    std::shared_ptr<Model>& urdfModel) {
-  auto filename = artObjAttributes->getURDFPath();
+bool Parser::parseURDF(const std::string& filename,
+                       std::shared_ptr<Model>& urdfModel) {
   // override the previous model with a fresh one
   urdfModel = std::make_shared<Model>();
   sourceFilePath_ = filename;
@@ -236,9 +234,6 @@ bool Parser::parseURDF(
   if (!initTreeAndRoot(urdfModel)) {
     return false;
   }
-
-  // Set the creation attributes
-  urdfModel->setModelInitAttributes(artObjAttributes);
 
   ESP_VERY_VERBOSE() << "Done parsing URDF for" << filename;
   return true;

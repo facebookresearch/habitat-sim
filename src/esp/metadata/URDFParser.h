@@ -562,9 +562,7 @@ class Parser {
 
   // parse a loaded URDF string into relevant general data structures
   // return false if the string is not a valid urdf or other error causes abort
-  bool parseURDF(const metadata::attributes::ArticulatedObjectAttributes::ptr&
-                     artObjAttributes,
-                 std::shared_ptr<Model>& model);
+  bool parseURDF(const std::string& filename, std::shared_ptr<Model>& model);
 
   // This is no longer used, instead set the urdf and physics subsystem to
   // veryverbose, i.e. export HABITAT_SIM_LOG="urdf,physics=veryverbose" bool
