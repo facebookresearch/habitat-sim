@@ -378,16 +378,6 @@ class Model {
   }
 
   /**
-   * @brief Set the semantic ID of the URDF model.
-   */
-  void setSemanticId(int semanticId) { m_semanticId = semanticId; }
-
-  /**
-   * @brief Get the semantic ID of this URDF model.
-   */
-  int getSemanticId() const { return m_semanticId; }
-
-  /**
    * @brief This function will set the
    * @ref metadata::attributes::ArticulatedObjectAttributes used to create this model.
    */
@@ -435,9 +425,6 @@ class Model {
 
   //! Path to a render asset associated with this articulated object.
   Cr::Containers::Optional<std::string> m_renderAsset = Cr::Containers::NullOpt;
-
-  //! Semantic ID of this model.
-  int m_semanticId = 0;
 
   //! Scale the transformation and parameters of a Shape
   void scaleShape(Shape& shape, float scale);

@@ -109,7 +109,6 @@ void Model::setModelInitAttributes(
   // TODO these fields are redundant - can just use the attributes fields
   // directly
   m_renderAsset = initializationAttributes_->getRenderAssetHandle();
-  m_semanticId = initializationAttributes_->getSemanticId();
 
 }  // Model::setModelInitAttributes
 

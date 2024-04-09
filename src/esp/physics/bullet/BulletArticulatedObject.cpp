@@ -73,13 +73,11 @@ void BulletArticulatedObject::initializeFromURDF(
     URDFImporter& urdfImporter,
     const Mn::Matrix4& worldTransform,
     scene::SceneNode* physicsNode) {
-  Mn::Matrix4 rootTransformInWorldSpace{worldTransform};
-
   BulletURDFImporter& u2b = *(static_cast<BulletURDFImporter*>(&urdfImporter));
 
   auto urdfModel = u2b.getModel();
 
-  node().setSemanticId(urdfModel->getSemanticId());
+  Mn::Matrix4 rootTransformInWorldSpace{worldTransform};
 
   // cache the global scaling from the source model
   globalScale_ = urdfModel->getGlobalScaling();

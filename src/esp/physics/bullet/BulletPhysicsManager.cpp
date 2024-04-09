@@ -158,6 +158,8 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
   }
   u2b->initURDFToBulletCache();
 
+  articulatedObject->node().setSemanticId(artObjAttributes->getSemanticId());
+
   articulatedObject->initializeFromURDF(*urdfImporter_, {}, physicsNode_);
   auto model = u2b->getModel();
 
