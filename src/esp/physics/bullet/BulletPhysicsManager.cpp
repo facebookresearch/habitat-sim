@@ -178,10 +178,16 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
         articulatedObject->btMultiBody_->getLinkCollider(linkIx), linkObjectId);
   }
 
-  // render visual shapes if either no skinned mesh is present or if the render
-  // visual shapes flag is enabled
-  bool renderVisualShapes = !renderAssetPath || (*renderAssetPath == "") ||
-                            model->getRenderLinkVisualShapes();
+  // render visual shapes if either no skinned mesh is present or if the config
+  // specifies to render link visuals
+  auto renderMode = artObjAttributes->getRenderMode();
+
+  bool renderVisualShapes =
+      !renderAssetPath || (*renderAssetPath == "") ||
+      (renderMode ==
+       metadata::attributes::ArticulatedObjectRenderMode::LinkVisuals) ||
+      (renderMode == metadata::attributes::ArticulatedObjectRenderMode::Both);
+
   if (renderVisualShapes) {
     // attach link visual shapes
     for (size_t urdfLinkIx = 0; urdfLinkIx < model->m_links.size();

@@ -110,14 +110,6 @@ void Model::setModelInitAttributes(
   // directly
   m_renderAsset = initializationAttributes_->getRenderAssetHandle();
   m_semanticId = initializationAttributes_->getSemanticId();
-  // TODO : Use the enum value instead of settting a boolean here
-
-  auto renderMode = initializationAttributes_->getRenderMode();
-
-  m_renderLinkVisualShapes =
-      (renderMode ==
-       metadata::attributes::ArticulatedObjectRenderMode::LinkVisuals) ||
-      (renderMode == metadata::attributes::ArticulatedObjectRenderMode::Both);
 
 }  // Model::setModelInitAttributes
 

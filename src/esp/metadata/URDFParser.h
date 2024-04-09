@@ -388,20 +388,6 @@ class Model {
   int getSemanticId() const { return m_semanticId; }
 
   /**
-   * @brief Set hint to render articulated object primitives even if a render
-   * asset is present.
-   */
-  void setRenderLinkVisualShapes(bool renderLinkVisualShapes) {
-    m_renderLinkVisualShapes = renderLinkVisualShapes;
-  }
-
-  /**
-   * @brief Get hint to render articulated object visual shapes as defined in
-   * the URDF even if a render asset/skin is present.
-   */
-  bool getRenderLinkVisualShapes() const { return m_renderLinkVisualShapes; }
-
-  /**
    * @brief This function will set the
    * @ref metadata::attributes::ArticulatedObjectAttributes used to create this model.
    */
@@ -452,10 +438,6 @@ class Model {
 
   //! Semantic ID of this model.
   int m_semanticId = 0;
-
-  //! Forces link visual shapes to be rendered even if a render asset(skin) is
-  //! present.
-  bool m_renderLinkVisualShapes = false;
 
   //! Scale the transformation and parameters of a Shape
   void scaleShape(Shape& shape, float scale);
