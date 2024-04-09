@@ -164,11 +164,10 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
   auto model = u2b->getModel();
 
   // if the URDF model specifies a render asset, load and link it
-  const auto renderAssetPath = model->getRenderAsset();
-  if ((renderAssetPath) && (*renderAssetPath != "")) {
+  const auto renderAssetPath = artObjAttributes->getRenderAssetHandle();
+  if (renderAssetPath != "") {
     instantiateSkinnedModel(articulatedObject, artObjAttributes,
-                            *renderAssetPath, objectNode, drawables,
-                            lightSetup);
+                            renderAssetPath, objectNode, drawables, lightSetup);
   }
 
   // allocate ids for links
@@ -185,7 +184,7 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
   auto renderMode = artObjAttributes->getRenderMode();
 
   bool renderVisualShapes =
-      !renderAssetPath || (*renderAssetPath == "") ||
+      (renderAssetPath == "") ||
       (renderMode ==
        metadata::attributes::ArticulatedObjectRenderMode::LinkVisuals) ||
       (renderMode == metadata::attributes::ArticulatedObjectRenderMode::Both);

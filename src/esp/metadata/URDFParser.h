@@ -364,20 +364,6 @@ class Model {
   float getMassScaling() const { return m_massScaling; }
 
   /**
-   * @brief Set the path to the render asset to attach to this URDF model.
-   */
-  void setRenderAsset(Cr::Containers::Optional<std::string> renderAsset) {
-    m_renderAsset = std::move(renderAsset);
-  }
-
-  /**
-   * @brief Get the path to the render asset to attach to this URDF model.
-   */
-  Cr::Containers::Optional<std::string> getRenderAsset() const {
-    return m_renderAsset;
-  }
-
-  /**
    * @brief This function will set the
    * @ref metadata::attributes::ArticulatedObjectAttributes used to create this model.
    */
@@ -422,9 +408,6 @@ class Model {
 
   //! Mass scaling of the model's Link inertias.
   float m_massScaling = 1.0;
-
-  //! Path to a render asset associated with this articulated object.
-  Cr::Containers::Optional<std::string> m_renderAsset = Cr::Containers::NullOpt;
 
   //! Scale the transformation and parameters of a Shape
   void scaleShape(Shape& shape, float scale);
