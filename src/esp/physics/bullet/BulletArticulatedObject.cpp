@@ -71,7 +71,7 @@ BulletArticulatedObject::~BulletArticulatedObject() {
 }
 
 void BulletArticulatedObject::initializeFromURDF(
-    std::shared_ptr<metadata::attributes::ArticulatedObjectAttributes>
+    const std::shared_ptr<metadata::attributes::ArticulatedObjectAttributes>&
         initAttributes,
     URDFImporter& urdfImporter,
     const Mn::Matrix4& worldTransform,
@@ -168,7 +168,7 @@ void BulletArticulatedObject::initializeFromURDF(
   }
   // set user config and initialization attributes
   setUserAttributes(initAttributes->getUserConfiguration());
-  initializationAttributes_ = std::move(initAttributes);
+  initializationAttributes_ = initAttributes;
 }
 
 void BulletArticulatedObject::constructStaticRigidBaseObject() {

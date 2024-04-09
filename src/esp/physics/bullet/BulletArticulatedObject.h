@@ -90,7 +90,7 @@ class BulletArticulatedObject : public ArticulatedObject {
    * @param physicsNode The parent node of this object.
    */
   void initializeFromURDF(
-      std::shared_ptr<metadata::attributes::ArticulatedObjectAttributes>
+      const std::shared_ptr<metadata::attributes::ArticulatedObjectAttributes>&
           initAttributes,
       URDFImporter& u2b,
       const Magnum::Matrix4& worldTransform,

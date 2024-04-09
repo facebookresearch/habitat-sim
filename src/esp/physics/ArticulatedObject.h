@@ -376,8 +376,8 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @param physicsNode The parent node of this object.
    */
   virtual void initializeFromURDF(
-      CORRADE_UNUSED std::shared_ptr<
-          metadata::attributes::ArticulatedObjectAttributes> initAttributes,
+      CORRADE_UNUSED const std::shared_ptr<
+          metadata::attributes::ArticulatedObjectAttributes>& initAttributes,
       CORRADE_UNUSED URDFImporter& urdfImporter,
       CORRADE_UNUSED const Magnum::Matrix4& worldTransform,
       CORRADE_UNUSED scene::SceneNode* physicsNode) {
