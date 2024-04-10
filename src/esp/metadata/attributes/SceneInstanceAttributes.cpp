@@ -3,13 +3,18 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "SceneInstanceAttributes.h"
-
 #include <utility>
+
+#include "AbstractObjectAttributes.h"
+#include "ArticulatedObjectAttributes.h"
 #include "esp/physics/RigidBase.h"
+
 namespace esp {
 namespace metadata {
 namespace attributes {
 
+////////////////////////////////
+// SceneObjectInstanceAttributes
 SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
     const std::string& handle,
     const std::string& type)
@@ -20,7 +25,7 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
 
   // defaults to unknown/undefined
   setMotionType(getMotionTypeName(esp::physics::MotionType::UNDEFINED));
-  // set to no rotation
+  // set to no rotation or translation
   setRotation(Mn::Quaternion(Mn::Math::IdentityInit));
   setTranslation(Mn::Vector3());
   // don't override attributes-specified visibility. - sets int value to
@@ -34,6 +39,20 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
   setNonUniformScale({1.0, 1.0, 1.0});
   setMassScale(1.0);
   setApplyScaleToMass(true);
+}
+
+SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
+    const std::string& handle,
+    const std::shared_ptr<AbstractObjectAttributes>& baseObjAttribs)
+    : SceneObjectInstanceAttributes(handle) {
+  // initialize appropriate fields from abstract object attributes
+  setShaderType(getShaderTypeName(baseObjAttribs->getShaderType()));
+  // set to match attributes setting
+  setIsInstanceVisible(baseObjAttribs->getIsVisible());
+  // set nonuniform scale to match attributes scale
+  setNonUniformScale(baseObjAttribs->getScale());
+  // Prepopulate user config to match baseObjAttribs' user config.
+  overwriteWithConfig(baseObjAttribs->getUserConfiguration());
 }
 
 std::string SceneObjectInstanceAttributes::getObjectInfoHeaderInternal() const {
@@ -130,6 +149,9 @@ void SceneObjectInstanceAttributes::writeValuesToJson(
 
 }  // SceneObjectInstanceAttributes::writeValuesToJson
 
+////////////////////////////////
+// SceneAOInstanceAttributes
+
 SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
     : SceneObjectInstanceAttributes(handle, "SceneAOInstanceAttributes") {
   // set default auto clamp values (only used for articulated object)
@@ -148,6 +170,29 @@ SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
   // Set render mode to be unspecified - if not set in instance json, use
   // ao_config value
   setRenderMode(getAORenderModeName(ArticulatedObjectRenderMode::Unspecified));
+}
+
+SceneAOInstanceAttributes::SceneAOInstanceAttributes(
+    const std::string& handle,
+    const std::shared_ptr<ArticulatedObjectAttributes>& aObjAttribs)
+    : SceneObjectInstanceAttributes(handle, "SceneAOInstanceAttributes") {
+  // set default auto clamp values (only used for articulated object)
+  setAutoClampJointLimits(false);
+  // Set shader type to use aObjAttribs value
+  setShaderType(getShaderTypeName(aObjAttribs->getShaderType()));
+  // Set the instance base type to use aObjAttribs value
+  setBaseType(getAOBaseTypeName(aObjAttribs->getBaseType()));
+  // Set the instance source for the interia calculation to use aObjAttribs
+  // value
+  setInertiaSource(getAOInertiaSourceName(aObjAttribs->getInertiaSource()));
+  // Set the instance link order to use aObjAttribs value
+  setLinkOrder(getAOLinkOrderName(aObjAttribs->getLinkOrder()));
+  // Set render mode to use aObjAttribs value
+  setRenderMode(getAORenderModeName(aObjAttribs->getRenderMode()));
+  // set appropriate values to match values in aObjAttribs
+  setMassScale(aObjAttribs->getMassScale());
+  // Prepopulate user config to match attribs' user config.
+  overwriteWithConfig(aObjAttribs->getUserConfiguration());
 }
 
 std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoHeaderInternal()
@@ -218,6 +263,9 @@ void SceneAOInstanceAttributes::writeValuesToJsonInternal(
   }
 
 }  // SceneAOInstanceAttributes::writeValuesToJsonInternal
+
+////////////////////////////////
+// SceneInstanceAttributes
 
 SceneInstanceAttributes::SceneInstanceAttributes(const std::string& handle)
     : AbstractAttributes("SceneInstanceAttributes", handle) {
