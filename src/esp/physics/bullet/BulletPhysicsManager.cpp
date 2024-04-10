@@ -130,6 +130,14 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
   ESP_CHECK(urdfImporter_->loadURDF(urdfFilepath, forceReload),
             "failed to parse/load URDF file" << urdfFilepath);
 
+  BulletURDFImporter* u2b =
+      static_cast<BulletURDFImporter*>(urdfImporter_.get());
+
+  // This performs the initial urdf asset import, configures the current active
+  // model based on settings in the passed attributes, and builds the cache
+  // based on the active model
+  u2b->initURDFToBulletCache(artObjAttributes);
+
   int articulatedObjectID = allocateObjectID();
 
   // parse succeeded, attempt to create the articulated object
@@ -139,16 +147,7 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
                                       articulatedObjectID, bWorld_,
                                       collisionObjToObjIds_);
 
-  // before initializing the URDF, import all necessary assets in advance
-  // TODO pass attributes so that loaded assets can be scaled/modified as
-  // appropriate
-  urdfImporter_->importURDFAssets(artObjAttributes);
-
-  BulletURDFImporter* u2b =
-      static_cast<BulletURDFImporter*>(urdfImporter_.get());
-
-  u2b->initURDFToBulletCache(artObjAttributes);
-
+  // Setup and configure
   articulatedObject->initializeFromURDF(artObjAttributes, *urdfImporter_, {},
                                         physicsNode_);
 

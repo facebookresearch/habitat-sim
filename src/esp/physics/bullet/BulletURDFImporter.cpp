@@ -225,6 +225,9 @@ void BulletURDFImporter::computeParentIndices(URDFToBulletCached& bulletCache,
 void BulletURDFImporter::initURDFToBulletCache(
     const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
         artObjAttributes) {
+  // before initializing the URDF, import all necessary assets in advance.
+  importURDFAssets(artObjAttributes);
+
   setFixedBase(artObjAttributes->getBaseType() ==
                metadata::attributes::ArticulatedObjectBaseType::Fixed);
 

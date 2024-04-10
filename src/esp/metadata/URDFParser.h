@@ -15,7 +15,6 @@
 #include <string>
 #include <vector>
 #include "Corrade/Containers/Optional.h"
-#include "attributes/ArticulatedObjectAttributes.h"
 #include "esp/core/Configuration.h"
 
 /** @file
@@ -362,13 +361,6 @@ class Model {
    * @brief Get the currently configured mass scaling of the model.
    */
   float getMassScaling() const { return m_massScaling; }
-
-  /**
-   * @brief This function will set the
-   * @ref metadata::attributes::ArticulatedObjectAttributes used to create this model.
-   */
-  void setModelInitAttributes(
-      metadata::attributes::ArticulatedObjectAttributes::ptr artObjAttributes);
 
  protected:
   // scaling values which can be applied to the model after parsing

@@ -8,16 +8,12 @@
 #define ESP_PHYSICS_URDFIMPORTER_H_
 
 #include "esp/metadata/URDFParser.h"
+#include "esp/metadata/attributes/ArticulatedObjectAttributes.h"
 
 namespace esp {
 namespace assets {
 class ResourceManager;
 }
-namespace metadata {
-namespace attributes {
-class ArticulatedObjectAttributes;
-}
-}  // namespace metadata
 
 namespace physics {
 
