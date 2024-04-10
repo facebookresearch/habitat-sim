@@ -71,8 +71,8 @@ class SceneInstanceAttributesManager
    */
   attributes::SceneObjectInstanceAttributes::ptr createEmptyInstanceAttributes(
       const std::string& handle,
-      std::shared_ptr<attributes::AbstractObjectAttributes> baseObjAttribs =
-          nullptr) {
+      const std::shared_ptr<attributes::AbstractObjectAttributes>&
+          baseObjAttribs = nullptr) {
     if (baseObjAttribs) {
       // SceneObjectInstanceAttributes constructor that takes an attributes is
       // protected
@@ -89,8 +89,8 @@ class SceneInstanceAttributesManager
    */
   attributes::SceneAOInstanceAttributes::ptr createEmptyAOInstanceAttributes(
       const std::string& handle,
-      std::shared_ptr<attributes::ArticulatedObjectAttributes> aObjAttribs =
-          nullptr) {
+      const std::shared_ptr<attributes::ArticulatedObjectAttributes>&
+          aObjAttribs = nullptr) {
     if (aObjAttribs) {
       // SceneAOInstanceAttributes constructor that takes an attributes is
       // protected
