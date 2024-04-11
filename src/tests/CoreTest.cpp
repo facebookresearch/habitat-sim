@@ -25,6 +25,8 @@ struct CoreTest : Cr::TestSuite::Tester {
                            int totalDepth,
                            Configuration::cptr& config);
 
+  void compareSubconfigs(Configuration::cptr& src, Configuration::cptr& target);
+
   void TestConfiguration();
 
   /**
@@ -93,6 +95,31 @@ void CoreTest::verifySubconfigTree(int countPerDepth,
   CORRADE_COMPARE(config->getNumSubconfigEntries(), countPerDepth);
 
 }  // CoreTest::verifySubconfigTree
+
+void CoreTest::compareSubconfigs(Configuration::cptr& src,
+                                 Configuration::cptr& target) {
+  // verify target has at least all the number of subconfigs that src has
+  CORRADE_VERIFY(src->getNumSubconfigEntries() <=
+                 target->getNumSubconfigEntries());
+  // verify that target has all the values that src has, and they are equal.
+  auto srcIterValPair = src->getValuesIterator();
+  for (auto& cfgIter = srcIterValPair.first; cfgIter != srcIterValPair.second;
+       ++cfgIter) {
+    CORRADE_VERIFY(cfgIter->second == target->get(cfgIter->first));
+  }
+
+  // Verify all subconfigs have the same keys - get begin/end iterators for src
+  // subconfigs
+  auto srcIterConfigPair = src->getSubconfigIterator();
+  for (auto& cfgIter = srcIterConfigPair.first;
+       cfgIter != srcIterConfigPair.second; ++cfgIter) {
+    CORRADE_VERIFY(target->hasSubconfig(cfgIter->first));
+    Configuration::cptr srcSubConfig = cfgIter->second;
+    Configuration::cptr tarSubConfig = target->getSubconfigView(cfgIter->first);
+    compareSubconfigs(srcSubConfig, tarSubConfig);
+  }
+
+}  // CoreTest::compareSubconfigs
 
 void CoreTest::TestConfiguration() {
   Configuration cfg;
@@ -190,12 +217,14 @@ void CoreTest::TestConfigurationSubconfigFind() {
     CORRADE_VERIFY(cfg);
     // Set base value for parent iteration
     cfg->set("breakcrumb", "");
+    int depth = 5;
+    int count = 3;
     // Build subconfig tree 4 levels deep, 3 subconfigs per config
-    buildSubconfigsInConfig(3, 0, 4, cfg);
+    buildSubconfigsInConfig(count, 0, depth, cfg);
     Configuration::cptr const_cfg =
         std::const_pointer_cast<const Configuration>(cfg);
     // Verify subconfig tree structure using const views
-    verifySubconfigTree(3, 0, 4, const_cfg);
+    verifySubconfigTree(count, 0, depth, const_cfg);
 
     // grab a subconfig, edit it and save it with a different key
     // use find to get key path
@@ -243,6 +272,55 @@ void CoreTest::TestConfigurationSubconfigFind() {
     CORRADE_VERIFY(viewConfig->get<std::string>("key") != newKey);
     CORRADE_VERIFY(viewConfig->get<int>("depth") != 0);
     CORRADE_VERIFY(!viewConfig->hasValue("test_string"));
+
+    // Now Test merge/Overwriting
+    const std::string mergedKey = "merged_subconfig";
+    Configuration::ptr cfgToOverwrite =
+        cfg->editSubconfig<Configuration>(mergedKey);
+
+    // first set some test values that will be clobbered
+    cfgToOverwrite->set("key", mergedKey);
+    cfgToOverwrite->set("depth", 11);
+    cfgToOverwrite->set("breakcrumb", "1123");
+    cfgToOverwrite->set("test_string", "this string will be clobbered");
+    // Now add some values that won't be clobbered
+    cfgToOverwrite->set("myBool", true);
+    cfgToOverwrite->set("myInt", 10);
+    cfgToOverwrite->set("myFloatToDouble", 1.2f);
+    cfgToOverwrite->set("myVec2", Mn::Vector2{1.0, 2.0});
+    cfgToOverwrite->set("myVec3", Mn::Vector3{1.0, 2.0, 3.0});
+    cfgToOverwrite->set("myVec4", Mn::Vector4{1.0, 2.0, 3.0, 4.0});
+    cfgToOverwrite->set("myQuat", Mn::Quaternion{{1.0, 2.0, 3.0}, 0.1});
+    cfgToOverwrite->set("myRad", Mn::Rad{1.23});
+    cfgToOverwrite->set("myString", "test");
+
+    // Now overwrite the values from cfgToVerify
+    cfgToOverwrite->overwriteWithConfig(cfgToVerify);
+
+    CORRADE_VERIFY(cfg->hasSubconfig(mergedKey));
+    // Verify all the overwritten values are correct
+    Configuration::cptr cfgToVerifyOverwrite = cfg->getSubconfigView(mergedKey);
+    CORRADE_COMPARE(cfgToVerifyOverwrite->get<std::string>("breakcrumb"), "");
+    CORRADE_COMPARE(cfgToVerifyOverwrite->get<std::string>("test_string"),
+                    "this is an added test string");
+    CORRADE_COMPARE(cfgToVerifyOverwrite->get<std::string>("key"), newKey);
+    CORRADE_COMPARE(cfgToVerifyOverwrite->get<int>("depth"), 0);
+    // Verify original non-overwritten values are still present
+    CORRADE_COMPARE(cfgToVerifyOverwrite->get<bool>("myBool"), true);
+    CORRADE_COMPARE(cfgToVerifyOverwrite->get<int>("myInt"), 10);
+    CORRADE_COMPARE(cfgToVerifyOverwrite->get<double>("myFloatToDouble"), 1.2f);
+    CORRADE_COMPARE(cfgToVerifyOverwrite->get<Mn::Vector2>("myVec2"),
+                    Mn::Vector2(1.0, 2.0));
+    CORRADE_COMPARE(cfgToVerifyOverwrite->get<Mn::Vector3>("myVec3"),
+                    Mn::Vector3(1.0, 2.0, 3.0));
+    CORRADE_COMPARE(cfgToVerifyOverwrite->get<Mn::Vector4>("myVec4"),
+                    Mn::Vector4(1.0, 2.0, 3.0, 4.0));
+    CORRADE_COMPARE(cfgToVerifyOverwrite->get<Mn::Quaternion>("myQuat"),
+                    Mn::Quaternion({1.0, 2.0, 3.0}, 0.1));
+    CORRADE_COMPARE(cfgToVerifyOverwrite->get<Mn::Rad>("myRad"), Mn::Rad(1.23));
+
+    // Verify overwrite performed properly
+    compareSubconfigs(cfgToVerify, cfgToVerifyOverwrite);
   }
 
 }  // CoreTest::TestConfigurationSubconfigFind test
