@@ -1224,6 +1224,7 @@ if __name__ == "__main__":
     sim_settings["window_height"] = args.height
     sim_settings["pbr_image_based_lighting"] = args.ibl
     sim_settings["default_agent_navmesh"] = False
+    sim_settings["enable_hbao"] = args.hbao
     sim_settings["silent"] = args.silent
     sim_settings["save_png"] = args.save_png
     sim_settings["out_path"] = args.out_path
