@@ -224,6 +224,12 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
    */
   void testPrimitiveAssetAttributes();
 
+  /**
+   * @brief Test that primitive attribute-based object attributes exist and
+   * maintain appropriate format.
+   */
+  void testPrimitiveBasedObjectAttributes();
+
   // test member vars
 
   esp::logging::LoggingContext loggingContext_;
@@ -268,6 +274,7 @@ AttributesManagersTest::AttributesManagersTest() {
       &AttributesManagersTest::testObjectAttributesManagersCreate,
       &AttributesManagersTest::testLightLayoutAttributesManager,
       &AttributesManagersTest::testPrimitiveAssetAttributes,
+      &AttributesManagersTest::testPrimitiveBasedObjectAttributes,
   });
 }
 
@@ -922,6 +929,121 @@ void AttributesManagersTest::testPrimitiveAssetAttributes() {
     testAssetAttributesTemplateCreateFromHandle(uvSphereWireframeHandle);
   }
 }  // AttributesManagersTest::AsssetAttributesManagerGetAndModify test
+
+void AttributesManagersTest::testPrimitiveBasedObjectAttributes() {
+  // get all handles of templates for primitive-based render objects
+  std::vector<std::string> primObjAssetHandles =
+      objectAttributesManager_->getSynthTemplateHandlesBySubstring("");
+
+  // there should be 1 prim template per default primitive asset template
+  int numPrimsExpected =
+      static_cast<int>(esp::metadata::PrimObjTypes::END_PRIM_OBJ_TYPES);
+  // verify the number of primitive templates
+  CORRADE_COMPARE(numPrimsExpected, primObjAssetHandles.size());
+
+  AbstractPrimitiveAttributes::ptr primAttr;
+  {
+    // test that there are existing templates for each key, and that they have
+    // valid values to be used to construct magnum primitives
+    for (int i = 0; i < numPrimsExpected; ++i) {
+      std::string handle = primObjAssetHandles[i];
+      CORRADE_VERIFY(!handle.empty());
+      primAttr = assetAttributesManager_->getObjectCopyByHandle(handle);
+      CORRADE_VERIFY(primAttr);
+      CORRADE_VERIFY(primAttr->isValidTemplate());
+      // verify that the attributes contains the handle, and the handle contains
+      // the expected class name
+      std::string className =
+          esp::metadata::managers::AssetAttributesManager::PrimitiveNames3DMap
+              .at(static_cast<esp::metadata::PrimObjTypes>(
+                  primAttr->getPrimObjType()));
+
+      CORRADE_COMPARE(primAttr->getHandle(), handle);
+      CORRADE_VERIFY(handle.find(className) != std::string::npos);
+    }
+  }
+  // empty vector of handles
+  primObjAssetHandles.clear();
+  {
+    // test that existing template handles can be accessed via name string.
+    // This access is case insensitive
+    primObjAssetHandles =
+        objectAttributesManager_->getSynthTemplateHandlesBySubstring(
+            "CONESOLID");
+    // should only be one handle in this vector
+    CORRADE_COMPARE(primObjAssetHandles.size(), 1);
+    // handle should not be empty and be long enough to hold class name prefix
+    CORRADE_COMPARE_AS(primObjAssetHandles[0].length(), 9,
+                       Cr::TestSuite::Compare::Greater);
+    // coneSolid should appear in handle
+    std::string checkStr("coneSolid");
+    CORRADE_VERIFY(primObjAssetHandles[0].find(checkStr) != std::string::npos);
+    // empty vector of handles
+    primObjAssetHandles.clear();
+
+    // test that existing template handles can be accessed through exclusion -
+    // all but certain string.  This access is case insensitive
+    primObjAssetHandles =
+        objectAttributesManager_->getSynthTemplateHandlesBySubstring(
+            "CONESOLID", false);
+    // should be all handles but coneSolid handle here
+    CORRADE_COMPARE((numPrimsExpected - 1), primObjAssetHandles.size());
+    for (auto primObjAssetHandle : primObjAssetHandles) {
+      CORRADE_COMPARE(primObjAssetHandle.find(checkStr), std::string::npos);
+    }
+  }
+  // empty vector of handles
+  primObjAssetHandles.clear();
+
+  // test that primitive asset attributes are able to be modified and saved and
+  // the changes persist, while the old templates are not removed
+  {
+    // get existing default cylinder handle
+    primObjAssetHandles = assetAttributesManager_->getTemplateHandlesByPrimType(
+        esp::metadata::PrimObjTypes::CYLINDER_SOLID);
+    // should only be one handle in this vector
+    CORRADE_COMPARE(primObjAssetHandles.size(), 1);
+    // primitive render object uses primitive render asset as handle
+    std::string origCylinderHandle = primObjAssetHandles[0];
+    primAttr =
+        assetAttributesManager_->getObjectCopyByHandle(origCylinderHandle);
+    // verify that the origin handle matches what is expected
+    CORRADE_COMPARE(primAttr->getHandle(), origCylinderHandle);
+    // get original number of rings for this cylinder
+    int origNumRings = primAttr->getNumRings();
+    // modify attributes - this will change handle
+    primAttr->setNumRings(2 * origNumRings);
+    // verify that internal name of attributes has changed due to essential
+    // quantity being modified
+    std::string newHandle = primAttr->getHandle();
+
+    CORRADE_COMPARE_AS(newHandle, origCylinderHandle,
+                       Cr::TestSuite::Compare::NotEqual);
+    // set bogus file directory, to validate that copy is registered
+    primAttr->setFileDirectory("test0");
+    // register new attributes
+    int idx = assetAttributesManager_->registerObject(primAttr);
+
+    CORRADE_VERIFY(idx != esp::ID_UNDEFINED);
+    // set new test label, to validate against retrieved copy
+    primAttr->setFileDirectory("test1");
+    // retrieve registered attributes copy
+    AbstractPrimitiveAttributes::ptr primAttr2 =
+        assetAttributesManager_->getObjectCopyByHandle(newHandle);
+    // verify pre-reg and post-reg are named the same
+    CORRADE_COMPARE(primAttr->getHandle(), primAttr2->getHandle());
+    // verify retrieved attributes is copy, not original
+
+    CORRADE_COMPARE_AS(primAttr->getFileDirectory(),
+                       primAttr2->getFileDirectory(),
+                       Cr::TestSuite::Compare::NotEqual);
+    // remove modified attributes
+    AbstractPrimitiveAttributes::ptr primAttr3 =
+        assetAttributesManager_->removeObjectByHandle(newHandle);
+    CORRADE_VERIFY(primAttr3);
+  }
+
+}  // AttributesManagersTest::testPrimitiveBasedObjectAttributes test
 
 }  // namespace
 
