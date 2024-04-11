@@ -15,10 +15,23 @@ namespace {
 struct CoreTest : Cr::TestSuite::Tester {
   explicit CoreTest();
 
+  void buildSubconfigsInConfig(int countPerDepth,
+                               int curDepth,
+                               int totalDepth,
+                               Configuration::ptr& config);
+
+  void verifySubconfigTree(int countPerDepth,
+                           int curDepth,
+                           int totalDepth,
+                           Configuration::cptr& config);
+
   void TestConfiguration();
 
-  // void TestConfigurationSubConfigs();
-  void TestConfigurationFind();
+  /**
+   * @brief Test Configuration find and subconfig edit capability. Find returns
+   * a list of subconfiguration keys required to find a particular key
+   */
+  void TestConfigurationSubconfigFind();
 
   esp::logging::LoggingContext loggingContext_;
 };  // struct CoreTest
@@ -26,10 +39,60 @@ struct CoreTest : Cr::TestSuite::Tester {
 CoreTest::CoreTest() {
   addTests({
       &CoreTest::TestConfiguration,
-      //&CoreTest::TestConfigurationSubConfigs,
-      &CoreTest::TestConfigurationFind,
+      &CoreTest::TestConfigurationSubconfigFind,
   });
 }
+
+void CoreTest::buildSubconfigsInConfig(int countPerDepth,
+                                       int curDepth,
+                                       int totalDepth,
+                                       Configuration::ptr& config) {
+  if (curDepth == totalDepth) {
+    return;
+  }
+  std::string breadcrumb = config->get<std::string>("breakcrumb");
+  for (int i = 0; i < countPerDepth; ++i) {
+    const std::string subconfigKey = Cr::Utility::formatString(
+        "breadcrumb_{}_depth_{}_subconfig_{}", breadcrumb, curDepth, i);
+    Configuration::ptr newCfg =
+        config->editSubconfig<Configuration>(subconfigKey);
+    newCfg->set("depth", curDepth);
+    newCfg->set("iter", i);
+    newCfg->set("breakcrumb", Cr::Utility::formatString("{}{}", breadcrumb, i));
+    newCfg->set("key", subconfigKey);
+
+    buildSubconfigsInConfig(countPerDepth, curDepth + 1, totalDepth, newCfg);
+  }
+}  // CoreTest::buildSubconfigsInConfig
+
+void CoreTest::verifySubconfigTree(int countPerDepth,
+                                   int curDepth,
+                                   int totalDepth,
+                                   Configuration::cptr& config) {
+  if (curDepth == totalDepth) {
+    return;
+  }
+  std::string breadcrumb = config->get<std::string>("breakcrumb");
+  for (int i = 0; i < countPerDepth; ++i) {
+    const std::string subconfigKey = Cr::Utility::formatString(
+        "breadcrumb_{}_depth_{}_subconfig_{}", breadcrumb, curDepth, i);
+    // Verify subconfig with key exists
+    CORRADE_VERIFY(config->hasSubconfig(subconfigKey));
+    Configuration::cptr newCfg = config->getSubconfigView(subconfigKey);
+    CORRADE_VERIFY(newCfg);
+    // Verify subconfig depth value is as expected
+    CORRADE_COMPARE(newCfg->get<int>("depth"), curDepth);
+    // Verify iteration and parent iteration
+    CORRADE_COMPARE(newCfg->get<int>("iter"), i);
+    CORRADE_COMPARE(newCfg->get<std::string>("breakcrumb"),
+                    Cr::Utility::formatString("{}{}", breadcrumb, i));
+    CORRADE_COMPARE(newCfg->get<std::string>("key"), subconfigKey);
+    // Check into tree
+    verifySubconfigTree(countPerDepth, curDepth + 1, totalDepth, newCfg);
+  }
+  CORRADE_COMPARE(config->getNumSubconfigEntries(), countPerDepth);
+
+}  // CoreTest::verifySubconfigTree
 
 void CoreTest::TestConfiguration() {
   Configuration cfg;
@@ -73,55 +136,116 @@ void CoreTest::TestConfiguration() {
   CORRADE_COMPARE(cfg.get<std::string>("myString"), "test");
 }  // CoreTest::TestConfiguration test
 
-// Test subconfig editing and merging
-// void CoreTest::TestConfigurationSubConfigs() {
+// Test configuration find functionality
+void CoreTest::TestConfigurationSubconfigFind() {
+  {
+    Configuration::ptr cfg = Configuration::create();
+    Configuration::ptr baseCfg = cfg;
+    // Build layers of subconfigs
+    for (int i = 0; i < 10; ++i) {
+      Configuration::ptr newCfg = cfg->editSubconfig<Configuration>(
+          Cr::Utility::formatString("depth_{}_subconfig_{}", i + 1, i));
+      newCfg->set("depth", i + 1);
+      cfg = newCfg;
+    }
+    // Set deepest layer config to have treasure
+    cfg->set("treasure", "this is the treasure!");
+    // Find the treasure!
+    std::vector<std::string> keyList = baseCfg->findValue("treasure");
 
-// }  // CoreTest::TestConfigurationSubConfigs test
+    // Display breadcrumbs
+    std::string resStr = Cr::Utility::formatString(
+        "Vector of 'treasure' keys is size : {}", keyList.size());
+    for (const auto& key : keyList) {
+      Cr::Utility::formatInto(resStr, resStr.size(), "\n\t{}", key);
+    }
+    ESP_DEBUG() << resStr;
+    // Verify the found treasure
+    CORRADE_COMPARE(keyList.size(), 11);
 
-// Test find functionality
-void CoreTest::TestConfigurationFind() {
-  Configuration::ptr cfg = Configuration::create();
-  Configuration::ptr baseCfg = cfg;
-  // Build layers of subconfigs
-  std::string titleBase("subConfig_");
-  for (int i = 0; i < 10; ++i) {
-    Configuration::ptr newCfg = cfg->editSubconfig<Configuration>(
-        Cr::Utility::formatString("subConfig_{}", i));
-    newCfg->set("depth", i + 1);
-    cfg = newCfg;
+    Configuration::cptr viewConfig = baseCfg;
+    for (int i = 0; i < 10; ++i) {
+      const std::string subconfigKey =
+          Cr::Utility::formatString("depth_{}_subconfig_{}", i + 1, i);
+      CORRADE_COMPARE(keyList[i], subconfigKey);
+      // Verify that subconfig with given name exists
+      CORRADE_VERIFY(viewConfig->hasSubconfig(subconfigKey));
+      // retrieve actual subconfig
+      Configuration::cptr newCfg = viewConfig->getSubconfigView(subconfigKey);
+      // verity subconfig has correct depth value
+      CORRADE_COMPARE(newCfg->get<int>("depth"), i + 1);
+      viewConfig = newCfg;
+    }
+    CORRADE_VERIFY(viewConfig->hasValue("treasure"));
+    CORRADE_COMPARE(viewConfig->get<std::string>("treasure"),
+                    "this is the treasure!");
+
+    // Verify pirate isn't found
+    std::vector<std::string> notFoundKeyList = baseCfg->findValue("pirate");
+    CORRADE_COMPARE(notFoundKeyList.size(), 0);
   }
-  // Set deepest layer config to have treasure
-  cfg->set("treasure", "this is the treasure!");
-  // Find the treasure!
-  std::vector<std::string> keyList = baseCfg->findValue("treasure");
+  // Test subconfig edit/merge and save
+  {
+    Configuration::ptr cfg = Configuration::create();
+    CORRADE_VERIFY(cfg);
+    // Set base value for parent iteration
+    cfg->set("breakcrumb", "");
+    // Build subconfig tree 4 levels deep, 3 subconfigs per config
+    buildSubconfigsInConfig(3, 0, 4, cfg);
+    Configuration::cptr const_cfg =
+        std::const_pointer_cast<const Configuration>(cfg);
+    // Verify subconfig tree structure using const views
+    verifySubconfigTree(3, 0, 4, const_cfg);
 
-  // Display breadcrumbs
-  std::string resStr = Cr::Utility::formatString(
-      "Vector of results is size : {}", keyList.size());
-  for (const auto& key : keyList) {
-    Cr::Utility::formatInto(resStr, resStr.size(), "\n\t{}", key);
+    // grab a subconfig, edit it and save it with a different key
+    // use find to get key path
+    const std::string keyToFind = "breadcrumb_212_depth_3_subconfig_2";
+    std::vector<std::string> subconfigPath = cfg->findValue(keyToFind);
+    // Display breadcrumbs
+    std::string resStr = Cr::Utility::formatString(
+        "Vector of desired subconfig keys to get to '{}' "
+        "subconfig is size : {}",
+        keyToFind, subconfigPath.size());
+    for (const auto& key : subconfigPath) {
+      Cr::Utility::formatInto(resStr, resStr.size(), "\n\t{}", key);
+    }
+    ESP_DEBUG() << resStr;
+    CORRADE_COMPARE(subconfigPath.size(), 4);
+    CORRADE_COMPARE(subconfigPath[3], keyToFind);
+    Configuration::cptr viewConfig = cfg;
+    Configuration::cptr lastConfig = cfg;
+    for (const std::string& key : subconfigPath) {
+      Configuration::cptr tempConfig = viewConfig->getSubconfigView(key);
+      CORRADE_COMPARE(tempConfig->get<std::string>("key"), key);
+      lastConfig = viewConfig;
+      viewConfig = tempConfig;
+    }
+    // By here lastConfig is the parent of the config we want, and viewConfig is
+    // the config we are getting a copy of.
+    Configuration::ptr cfgToEdit =
+        lastConfig->getSubconfigCopy<Configuration>(keyToFind);
+    const std::string newKey = "edited_subconfig";
+    cfgToEdit->set("key", newKey);
+    cfgToEdit->set("depth", 0);
+    cfgToEdit->set("breakcrumb", "");
+    cfgToEdit->set("test_string", "this is an added test string");
+    // Added edited subconfig to base config
+    cfg->setSubconfigPtr(newKey, cfgToEdit);
+    CORRADE_VERIFY(cfg->hasSubconfig(newKey));
+    Configuration::cptr cfgToVerify = cfg->getSubconfigView(newKey);
+    CORRADE_COMPARE(cfgToVerify->get<std::string>("breakcrumb"), "");
+    CORRADE_COMPARE(cfgToVerify->get<std::string>("test_string"),
+                    "this is an added test string");
+    CORRADE_COMPARE(cfgToVerify->get<std::string>("key"), newKey);
+    CORRADE_COMPARE(cfgToVerify->get<int>("depth"), 0);
+    // Make sure original was not modified
+    CORRADE_VERIFY(viewConfig->get<std::string>("breakcrumb") != "");
+    CORRADE_VERIFY(viewConfig->get<std::string>("key") != newKey);
+    CORRADE_VERIFY(viewConfig->get<int>("depth") != 0);
+    CORRADE_VERIFY(!viewConfig->hasValue("test_string"));
   }
-  ESP_DEBUG() << resStr;
-  Configuration::cptr view_cfg = baseCfg;
-  // Verify the found treasure
-  CORRADE_COMPARE(keyList.size(), 11);
-  for (int i = 0; i < 10; ++i) {
-    const std::string subConfigKey =
-        Cr::Utility::formatString("subConfig_{}", i);
-    CORRADE_COMPARE(keyList[i], subConfigKey);
-    // Verify that subconfig with given name exists
-    CORRADE_VERIFY(view_cfg->hasSubconfig(subConfigKey));
-    // retrieve actual subconfig
-    Configuration::cptr newCfg = view_cfg->getSubconfigView(subConfigKey);
-    // verity subconfig has correct depth value
-    CORRADE_COMPARE(newCfg->get<int>("depth"), i + 1);
-    view_cfg = newCfg;
-  }
-  CORRADE_VERIFY(view_cfg->hasValue("treasure"));
-  CORRADE_COMPARE(view_cfg->get<std::string>("treasure"),
-                  "this is the treasure!");
 
-}  // CoreTest::TestConfigurationFind test
+}  // CoreTest::TestConfigurationSubconfigFind test
 
 }  // namespace
 

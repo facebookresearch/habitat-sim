@@ -660,8 +660,8 @@ class Configuration {
   }
 
   /**
-   * @brief This method will build a vector of all the config values this
-   * configuration holds and the types of these values.
+   * @brief This method will build a map of the keys of all the config values
+   * this configuration holds and the types of each of these values.
    */
   std::unordered_map<std::string, ConfigStoredType> getValueTypes() const {
     std::unordered_map<std::string, ConfigStoredType> res{};
