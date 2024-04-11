@@ -345,8 +345,18 @@ class ConfigValue {
                              Cr::Utility::ConfigurationGroup& cfg) const;
 
  public:
+  /**
+   * @brief Comparison
+   */
+  friend bool operator==(const ConfigValue& a, const ConfigValue& b);
+
   ESP_SMART_POINTERS(ConfigValue)
 };  // ConfigValue
+
+/**
+ * @brief Inequality Comparison
+ */
+bool operator!=(const ConfigValue& a, const ConfigValue& b);
 
 /**
  * @brief provide debug stream support for @ref ConfigValue
@@ -781,7 +791,7 @@ class Configuration {
   }
 
   /**
-   * @brief Retrieve the number of entries held by the subconfig with the give
+   * @brief Retrieve the number of entries held by the subconfig with the given
    * name
    * @param name The name of the subconfig to query. If not found, returns 0
    * with a warning.
@@ -803,7 +813,7 @@ class Configuration {
    * @param src The source of configuration data we wish to merge into this
    * configuration.
    */
-  void overwriteWithConfig(const std::shared_ptr<Configuration>& src) {
+  void overwriteWithConfig(const std::shared_ptr<const Configuration>& src) {
     if (src->getNumEntries() == 0) {
       return;
     }
@@ -812,7 +822,7 @@ class Configuration {
       valueMap_[elem.first] = elem.second;
     }
     // merge subconfigs
-    for (const auto& subConfig : configMap_) {
+    for (const auto& subConfig : src->configMap_) {
       const auto name = subConfig.first;
       // make if DNE and merge src subconfig
       addSubgroup(name)->overwriteWithConfig(subConfig.second);

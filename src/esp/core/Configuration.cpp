@@ -223,6 +223,31 @@ std::string ConfigValue::getAsString() const {
   }  // switch
 }  // ConfigValue::getAsString
 
+bool operator==(const ConfigValue& a, const ConfigValue& b) {
+  if (a._type != b._type) {
+    return false;
+  }
+  // Types are equal, check values
+  // if trivial type, compare data arrays
+  if (a._type < ConfigStoredType::_nonTrivialTypes) {
+    return std::equal(std::begin(a._data), std::end(a._data),
+                      std::begin(b._data));
+  } else {
+    // Nontrivial, get values as appropriate
+    if (a._type == ConfigStoredType::String) {
+      return a.get<std::string>() == b.get<std::string>();
+    } else {
+      // Shouldn't get here
+      CORRADE_ASSERT_UNREACHABLE(
+          "Unknown/unsupported Type in ConfigValue equality check", false);
+    }
+  }
+}
+
+bool operator!=(const ConfigValue& a, const ConfigValue& b) {
+  return !(a == b);
+}
+
 io::JsonGenericValue ConfigValue::writeToJsonObject(
     io::JsonAllocator& allocator) const {
   // unknown is checked before this function is called, so does not need support
