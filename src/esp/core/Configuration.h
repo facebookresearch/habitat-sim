@@ -717,7 +717,10 @@ class Configuration {
   std::shared_ptr<const Configuration> getSubconfigView(
       const std::string& name) const {
     auto configIter = configMap_.find(name);
-    CORRADE_ASSERT(configIter != configMap_.end(), "", nullptr);
+    CORRADE_ASSERT(
+        configIter != configMap_.end(),
+        "Subconfiguration with name " << name << " not found in Configuration.",
+        nullptr);
     // if exists return actual object
     return configIter->second;
   }
