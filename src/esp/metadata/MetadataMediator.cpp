@@ -494,7 +494,7 @@ MetadataMediator::makeSceneAndReferenceStage(
   // create stage instance attributes and set its name (from stage attributes)
   sceneInstanceAttributes->setStageInstanceAttrs(
       dsSceneAttrMgr->createEmptyInstanceAttributes(
-          stageAttributes->getHandle()));
+          stageAttributes->getHandle(), stageAttributes));
 
   // The following is to manage stage configs that have navmesh handles defined
   // in them. This mechanism has been deprecated, but in order to provide

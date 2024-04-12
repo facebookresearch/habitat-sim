@@ -74,7 +74,7 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
       ESP_ERROR(Mn::Debug::Flag::NoSpace)
           << "'" << baseType
           << "' is an illegal value for "
-             "ArticulatedObjectAttributes::setBaseType, so default value "
+             "ArticulatedObjectAttributes::setBaseType, so current value "
           << get<std::string>("base_type") << " not changed.";
       return;
     }
@@ -110,7 +110,7 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
       ESP_ERROR(Mn::Debug::Flag::NoSpace)
           << "'" << inertiaSrc
           << "' is an illegal value for "
-             "ArticulatedObjectAttributes::setInertiaSource, so default value '"
+             "ArticulatedObjectAttributes::setInertiaSource, so current value '"
           << get<std::string>("inertia_source") << "' not changed.";
       return;
     }
@@ -146,7 +146,7 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
       ESP_ERROR(Mn::Debug::Flag::NoSpace)
           << "'" << linkOrder
           << "' is an illegal value for "
-             "ArticulatedObjectAttributes::setLinkOrder, so default value '"
+             "ArticulatedObjectAttributes::setLinkOrder, so current value '"
           << get<std::string>("link_order") << "' not changed.";
       return;
     }

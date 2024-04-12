@@ -59,7 +59,7 @@ std::string ArticulatedObjectAttributes::getObjectInfoHeaderInternal() const {
 
 std::string ArticulatedObjectAttributes::getObjectInfoInternal() const {
   return Cr::Utility::formatString(
-      "{},{},{},{},{},{},{},{}", getURDFPath(), getRenderAssetHandle(),
+      "{},{},{},{},{},{},{},{},{},{}", getURDFPath(), getRenderAssetHandle(),
       getAsString("semantic_id"), getAsString("uniform_scale"),
       getAsString("mass_scale"), getAOBaseTypeName(getBaseType()),
       getAOInertiaSourceName(getInertiaSource()),

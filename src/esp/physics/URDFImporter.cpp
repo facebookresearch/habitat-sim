@@ -18,11 +18,7 @@ namespace Mn = Magnum;
 namespace esp {
 namespace physics {
 
-bool URDFImporter::loadURDF(
-    const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
-        artObjAttributes,
-    bool forceReload) {
-  const std::string urdfFilepath = artObjAttributes->getURDFPath();
+bool URDFImporter::loadURDF(const std::string& urdfFilepath, bool forceReload) {
   auto modelCacheIter = modelCache_.find(urdfFilepath);
   // if map not found or forcing reload
   if ((modelCacheIter == modelCache_.end()) || forceReload) {
@@ -35,7 +31,7 @@ bool URDFImporter::loadURDF(
 
     // parse the URDF from file
     std::shared_ptr<metadata::URDF::Model> urdfModel;
-    bool success = urdfParser_.parseURDF(artObjAttributes, urdfModel);
+    bool success = urdfParser_.parseURDF(urdfFilepath, urdfModel);
     if (!success) {
       ESP_DEBUG() << "Failed to parse URDF:" << urdfFilepath << ", aborting.";
       return false;
@@ -54,11 +50,8 @@ bool URDFImporter::loadURDF(
     // register the new model and set to iterator
     modelCacheIter = modelCache_.emplace(urdfFilepath, urdfModel).first;
   }
-  activeModel_ = modelCacheIter->second;
 
-  // re-scale the cached model
-  activeModel_->setGlobalScaling(artObjAttributes->getUniformScale());
-  activeModel_->setMassScaling(artObjAttributes->getMassScale());
+  activeModel_ = modelCacheIter->second;
 
   return true;
 }
@@ -246,12 +239,18 @@ bool URDFImporter::getLinkContactInfo(
   return true;
 }
 
-void URDFImporter::importURDFAssets() {
+void URDFImporter::importURDFAssets(
+    const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
+        artObjAttributes) {
   if (activeModel_ == nullptr) {
     ESP_DEBUG()
         << "URDFImporter::importURDFAssets - No URDF::Model loaded, aborting.";
     return;
   }
+  // re-scale the cached model
+  activeModel_->setGlobalScaling(artObjAttributes->getUniformScale());
+  activeModel_->setMassScaling(artObjAttributes->getMassScale());
+
   for (size_t linkIx = 0; linkIx < activeModel_->m_links.size(); ++linkIx) {
     auto link = activeModel_->getLink(linkIx);
     // load collision shapes

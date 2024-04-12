@@ -368,15 +368,16 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @brief Initialize this ArticulatedObject from a parsed URDF stored in a
    * URDFImporter.
    *
+   * @param initAttributes The ArticulatedObjectAttributes used to build this
+   * ArticulatedObject.
    * @param urdfImporter The URDFImporter which will initialize this object from
    * a parsed URDF file.
    * @param worldTransform Desired global root state of the ArticulatedObject.
-   * @param drawables DrawableGroup to which this object's visual shapes will be
-   * added.
    * @param physicsNode The parent node of this object.
-   * @param fixedBase Whether or not the root link should be fixed or free.
    */
   virtual void initializeFromURDF(
+      CORRADE_UNUSED const std::shared_ptr<
+          metadata::attributes::ArticulatedObjectAttributes>& initAttributes,
       CORRADE_UNUSED URDFImporter& urdfImporter,
       CORRADE_UNUSED const Magnum::Matrix4& worldTransform,
       CORRADE_UNUSED scene::SceneNode* physicsNode) {
@@ -713,7 +714,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   /**
    * @brief Create a new JointMotor from a JointMotorSettings.
    *
-   * Note: No base implementation. See @ref bullet::BulletArticulatedObject.
+   * Note: No base implementation. See @ref BulletArticulatedObject.
    * @param index DoF (for revolute or prismatic joints) or Link (spherical
    * joints)
    * @param settings The settings for the joint motor. Must have JointMotorType
@@ -785,7 +786,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @brief Create a new set of default JointMotors for all valid dofs in an
    * ArticulatedObject.
    *
-   * Note: No base implementation. See @ref bullet::BulletArticulatedObject.
+   * Note: No base implementation. See @ref BulletArticulatedObject.
    *
    * @return A map motorIds to link/joint indices for the new motors.
    */
@@ -805,7 +806,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * this object. This function will safely skip states for jointa which don't
    * support JointMotors.
    *
-   * Note: No base implementation. See @ref bullet::BulletArticulatedObject.
+   * Note: No base implementation. See @ref BulletArticulatedObject.
    *
    * @param stateTargets Full length joint position or velocity array for this
    * object.
