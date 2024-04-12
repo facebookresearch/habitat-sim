@@ -70,7 +70,16 @@ class SceneInstanceAttributesManager
    * attributes::SceneObjectInstanceAttributes object with passed handle.
    */
   attributes::SceneObjectInstanceAttributes::ptr createEmptyInstanceAttributes(
-      const std::string& handle) {
+      const std::string& handle,
+      const std::shared_ptr<attributes::AbstractObjectAttributes>&
+          baseObjAttribs = nullptr) {
+    if (baseObjAttribs) {
+      // SceneObjectInstanceAttributes constructor that takes an attributes is
+      // protected
+      return std::shared_ptr<attributes::SceneObjectInstanceAttributes>(
+          new attributes::SceneObjectInstanceAttributes(handle,
+                                                        baseObjAttribs));
+    }
     return attributes::SceneObjectInstanceAttributes::create(handle);
   }
 
@@ -79,7 +88,15 @@ class SceneInstanceAttributesManager
    * attributes::SceneObjectInstanceAttributes object with passed handle.
    */
   attributes::SceneAOInstanceAttributes::ptr createEmptyAOInstanceAttributes(
-      const std::string& handle) {
+      const std::string& handle,
+      const std::shared_ptr<attributes::ArticulatedObjectAttributes>&
+          aObjAttribs = nullptr) {
+    if (aObjAttribs) {
+      // SceneAOInstanceAttributes constructor that takes an attributes is
+      // protected
+      return std::shared_ptr<attributes::SceneAOInstanceAttributes>(
+          new attributes::SceneAOInstanceAttributes(handle, aObjAttribs));
+    }
     return attributes::SceneAOInstanceAttributes::create(handle);
   }
 

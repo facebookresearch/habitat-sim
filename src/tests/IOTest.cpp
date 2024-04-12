@@ -147,7 +147,7 @@ void IOTest::parseURDF() {
 
   // load the iiwa test asset
   std::shared_ptr<esp::metadata::URDF::Model> urdfModel;
-  parser.parseURDF(attributes, urdfModel);
+  parser.parseURDF(attributes->getURDFPath(), urdfModel);
   ESP_DEBUG() << "name:" << urdfModel->m_name;
   CORRADE_COMPARE(urdfModel->m_name, "lbr_iiwa");
   ESP_DEBUG() << "file:" << urdfModel->m_sourceFile;
@@ -183,7 +183,7 @@ void IOTest::parseURDF() {
   CORRADE_COMPARE(urdfModel->getLink(1)->m_inertia.m_mass, 12.0);
 
   // test overwrite re-load
-  parser.parseURDF(attributes, urdfModel);
+  parser.parseURDF(attributes->getURDFPath(), urdfModel);
   // should have default values again
   CORRADE_COMPARE(urdfModel->getGlobalScaling(), 1.0);
   CORRADE_COMPARE(urdfModel->getMassScaling(), 1.0);

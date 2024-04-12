@@ -345,8 +345,18 @@ class ConfigValue {
                              Cr::Utility::ConfigurationGroup& cfg) const;
 
  public:
+  /**
+   * @brief Comparison
+   */
+  friend bool operator==(const ConfigValue& a, const ConfigValue& b);
+
   ESP_SMART_POINTERS(ConfigValue)
 };  // ConfigValue
+
+/**
+ * @brief Inequality Comparison
+ */
+bool operator!=(const ConfigValue& a, const ConfigValue& b);
 
 /**
  * @brief provide debug stream support for @ref ConfigValue
@@ -660,8 +670,8 @@ class Configuration {
   }
 
   /**
-   * @brief This method will build a vector of all the config values this
-   * configuration holds and the types of these values.
+   * @brief This method will build a map of the keys of all the config values
+   * this configuration holds and the types of each of these values.
    */
   std::unordered_map<std::string, ConfigStoredType> getValueTypes() const {
     std::unordered_map<std::string, ConfigStoredType> res{};
@@ -717,7 +727,10 @@ class Configuration {
   std::shared_ptr<const Configuration> getSubconfigView(
       const std::string& name) const {
     auto configIter = configMap_.find(name);
-    CORRADE_ASSERT(configIter != configMap_.end(), "", nullptr);
+    CORRADE_ASSERT(
+        configIter != configMap_.end(),
+        "Subconfiguration with name " << name << " not found in Configuration.",
+        nullptr);
     // if exists return actual object
     return configIter->second;
   }
@@ -778,7 +791,7 @@ class Configuration {
   }
 
   /**
-   * @brief Retrieve the number of entries held by the subconfig with the give
+   * @brief Retrieve the number of entries held by the subconfig with the given
    * name
    * @param name The name of the subconfig to query. If not found, returns 0
    * with a warning.
@@ -800,7 +813,7 @@ class Configuration {
    * @param src The source of configuration data we wish to merge into this
    * configuration.
    */
-  void overwriteWithConfig(const std::shared_ptr<Configuration>& src) {
+  void overwriteWithConfig(const std::shared_ptr<const Configuration>& src) {
     if (src->getNumEntries() == 0) {
       return;
     }
@@ -809,7 +822,7 @@ class Configuration {
       valueMap_[elem.first] = elem.second;
     }
     // merge subconfigs
-    for (const auto& subConfig : configMap_) {
+    for (const auto& subConfig : src->configMap_) {
       const auto name = subConfig.first;
       // make if DNE and merge src subconfig
       addSubgroup(name)->overwriteWithConfig(subConfig.second);

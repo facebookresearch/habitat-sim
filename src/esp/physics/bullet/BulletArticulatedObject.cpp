@@ -8,6 +8,7 @@
 #include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
 #include "BulletPhysicsManager.h"
 #include "BulletURDFImporter.h"
+#include "esp/metadata/attributes/ArticulatedObjectAttributes.h"
 #include "esp/scene/SceneNode.h"
 
 namespace Mn = Magnum;
@@ -63,66 +64,37 @@ BulletArticulatedObject::~BulletArticulatedObject() {
   }
 
   // remove joint limit constraints
-  for (auto& jlIter : jointLimitConstraints) {
+  for (auto& jlIter : jointLimitConstraints_) {
     bWorld_->removeMultiBodyConstraint(jlIter.second.con);
     delete jlIter.second.con;
   }
 }
 
 void BulletArticulatedObject::initializeFromURDF(
+    const std::shared_ptr<metadata::attributes::ArticulatedObjectAttributes>&
+        initAttributes,
     URDFImporter& urdfImporter,
     const Mn::Matrix4& worldTransform,
     scene::SceneNode* physicsNode) {
-  Mn::Matrix4 rootTransformInWorldSpace{worldTransform};
+  // set semantic ID
+  node().setSemanticId(initAttributes->getSemanticId());
 
   BulletURDFImporter& u2b = *(static_cast<BulletURDFImporter*>(&urdfImporter));
 
-  auto urdfModel = u2b.getModel();
+  Mn::Matrix4 rootTransformInWorldSpace{worldTransform};
 
-  node().setSemanticId(urdfModel->getSemanticId());
+  auto urdfModel = u2b.getModel();
 
   // cache the global scaling from the source model
   globalScale_ = urdfModel->getGlobalScaling();
 
-  int urdfLinkIndex = u2b.getRootLinkIndex();
-
-  bool recursive = (u2b.flags & CUF_MAINTAIN_LINK_ORDER) == 0;
-
-  if (recursive) {
-    // NOTE: recursive path only
-    u2b.convertURDFToBulletInternal(urdfLinkIndex, rootTransformInWorldSpace,
-                                    bWorld_.get(), linkCompoundShapes_,
-                                    linkChildShapes_, recursive);
-  } else {
-    std::vector<Mn::Matrix4> parentTransforms;
-    parentTransforms.resize(urdfLinkIndex + 1);
-    parentTransforms[urdfLinkIndex] = rootTransformInWorldSpace;
-    std::vector<childParentIndex> allIndices;
-
-    u2b.getAllIndices(urdfLinkIndex, -1, allIndices);
-    std::sort(allIndices.begin(), allIndices.end(),
-              [](const childParentIndex& a, const childParentIndex& b) {
-                return a.m_index < b.m_index;
-              });
-
-    if (allIndices.size() + 1 > parentTransforms.size()) {
-      parentTransforms.resize(allIndices.size() + 1);
-    }
-    for (size_t i = 0; i < allIndices.size(); ++i) {
-      int urdfLinkIndex = allIndices[i].m_index;
-      int parentIndex = allIndices[i].m_parentIndex;
-      Mn::Matrix4 parentTr = parentIndex >= 0 ? parentTransforms[parentIndex]
-                                              : rootTransformInWorldSpace;
-      Mn::Matrix4 tr = u2b.convertURDFToBulletInternal(
-          urdfLinkIndex, parentTr, bWorld_.get(), linkCompoundShapes_,
-          linkChildShapes_, recursive);
-      parentTransforms[urdfLinkIndex] = tr;
-    }
-  }
+  u2b.convertURDFToBullet(rootTransformInWorldSpace, bWorld_.get(),
+                          linkCompoundShapes_, linkChildShapes_);
 
   if (u2b.cache->m_bulletMultiBody) {
+    int urdfLinkIndex = u2b.getRootLinkIndex();
     btMultiBody* mb = u2b.cache->m_bulletMultiBody;
-    jointLimitConstraints = u2b.cache->m_jointLimitConstraints;
+    jointLimitConstraints_ = u2b.cache->m_jointLimitConstraints;
 
     mb->setHasSelfCollision((u2b.flags & CUF_USE_SELF_COLLISION) !=
                             0);  // NOTE: default no
@@ -191,13 +163,12 @@ void BulletArticulatedObject::initializeFromURDF(
         createJointMotor(linkIx, settings);
       }
     }
-    // set user config attributes from model.
-    setUserAttributes(urdfModel->getUserConfiguration());
-    initializationAttributes_ = urdfModel->getInitializationAttributes();
-
     // in case the base transform is not zero by default
     syncPose();
   }
+  // set user config and initialization attributes
+  setUserAttributes(initAttributes->getUserConfiguration());
+  initializationAttributes_ = initAttributes;
 }
 
 void BulletArticulatedObject::constructStaticRigidBaseObject() {
@@ -521,8 +492,8 @@ BulletArticulatedObject::getJointPositionLimits() {
 
   int posCount = 0;
   for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
-    auto jntLimitCnstrntIter = jointLimitConstraints.find(i);
-    if (jntLimitCnstrntIter != jointLimitConstraints.end()) {
+    auto jntLimitCnstrntIter = jointLimitConstraints_.find(i);
+    if (jntLimitCnstrntIter != jointLimitConstraints_.end()) {
       // a joint limit constraint exists for this link's parent joint
       lowerLimits[posCount] = jntLimitCnstrntIter->second.lowerLimit;
       upperLimits[posCount] = jntLimitCnstrntIter->second.upperLimit;
@@ -661,8 +632,8 @@ void BulletArticulatedObject::clampJointLimits() {
 
   int dofCount = 0;
   for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
-    auto jntLimitCnstrntIter = jointLimitConstraints.find(i);
-    if (jntLimitCnstrntIter != jointLimitConstraints.end()) {
+    auto jntLimitCnstrntIter = jointLimitConstraints_.find(i);
+    if (jntLimitCnstrntIter != jointLimitConstraints_.end()) {
       // a joint limit constraint exists for this link
       // position clamping:
       if (pose[dofCount] <
