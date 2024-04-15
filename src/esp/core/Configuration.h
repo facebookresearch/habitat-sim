@@ -215,12 +215,10 @@ class ConfigValue {
 
   /**
    * @brief The data this ConfigValue holds.
-   * Aligns to individual 8-byte bounds. The pair the Configuration map holds
-   * consists of a std::string key (sizeof:24 bytes) and a ConfigValue. The
-   * _type is 4 bytes, 4 bytes of padding (on 64 bit machines) and 48 bytes for
-   * data.
+   * Aligns to individual 8-byte bounds. The _type is 4 bytes, 4 bytes of
+   * padding (on 64 bit machines) and 36 bytes for data.
    */
-  alignas(8) char _data[6 * 8] = {0};
+  alignas(8) char _data[9 * 4] = {0};
 
   /**
    * @brief Copy the passed @p val into this ConfigValue.  If this @ref
