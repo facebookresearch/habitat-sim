@@ -29,6 +29,27 @@ bool fromJsonValue(const JsonGenericValue& obj, Magnum::Matrix3& mat) {
   return false;
 }
 
+JsonGenericValue toJsonValue(const Magnum::Matrix4& mat,
+                             JsonAllocator& allocator) {
+  return toJsonArrayHelper(mat.data(), (mat.Size * mat.Size), allocator);
+}
+
+bool fromJsonValue(const JsonGenericValue& obj, Magnum::Matrix4& mat) {
+  int numElems = mat.Size * mat.Size;
+  if (obj.IsArray() && obj.Size() == numElems) {
+    for (rapidjson::SizeType i = 0; i < numElems; ++i) {
+      if (!fromJsonValue(obj[i], mat.data()[i])) {
+        ESP_ERROR() << "Invalid numeric value specified in JSON "
+                       "Magnum::Matrix4, index :"
+                    << i;
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
 JsonGenericValue toJsonValue(const Magnum::Vector2& vec,
                              JsonAllocator& allocator) {
   return toJsonArrayHelper(vec.data(), vec.Size, allocator);
