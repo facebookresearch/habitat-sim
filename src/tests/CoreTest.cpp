@@ -130,6 +130,7 @@ void CoreTest::TestConfiguration() {
   cfg.set("myVec4", Mn::Vector4{1.0, 2.0, 3.0, 4.0});
   cfg.set("myQuat", Mn::Quaternion{{1.0, 2.0, 3.0}, 0.1});
   cfg.set("myMat3", Mn::Matrix3(Mn::Math::IdentityInit));
+  cfg.set("myMat4", Mn::Matrix4(Mn::Math::IdentityInit));
   cfg.set("myRad", Mn::Rad{1.23});
   cfg.set("myString", "test");
 
@@ -159,6 +160,10 @@ void CoreTest::TestConfiguration() {
   for (int i = 0; i < 3; ++i) {
     CORRADE_COMPARE(cfg.get<Mn::Matrix3>("myMat3").row(i)[i], 1);
   }
+  for (int i = 0; i < 4; ++i) {
+    CORRADE_COMPARE(cfg.get<Mn::Matrix4>("myMat4").row(i)[i], 1);
+  }
+
   CORRADE_COMPARE(cfg.get<std::string>("myString"), "test");
 }  // CoreTest::TestConfiguration test
 
