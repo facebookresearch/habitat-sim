@@ -33,8 +33,6 @@ Creating a stereo agent                             :ref:`Page <std:doc:stereo-a
 
 Working with light setups                           :ref:`Page <std:doc:lighting-setups>`
 
-Extracting Images                                   :ref:`Page <std:doc:image-extractor>`
-
 View Assets in Habitat-Sim                          :ref:`Page <std:doc:asset-viewer-tutorial>`                                                                                                                    :gh:`Jupyter Notebook <facebookresearch/habitat-sim/blob/main/examples/tutorials/notebooks/asset_viewer.ipynb>`
 
 Interactive Rigid Objects 2.0                       :ref:`Page <std:doc:managed-rigid-object-tutorial>`                                                                                                            :gh:`Jupyter Notebook <facebookresearch/habitat-sim/blob/main/examples/tutorials/notebooks/managed_rigid_object_tutorial.ipynb>`
