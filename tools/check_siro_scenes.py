@@ -425,6 +425,10 @@ def run_rec_filter_analysis(
 ) -> None:
     """
     Collect all receptacles for the scene and run an accessibility check, saving the resulting filter file.
+
+    :param out_dir: Where to write the filter files.
+    :param open_default_links: Whether or not to open default links when considering final accessible Receptacles set.
+    :param keep_manual_filters: Whether to keep or override existing manual filter definitions.
     """
 
     rec_filter_dict = init_rec_filter_data_dict()
@@ -440,15 +444,6 @@ def run_rec_filter_analysis(
 
     # get the largest indoor island
     largest_island = get_largest_island_index(sim.pathfinder, sim, allow_outdoor=False)
-
-    # open default links
-    if open_default_links:
-        all_objects = sutils.get_all_objects(sim)
-        aos = [obj for obj in all_objects if isinstance(obj, ManagedArticulatedObject)]
-        for ao in aos:
-            default_link = sutils.get_ao_default_link(ao, True)
-            if default_link is not None:
-                sutils.open_link(ao, default_link)
 
     # keep manually filtered receptacles
     ignore_existing_status = []
@@ -467,11 +462,21 @@ def run_rec_filter_analysis(
         sim, exclude_filter_strings=rec_filter_dict["manually_filtered"]
     )
 
-    # compute and set the receptacle filters
+    # compute a map from parent object to Receptacles
+    parent_handle_to_rec: Dict[str, List[hab_receptacle.Receptacle]] = defaultdict(
+        lambda: []
+    )
+    for rec in recs:
+        parent_handle_to_rec[rec.parent_object_handle].append(rec)
+
+    # compute the default accessibility with all closed links
+    default_active_set: List[hab_receptacle.Receptacle] = []
     for rix, rec in enumerate(recs):
         rec_accessible, filter_type = check_rec_accessibility(
             sim, rec, clutter_object_handles, island_index=largest_island
         )
+        if rec_accessible:
+            default_active_set.append(rec)
         set_filter_status_for_rec(
             rec,
             filter_type,
@@ -480,6 +485,42 @@ def run_rec_filter_analysis(
         )
         print(f"-- progress = {rix}/{len(recs)} --")
 
+    # open default links and re-compute accessibility for each AO
+    # the difference between default state accessibility and open state accessibility defines the "within_set"
+    within_set: List[hab_receptacle.Receptacle] = []
+    if open_default_links:
+        all_objects = sutils.get_all_objects(sim)
+        aos = [obj for obj in all_objects if isinstance(obj, ManagedArticulatedObject)]
+        for aoix, ao in enumerate(aos):
+            default_link = sutils.get_ao_default_link(ao, True)
+            if default_link is not None:
+                sutils.open_link(ao, default_link)
+                # recompute accessibility
+                for child_rec in parent_handle_to_rec[ao.handle]:
+                    rec_accessible, filter_type = check_rec_accessibility(
+                        sim,
+                        child_rec,
+                        clutter_object_handles,
+                        island_index=largest_island,
+                    )
+                    if rec_accessible and child_rec not in default_active_set:
+                        # found a Receptacle which is only accessible when the default_link is open
+                        within_set.append(child_rec)
+                        set_filter_status_for_rec(
+                            child_rec,
+                            filter_type,
+                            rec_filter_dict,
+                            ignore_existing_status=ignore_existing_status,
+                        )
+                sutils.close_link(ao, default_link)
+            print(f"-- progress = {aoix}/{len(aos)} --")
+
+    # write the within set to the filter file
+    rec_filter_dict["within_set"] = [
+        within_rec.unique_name for within_rec in within_set
+    ]
+
+    # write the filter file to JSON
     filter_filepath = os.path.join(
         out_dir, f"scene_filter_files/{sim.curr_scene_name}.rec_filter.json"
     )
