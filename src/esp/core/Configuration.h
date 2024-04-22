@@ -383,9 +383,6 @@ class ConfigValue {
   template <typename T>
   EnableIf<isConfigValTypePointerBased(configValTypeFor<T>()), void>
   setInternal(const T& value) {
-    // Is this correct? Creating a ptr to a new T == value, and then placing
-    // that pointer to the value's value into _data array
-
     new (_data) T* {new T{value}};
   }
 
