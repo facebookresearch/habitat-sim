@@ -24,6 +24,8 @@ namespace core {
 
 namespace config {
 
+constexpr int CONFIG_VAL_SIZE = 8;  // 2 * 4
+
 /**
  * @brief This enum lists every type of value that can be currently stored
  * directly in an @ref esp::core::config::Configuration.  All supported types
@@ -249,7 +251,7 @@ class ConfigValue {
    * Aligns to individual 8-byte bounds. The _type is 4 bytes, 4 bytes of
    * padding (on 64 bit machines) and 36 bytes for data.
    */
-  alignas(8) char _data[2 * 4] = {0};
+  alignas(8) char _data[CONFIG_VAL_SIZE] = {0};
 
   /**
    * @brief Copy the passed @p val into this ConfigValue.  If this @ref
