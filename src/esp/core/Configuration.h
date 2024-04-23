@@ -415,14 +415,13 @@ class ConfigValue {
    * @brief Comparison
    */
   friend bool operator==(const ConfigValue& a, const ConfigValue& b);
+  /**
+   * @brief Inequality Comparison
+   */
+  friend bool operator!=(const ConfigValue& a, const ConfigValue& b);
 
   ESP_SMART_POINTERS(ConfigValue)
 };  // namespace config
-
-/**
- * @brief Inequality Comparison
- */
-bool operator!=(const ConfigValue& a, const ConfigValue& b);
 
 /**
  * @brief provide debug stream support for @ref ConfigValue

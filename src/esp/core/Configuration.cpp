@@ -34,14 +34,14 @@ const std::unordered_map<ConfigValType, std::string, ConfigValTypeHash>
     ConfigTypeNamesMap = {{ConfigValType::Unknown, "Unknown"},
                           {ConfigValType::Boolean, "bool"},
                           {ConfigValType::Integer, "int"},
+                          {ConfigValType::MagnumRad, "Mn::Rad"},
                           {ConfigValType::Double, "double"},
                           {ConfigValType::MagnumVec2, "Mn::Vector2"},
                           {ConfigValType::MagnumVec3, "Mn::Vector3"},
                           {ConfigValType::MagnumVec4, "Mn::Vector4"},
+                          {ConfigValType::MagnumQuat, "Mn::Quaternion"},
                           {ConfigValType::MagnumMat3, "Mn::Matrix3"},
                           {ConfigValType::MagnumMat4, "Mn::Matrix4"},
-                          {ConfigValType::MagnumQuat, "Mn::Quaternion"},
-                          {ConfigValType::MagnumRad, "Mn::Rad"},
                           {ConfigValType::String, "std::string"}};
 
 // force this functionality to remain local to this file.
@@ -95,7 +95,7 @@ struct PointerBasedTypeHandler {
  * ConfigValue supports.
  *
  * This array will be indexed by consuming ConfigValType -
- * int(ConfigValType::_storedAsAPointer.
+ * int(ConfigValType::_storedAsAPointer).
  *
  * There needs to be an entry in this table for each pointer-based data
  * type, in sequence as specified in @ref ConfigValType enum following
@@ -411,19 +411,18 @@ int Configuration::loadOneConfigFromJson(int numConfigSettings,
         // NOTE : to properly make use of vector4 and color4 configValues
         // loaded from JSON, the owning Configuration must be
         // pre-initialized in its constructor with a default value at the
-        // target key. Otherwise for backwards compatibility, we default to
-        // reading a quaternion
+        // target key.
 
         // Check if this configuration has pre-defined field with given key
         if (hasValue(key)) {
-          ConfigStoredType valType = get(key).getType();
-          if (valType == ConfigStoredType::MagnumQuat) {
+          ConfigValType valType = get(key).getType();
+          if (valType == ConfigValType::MagnumQuat) {
             // if predefined object is neither
             Mn::Quaternion val{};
             if (io::fromJsonValue(jsonObj, val)) {
               set(key, val);
             }
-          } else if (valType == ConfigStoredType::MagnumVec4) {
+          } else if (valType == ConfigValType::MagnumVec4) {
             // if object exists already @ key and its type is Vector4
             Mn::Vector4 val{};
             if (io::fromJsonValue(jsonObj, val)) {
@@ -470,6 +469,12 @@ int Configuration::loadOneConfigFromJson(int numConfigSettings,
       } else if (jsonObj.Size() == 9) {
         // assume is 3x3 matrix
         Mn::Matrix3 mat{};
+        if (io::fromJsonValue(jsonObj, mat)) {
+          set(key, mat);
+        }
+      } else if (jsonObj.Size() == 16) {
+        // assume is 4x4 matrix
+        Mn::Matrix4 mat{};
         if (io::fromJsonValue(jsonObj, mat)) {
           set(key, mat);
         }
