@@ -107,9 +107,9 @@ constexpr PointerBasedTypeHandler pointerBasedTypeHandlers[]{
     //_storedAsAPointer start
     PointerBasedTypeHandler::make<Mn::Vector3>(),
     PointerBasedTypeHandler::make<Mn::Vector4>(),
+    PointerBasedTypeHandler::make<Mn::Quaternion>(),
     PointerBasedTypeHandler::make<Mn::Matrix3>(),
     PointerBasedTypeHandler::make<Mn::Matrix4>(),
-    PointerBasedTypeHandler::make<Mn::Quaternion>(),
     //_nonTrivialTypes start
     PointerBasedTypeHandler::make<std::string>(),
 };
