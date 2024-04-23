@@ -14,48 +14,45 @@ namespace config {
 
 py::object getObjectForConfigValue(const ConfigValue& value) {
   switch (value.getType()) {
-    case ConfigValType::Unknown:
+    case ConfigStoredType::Unknown:
       return py::cast(nullptr);
-    case ConfigValType::Boolean:
+    case ConfigStoredType::Boolean:
       return py::cast(value.get<bool>());
-    case ConfigValType::Integer:
+    case ConfigStoredType::Integer:
       return py::cast(value.get<int>());
-    case ConfigValType::Double:
+    case ConfigStoredType::Double:
       return py::cast(value.get<double>());
-    case ConfigValType::String:
+    case ConfigStoredType::String:
       return py::cast(value.get<std::string>());
-    case ConfigValType::MagnumVec2:
+    case ConfigStoredType::MagnumVec2:
       return py::cast(value.get<Mn::Vector2>());
-    case ConfigValType::MagnumVec3:
+    case ConfigStoredType::MagnumVec3:
       return py::cast(value.get<Mn::Vector3>());
-    case ConfigValType::MagnumVec4:
+    case ConfigStoredType::MagnumVec4:
       return py::cast(value.get<Mn::Vector4>());
-    case ConfigValType::MagnumMat3:
+    case ConfigStoredType::MagnumMat3:
       return py::cast(value.get<Mn::Matrix3>());
-    case ConfigValType::MagnumMat4:
-      return py::cast(value.get<Mn::Matrix4>());
-    case ConfigValType::MagnumQuat:
+    case ConfigStoredType::MagnumQuat:
       return py::cast(value.get<Mn::Quaternion>());
-    case ConfigValType::MagnumRad:
+    case ConfigStoredType::MagnumRad:
       return py::cast(value.get<Mn::Rad>());
   }
   return py::cast(nullptr);
 }
 
 void initConfigBindings(py::module& m) {
-  py::enum_<ConfigValType>(m, "ConfigValType")
-      .value("Unknown", ConfigValType::Unknown)
-      .value("Boolean", ConfigValType::Boolean)
-      .value("Integer", ConfigValType::Integer)
-      .value("Float", ConfigValType::Double)
-      .value("String", ConfigValType::String)
-      .value("MagnumVec2", ConfigValType::MagnumVec2)
-      .value("MagnumVec3", ConfigValType::MagnumVec3)
-      .value("MagnumVec4", ConfigValType::MagnumVec4)
-      .value("MagnumMat3", ConfigValType::MagnumMat3)
-      .value("MagnumMat4", ConfigValType::MagnumMat4)
-      .value("MagnumQuat", ConfigValType::MagnumQuat)
-      .value("MagnumRad", ConfigValType::MagnumRad);
+  py::enum_<ConfigStoredType>(m, "ConfigStoredType")
+      .value("Unknown", ConfigStoredType::Unknown)
+      .value("Boolean", ConfigStoredType::Boolean)
+      .value("Integer", ConfigStoredType::Integer)
+      .value("Float", ConfigStoredType::Double)
+      .value("String", ConfigStoredType::String)
+      .value("MagnumVec2", ConfigStoredType::MagnumVec2)
+      .value("MagnumVec3", ConfigStoredType::MagnumVec3)
+      .value("MagnumVec4", ConfigStoredType::MagnumVec4)
+      .value("MagnumMat3", ConfigStoredType::MagnumMat3)
+      .value("MagnumQuat", ConfigStoredType::MagnumQuat)
+      .value("MagnumRad", ConfigStoredType::MagnumRad);
 
   py::class_<Configuration, Configuration::ptr>(m, "Configuration")
       .def(py::init(&Configuration::create<>))
@@ -132,14 +129,8 @@ void initConfigBindings(py::module& m) {
           R"(Set the value specified by given string key to be specified Magnum::Matrix3 value)",
           "key"_a, "value"_a)
       .def(
-          "set",
-          [](Configuration& self, const std::string& key,
-             const Magnum::Matrix4& val) { self.set(key, val); },
-          R"(Set the value specified by given string key to be specified Magnum::Matrix4 value)",
-          "key"_a, "value"_a)
-      .def(
           "get_type", &Configuration::getType,
-          R"(Retrieves the ConfigValType of the value referred to by the passed key.)")
+          R"(Retrieves the ConfigStoredType of the value referred to by the passed key.)")
 
       .def(
           "get_as_string", &Configuration::getAsString,
@@ -147,7 +138,7 @@ void initConfigBindings(py::module& m) {
 
       .def(
           "get_keys_by_type", &Configuration::getStoredKeys,
-          R"(Retrieves a list of all the keys of values of the specified types. Takes ConfigValType
+          R"(Retrieves a list of all the keys of values of the specified types. Takes ConfigStoredType
           enum value as argument.)",
           "value_type"_a)
 
@@ -167,7 +158,7 @@ void initConfigBindings(py::module& m) {
           "key"_a)
       .def(
           "has_key_to_type", &Configuration::hasKeyOfType,
-          R"(Returns whether passed key points to a value of specified ConfigValType)",
+          R"(Returns whether passed key points to a value of specified ConfigStoredType)",
           "key"_a, "value_type"_a)
       .def(
           "remove",

@@ -19,7 +19,7 @@ namespace config {
 namespace {
 
 // enum class hash function - uses enum value as hash
-struct ConfigValTypeHash {
+struct ConfigStoredTypeHash {
   template <typename T>
   std::size_t operator()(T t) const {
     return static_cast<std::size_t>(t);
@@ -27,103 +27,78 @@ struct ConfigValTypeHash {
 };
 
 /**
- * @brief Constant map to provide mappings from @ref ConfigValType enum tags
+ * @brief Constant map to provide mappings from @ref ConfigStoredType enum tags
  * to string.  All supported types should have mappings in this map
  */
-const std::unordered_map<ConfigValType, std::string, ConfigValTypeHash>
-    ConfigTypeNamesMap = {{ConfigValType::Unknown, "Unknown"},
-                          {ConfigValType::Boolean, "bool"},
-                          {ConfigValType::Integer, "int"},
-                          {ConfigValType::Double, "double"},
-                          {ConfigValType::MagnumVec2, "Mn::Vector2"},
-                          {ConfigValType::MagnumVec3, "Mn::Vector3"},
-                          {ConfigValType::MagnumVec4, "Mn::Vector4"},
-                          {ConfigValType::MagnumMat3, "Mn::Matrix3"},
-                          {ConfigValType::MagnumMat4, "Mn::Matrix4"},
-                          {ConfigValType::MagnumQuat, "Mn::Quaternion"},
-                          {ConfigValType::MagnumRad, "Mn::Rad"},
-                          {ConfigValType::String, "std::string"}};
+const std::unordered_map<ConfigStoredType, std::string, ConfigStoredTypeHash>
+    ConfigTypeNamesMap = {{ConfigStoredType::Unknown, "Unknown"},
+                          {ConfigStoredType::Boolean, "bool"},
+                          {ConfigStoredType::Integer, "int"},
+                          {ConfigStoredType::Double, "double"},
+                          {ConfigStoredType::MagnumVec2, "Mn::Vector2"},
+                          {ConfigStoredType::MagnumVec3, "Mn::Vector3"},
+                          {ConfigStoredType::MagnumVec4, "Mn::Vector4"},
+                          {ConfigStoredType::MagnumMat3, "Mn::Matrix3"},
+                          {ConfigStoredType::MagnumQuat, "Mn::Quaternion"},
+                          {ConfigStoredType::MagnumRad, "Mn::Rad"},
+                          {ConfigStoredType::String, "std::string"}};
 
 // force this functionality to remain local to this file.
 
 // free functions for non-trivial types control.
-// ConfigValue._data is a T* for these types.
 template <class T>
 void copyConstructorFunc(
     const char* const src,
     char* const dst) {  // NOLINT(readability-non-const-parameter)
-  new (dst) T* {new T{**reinterpret_cast<const T* const*>(src)}};
+  new (dst) T{*reinterpret_cast<const T*>(src)};
 }
 template <class T>
 void moveConstructorFunc(
     char* const src,    // NOLINT(readability-non-const-parameter)
     char* const dst) {  // NOLINT(readability-non-const-parameter)
-  new (dst) T* {std::move(*reinterpret_cast<T**>(src))};
+  new (dst) T{std::move(*reinterpret_cast<T*>(src))};
 }
 template <class T>
 void destructorFunc(
     char* const src) {  // NOLINT(readability-non-const-parameter)
-  (*reinterpret_cast<T**>(src))->~T();
-}
-template <class T>
-bool comparisonFunc(const char* const a, const char* const b) {
-  return **reinterpret_cast<const T* const*>(a) ==
-         **reinterpret_cast<const T* const*>(b);
+  reinterpret_cast<T*>(src)->~T();
 }
 
 /**
- * @brief This struct handles pointer-to-data typed (i.e.non-trivial types)
- * ConfigValues by providing a copy constructor, a move constructor and a
- * destructor as function pointers that populate the _data array with the
- * pointer to the instantiated object.
+ * @brief This struct handles non-trivial types by providing a copy constructor,
+ * a move constructor and a destructor as function pointers.
  */
-struct PointerBasedTypeHandler {
+struct NonTrivialTypeHandler {
   void (*copier)(const char* const, char* const);
   void (*mover)(char* const, char* const);
   void (*destructor)(char* const);
-  bool (*comparator)(const char* const, const char* const);
 
   template <class T>
-  static constexpr PointerBasedTypeHandler make() {
-    return {copyConstructorFunc<T>, moveConstructorFunc<T>, destructorFunc<T>,
-            comparisonFunc<T>};
+  static constexpr NonTrivialTypeHandler make() {
+    return {copyConstructorFunc<T>, moveConstructorFunc<T>, destructorFunc<T>};
   }
 };
 
 /**
- * @brief Table of @ref PointerBasedTypeHandler s for the types the @ref
- * ConfigValue supports.
- *
- * This array will be indexed by consuming ConfigValType -
- * int(ConfigValType::_storedAsAPointer.
- *
- * There needs to be an entry in this table for each pointer-based data
- * type, in sequence as specified in @ref ConfigValType enum following
- * _storedAsAPointer, and each non-trivial type specified in @ref ConfigValType
- * enum, following the pattern for strings (all non-trivial types are by default
- * pointer-based)
+ * @brief Table of @ref NonTrivialTypeHandler s for the types this @ref
+ * ConfigValue support. There needs to be an entry in this table for each
+ * non-trivial type specified in @ref ConfigStoredType enum, following the
+ * pattern for strings.
  */
-constexpr PointerBasedTypeHandler pointerBasedTypeHandlers[]{
-    //_storedAsAPointer start
-    PointerBasedTypeHandler::make<Mn::Vector3>(),
-    PointerBasedTypeHandler::make<Mn::Vector4>(),
-    PointerBasedTypeHandler::make<Mn::Matrix3>(),
-    PointerBasedTypeHandler::make<Mn::Matrix4>(),
-    PointerBasedTypeHandler::make<Mn::Quaternion>(),
-    //_nonTrivialTypes start
-    PointerBasedTypeHandler::make<std::string>(),
-};
+constexpr NonTrivialTypeHandler nonTrivialTypeHandlers[]{
+    NonTrivialTypeHandler::make<std::string>()};
 
-PointerBasedTypeHandler pointerBasedConfigTypeHandlerFor(ConfigValType type) {
-  const std::size_t i = int(type) - int(ConfigValType::_storedAsAPointer);
+NonTrivialTypeHandler nonTrivialConfigStoredTypeHandlerFor(
+    ConfigStoredType type) {
+  const std::size_t i = int(type) - int(ConfigStoredType::_nonTrivialTypes);
   CORRADE_INTERNAL_ASSERT(i <
-                          Cr::Containers::arraySize(pointerBasedTypeHandlers));
-  return pointerBasedTypeHandlers[i];
+                          Cr::Containers::arraySize(nonTrivialTypeHandlers));
+  return nonTrivialTypeHandlers[i];
 }
 
 }  // namespace
 
-std::string getNameForStoredType(const ConfigValType& value) {
+std::string getNameForStoredType(const ConfigStoredType& value) {
   auto valName = ConfigTypeNamesMap.find(value);
   if (valName != ConfigTypeNamesMap.end()) {
     return valName->second;
@@ -131,7 +106,7 @@ std::string getNameForStoredType(const ConfigValType& value) {
   // this should happen only if newly supported type has not been added to
   // ConfigTypeNamesMap
   return Cr::Utility::formatString(
-      "ConfigValType with value {} not currently supported fully as a type "
+      "ConfigStoredType with value {} not currently supported fully as a type "
       "for a ConfigValue",
       static_cast<int>(value));
 }
@@ -151,8 +126,8 @@ ConfigValue::~ConfigValue() {
 void ConfigValue::copyValueFrom(const ConfigValue& otr) {
   // set new type
   _type = otr._type;
-  if (isConfigValTypePointerBased(otr._type)) {
-    pointerBasedConfigTypeHandlerFor(_type).copier(otr._data, _data);
+  if (isConfigStoredTypeNonTrivial(otr._type)) {
+    nonTrivialConfigStoredTypeHandlerFor(_type).copier(otr._data, _data);
   } else {
     std::memcpy(_data, otr._data, sizeof(_data));
   }
@@ -161,8 +136,8 @@ void ConfigValue::copyValueFrom(const ConfigValue& otr) {
 void ConfigValue::moveValueFrom(ConfigValue&& otr) {
   // set new type
   _type = otr._type;
-  if (isConfigValTypePointerBased(otr._type)) {
-    pointerBasedConfigTypeHandlerFor(_type).mover(otr._data, _data);
+  if (isConfigStoredTypeNonTrivial(otr._type)) {
+    nonTrivialConfigStoredTypeHandlerFor(_type).mover(otr._data, _data);
   } else {
     // moving character buffer ends up not being much better than copy
     std::memcpy(_data, otr._data, sizeof(_data));
@@ -170,10 +145,10 @@ void ConfigValue::moveValueFrom(ConfigValue&& otr) {
 }
 
 void ConfigValue::deleteCurrentValue() {
-  if (isConfigValTypePointerBased(_type)) {
-    pointerBasedConfigTypeHandlerFor(_type).destructor(_data);
+  if (isConfigStoredTypeNonTrivial(_type)) {
+    nonTrivialConfigStoredTypeHandlerFor(_type).destructor(_data);
   }
-  _type = ConfigValType::Unknown;
+  _type = ConfigStoredType::Unknown;
 }
 
 ConfigValue& ConfigValue::operator=(const ConfigValue& otr) {
@@ -190,66 +165,38 @@ ConfigValue& ConfigValue::operator=(ConfigValue&& otr) noexcept {
   return *this;
 }  // ConfigValue::operator=
 
-bool operator==(const ConfigValue& a, const ConfigValue& b) {
-  // Verify types are equal
-  if (a._type != b._type) {
-    return false;
-  }
-  // Pointer-backed data types need to have _data dereffed
-  if (isConfigValTypePointerBased(a._type)) {
-    // Pointer-backed data (i.e. nontrival types)
-    if (a._type == ConfigValType::String) {
-      return a.get<std::string>() == b.get<std::string>();
-    } else {
-      // Shouldn't get here
-      CORRADE_ASSERT_UNREACHABLE(
-          "Unknown/unsupported Type in ConfigValue equality check", false);
-    }
-  }
-
-  // Trivial type : a._data holds the actual value
-  // _data array will always hold only legal data, since a ConfigValue should
-  // never change type.
-  return std::equal(std::begin(a._data), std::end(a._data),
-                    std::begin(b._data));
-}
-
-bool operator!=(const ConfigValue& a, const ConfigValue& b) {
-  return !(a == b);
-}
-
 std::string ConfigValue::getAsString() const {
   switch (_type) {
-    case ConfigValType::Unknown: {
+    case ConfigStoredType::Unknown: {
       return "Undefined value/Unknown type";
     }
-    case ConfigValType::Boolean: {
+    case ConfigStoredType::Boolean: {
       return (get<bool>() ? "True" : "False");
     }
-    case ConfigValType::Integer: {
+    case ConfigStoredType::Integer: {
       return std::to_string(get<int>());
     }
-    case ConfigValType::Double: {
+    case ConfigStoredType::Double: {
       return std::to_string(get<double>());
     }
-    case ConfigValType::String: {
+    case ConfigStoredType::String: {
       return get<std::string>();
     }
 
-    case ConfigValType::MagnumVec2: {
+    case ConfigStoredType::MagnumVec2: {
       auto v = get<Mn::Vector2>();
       return Cr::Utility::formatString("[{} {}]", v.x(), v.y());
     }
-    case ConfigValType::MagnumVec3: {
+    case ConfigStoredType::MagnumVec3: {
       auto v = get<Mn::Vector3>();
       return Cr::Utility::formatString("[{} {} {}]", v.x(), v.y(), v.z());
     }
-    case ConfigValType::MagnumVec4: {
+    case ConfigStoredType::MagnumVec4: {
       auto v = get<Mn::Vector4>();
       return Cr::Utility::formatString("[{} {} {} {}]", v.x(), v.y(), v.z(),
                                        v.w());
     }
-    case ConfigValType::MagnumMat3: {
+    case ConfigStoredType::MagnumMat3: {
       auto m = get<Mn::Matrix3>();
       std::string res = "[";
       for (int i = 0; i < m.Size; ++i) {
@@ -260,24 +207,13 @@ std::string ConfigValue::getAsString() const {
       Cr::Utility::formatInto(res, res.length(), "]");
       return res;
     }
-    case ConfigValType::MagnumMat4: {
-      auto m = get<Mn::Matrix4>();
-      std::string res = "[";
-      for (int i = 0; i < m.Size; ++i) {
-        auto v = m.row(i);
-        Cr::Utility::formatInto(res, res.length(), "[{} {} {} {}]", v.x(),
-                                v.y(), v.z(), v.w());
-      }
-      Cr::Utility::formatInto(res, res.length(), "]");
-      return res;
-    }
-    case ConfigValType::MagnumQuat: {
+    case ConfigStoredType::MagnumQuat: {
       auto q = get<Mn::Quaternion>();
       auto qv = q.vector();
       return Cr::Utility::formatString("{} [{} {} {}]", q.scalar(), qv.x(),
                                        qv.y(), qv.z());
     }
-    case ConfigValType::MagnumRad: {
+    case ConfigStoredType::MagnumRad: {
       auto r = get<Mn::Rad>();
       return std::to_string(r.operator float());
     }
@@ -287,42 +223,64 @@ std::string ConfigValue::getAsString() const {
   }  // switch
 }  // ConfigValue::getAsString
 
+bool operator==(const ConfigValue& a, const ConfigValue& b) {
+  if (a._type != b._type) {
+    return false;
+  }
+  // Types are equal, check values
+  // if trivial type, compare data arrays
+  if (a._type < ConfigStoredType::_nonTrivialTypes) {
+    return std::equal(std::begin(a._data), std::end(a._data),
+                      std::begin(b._data));
+  } else {
+    // Nontrivial, get values as appropriate
+    if (a._type == ConfigStoredType::String) {
+      return a.get<std::string>() == b.get<std::string>();
+    } else {
+      // Shouldn't get here
+      CORRADE_ASSERT_UNREACHABLE(
+          "Unknown/unsupported Type in ConfigValue equality check", false);
+    }
+  }
+}
+
+bool operator!=(const ConfigValue& a, const ConfigValue& b) {
+  return !(a == b);
+}
+
 io::JsonGenericValue ConfigValue::writeToJsonObject(
     io::JsonAllocator& allocator) const {
   // unknown is checked before this function is called, so does not need support
   switch (getType()) {
-    case ConfigValType::Boolean: {
+    case ConfigStoredType::Boolean: {
       return io::toJsonValue(get<bool>(), allocator);
     }
-    case ConfigValType::Integer: {
+    case ConfigStoredType::Integer: {
       return io::toJsonValue(get<int>(), allocator);
     }
-    case ConfigValType::Double: {
+    case ConfigStoredType::Double: {
       return io::toJsonValue(get<double>(), allocator);
     }
-    case ConfigValType::MagnumVec2: {
+    case ConfigStoredType::MagnumVec2: {
       return io::toJsonValue(get<Mn::Vector2>(), allocator);
     }
-    case ConfigValType::MagnumVec3: {
+    case ConfigStoredType::MagnumVec3: {
       return io::toJsonValue(get<Mn::Vector3>(), allocator);
     }
-    case ConfigValType::MagnumVec4: {
+    case ConfigStoredType::MagnumVec4: {
       return io::toJsonValue(get<Mn::Vector4>(), allocator);
     }
-    case ConfigValType::MagnumMat3: {
+    case ConfigStoredType::MagnumMat3: {
       return io::toJsonValue(get<Mn::Matrix3>(), allocator);
     }
-    case ConfigValType::MagnumMat4: {
-      return io::toJsonValue(get<Mn::Matrix4>(), allocator);
-    }
-    case ConfigValType::MagnumQuat: {
+    case ConfigStoredType::MagnumQuat: {
       return io::toJsonValue(get<Mn::Quaternion>(), allocator);
     }
-    case ConfigValType::MagnumRad: {
+    case ConfigStoredType::MagnumRad: {
       auto r = get<Mn::Rad>();
       return io::toJsonValue((r.operator float()), allocator);
     }
-    case ConfigValType::String: {
+    case ConfigStoredType::String: {
       return io::toJsonValue(get<std::string>(), allocator);
     }
     default:
@@ -335,29 +293,27 @@ bool ConfigValue::putValueInConfigGroup(
     const std::string& key,
     Cr::Utility::ConfigurationGroup& cfg) const {
   switch (_type) {
-    case ConfigValType::Unknown:
+    case ConfigStoredType::Unknown:
       return false;
-    case ConfigValType::Boolean:
+    case ConfigStoredType::Boolean:
       return cfg.setValue(key, get<bool>());
-    case ConfigValType::Integer:
+    case ConfigStoredType::Integer:
       return cfg.setValue(key, get<int>());
-    case ConfigValType::Double:
+    case ConfigStoredType::Double:
       return cfg.setValue(key, get<double>());
-    case ConfigValType::String:
+    case ConfigStoredType::String:
       return cfg.setValue(key, get<std::string>());
-    case ConfigValType::MagnumVec2:
+    case ConfigStoredType::MagnumVec2:
       return cfg.setValue(key, get<Mn::Vector2>());
-    case ConfigValType::MagnumVec3:
+    case ConfigStoredType::MagnumVec3:
       return cfg.setValue(key, get<Mn::Vector3>());
-    case ConfigValType::MagnumVec4:
+    case ConfigStoredType::MagnumVec4:
       return cfg.setValue(key, get<Mn::Vector4>());
-    case ConfigValType::MagnumMat3:
+    case ConfigStoredType::MagnumMat3:
       return cfg.setValue(key, get<Mn::Matrix3>());
-    case ConfigValType::MagnumMat4:
-      return cfg.setValue(key, get<Mn::Matrix4>());
-    case ConfigValType::MagnumQuat:
+    case ConfigStoredType::MagnumQuat:
       return cfg.setValue(key, get<Mn::Quaternion>());
-    case ConfigValType::MagnumRad:
+    case ConfigStoredType::MagnumRad:
       return cfg.setValue(key, get<Mn::Rad>());
     default:
       CORRADE_ASSERT_UNREACHABLE(
@@ -366,7 +322,7 @@ bool ConfigValue::putValueInConfigGroup(
   }  // switch
 }  // ConfigValue::putValueInConfigGroup
 
-Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValType& value) {
+Mn::Debug& operator<<(Mn::Debug& debug, const ConfigStoredType& value) {
   return debug << "Type:" << getNameForStoredType(value);
 }
 
@@ -421,14 +377,14 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
 
           // Check if this configuration has pre-defined field with given key
           if (hasValue(key)) {
-            ConfigValType valType = get(key).getType();
-            if (valType == ConfigValType::MagnumQuat) {
+            ConfigStoredType valType = get(key).getType();
+            if (valType == ConfigStoredType::MagnumQuat) {
               // if predefined object is neither
               Mn::Quaternion val{};
               if (io::fromJsonValue(obj, val)) {
                 set(key, val);
               }
-            } else if (valType == ConfigValType::MagnumVec4) {
+            } else if (valType == ConfigStoredType::MagnumVec4) {
               // if object exists already @ key and its type is Vector4
               Mn::Vector4 val{};
               if (io::fromJsonValue(obj, val)) {

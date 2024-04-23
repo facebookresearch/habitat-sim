@@ -27,13 +27,10 @@ namespace config {
 /**
  * @brief This enum lists every type of value that can be currently stored
  * directly in an @ref esp::core::config::Configuration.  All supported types
- * should have entries in this enum class. All pointer-backed types (i.e. data
- * larger than ConfigValue::_data array sizee) should have their enums placed
- * after @p _storedAsAPointer tag. All non-trivial types should have their enums
- * placed below @p _nonTrivialTypes tag. Any small, trivially copyable types
- * should be placed before @p _storedAsAPointer tag.
+ * should have entries in this enum class.  All non-trivial types should have
+ * their enums placed below @p _nonTrivialTypes tag.
  */
-enum class ConfigValType {
+enum class ConfigStoredType {
   /**
    * @brief Unknown type
    */
@@ -47,191 +44,163 @@ enum class ConfigValType {
    */
   Integer,
   /**
-   * @brief Magnum::Rad angle type
-   */
-  MagnumRad,
-  /**
    * @brief double type
    */
   Double,
-
   /**
    * @brief Magnum::Vector2 type
    */
   MagnumVec2,
-
-  // Types stored as a pointer.  All non-trivial types must also be placed after
-  // this marker.
-  _storedAsAPointer,
   /**
-   * @brief Magnum::Vector3 type. All types of size greater than _data size must
-   * be placed after this marker, either before or after String, depending on if
-   * they are trivially copyable or not.
+   * @brief Magnum::Vector3 type
    */
-  MagnumVec3 = _storedAsAPointer,
+  MagnumVec3,
   /**
    * @brief Magnum::Vector4 type
    */
   MagnumVec4,
   /**
-   * @brief Magnum::Quaternion type
-   */
-  MagnumQuat,
-  /**
    * @brief Magnum::Matrix3 (3x3) type
    */
   MagnumMat3,
   /**
-   * @brief Magnum::Matrix4 (4x4) type
+   * @brief Magnum::Quaternion type
    */
-  MagnumMat4,
+  MagnumQuat,
+  /**
+   * @brief Magnum::Rad angle type
+   */
+  MagnumRad,
 
-  // These types are not trivially copyable. All non-trivial types are by
-  // default stored as pointers in ConfigValue::_data array.
   _nonTrivialTypes,
   /**
    * @brief All enum values of nontrivial types must be added after @p String .
    */
   String = _nonTrivialTypes,
-};  // enum class ConfigValType
+};
 
 /**
- * @brief Retrieve a string description of the passed @ref ConfigValType enum
+ * @brief Retrieve a string description of the passed @ref ConfigStoredType enum
  * value.
  */
-std::string getNameForStoredType(const ConfigValType& value);
+std::string getNameForStoredType(const ConfigStoredType& value);
 
 /**
- * @brief Quick check to see if type is stored as a pointer in the data or not
- * (i.e. the type is trivially copyable or not)
+ * @brief Quick check to see if type is trivial or not.
  */
-constexpr bool isConfigValTypePointerBased(ConfigValType type) {
+constexpr bool isConfigStoredTypeNonTrivial(ConfigStoredType type) {
   return static_cast<int>(type) >=
-         static_cast<int>(ConfigValType::_storedAsAPointer);
+         static_cast<int>(ConfigStoredType::_nonTrivialTypes);
 }
-/**
- * @brief Quick check to see if type is trivially copyable or not.
- */
-constexpr bool isConfigValTypeNonTrivial(ConfigValType type) {
-  return static_cast<int>(type) >=
-         static_cast<int>(ConfigValType::_nonTrivialTypes);
-}
+
 /**
  * @brief Function template to return type enum for specified type. All
  * supported types should have a specialization of this function handling their
- * type to @ref ConfigValType enum tags mapping.
+ * type to @ref ConfigStoredType enum tags mapping.
  */
-template <typename T>
-constexpr ConfigValType configValTypeFor() {
+template <class T>
+constexpr ConfigStoredType configStoredTypeFor() {
   static_assert(sizeof(T) == 0, "unsupported type ");
   return {};
 }
 
 /**
- * @brief Returns @ref ConfigValType::Boolean type enum for specified type
+ * @brief Returns @ref ConfigStoredType::Boolean type enum for specified type
  */
 template <>
-constexpr ConfigValType configValTypeFor<bool>() {
-  return ConfigValType::Boolean;
+constexpr ConfigStoredType configStoredTypeFor<bool>() {
+  return ConfigStoredType::Boolean;
 }
 /**
- * @brief Returns @ref ConfigValType::Integer type enum for specified type
+ * @brief Returns @ref ConfigStoredType::Integer type enum for specified type
  */
 template <>
-constexpr ConfigValType configValTypeFor<int>() {
-  return ConfigValType::Integer;
+constexpr ConfigStoredType configStoredTypeFor<int>() {
+  return ConfigStoredType::Integer;
 }
 /**
- * @brief Returns @ref ConfigValType::Double type enum for specified type
+ * @brief Returns @ref ConfigStoredType::Double type enum for specified type
  */
 template <>
-constexpr ConfigValType configValTypeFor<double>() {
-  return ConfigValType::Double;
+constexpr ConfigStoredType configStoredTypeFor<double>() {
+  return ConfigStoredType::Double;
 }
 /**
- * @brief Returns @ref ConfigValType::String type enum for specified type
+ * @brief Returns @ref ConfigStoredType::String type enum for specified type
  */
 
 template <>
-constexpr ConfigValType configValTypeFor<std::string>() {
-  return ConfigValType::String;
+constexpr ConfigStoredType configStoredTypeFor<std::string>() {
+  return ConfigStoredType::String;
 }
 /**
- * @brief Returns @ref ConfigValType::MagnumVec2 type enum for specified type
+ * @brief Returns @ref ConfigStoredType::MagnumVec2 type enum for specified type
  */
 template <>
-constexpr ConfigValType configValTypeFor<Mn::Vector2>() {
-  return ConfigValType::MagnumVec2;
+constexpr ConfigStoredType configStoredTypeFor<Mn::Vector2>() {
+  return ConfigStoredType::MagnumVec2;
 }
 /**
- * @brief Returns @ref ConfigValType::MagnumVec3 type enum for specified type
+ * @brief Returns @ref ConfigStoredType::MagnumVec3 type enum for specified type
  */
 template <>
-constexpr ConfigValType configValTypeFor<Mn::Vector3>() {
-  return ConfigValType::MagnumVec3;
+constexpr ConfigStoredType configStoredTypeFor<Mn::Vector3>() {
+  return ConfigStoredType::MagnumVec3;
 }
 
 /**
- * @brief Returns @ref ConfigValType::MagnumVec3 type enum for specified type
+ * @brief Returns @ref ConfigStoredType::MagnumVec3 type enum for specified type
  */
 template <>
-constexpr ConfigValType configValTypeFor<Mn::Color3>() {
-  return ConfigValType::MagnumVec3;
+constexpr ConfigStoredType configStoredTypeFor<Mn::Color3>() {
+  return ConfigStoredType::MagnumVec3;
 }
 
 /**
- * @brief Returns @ref ConfigValType::MagnumVec4 type enum for specified type
+ * @brief Returns @ref ConfigStoredType::MagnumVec4 type enum for specified type
  */
 template <>
-constexpr ConfigValType configValTypeFor<Mn::Vector4>() {
-  return ConfigValType::MagnumVec4;
+constexpr ConfigStoredType configStoredTypeFor<Mn::Vector4>() {
+  return ConfigStoredType::MagnumVec4;
 }
 
 /**
- * @brief Returns @ref ConfigValType::MagnumVec4 type enum for specified type
+ * @brief Returns @ref ConfigStoredType::MagnumVec4 type enum for specified type
  */
 template <>
-constexpr ConfigValType configValTypeFor<Mn::Color4>() {
-  return ConfigValType::MagnumVec4;
+constexpr ConfigStoredType configStoredTypeFor<Mn::Color4>() {
+  return ConfigStoredType::MagnumVec4;
 }
 
 /**
- * @brief Returns @ref ConfigValType::MagnumMat3 type enum for specified type
+ * @brief Returns @ref ConfigStoredType::MagnumMat3 type enum for specified type
  */
 template <>
-constexpr ConfigValType configValTypeFor<Mn::Matrix3>() {
-  return ConfigValType::MagnumMat3;
+constexpr ConfigStoredType configStoredTypeFor<Mn::Matrix3>() {
+  return ConfigStoredType::MagnumMat3;
 }
 
 /**
- * @brief Returns @ref ConfigValType::MagnumMat4 type enum for specified type
+ * @brief Returns @ref ConfigStoredType::MagnumQuat type enum for specified type
  */
 template <>
-constexpr ConfigValType configValTypeFor<Mn::Matrix4>() {
-  return ConfigValType::MagnumMat4;
+constexpr ConfigStoredType configStoredTypeFor<Mn::Quaternion>() {
+  return ConfigStoredType::MagnumQuat;
 }
 
 /**
- * @brief Returns @ref ConfigValType::MagnumQuat type enum for specified type
+ * @brief Returns @ref ConfigStoredType::MagnumRad type enum for specified type
  */
 template <>
-constexpr ConfigValType configValTypeFor<Mn::Quaternion>() {
-  return ConfigValType::MagnumQuat;
+constexpr ConfigStoredType configStoredTypeFor<Mn::Rad>() {
+  return ConfigStoredType::MagnumRad;
 }
 
 /**
- * @brief Returns @ref ConfigValType::MagnumRad type enum for specified type
- */
-template <>
-constexpr ConfigValType configValTypeFor<Mn::Rad>() {
-  return ConfigValType::MagnumRad;
-}
-
-/**
- * @brief Stream operator to support display of @ref ConfigValType enum tags
+ * @brief Stream operator to support display of @ref ConfigStoredType enum tags
  */
 MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug,
-                                    const ConfigValType& value);
+                                    const ConfigStoredType& value);
 
 /**
  * @brief This class uses an anonymous tagged union to store values of different
@@ -242,14 +211,16 @@ class ConfigValue {
   /**
    * @brief This is the type of the data represented in this ConfigValue.
    */
-  ConfigValType _type{ConfigValType::Unknown};
+  ConfigStoredType _type{ConfigStoredType::Unknown};
 
   /**
    * @brief The data this ConfigValue holds.
-   * Aligns to individual 8-byte bounds. The _type is 4 bytes, 4 bytes of
-   * padding (on 64 bit machines) and 36 bytes for data.
+   * Aligns to individual 8-byte bounds. The pair the Configuration map holds
+   * consists of a std::string key (sizeof:24 bytes) and a ConfigValue. The
+   * _type is 4 bytes, 4 bytes of padding (on 64 bit machines) and 48 bytes for
+   * data.
    */
-  alignas(8) char _data[2 * 4] = {0};
+  alignas(8) char _data[6 * 8] = {0};
 
   /**
    * @brief Copy the passed @p val into this ConfigValue.  If this @ref
@@ -303,7 +274,7 @@ class ConfigValue {
    * @brief Whether this @ref ConfigValue is valid.
    * @return Whether or not the specified type of this @ref ConfigValue is known.
    */
-  bool isValid() const { return _type != ConfigValType::Unknown; }
+  bool isValid() const { return _type != ConfigStoredType::Unknown; }
 
   /**
    * @brief Write this ConfigValue to an appropriately configured json object.
@@ -312,33 +283,26 @@ class ConfigValue {
 
   /**
    * @brief Set the passed @p value as the data for this @ref ConfigValue, while also setting the appropriate type.
-   * @tparam The type of the @p value being set. Must be a handled type as specified by @ref ConfigValType.
+   * @tparam The type of the @p value being set. Must be a handled type as specified by @ref ConfigStoredType.
    * @param value The value to store in this @ref ConfigValue
    */
-  template <typename T>
+  template <class T>
   void set(const T& value) {
     deleteCurrentValue();
     // This will blow up at compile time if given type is not supported
-    _type = configValTypeFor<T>();
+    _type = configStoredTypeFor<T>();
     // These asserts are checking the integrity of the support for T's type, and
     // will fire if conditions are not met.
 
-    // This fails if we added a new type into @ref ConfigValType enum improperly
-    // (trivial type added after entry ConfigValType::_nonTrivialTypes, or
-    // vice-versa)
-    static_assert(isConfigValTypeNonTrivial(configValTypeFor<T>()) !=
+    // This fails if we added a new type into @ref ConfigStoredType enum
+    // improperly (trivial type added after entry
+    // ConfigStoredType::_nonTrivialTypes, or vice-versa)
+    static_assert(isConfigStoredTypeNonTrivial(configStoredTypeFor<T>()) !=
                       std::is_trivially_copyable<T>::value,
-                  "Something's incorrect about enum placement for added type "
-                  "(type is not trivially copyable, or vice-versa)");
-
-    // This verifies that any values that are too large to be stored directly
-    // (or are already specified as non-trivial) are pointer based, while those
-    // that are trivial and small are stored directly,
-    //
+                  "Something's incorrect about enum placement for added type!");
+    // This fails if a new type was added that is too large for internal storage
     static_assert(
-        ((sizeof(T) >= sizeof(_data)) ||
-         isConfigValTypeNonTrivial(configValTypeFor<T>()) ==
-             (isConfigValTypePointerBased(configValTypeFor<T>()))),
+        sizeof(T) <= sizeof(_data),
         "ConfigValue's internal storage is too small for added type!");
     // This fails if a new type was added whose alignment does not match
     // internal storage alignment
@@ -347,25 +311,26 @@ class ConfigValue {
         "ConfigValue's internal storage improperly aligned for added type!");
 
     //_data should be destructed at this point, construct a new value
-    setInternal(value);
+    new (_data) T{value};
   }
 
   /**
    * @brief Retrieve an appropriately cast copy of the data stored in this @ref ConfigValue
    * @tparam The type the data should be cast as.
    */
-  template <typename T>
+  template <class T>
   const T& get() const {
-    ESP_CHECK(_type == configValTypeFor<T>(),
-              "Attempting to access ConfigValue of" << _type << "with type"
-                                                    << configValTypeFor<T>());
-    return getInternal<T>();
+    ESP_CHECK(_type == configStoredTypeFor<T>(),
+              "Attempting to access ConfigValue of"
+                  << _type << "with type" << configStoredTypeFor<T>());
+    auto val = [&]() { return reinterpret_cast<const T*>(this->_data); };
+    return *val();
   }
 
   /**
    * @brief Returns the current type of this @ref ConfigValue
    */
-  ConfigValType getType() const { return _type; }
+  ConfigStoredType getType() const { return _type; }
 
   /**
    * @brief Retrieve a string representation of the data held in this @ref
@@ -379,35 +344,6 @@ class ConfigValue {
   bool putValueInConfigGroup(const std::string& key,
                              Cr::Utility::ConfigurationGroup& cfg) const;
 
- private:
-  template <typename T>
-  EnableIf<isConfigValTypePointerBased(configValTypeFor<T>()), void>
-  setInternal(const T& value) {
-    new (_data) T* {new T{value}};
-  }
-
-  template <typename T>
-  EnableIf<!isConfigValTypePointerBased(configValTypeFor<T>()), void>
-  setInternal(const T& value) {
-    new (_data) T{value};
-  }
-
-  template <typename T>
-  EnableIf<isConfigValTypePointerBased(configValTypeFor<T>()), const T&>
-  getInternal() const {
-    auto val = [&]() {
-      return *reinterpret_cast<const T* const*>(this->_data);
-    };
-    return *val();
-  }
-
-  template <typename T>
-  EnableIf<!isConfigValTypePointerBased(configValTypeFor<T>()), const T&>
-  getInternal() const {
-    auto val = [&]() { return reinterpret_cast<const T*>(this->_data); };
-    return *val();
-  }
-
  public:
   /**
    * @brief Comparison
@@ -415,7 +351,7 @@ class ConfigValue {
   friend bool operator==(const ConfigValue& a, const ConfigValue& b);
 
   ESP_SMART_POINTERS(ConfigValue)
-};  // namespace config
+};  // ConfigValue
 
 /**
  * @brief Inequality Comparison
@@ -484,7 +420,7 @@ class Configuration {
    *
    * @param key The key of the value desired to be retrieved.
    * @return ConfigValue specified by key. If none exists, will be empty
-   * ConfigValue, with type @ref ConfigValType::Unknown
+   * ConfigValue, with type @ref ConfigStoredType::Unknown
    */
   ConfigValue get(const std::string& key) const {
     ValueMapType::const_iterator mapIter = valueMap_.find(key);
@@ -505,10 +441,10 @@ class Configuration {
    * found, or not of expected type, gives an error message and returns a
    * default value.
    */
-  template <typename T>
+  template <class T>
   T get(const std::string& key) const {
     ValueMapType::const_iterator mapIter = valueMap_.find(key);
-    const ConfigValType desiredType = configValTypeFor<T>();
+    const ConfigStoredType desiredType = configStoredTypeFor<T>();
     if (mapIter != valueMap_.end() &&
         (mapIter->second.getType() == desiredType)) {
       return mapIter->second.get<T>();
@@ -519,17 +455,17 @@ class Configuration {
   }
 
   /**
-   * @brief Return the @ref ConfigValType enum representing the type of the
-   * value referenced by the passed @p key or @ref ConfigValType::Unknown
+   * @brief Return the @ref ConfigStoredType enum representing the type of the
+   * value referenced by the passed @p key or @ref ConfigStoredType::Unknown
    * if unknown/unspecified.
    */
-  ConfigValType getType(const std::string& key) const {
+  ConfigStoredType getType(const std::string& key) const {
     ValueMapType::const_iterator mapIter = valueMap_.find(key);
     if (mapIter != valueMap_.end()) {
       return mapIter->second.getType();
     }
     ESP_ERROR() << "Key :" << key << "not present in configuration.";
-    return ConfigValType::Unknown;
+    return ConfigStoredType::Unknown;
   }
 
   // ****************** String Conversion ******************
@@ -582,7 +518,7 @@ class Configuration {
    * @param storedType The desired type of value whose key should be returned.
    * @return vector of string keys pointing to values of desired @p storedType
    */
-  std::vector<std::string> getStoredKeys(ConfigValType storedType) const {
+  std::vector<std::string> getStoredKeys(ConfigStoredType storedType) const {
     std::vector<std::string> keys;
     // reserve space for all keys
     keys.reserve(valueMap_.size());
@@ -658,10 +594,10 @@ class Configuration {
    * if found.  If not found, or not of expected type, gives a warning and
    * returns a default value.
    */
-  template <typename T>
+  template <class T>
   T remove(const std::string& key) {
     ValueMapType::const_iterator mapIter = valueMap_.find(key);
-    const ConfigValType desiredType = configValTypeFor<T>();
+    const ConfigStoredType desiredType = configStoredTypeFor<T>();
     if (mapIter != valueMap_.end() &&
         (mapIter->second.getType() == desiredType)) {
       valueMap_.erase(mapIter);
@@ -698,12 +634,12 @@ class Configuration {
   }
 
   /**
-   * @brief Whether passed @p key references a @ref ConfigValue of passed @ref ConfigValType @p desiredType
+   * @brief Whether passed @p key references a @ref ConfigValue of passed @ref ConfigStoredType @p desiredType
    * @param key The key to check the type of.
-   * @param desiredType the @ref ConfigValType to compare the value's type to
+   * @param desiredType the @ref ConfigStoredType to compare the value's type to
    * @return Whether @p key references a value that is of @p desiredType.
    */
-  bool hasKeyOfType(const std::string& key, ConfigValType desiredType) {
+  bool hasKeyOfType(const std::string& key, ConfigStoredType desiredType) {
     ValueMapType::const_iterator mapIter = valueMap_.find(key);
     return (mapIter != valueMap_.end() &&
             (mapIter->second.getType() == desiredType));
@@ -737,8 +673,8 @@ class Configuration {
    * @brief This method will build a map of the keys of all the config values
    * this configuration holds and the types of each of these values.
    */
-  std::unordered_map<std::string, ConfigValType> getValueTypes() const {
-    std::unordered_map<std::string, ConfigValType> res{};
+  std::unordered_map<std::string, ConfigStoredType> getValueTypes() const {
+    std::unordered_map<std::string, ConfigStoredType> res{};
     res.reserve(valueMap_.size());
     for (const auto& elem : valueMap_) {
       res[elem.first] = elem.second.getType();
@@ -769,7 +705,7 @@ class Configuration {
    * cast to the appropriate type, or nullptr if not found.
    */
 
-  template <typename T>
+  template <class T>
   std::shared_ptr<T> getSubconfigCopy(const std::string& name) const {
     static_assert(std::is_base_of<Configuration, T>::value,
                   "Configuration : Desired subconfig must be derived from "
@@ -813,7 +749,7 @@ class Configuration {
    * @return The actual pointer to the configuration having the requested
    * name, cast to the specified type.
    */
-  template <typename T>
+  template <class T>
   std::shared_ptr<T> editSubconfig(const std::string& name) {
     static_assert(std::is_base_of<Configuration, T>::value,
                   "Configuration : Desired subconfig must be derived from "
@@ -828,7 +764,7 @@ class Configuration {
    * @param name The name of the subconfiguration to add
    * @param configPtr A pointer to a subconfiguration to add.
    */
-  template <typename T>
+  template <class T>
   void setSubconfigPtr(const std::string& name, std::shared_ptr<T>& configPtr) {
     static_assert(std::is_base_of<Configuration, T>::value,
                   "Configuration : Desired subconfig must be derived from "
