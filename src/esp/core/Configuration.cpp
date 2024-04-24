@@ -345,7 +345,8 @@ int Configuration::loadOneConfigFromJson(int numConfigSettings,
   } else if (jsonObj.IsBool()) {
     set(key, jsonObj.GetBool());
   } else if (jsonObj.IsArray() && jsonObj.Size() > 0) {
-    // non-empty array of numeric values
+    // non-empty array of numeric values - first attempt to put them into a
+    // magnum vector or matrix
     if (jsonObj[0].IsNumber()) {
       // numeric vector, quaternion or matrix
       if (jsonObj.Size() == 2) {
@@ -429,36 +430,33 @@ int Configuration::loadOneConfigFromJson(int numConfigSettings,
           set(key, mat);
         }
       } else {
-        // decrement count for key:obj due to not being handled vector
-        --numConfigSettings;
-        // TODO support numeric array in JSON
-        ESP_WARNING() << "Config cell in JSON document contains key" << key
-                      << "referencing an unsupported numeric array of length :"
-                      << jsonObj.Size() << "so skipping.";
-      }
-    } else if (jsonObj[0].IsString()) {
-      // Array of strings
+        // The array does not match any currently supported magnum
+        // objects, so place in indexed subconfig of values.
+        // create a new subgroup
+        std::shared_ptr<core::config::Configuration> subGroupPtr =
+            getSubconfigCopy<core::config::Configuration>(key);
 
+        for (size_t i = 0; i < jsonObj.Size(); ++i) {
+          const std::string subKey =
+              Cr::Utility::formatString("{}_{:.02d}", key, i);
+          numConfigSettings += subGroupPtr->loadOneConfigFromJson(
+              numConfigSettings, subKey, jsonObj[i]);
+        }
+        setSubconfigPtr<core::config::Configuration>(key, subGroupPtr);
+      }
+      // value in array is a number of specified length, else it is a string, an
+      // object or a nested array
+    } else {
       // create a new subgroup
       std::shared_ptr<core::config::Configuration> subGroupPtr =
           getSubconfigCopy<core::config::Configuration>(key);
 
       for (size_t i = 0; i < jsonObj.Size(); ++i) {
-        std::string dest;
-        if (!io::fromJsonValue(jsonObj[i], dest)) {
-          ESP_ERROR() << "Failed to parse array element" << i
-                      << "in non-numeric list of values keyed by" << key
-                      << "so skipping this value.";
-        } else {
-          const std::string subKey =
-              Cr::Utility::formatString("{}_{:.02d}", key, i);
-          subGroupPtr->set(subKey, dest);
-          // Increment for each sub-config object
-          ++numConfigSettings;
-        }
+        const std::string subKey =
+            Cr::Utility::formatString("{}_{:.02d}", key, i);
+        numConfigSettings += subGroupPtr->loadOneConfigFromJson(
+            numConfigSettings, subKey, jsonObj[i]);
       }
-      // Incremented numConfigSettings for this config already.
-      // save subgroup's subgroup configuration in original config
       setSubconfigPtr<core::config::Configuration>(key, subGroupPtr);
     }
   } else if (jsonObj.IsObject()) {
@@ -470,8 +468,6 @@ int Configuration::loadOneConfigFromJson(int numConfigSettings,
     // save subgroup's subgroup configuration in original config
     setSubconfigPtr<core::config::Configuration>(key, subGroupPtr);
     //
-  } else if (jsonObj.IsArray()) {
-    // support array of values by reading each into subconfig
   } else {
     // TODO support other types?
     // decrement count for key:obj due to not being handled type
@@ -481,7 +477,7 @@ int Configuration::loadOneConfigFromJson(int numConfigSettings,
                      "skipping this key.";
   }
   return numConfigSettings;
-}  // Configuration::loadOneConfigFromJson
+}  // namespace config
 
 int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
   // count number of valid user config settings found
