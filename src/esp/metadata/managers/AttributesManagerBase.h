@@ -518,7 +518,7 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
     const attributes::AbstractAttributes::ptr& attribs,
     const io::JsonGenericValue& jsonConfig) const {
   const std::string subGroupName = "user_defined";
-  // check for user defined attributes and verify it is an object
+  // check for subGroupName tagged-json value and verify it is an object
   io::JsonGenericValue::ConstMemberIterator jsonIter =
       jsonConfig.FindMember(subGroupName.c_str());
   if (jsonIter != jsonConfig.MemberEnd()) {
@@ -526,8 +526,10 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
           << "<" << this->objectType_
           << "> : " << attribs->getSimplifiedHandle()
-          << " attributes specifies user_defined attributes but their format "
-             "is incorrect, so no user_defined attributes are loaded.";
+          << " attributes specifies `" << subGroupName
+          << "` attributes but their format "
+             "is incorrect, so no `"
+          << subGroupName << "` attributes are loaded.";
       return false;
     } else {
       // get pointer to user_defined subgroup configuration
@@ -536,15 +538,15 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
       // get json object referenced by tag subGroupName
       const io::JsonGenericValue& jsonObj = jsonIter->value;
 
-      // count number of valid user config settings found
+      // count number of valid sub-config settings found
       int numConfigSettings = subGroupPtr->loadFromJson(jsonObj);
 
-      // save as user_defined subgroup configuration
+      // save with requested tag as subgroup configuration
       attribs->setSubconfigPtr(subGroupName, subGroupPtr);
 
       return (numConfigSettings > 0);
     }
-  }  // if has user_defined tag
+  }  // if has reqyested tag
   return false;
 }  // AttributesManager<T, Access>::parseUserDefinedJsonVals
 
