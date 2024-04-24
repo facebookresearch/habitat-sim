@@ -779,7 +779,7 @@ bool Simulator::saveCurrentSceneInstance(
                 << saveFilename;
     return metadataMediator_->getSceneInstanceAttributesManager()
         ->saveManagedObjectToFile(buildCurrentStateSceneAttributes(),
-                                  saveFilename);
+                                  saveFilename, false);
   }
   return false;
 }  // saveCurrentSceneInstance

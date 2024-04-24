@@ -224,7 +224,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
 
     // Managed file-based object to save
     ManagedFileIOPtr obj = this->template getObjectInternal<T>(objectHandle);
-    return this->saveManagedObjectToFile(obj, fullFilename);
+    return this->saveManagedObjectToFile(obj, fullFilename, false);
   }  // ManagedFileBasedContainer::saveManagedObjectToFile
 
   /**
@@ -243,7 +243,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
 
   bool saveManagedObjectToFile(const ManagedFileIOPtr& managedObject,
                                const std::string& filename,
-                               bool createDir = false) const {
+                               bool createDir) const {
     // get file directory from passed desired filename, if present
     std::string fileDirectory = Cr::Utility::Path::split(filename).first();
     // if no directory given then use object's local directory
@@ -270,7 +270,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   bool saveManagedObjectToFile(const ManagedFileIOPtr& managedObject,
                                const std::string& fileDirectory,
                                const std::string& fileName,
-                               bool createDir = false) const {
+                               bool createDir) const {
     namespace FileUtil = Cr::Utility::Path;
     // construct filename candidate from given filename
     // This will make sure written file will have appropriate extension (by
