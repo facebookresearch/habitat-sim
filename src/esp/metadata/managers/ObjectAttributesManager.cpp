@@ -127,6 +127,9 @@ void ObjectAttributesManager::setValsFromJSONDoc(
   // if com is set from json, don't compute from shape, and vice versa
   objAttributes->setComputeCOMFromShape(!comIsSet);
 
+  // check for the existing of markersets
+  this->parseSubconfigJsonVals("marker_sets", objAttributes, jsonConfig);
+
   // check for user defined attributes
   this->parseUserDefinedJsonVals(objAttributes, jsonConfig);
 
