@@ -194,6 +194,26 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
    */
   bool parseUserDefinedJsonVals(
       const attributes::AbstractAttributes::ptr& attribs,
+      const io::JsonGenericValue& jsonConfig) const {
+    return this->parseSubconfigJsonVals("user_defined", attribs, jsonConfig);
+  }  // AttributesManager<T, Access>::parseUserDefinedJsonVals
+
+  /**
+   * @brief This function takes the passed json block @p jsonConfig, looks for
+   * @p subGroupName , and if found in json document and referencing an
+   * appropriately formatted object, will load the found values into a
+   * subconfig, keyed by
+   * @p subGroupName , placed into @p attribs ' subconfig tree.
+   * @param subGroupName The name of the target subgroup in the json document.
+   * Will also be the key of the resultant subconfig.
+   * @param attribs (out) an existing attributes to be modified.
+   * @param jsonConfig json document to parse
+   * @return true if tag is found, of appropriate configuration, and holds
+   * actual values.
+   */
+  bool parseSubconfigJsonVals(
+      const std::string& subGroupName,
+      const attributes::AbstractAttributes::ptr& attribs,
       const io::JsonGenericValue& jsonConfig) const;
 
   /**
@@ -514,10 +534,10 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
 }  // AttributesManager<T, Access>::createFromJsonFileOrDefaultInternal
 
 template <class T, ManagedObjectAccess Access>
-bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
+bool AttributesManager<T, Access>::parseSubconfigJsonVals(
+    const std::string& subGroupName,
     const attributes::AbstractAttributes::ptr& attribs,
     const io::JsonGenericValue& jsonConfig) const {
-  const std::string subGroupName = "user_defined";
   // check for subGroupName tagged-json value and verify it is an object
   io::JsonGenericValue::ConstMemberIterator jsonIter =
       jsonConfig.FindMember(subGroupName.c_str());
@@ -527,14 +547,15 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
           << "<" << this->objectType_
           << "> : " << attribs->getSimplifiedHandle()
           << " attributes specifies `" << subGroupName
-          << "` attributes but their format "
-             "is incorrect, so no `"
-          << subGroupName << "` attributes are loaded.";
+          << "` attributes but their format is incorrect (is not a JSON "
+             "object), so no `"
+          << subGroupName << "` configuration values will be loaded.";
       return false;
     } else {
-      // get pointer to user_defined subgroup configuration
+      // get pointer to subGroupName-specified subgroup configuration
       std::shared_ptr<Configuration> subGroupPtr =
-          attribs->getUserConfiguration();
+          attribs->getSubconfigCopy<Configuration>(subGroupName);
+
       // get json object referenced by tag subGroupName
       const io::JsonGenericValue& jsonObj = jsonIter->value;
 
@@ -548,7 +569,7 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
     }
   }  // if has reqyested tag
   return false;
-}  // AttributesManager<T, Access>::parseUserDefinedJsonVals
+}  // AttributesManager<T, Access>::parseSubconfigJsonVals
 
 template <class T, ManagedObjectAccess Access>
 bool AttributesManager<T, Access>::setFilenameFromDefaultTag(
