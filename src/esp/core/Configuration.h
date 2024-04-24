@@ -472,7 +472,7 @@ class Configuration {
 
   /**
    * @brief This method will look for the provided key, and return a string
-   * holding the object, if it is found in one of this configuration's maps
+   * holding the object, if it is found in one of this Configuration's maps
    */
   std::string getAsString(const std::string& key) const {
     ValueMapType::const_iterator mapIter = valueMap_.find(key);
@@ -480,7 +480,7 @@ class Configuration {
       return mapIter->second.getAsString();
     }
     std::string retVal = Cr::Utility::formatString(
-        "Key {} does not represent a valid value in this configuration.", key);
+        "Key {} does not represent a valid value in this Configuration.", key);
     ESP_WARNING() << retVal;
     return retVal;
   }
@@ -609,21 +609,56 @@ class Configuration {
   }
 
   /**
-   * @brief Return number of value and subconfig entries in this configuration.
+   * @brief Return number of value and subconfig entries in this Configuration.
    * This only counts each subconfiguration entry as a single entry.
    */
   int getNumEntries() const { return configMap_.size() + valueMap_.size(); }
 
   /**
-   * @brief Return number of subconfig entries in this configuration. This only
+   * @brief Return total number of value and subconfig entries held by this
+   * Configuration and all its subconfigs.
+   */
+  int getConfigTreeNumEntries() const {
+    int num = getNumEntries();
+    for (const auto& subConfig : configMap_) {
+      num += subConfig.second->getConfigTreeNumEntries();
+    }
+    return num;
+  }
+  /**
+   * @brief Return number of subconfig entries in this Configuration. This only
    * counts each subconfiguration entry as a single entry.
    */
-  int getNumSubconfigEntries() const { return configMap_.size(); }
+  int getNumSubconfigs() const { return configMap_.size(); }
 
   /**
-   * @brief returns number of values in this configuration.
+   * @brief Return size of entire subconfig tree (i.e. total number of
+   * subconfigs nested under this Configuration.)
+   */
+  int getConfigTreeNumSubconfigs() const {
+    int num = configMap_.size();
+    for (const auto& subConfig : configMap_) {
+      num += subConfig.second->getConfigTreeNumSubconfigs();
+    }
+    return num;
+  }
+
+  /**
+   * @brief returns number of values in this Configuration.
    */
   int getNumValues() const { return valueMap_.size(); }
+
+  /**
+   * @brief Return total number of values held by this Configuration and all its
+   * subconfigs.
+   */
+  int getConfigTreeNumValues() const {
+    int num = valueMap_.size();
+    for (const auto& subConfig : configMap_) {
+      num += subConfig.second->getConfigTreeNumValues();
+    }
+    return num;
+  }
 
   /**
    * @brief Returns whether this @ref Configuration has the passed @p key as a
@@ -646,7 +681,7 @@ class Configuration {
   }
 
   /**
-   * @brief Checks if passed @p key is contained in this configuration.
+   * @brief Checks if passed @p key is contained in this Configuration.
    * Returns a list of nested subconfiguration keys, in order, to the
    * configuration where the key was found, ending in the requested @p key.
    * If list is empty, @p key was not found.
@@ -660,7 +695,7 @@ class Configuration {
    * @brief Builds and returns @ref Corrade::Utility::ConfigurationGroup
    * holding the values in this esp::core::config::Configuration.
    *
-   * @return a reference to a configuration group for this configuration
+   * @return a reference to a configuration group for this Configuration
    * object.
    */
   Cr::Utility::ConfigurationGroup getConfigGroup() const {
@@ -671,7 +706,7 @@ class Configuration {
 
   /**
    * @brief This method will build a map of the keys of all the config values
-   * this configuration holds and the types of each of these values.
+   * this Configuration holds and the types of each of these values.
    */
   std::unordered_map<std::string, ConfigStoredType> getValueTypes() const {
     std::unordered_map<std::string, ConfigStoredType> res{};
@@ -741,7 +776,7 @@ class Configuration {
    * , cast to the specified type. This will create a shared pointer to a new
    * sub-configuration if none exists and return it, cast to specified type.
    *
-   * Use this function when you wish to modify this configuration's
+   * Use this function when you wish to modify this Configuration's
    * subgroup, possibly creating it in the process.
    * @tparam The type to cast the @ref esp::core::config::Configuration to. Type
    * is checked to verify that it inherits from Configuration.
@@ -801,6 +836,23 @@ class Configuration {
     auto configIter = configMap_.find(name);
     if (configIter != configMap_.end()) {
       return configIter->second->getNumEntries();
+    }
+    ESP_WARNING() << "No Subconfig found named :" << name;
+    return 0;
+  }
+
+  /**
+   * @brief Retrieve the number of entries held by the subconfig with the given
+   * name, recursing subordinate subconfigs
+   * @param name The name of the subconfig to query. If not found, returns 0
+   * with a warning.
+   * @return The number of entries in the named subconfig, including all
+   * subconfigs
+   */
+  int getSubconfigTreeNumEntries(const std::string& name) const {
+    auto configIter = configMap_.find(name);
+    if (configIter != configMap_.end()) {
+      return configIter->second->getConfigTreeNumEntries();
     }
     ESP_WARNING() << "No Subconfig found named :" << name;
     return 0;
@@ -913,6 +965,20 @@ class Configuration {
 
  protected:
   /**
+   * @brief Process passed json object into this Configuration, using passed
+   * key.
+   *
+   * @param numVals number of values/configs loaded so far
+   * @param key key to use to search @p jsonObj and also to set value or
+   * subconfig within this Configuration.
+   * @return the number of total fields successfully loaded after this function
+   * executes.
+   */
+  int loadOneConfigFromJson(int numVals,
+                            const std::string& key,
+                            const io::JsonGenericValue& jsonObj);
+
+  /**
    * @brief Friend function.  Checks if passed @p key is contained in @p
    * config. Returns the highest level where @p key was found
    * @param config The configuration to search for passed key
@@ -986,7 +1052,7 @@ MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug,
  * @brief Retrieves a shared pointer to a copy of the subConfig @ref
  * esp::core::config::Configuration that has the passed @p name . This will
  * create a pointer to a new sub-configuration if none exists already with that
- * name, but will not add this configuration to this Configuration's internal
+ * name, but will not add this Configuration to this Configuration's internal
  * storage.
  *
  * @param name The name of the configuration to retrieve.

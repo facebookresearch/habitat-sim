@@ -92,15 +92,14 @@ void CoreTest::verifySubconfigTree(int countPerDepth,
     // Check into tree
     verifySubconfigTree(countPerDepth, curDepth + 1, totalDepth, newCfg);
   }
-  CORRADE_COMPARE(config->getNumSubconfigEntries(), countPerDepth);
+  CORRADE_COMPARE(config->getNumSubconfigs(), countPerDepth);
 
 }  // CoreTest::verifySubconfigTree
 
 void CoreTest::compareSubconfigs(Configuration::cptr& src,
                                  Configuration::cptr& target) {
   // verify target has at least all the number of subconfigs that src has
-  CORRADE_VERIFY(src->getNumSubconfigEntries() <=
-                 target->getNumSubconfigEntries());
+  CORRADE_VERIFY(src->getNumSubconfigs() <= target->getNumSubconfigs());
   // verify that target has all the values that src has, and they are equal.
   auto srcIterValPair = src->getValuesIterator();
   for (auto& cfgIter = srcIterValPair.first; cfgIter != srcIterValPair.second;

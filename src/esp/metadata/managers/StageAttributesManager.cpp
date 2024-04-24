@@ -447,7 +447,8 @@ void StageAttributesManager::setValsFromJSONDoc(
     }
     stageAttributes->setSemanticDescriptorFilename(semanticSceneDescriptor);
   }
-
+  // check for the existing of markersets
+  this->parseSubconfigJsonVals("marker_sets", stageAttributes, jsonConfig);
   // check for user defined attributes
   this->parseUserDefinedJsonVals(stageAttributes, jsonConfig);
 

@@ -250,6 +250,23 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
   void writeValuesToJson(io::JsonGenericValue& jsonObj,
                          io::JsonAllocator& allocator) const override;
 
+  /**
+   * @brief Gets a smart pointer reference to a copy of the marker_sets
+   * configuration data from config file.
+   */
+  std::shared_ptr<Configuration> getMarkerSetsConfiguration() const {
+    return getSubconfigCopy<Configuration>("marker_sets");
+  }
+
+  /**
+   * @brief Gets a smart pointer reference to the actual marker_sets
+   * configuration data from config file. This method is for editing the
+   * configuration.
+   */
+  std::shared_ptr<Configuration> editMarkerSetsConfiguration() {
+    return editSubconfig<Configuration>("marker_sets");
+  }
+
  protected:
   /**
    * @brief Retrieve a comma-separated string holding the header values for the

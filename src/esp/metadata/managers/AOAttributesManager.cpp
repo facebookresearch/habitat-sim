@@ -100,6 +100,8 @@ void AOAttributesManager::setValsFromJSONDoc(
       attributes::AOLinkOrderMap,
       [aoAttr](const std::string& val) { aoAttr->setLinkOrder(val); });
 
+  // check for the existing of markersets
+  this->parseSubconfigJsonVals("marker_sets", aoAttr, jsonConfig);
   // check for user defined attributes
   this->parseUserDefinedJsonVals(aoAttr, jsonConfig);
 
