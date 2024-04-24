@@ -80,7 +80,7 @@ class AbstractAttributes
 
   /**
    * @brief Set this attributes name/origin.  Some attributes derive their own
-   * names based on their state, such as @ref AbstractPrimitiveAttributes;  in
+   * names based on their state, such as @ref AbstractPrimitiveAttributes; in
    * such cases this should be overridden with NOP.
    * @param handle the handle to set.
    */
@@ -129,6 +129,14 @@ class AbstractAttributes
    */
   int getNumUserDefinedConfigurations() const {
     return getSubconfigNumEntries("user_defined");
+  }
+
+  /**
+   * @brief Returns the number of user-defined values (within the "user-defined"
+   * sub-ConfigurationGroup) this attributes has.
+   */
+  int getTotalNumUserDefinedConfigurations() const {
+    return getSubconfigTreeNumEntries("user_defined");
   }
 
   /**
@@ -198,7 +206,7 @@ class AbstractAttributes
       const std::shared_ptr<Configuration>& subAttrConfig) const {
     int res = 0;
     if (subConfigNamePrefix.empty()) {
-      return subAttrConfig->getNumSubconfigEntries();
+      return subAttrConfig->getNumSubconfigs();
     }
     // iterator to subAttrConfig's subConfigs
     auto subAttrIter = subAttrConfig->getSubconfigIterator();
@@ -295,7 +303,7 @@ AbstractAttributes::getSubAttributesListInternal(
       "esp::metadata::AbstractAttributes");
   std::vector<std::shared_ptr<const T>> res{};
   // pair of begin/end const iters through subconfig of given name
-  int numSubconfigs = subAttrConfig->getNumSubconfigEntries();
+  int numSubconfigs = subAttrConfig->getNumSubconfigs();
   if (numSubconfigs == 0) {
     return {};
   }
@@ -387,15 +395,14 @@ void AbstractAttributes::setSubAttributesInternal(
       std::is_base_of<AbstractAttributes, T>::value,
       "AbstractAttributes : Desired subconfig type must be derived from "
       "esp::metadata::AbstractAttributes");
-  // get subconfig for articulated object instances, add this ao instance as a
   // set id
   if (!availableIDs.empty()) {
     // use saved value and then remove from storage
     objInst->setID(availableIDs.front());
     availableIDs.pop_front();
   } else {
-    // use size of container to set ID
-    objInst->setID(subAttrConfig->getNumSubconfigEntries());
+    // use current size of destination config to set ID
+    objInst->setID(subAttrConfig->getNumSubconfigs());
   }
   // get last key
   subAttrConfig->setSubconfigPtr<T>(

@@ -56,7 +56,30 @@ void initConfigBindings(py::module& m) {
 
   py::class_<Configuration, Configuration::ptr>(m, "Configuration")
       .def(py::init(&Configuration::create<>))
-
+      .def_property_readonly(
+          "top_level_num_entries", &Configuration::getNumEntries,
+          R"(Holds the total number of values and subconfigs this Configuration holds
+          at the base level (does not recurse subconfigs).)")
+      .def_property_readonly(
+          "top_level_num_configs", &Configuration::getNumSubconfigs,
+          R"(Holds the total number of subconfigs this Configuration holds at the base
+          level (does not recurse subconfigs).)")
+      .def_property_readonly(
+          "top_level_num_values", &Configuration::getNumValues,
+          R"(Holds the total number of values this Configuration holds at the base
+          level (does not recurse subconfigs).)")
+      .def_property_readonly(
+          "total_num_entries", &Configuration::getConfigTreeNumEntries,
+          R"(Holds the total number of values and subconfigs this Configuration holds
+          across all levels (recurses subconfigs).)")
+      .def_property_readonly(
+          "total_num_configs", &Configuration::getConfigTreeNumSubconfigs,
+          R"(Holds the total number of subconfigs this Configuration holds across all
+          levels (recurses subconfigs).)")
+      .def_property_readonly(
+          "total_num_values", &Configuration::getConfigTreeNumValues,
+          R"(Holds the total number of values this Configuration holds across all
+          levels (recurses subconfigs).)")
       .def(
           "get",
           [](Configuration& self, const std::string& key) {

@@ -615,15 +615,50 @@ class Configuration {
   int getNumEntries() const { return configMap_.size() + valueMap_.size(); }
 
   /**
+   * @brief Return total number of value and subconfig entries held by this
+   * Configuration and all its subconfigs.
+   */
+  int getConfigTreeNumEntries() const {
+    int num = getNumEntries();
+    for (const auto& subConfig : configMap_) {
+      num += subConfig.second->getConfigTreeNumEntries();
+    }
+    return num;
+  }
+  /**
    * @brief Return number of subconfig entries in this configuration. This only
    * counts each subconfiguration entry as a single entry.
    */
-  int getNumSubconfigEntries() const { return configMap_.size(); }
+  int getNumSubconfigs() const { return configMap_.size(); }
+
+  /**
+   * @brief Return size of entire subconfig tree (i.e. total number of
+   * subconfigs nested under this Configuration.)
+   */
+  int getConfigTreeNumSubconfigs() const {
+    int num = configMap_.size();
+    for (const auto& subConfig : configMap_) {
+      num += subConfig.second->getConfigTreeNumSubconfigs();
+    }
+    return num;
+  }
 
   /**
    * @brief returns number of values in this configuration.
    */
   int getNumValues() const { return valueMap_.size(); }
+
+  /**
+   * @brief Return total number of values held by this Configuration and all its
+   * subconfigs.
+   */
+  int getConfigTreeNumValues() const {
+    int num = valueMap_.size();
+    for (const auto& subConfig : configMap_) {
+      num += subConfig.second->getConfigTreeNumValues();
+    }
+    return num;
+  }
 
   /**
    * @brief Returns whether this @ref Configuration has the passed @p key as a
@@ -801,6 +836,23 @@ class Configuration {
     auto configIter = configMap_.find(name);
     if (configIter != configMap_.end()) {
       return configIter->second->getNumEntries();
+    }
+    ESP_WARNING() << "No Subconfig found named :" << name;
+    return 0;
+  }
+
+  /**
+   * @brief Retrieve the number of entries held by the subconfig with the given
+   * name, recursing subordinate subconfigs
+   * @param name The name of the subconfig to query. If not found, returns 0
+   * with a warning.
+   * @return The number of entries in the named subconfig, including all
+   * subconfigs
+   */
+  int getSubconfigTreeNumEntries(const std::string& name) const {
+    auto configIter = configMap_.find(name);
+    if (configIter != configMap_.end()) {
+      return configIter->second->getConfigTreeNumEntries();
     }
     ESP_WARNING() << "No Subconfig found named :" << name;
     return 0;

@@ -80,7 +80,13 @@ void initAttributesBindings(py::module& m) {
       .def_property_readonly(
           "num_user_configs",
           &AbstractAttributes::getNumUserDefinedConfigurations,
-          R"(The number of currently specified user-defined configuration values.)")
+          R"(The number of currently specified user-defined configuration values and
+          subconfigs (does not recurse subordinate subconfigs).)")
+      .def_property_readonly(
+          "total_num_user_configs",
+          &AbstractAttributes::getTotalNumUserDefinedConfigurations,
+          R"(The total number of currently specified user-defined configuration values
+          and subconfigs found by also recursing all subordinate subconfigs.)")
       .def_property_readonly("template_class", &AbstractAttributes::getClassKey,
                              R"(Class name of Attributes template.)")
       .def_property_readonly(
