@@ -1286,37 +1286,114 @@ void AttributesConfigsTest::testStageAttrVals(
 }  // AttributesConfigsTest::testStageAttrVals
 void AttributesConfigsTest::testStageJSONLoad() {
   // build JSON sample config
-  const std::string& jsonString =
-      R"({
-        "scale":[2,3,4],
-        "margin": 0.9,
-        "friction_coefficient": 0.321,
-        "restitution_coefficient": 0.456,
-        "force_flat_shading": false,
-        "units_to_meters": 1.1,
-        "up":[2.1, 0, 0],
-        "front":[0, 2.1, 0],
-        "has_semantic_textures":true,
-        "render_asset": "testJSONRenderAsset.glb",
-        "collision_asset": "testJSONCollisionAsset.glb",
-        "is_collidable": false,
-        "gravity": [9,8,7],
-        "origin":[1,2,3],
-        "semantic_asset":"testJSONSemanticAsset.glb",
-        "nav_asset":"testJSONNavMeshAsset.glb",
-        "shader_type" : "material",
-        "user_defined" : {
-            "user_str_array" : ["test_00", "test_01", "test_02", "test_03"],
-            "user_string" : "stage defined string",
-            "user_bool" : false,
-            "user_int" : 3,
-            "user_double" : 0.8,
-            "user_vec2" : [2.3, 4.5],
-            "user_vec3" : [5.4, 7.6, 10.1],
-            "user_vec4" : [14.5, 15.6, 16.7, 17.9],
-            "user_quat" : [0.1, 1.5, 2.6, 3.7]
-        }
-      })";
+  const std::string& jsonString = R"({
+  "scale":[2,3,4],
+  "margin": 0.9,
+  "friction_coefficient": 0.321,
+  "restitution_coefficient": 0.456,
+  "force_flat_shading": false,
+  "units_to_meters": 1.1,
+  "up":[2.1, 0, 0],
+  "front":[0, 2.1, 0],
+  "has_semantic_textures":true,
+  "render_asset": "testJSONRenderAsset.glb",
+  "collision_asset": "testJSONCollisionAsset.glb",
+  "is_collidable": false,
+  "gravity": [9,8,7],
+  "origin":[1,2,3],
+  "semantic_asset":"testJSONSemanticAsset.glb",
+  "nav_asset":"testJSONNavMeshAsset.glb",
+  "shader_type" : "material",
+  "marker_sets" : {
+      "marker_set_0_stage_name" : {
+          "link_id_00_stage_name" : {
+              "subset_id_000_stage_name" : {
+                "markers" : [
+                    [1.1, 2.2, 3.3],
+                    [2.1, 3.2, 4.3],
+                    [3.1, 4.2, 5.3],
+                    [4.1, 5.2, 6.3]
+                  ]
+              },
+              "subset_id_001_stage_name" : {
+                "markers" : {
+                    "0":[1.2, 2.3, 3.4],
+                    "1":[2.2, 3.3, 4.4],
+                    "2":[3.2, 4.3, 5.4],
+                    "3":[4.2, 5.3, 6.4]
+                }
+              }
+          },
+          "link_id_01_stage_name" : {
+              "subset_id_010_stage_name" : {
+                "markers" : {
+                    "0":[1.3, 2.4, 3.5],
+                    "1":[2.3, 3.4, 4.5],
+                    "2":[3.3, 4.4, 5.5],
+                    "3":[4.3, 5.4, 6.5]
+                }
+              },
+              "subset_id_011_stage_name" : {
+                "markers" : [
+                    [1.4, 2.5, 3.6],
+                    [2.4, 3.5, 4.6],
+                    [3.4, 4.5, 5.6],
+                    [4.4, 5.5, 6.6]
+                  ]
+              }
+          }
+      },
+      "marker_set_1_stage_name" : {
+          "link_id_10_stage_name" : {
+              "subset_id_100_stage_name" : {
+                "markers" : [
+                    [11.1, 12.2, 13.3],
+                    [12.1, 13.2, 14.3],
+                    [13.1, 14.2, 15.3],
+                    [14.1, 15.2, 16.3]
+                  ]
+              },
+              "subset_id_101_stage_name" : {
+                "markers" : {
+                    "0":[11.2, 12.3, 13.4],
+                    "1":[12.2, 13.3, 14.4],
+                    "2":[13.2, 14.3, 15.4],
+                    "3":[14.2, 15.3, 16.4]
+                }
+              }
+          },
+          "link_id_11_stage_name" : {
+              "subset_id_110_stage_name" : {
+                "markers" : {
+                    "0":[11.3, 12.4, 13.5],
+                    "1":[12.3, 13.4, 14.5],
+                    "2":[13.3, 14.4, 15.5],
+                    "3":[14.3, 15.4, 16.5]
+                }
+              },
+              "subset_id_111_stage_name" : {
+                "markers" : [
+                    [11.4, 12.5, 13.6],
+                    [12.4, 13.5, 14.6],
+                    [13.4, 14.5, 15.6],
+                    [14.4, 15.5, 16.6]
+                  ]
+              }
+          }
+      }
+  },
+  "user_defined" : {
+      "user_str_array" : ["test_00", "test_01", "test_02", "test_03"],
+      "user_string" : "stage defined string",
+      "user_bool" : false,
+      "user_int" : 3,
+      "user_double" : 0.8,
+      "user_vec2" : [2.3, 4.5],
+      "user_vec3" : [5.4, 7.6, 10.1],
+      "user_vec4" : [14.5, 15.6, 16.7, 17.9],
+      "user_quat" : [0.1, 1.5, 2.6, 3.7]
+  }
+})";
 
   // Build an attributes based on the above json string
   // Don't register - registration here verifies that the specified file handles
@@ -1440,6 +1517,84 @@ void AttributesConfigsTest::testObjectJSONLoad() {
   "semantic_id" : 7,
   "COM": [0.1,0.2,0.3],
   "shader_type" : "phong",
+  "marker_sets" : {
+      "marker_set_0_obj_name" : {
+          "link_id_00_obj_name" : {
+              "subset_id_000_obj_name" : {
+                "markers" : [
+                    [1.1, 2.2, 3.3],
+                    [2.1, 3.2, 4.3],
+                    [3.1, 4.2, 5.3],
+                    [4.1, 5.2, 6.3]
+                  ]
+              },
+              "subset_id_001_obj_name" : {
+                "markers" : {
+                    "0":[1.2, 2.3, 3.4],
+                    "1":[2.2, 3.3, 4.4],
+                    "2":[3.2, 4.3, 5.4],
+                    "3":[4.2, 5.3, 6.4]
+                }
+              }
+          },
+          "link_id_01_obj_name" : {
+              "subset_id_010_obj_name" : {
+                "markers" : {
+                    "0":[1.3, 2.4, 3.5],
+                    "1":[2.3, 3.4, 4.5],
+                    "2":[3.3, 4.4, 5.5],
+                    "3":[4.3, 5.4, 6.5]
+                }
+              },
+              "subset_id_011_obj_name" : {
+                "markers" : [
+                    [1.4, 2.5, 3.6],
+                    [2.4, 3.5, 4.6],
+                    [3.4, 4.5, 5.6],
+                    [4.4, 5.5, 6.6]
+                  ]
+              }
+          }
+      },
+      "marker_set_1_obj_name" : {
+          "link_id_10_obj_name" : {
+              "subset_id_100_obj_name" : {
+                "markers" : [
+                    [11.1, 12.2, 13.3],
+                    [12.1, 13.2, 14.3],
+                    [13.1, 14.2, 15.3],
+                    [14.1, 15.2, 16.3]
+                  ]
+              },
+              "subset_id_101_obj_name" : {
+                "markers" : {
+                    "0":[11.2, 12.3, 13.4],
+                    "1":[12.2, 13.3, 14.4],
+                    "2":[13.2, 14.3, 15.4],
+                    "3":[14.2, 15.3, 16.4]
+                }
+              }
+          },
+          "link_id_11_obj_name" : {
+              "subset_id_110_obj_name" : {
+                "markers" : {
+                    "0":[11.3, 12.4, 13.5],
+                    "1":[12.3, 13.4, 14.5],
+                    "2":[13.3, 14.4, 15.5],
+                    "3":[14.3, 15.4, 16.5]
+                }
+              },
+              "subset_id_111_obj_name" : {
+                "markers" : [
+                    [11.4, 12.5, 13.6],
+                    [12.4, 13.5, 14.6],
+                    [13.4, 14.5, 15.6],
+                    [14.4, 15.5, 16.6]
+                  ]
+              }
+          }
+      }
+  },
   "user_defined" : {
       "user_str_array" : ["test_00", "test_01", "test_02", "test_03"],
       "user_string" : "object defined string",
@@ -1555,6 +1710,84 @@ void AttributesConfigsTest::testArticulatedObjectJSONLoad() {
   "link_order" : "tree_traversal",
   "render_mode": "skin",
   "shader_type" : "pbr",
+  "marker_sets" : {
+      "marker_set_0_AO_name" : {
+          "link_id_00_AO_name" : {
+              "subset_id_000_AO_name" : {
+                "markers" : [
+                    [1.1, 2.2, 3.3],
+                    [2.1, 3.2, 4.3],
+                    [3.1, 4.2, 5.3],
+                    [4.1, 5.2, 6.3]
+                  ]
+              },
+              "subset_id_001_AO_name" : {
+                "markers" : {
+                    "0":[1.2, 2.3, 3.4],
+                    "1":[2.2, 3.3, 4.4],
+                    "2":[3.2, 4.3, 5.4],
+                    "3":[4.2, 5.3, 6.4]
+                }
+              }
+          },
+          "link_id_01_AO_name" : {
+              "subset_id_010_AO_name" : {
+                "markers" : {
+                    "0":[1.3, 2.4, 3.5],
+                    "1":[2.3, 3.4, 4.5],
+                    "2":[3.3, 4.4, 5.5],
+                    "3":[4.3, 5.4, 6.5]
+                }
+              },
+              "subset_id_011_AO_name" : {
+                "markers" : [
+                    [1.4, 2.5, 3.6],
+                    [2.4, 3.5, 4.6],
+                    [3.4, 4.5, 5.6],
+                    [4.4, 5.5, 6.6]
+                  ]
+              }
+          }
+      },
+      "marker_set_1_AO_name" : {
+          "link_id_10_AO_name" : {
+              "subset_id_100_AO_name" : {
+                "markers" : [
+                    [11.1, 12.2, 13.3],
+                    [12.1, 13.2, 14.3],
+                    [13.1, 14.2, 15.3],
+                    [14.1, 15.2, 16.3]
+                  ]
+              },
+              "subset_id_101_AO_name" : {
+                "markers" : {
+                    "0":[11.2, 12.3, 13.4],
+                    "1":[12.2, 13.3, 14.4],
+                    "2":[13.2, 14.3, 15.4],
+                    "3":[14.2, 15.3, 16.4]
+                }
+              }
+          },
+          "link_id_11_AO_name" : {
+              "subset_id_110_AO_name" : {
+                "markers" : {
+                    "0":[11.3, 12.4, 13.5],
+                    "1":[12.3, 13.4, 14.5],
+                    "2":[13.3, 14.4, 15.5],
+                    "3":[14.3, 15.4, 16.5]
+                }
+              },
+              "subset_id_111_AO_name" : {
+                "markers" : [
+                    [11.4, 12.5, 13.6],
+                    [12.4, 13.5, 14.6],
+                    [13.4, 14.5, 15.6],
+                    [14.4, 15.5, 16.6]
+                  ]
+              }
+          }
+      }
+  },
   "user_defined" : {
       "user_str_array" : ["test_00", "test_01", "test_02", "test_03", "test_04"],
       "user_string" : "articulated object defined string",
