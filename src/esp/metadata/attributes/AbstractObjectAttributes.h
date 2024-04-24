@@ -263,6 +263,23 @@ class AbstractObjectAttributes : public AbstractAttributes {
     return get<bool>("use_frame_for_all_orientation");
   }
 
+  /**
+   * @brief Gets a smart pointer reference to a copy of the marker_sets
+   * configuration data from config file.
+   */
+  std::shared_ptr<Configuration> getMarkerSetsConfiguration() const {
+    return getSubconfigCopy<Configuration>("marker_sets");
+  }
+
+  /**
+   * @brief Gets a smart pointer reference to the actual marker_sets
+   * configuration data from config file. This method is for editing the
+   * configuration.
+   */
+  std::shared_ptr<Configuration> editMarkerSetsConfiguration() {
+    return editSubconfig<Configuration>("marker_sets");
+  }
+
  protected:
   /**
    * @brief Whether to use the specified orientation frame for all orientation

@@ -237,6 +237,13 @@ void initAttributesBindings(py::module& m) {
       .ao_config.json files.)")
       .def(py::init(&ArticulatedObjectAttributes::create<>))
       .def(py::init(&ArticulatedObjectAttributes::create<const std::string&>))
+      .def("get_marker_sets",
+           &ArticulatedObjectAttributes::editMarkerSetsConfiguration,
+           py::return_value_policy::reference_internal,
+           R"(Returns a reference to the marker-sets configuration object for
+          this Articulated Object attributes, so that it can be viewed or modified.
+          Any changes to this configuration will require the owning attributes to
+          be re-registered.)")
       .def_property(
           "urdf_filepath", &ArticulatedObjectAttributes::getURDFPath,
           &ArticulatedObjectAttributes::setURDFPath,
@@ -283,6 +290,13 @@ void initAttributesBindings(py::module& m) {
              AbstractObjectAttributes::ptr>(m, "AbstractObjectAttributes")
       .def(py::init(&AbstractObjectAttributes::create<const std::string&,
                                                       const std::string&>))
+      .def("get_marker_sets",
+           &AbstractObjectAttributes::editMarkerSetsConfiguration,
+           py::return_value_policy::reference_internal,
+           R"(Returns a reference to the marker-sets configuration object for
+          constructs built using this template, so that it can be viewed or modified.
+          Any changes to this configuration will require the owning attributes to
+          be re-registered.)")
       .def_property(
           "scale", &AbstractObjectAttributes::getScale,
           &AbstractObjectAttributes::setScale,
