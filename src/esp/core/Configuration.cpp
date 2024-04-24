@@ -332,7 +332,7 @@ Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value) {
 }
 
 int Configuration::loadOneConfigFromJson(int numConfigSettings,
-                                         const std::string key,
+                                         const std::string& key,
                                          const io::JsonGenericValue& jsonObj) {
   // increment, assuming is valid object
   ++numConfigSettings;

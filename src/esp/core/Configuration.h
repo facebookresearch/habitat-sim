@@ -975,7 +975,7 @@ class Configuration {
    * executes.
    */
   int loadOneConfigFromJson(int numVals,
-                            const std::string key,
+                            const std::string& key,
                             const io::JsonGenericValue& jsonObj);
 
   /**
