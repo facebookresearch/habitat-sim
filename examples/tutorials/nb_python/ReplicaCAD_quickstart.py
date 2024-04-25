@@ -136,7 +136,7 @@ def make_default_settings():
         "scene": "NONE",  # Scene path
         "default_agent": 0,
         "sensor_height": 1.5,  # Height of sensors in meters
-        "sensor_pitch": 0,  # sensor pitch (x rotation in rads)
+        "sensor_pitch": 0.0,  # sensor pitch (x rotation in rads)
         "seed": 1,
         "enable_physics": True,  # enable dynamics simulation
     }

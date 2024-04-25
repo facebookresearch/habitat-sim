@@ -57,8 +57,6 @@ void initGfxBindings(py::module& m) {
   pybindEnumOperators(flags);
 
   render_camera
-      .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
-                          const vec3f&, const vec3f&, const vec3f&>())
       .def(
           "set_projection_matrix",
           [](RenderCamera& self, int w, int h, float n, float f, Mn::Degd fov) {

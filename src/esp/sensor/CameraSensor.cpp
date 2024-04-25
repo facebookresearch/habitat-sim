@@ -44,8 +44,8 @@ namespace {
    hFoV from the CameraSensorSpec */
 Mn::Matrix4 projectionMatrixInternal(const CameraSensorSpec& spec,
                                      Mn::Rad hfov) {
-  const Mn::Vector2 nearPlaneSize{
-      1.0f, Mn::Vector2{Mn::Vector2i{spec.resolution}}.aspectRatio()};
+  const Mn::Vector2 nearPlaneSize{1.0f,
+                                  Mn::Vector2{spec.resolution}.aspectRatio()};
   if (spec.sensorSubType == SensorSubType::Orthographic) {
     return Mn::Matrix4::orthographicProjection(nearPlaneSize / spec.orthoScale,
                                                spec.near, spec.far);
@@ -71,7 +71,8 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
     : VisualSensor(cameraNode, spec),
       baseProjMatrix_(Magnum::Math::IdentityInit),
       zoomMatrix_(Magnum::Math::IdentityInit),
-      renderCamera_(new gfx::RenderCamera(cameraNode)) {
+      renderCamera_(new gfx::RenderCamera(cameraNode,
+                                          visualSensorSpec_->semanticTarget)) {
   // Sanity check
   CORRADE_ASSERT(
       cameraSensorSpec_,
@@ -140,6 +141,9 @@ bool CameraSensor::drawObservation(sim::Simulator& sim) {
         (&sim.getActiveSemanticSceneGraph() != &sim.getActiveSceneGraph());
 
     if (twoSceneGraphs) {
+      // Helper's constructor moves this camera to the semantic scene graph.
+      // When helper goes out of scope, its destructor moves it back to main
+      // scene graph.
       VisualSensor::MoveSemanticSensorNodeHelper helper(*this, sim);
       draw(sim.getActiveSemanticSceneGraph(), flags);
     } else {

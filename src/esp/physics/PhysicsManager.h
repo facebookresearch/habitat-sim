@@ -1263,7 +1263,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   /** @brief A counter of unique object ID's allocated thus far. Used to
    * allocate new IDs when  @ref recycledObjectIDs_ is empty without needing
    * to check @ref existingObjects_ explicitly.*/
-  int nextObjectID_ = 0;
+  int nextObjectID_ = RIGID_STAGE_ID + 1;
 
   /** @brief A list of available object IDs tracked by @ref
    * deallocateObjectID which were previously used by objects since removed

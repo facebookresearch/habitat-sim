@@ -436,18 +436,6 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
   }  // if original filename was specified else
 }  // SceneDatasetAttributesManager::readDatasetConfigsJSONCell
 
-int SceneDatasetAttributesManager::registerObjectFinalize(
-    attributes::SceneDatasetAttributes::ptr SceneDatasetAttributes,
-    const std::string& SceneDatasetAttributesHandle,
-    bool) {
-  // adds template to library, and returns either the ID of the existing
-  // template referenced by SceneDatasetAttributesHandle, or the next
-  // available ID if not found.
-  int datasetTemplateID = this->addObjectToLibrary(
-      std::move(SceneDatasetAttributes), SceneDatasetAttributesHandle);
-  return datasetTemplateID;
-}  // SceneDatasetAttributesManager::registerObjectFinalize
-
 }  // namespace managers
 }  // namespace metadata
 }  // namespace esp

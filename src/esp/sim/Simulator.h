@@ -73,16 +73,6 @@ class Simulator {
   void seed(uint32_t newSeed);
 
   std::shared_ptr<gfx::Renderer> getRenderer() { return renderer_; }
-  std::shared_ptr<scene::SemanticScene> getSemanticScene() {
-    return resourceManager_->getSemanticScene();
-  }
-
-  /**
-   * @brief Return a view of the currently set Semantic scene colormap.
-   */
-  const std::vector<Mn::Vector3ub>& getSemanticSceneColormap() const {
-    return resourceManager_->getSemanticSceneColormap();
-  }
 
   inline void getRenderGLContext() {
     // acquire GL context from background thread, if background rendering
@@ -92,29 +82,6 @@ class Simulator {
     }
   }
 
-  /** @brief check if the semantic scene exists.*/
-  bool semanticSceneExists() const {
-    return resourceManager_->semanticSceneExists();
-  }
-
-  /**
-   * @brief get the current active scene graph
-   */
-  scene::SceneGraph& getActiveSceneGraph() {
-    CORRADE_INTERNAL_ASSERT(std::size_t(activeSceneID_) < sceneID_.size());
-    return sceneManager_->getSceneGraph(activeSceneID_);
-  }
-
-  /** @brief Check to see if there is a SemanticSceneGraph for rendering */
-  bool semanticSceneGraphExists() const {
-    return std::size_t(activeSemanticSceneID_) < sceneID_.size();
-  }
-
-  /** @brief get the semantic scene's SceneGraph for rendering */
-  scene::SceneGraph& getActiveSemanticSceneGraph() {
-    CORRADE_INTERNAL_ASSERT(semanticSceneGraphExists());
-    return sceneManager_->getSceneGraph(activeSemanticSceneID_);
-  }
   std::shared_ptr<gfx::replay::ReplayManager> getGfxReplayManager() {
     return gfxReplayMgr_;
   }
@@ -218,7 +185,44 @@ class Simulator {
   }
 
   /**
-   * @brief Build a map keyed by semantic color/id referencing a vector
+   * @brief get the current active scene graph
+   */
+  scene::SceneGraph& getActiveSceneGraph() {
+    CORRADE_INTERNAL_ASSERT(std::size_t(activeSceneID_) < sceneID_.size());
+    return sceneManager_->getSceneGraph(activeSceneID_);
+  }
+
+  ///////////////////////////
+  // Semantic Scene and Data
+  std::shared_ptr<scene::SemanticScene> getSemanticScene() {
+    return resourceManager_->getSemanticScene();
+  }
+
+  /**
+   * @brief Return a view of the currently set Semantic scene colormap.
+   */
+  const std::vector<Mn::Vector3ub>& getSemanticSceneColormap() const {
+    return resourceManager_->getSemanticSceneColormap();
+  }
+
+  /** @brief check if the semantic scene exists.*/
+  bool semanticSceneExists() const {
+    return resourceManager_->semanticSceneExists();
+  }
+
+  /** @brief Check to see if there is a SemanticSceneGraph for rendering */
+  bool semanticSceneGraphExists() const {
+    return std::size_t(activeSemanticSceneID_) < sceneID_.size();
+  }
+
+  /** @brief get the semantic scene's SceneGraph for rendering */
+  scene::SceneGraph& getActiveSemanticSceneGraph() {
+    CORRADE_INTERNAL_ASSERT(semanticSceneGraphExists());
+    return sceneManager_->getSceneGraph(activeSemanticSceneID_);
+  }
+
+  /**
+   * @brief Build a map keyed by semantic color/id referencing a list of
    * connected component-based Semantic objects.
    */
   std::unordered_map<uint32_t, std::vector<scene::CCSemanticObject::ptr>>
@@ -247,6 +251,9 @@ class Simulator {
                      "semantic mesh exists.";
     return {};
   }
+
+  ///////////////////////////
+  // End Semantic Scene and Data
 
   /**
    * @brief Builds a @ref esp::metadata::attributes::SceneInstanceAttributes describing the

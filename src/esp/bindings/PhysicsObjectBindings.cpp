@@ -298,6 +298,12 @@ void declareRigidBaseWrapper(py::module& m,
                               ".  To change the values, use the object's "
                               "'intertia_diagonal' property.")
                                  .c_str())
+      .def_property_readonly(
+          "com_correction", &RigidBaseWrapper::getCOMCorrection,
+          ("Get the COM correction vector for this " + objType +
+           ". This tracks the local change in translation from the original "
+           "frame to center the COM locally.")
+              .c_str())
       .def_property("linear_damping", &RigidBaseWrapper::getLinearDamping,
                     &RigidBaseWrapper::setLinearDamping,
                     ("Get or set this " + objType +

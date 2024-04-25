@@ -206,10 +206,9 @@ class ObjectAttributesManager
   }
 
   /**
-   * @brief Add a copy of @ref  esp::metadata::attributes::AbstractAttributes
-   * object to the @ref objectLibrary_. Verify that render and collision
-   * handles have been set properly.  We are doing this since these values can
-   * be modified by the user.
+   * @brief This method will perform any essential updating to the managed
+   * object before registration is performed. If this updating fails,
+   * registration will also fail.
    *
    * @param attributesTemplate The attributes template.
    * @param attributesTemplateHandle The key for referencing the template in
@@ -217,13 +216,24 @@ class ObjectAttributesManager
    * @ref objectLibrary_. Will be set as origin handle for template.
    * @param forceRegistration Will register object even if conditional
    * registration checks fail.
-   * @return The index in the @ref objectLibrary_ of object
-   * template.
+   * @return Whether the preregistration has succeeded and what handle to use to
+   * register the object if it has.
    */
-  int registerObjectFinalize(
+  core::managedContainers::ManagedObjectPreregistration
+  preRegisterObjectFinalize(
       attributes::ObjectAttributes::ptr attributesTemplate,
       const std::string& attributesTemplateHandle,
       bool forceRegistration) override;
+
+  /**
+   * @brief This method will perform any final manager-related handling after
+   * successfully registering an object.
+   *
+   * @param objectID the ID of the successfully registered managed object
+   * @param objectHandle The name of the managed objbect
+   */
+  void postRegisterObjectHandling(int objectID,
+                                  const std::string& objectHandle) override;
 
   /**
    * @brief Any object-attributes-specific resetting that needs to happen on
@@ -235,6 +245,10 @@ class ObjectAttributesManager
   }
 
   // ======== Typedefs and Instance Variables ========
+
+  // create a ref to the partition map of either prims or file-based objects to
+  // place a ref to the object template being regsitered during registration.
+  std::unordered_map<int, std::string>* mapToAddTo_ = nullptr;
 
   /**
    * @brief Maps loaded object template IDs to the appropriate template

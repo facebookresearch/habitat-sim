@@ -124,29 +124,42 @@ class SemanticAttributesManager
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
   /**
-   * @brief Add a copy of the @ref
-   * esp::metadata::attributes::SemanticAttributes shared_ptr object to
-   * the @ref objectLibrary_.
+   * @brief Not required for this manager.
    *
-   * @param semanticTemplate The attributes template.
-   * @param semanticHandle The key for referencing the template in
-   * the @ref objectLibrary_.
-   * @param forceRegistration Will register object even if conditional
+   * This method will perform any essential updating to the managed object
+   * before registration is performed. If this updating fails, registration will
+   * also fail.
+   * @param object the managed object to be registered
+   * @param objectHandle the name to register the managed object with.
+   * Expected to be valid.
+   * @param forceRegistration Should register object even if conditional
    * registration checks fail.
-   * @return The index in the @ref objectLibrary_ of object
-   * template.
+   * @return Whether the preregistration has succeeded and what handle to use to
+   * register the object if it has.
    */
-  int registerObjectFinalize(
-      attributes::SemanticAttributes::ptr semanticTemplate,
-      const std::string& semanticHandle,
+  core::managedContainers::ManagedObjectPreregistration
+  preRegisterObjectFinalize(
+      CORRADE_UNUSED attributes::SemanticAttributes::ptr object,
+      CORRADE_UNUSED const std::string& objectHandle,
       CORRADE_UNUSED bool forceRegistration) override {
-    // adds template to library, and returns either the ID of the existing
-    // template referenced by semanticHandle, or the next
-    // available ID if not found.
-    int semanticAttrID =
-        this->addObjectToLibrary(std::move(semanticTemplate), semanticHandle);
-    return semanticAttrID;
-  }  // SemanticAttributesManager::registerObjectFinalize
+    // No pre-registration conditioning performed
+    return core::managedContainers::ManagedObjectPreregistration::Success;
+  }
+
+  /**
+   * @brief Not required for this manager.
+   *
+   * This method will perform any final manager-related handling after
+   * successfully registering an object.
+   *
+   * See @ref esp::attributes::managers::ObjectAttributesManager for an example.
+   *
+   * @param objectID the ID of the successfully registered managed object
+   * @param objectHandle The name of the managed objbect
+   */
+  void postRegisterObjectHandling(
+      CORRADE_UNUSED int objectID,
+      CORRADE_UNUSED const std::string& objectHandle) override {}
 
   /**
    * @brief Any physics-attributes-specific resetting that needs to happen on

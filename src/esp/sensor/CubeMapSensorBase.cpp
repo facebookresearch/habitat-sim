@@ -28,7 +28,7 @@ void CubeMapSensorBaseSpec::sanityCheck() const {
   }
 }
 
-int computeCubemapSize(const esp::vec2i& resolution,
+int computeCubemapSize(const Magnum::Vector2i& resolution,
                        const Cr::Containers::Optional<int>& cubemapSize) {
   int size = (resolution[0] < resolution[1] ? resolution[0] : resolution[1]);
   // if user sets the size of the cubemap, use it
@@ -41,7 +41,8 @@ int computeCubemapSize(const esp::vec2i& resolution,
 CubeMapSensorBase::CubeMapSensorBase(scene::SceneNode& cameraNode,
                                      const CubeMapSensorBaseSpec::ptr& spec)
     : VisualSensor(cameraNode, spec),
-      cubeMapCamera_(new gfx::CubeMapCamera(cameraNode)),
+      cubeMapCamera_(new gfx::CubeMapCamera(cameraNode,
+                                            visualSensorSpec_->semanticTarget)),
       mesh_(Mn::GL::Mesh()) {
   // initialize a cubemap
   int size = computeCubemapSize(cubeMapSensorBaseSpec_->resolution,
@@ -126,6 +127,9 @@ bool CubeMapSensorBase::renderToCubemapTexture(sim::Simulator& sim) {
         (&sim.getActiveSemanticSceneGraph() != &sim.getActiveSceneGraph());
 
     if (twoSceneGraphs) {
+      // Helper's constructor moves this camera to the semantic scene graph.
+      // When helper goes out of scope, its destructor moves it back to main
+      // scene graph.
       VisualSensor::MoveSemanticSensorNodeHelper helper(*this, sim);
       cubeMap_->renderToTexture(*cubeMapCamera_,
                                 sim.getActiveSemanticSceneGraph(),

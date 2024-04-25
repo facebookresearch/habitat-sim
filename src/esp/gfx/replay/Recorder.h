@@ -24,6 +24,8 @@ namespace gfx {
 struct Rig;
 namespace replay {
 
+const int DEFAULT_MAX_DECIMAL_PLACES = 7;
+
 class NodeDeletionHelper;
 
 /**
@@ -151,16 +153,28 @@ class Recorder {
   std::vector<std::string> writeIncrementalSavedKeyframesToStringArray();
 
   /**
+   * @brief Set the precision of the floating points serialized by this
+   * recorder.
+   */
+  void setMaxDecimalPlaces(int maxDecimalPlaces);
+
+  /**
+   * @brief Get the precision of the floating points serialized by this
+   * recorder.
+   */
+  int getMaxDecimalPlaces() const;
+
+  /**
    * @brief returns JSONized version of given keyframe.
    */
-  static std::string keyframeToString(const Keyframe& keyframe);
+  std::string keyframeToString(const Keyframe& keyframe) const;
 
   /**
    * @brief Reserved for unit-testing.
    */
   const std::vector<Keyframe>& debugGetSavedKeyframes() const {
     return savedKeyframes_;
-  }
+  };
 
  private:
   // NodeDeletionHelper calls onDeleteRenderAssetInstance
@@ -200,6 +214,7 @@ class Recorder {
   RenderAssetInstanceKey nextInstanceKey_ = 0;
   std::unordered_map<int, std::vector<scene::SceneNode*>> rigNodes_;
   std::unordered_map<int, std::vector<Magnum::Matrix4>> rigNodeTransformCache_;
+  int maxDecimalPlaces_ = DEFAULT_MAX_DECIMAL_PLACES;
 
   ESP_SMART_POINTERS(Recorder)
 };

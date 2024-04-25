@@ -67,7 +67,9 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
       : Magnum::SceneGraph::AbstractFeature3D(*bodyNode),
         objectId_(objectId),
         resMgr_(resMgr),
-        userAttributes_(std::make_shared<core::config::Configuration>()) {}
+        userAttributes_(std::make_shared<core::config::Configuration>()) {
+    bodyNode->setBaseObjectId(objectId);
+  }
 
   ~PhysicsObjectBase() override = default;
 
@@ -485,7 +487,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /**
    * @brief Reverses the COM correction transformation for objects that require
-   * it. Currently a simple passthrough for stages and Articulated Objects.
+   * it. Currently a simple passthrough for stages and articulated objects.
    */
   virtual Magnum::Vector3 getUncorrectedTranslation() const {
     return getTranslation();
@@ -493,7 +495,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /** @brief Accessed internally. Get an appropriately cast copy of the @ref
    * metadata::attributes::SceneObjectInstanceAttributes used to place the
-   * object within the scene, updated to have the c.
+   * object within the scene, updated to have the current transformation and
+   * status of the object.
    * @return A copy of the initialization template used to create this object
    * instance or nullptr if no template exists.
    */

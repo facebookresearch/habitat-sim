@@ -184,11 +184,11 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
       // uploaded to GPU so simply pass 0 to the uniform "objectId" in the
       // fragment shader
       .setObjectId(
-          static_cast<RenderCamera&>(camera).useDrawableIds() ? drawableId_
-          : (((flags_ >= Mn::Shaders::PhongGL::Flag::InstancedObjectId) ||
-              (flags_ >= Mn::Shaders::PhongGL::Flag::ObjectIdTexture)))
+          ((flags_ >= Mn::Shaders::PhongGL::Flag::InstancedObjectId) ||
+           (flags_ >= Mn::Shaders::PhongGL::Flag::ObjectIdTexture))
               ? 0
-              : node_.getSemanticId())
+              : node_.getShaderObjectID(
+                    static_cast<RenderCamera&>(camera).getSemanticDataIDX()))
       .setTransformationMatrix(transformationMatrix)
       .setProjectionMatrix(camera.projectionMatrix())
       .setNormalMatrix(normalMatrix);

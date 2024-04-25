@@ -125,9 +125,18 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
     // acquire context if available
     simulator_->getRenderGLContext();
   }
-  ESP_CHECK(
-      urdfImporter_->loadURDF(artObjAttributes, forceReload),
-      "failed to parse/load URDF file" << artObjAttributes->getURDFPath());
+  const std::string urdfFilepath = artObjAttributes->getURDFPath();
+  // Load model and set active
+  ESP_CHECK(urdfImporter_->loadURDF(urdfFilepath, forceReload),
+            "failed to parse/load URDF file" << urdfFilepath);
+
+  BulletURDFImporter* u2b =
+      static_cast<BulletURDFImporter*>(urdfImporter_.get());
+
+  // This performs the initial urdf asset import, configures the current active
+  // model based on settings in the passed attributes, and builds the cache
+  // based on the active model
+  u2b->initURDFToBulletCache(artObjAttributes);
 
   int articulatedObjectID = allocateObjectID();
 
@@ -138,35 +147,17 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
                                       articulatedObjectID, bWorld_,
                                       collisionObjToObjIds_);
 
-  // before initializing the URDF, import all necessary assets in advance
-  urdfImporter_->importURDFAssets();
+  // Setup and configure
+  articulatedObject->initializeFromURDF(artObjAttributes, *urdfImporter_, {},
+                                        physicsNode_);
 
-  BulletURDFImporter* u2b =
-      static_cast<BulletURDFImporter*>(urdfImporter_.get());
-
-  u2b->setFixedBase(artObjAttributes->getBaseType() ==
-                    metadata::attributes::ArticulatedObjectBaseType::Fixed);
-
-  u2b->flags = 0;
-  if (artObjAttributes->getLinkOrder() ==
-      metadata::attributes::ArticulatedObjectLinkOrder::URDFOrder) {
-    u2b->flags |= CUF_MAINTAIN_LINK_ORDER;
-  }
-  if (artObjAttributes->getInertiaSource() ==
-      metadata::attributes::ArticulatedObjectInertiaSource::URDF) {
-    u2b->flags |= CUF_USE_URDF_INERTIA;
-  }
-  u2b->initURDFToBulletCache();
-
-  articulatedObject->initializeFromURDF(*urdfImporter_, {}, physicsNode_);
   auto model = u2b->getModel();
 
-  // if the URDF model specifies a render asset, load and link it
-  const auto renderAssetPath = model->getRenderAsset();
-  if ((renderAssetPath) && (*renderAssetPath != "")) {
+  // if the AO attributes specifies a render asset, load and link it
+  const auto renderAssetPath = artObjAttributes->getRenderAssetHandle();
+  if (renderAssetPath != "") {
     instantiateSkinnedModel(articulatedObject, artObjAttributes,
-                            *renderAssetPath, objectNode, drawables,
-                            lightSetup);
+                            renderAssetPath, objectNode, drawables, lightSetup);
   }
 
   // allocate ids for links
@@ -178,10 +169,16 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
         articulatedObject->btMultiBody_->getLinkCollider(linkIx), linkObjectId);
   }
 
-  // render visual shapes if either no skinned mesh is present or if the render
-  // visual shapes flag is enabled
-  bool renderVisualShapes = !renderAssetPath || (*renderAssetPath == "") ||
-                            model->getRenderLinkVisualShapes();
+  // render visual shapes if either no skinned mesh is present or if the config
+  // explicitly specifies rendering link visuals
+  auto renderMode = artObjAttributes->getRenderMode();
+
+  bool renderVisualShapes =
+      (renderAssetPath == "") ||
+      (renderMode ==
+       metadata::attributes::ArticulatedObjectRenderMode::LinkVisuals) ||
+      (renderMode == metadata::attributes::ArticulatedObjectRenderMode::Both);
+
   if (renderVisualShapes) {
     // attach link visual shapes
     for (size_t urdfLinkIx = 0; urdfLinkIx < model->m_links.size();
@@ -501,9 +498,9 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
     hit.point = Magnum::Vector3{allResults.m_hitPointWorld[i]};
     hit.rayDistance =
         (static_cast<double>(allResults.m_hitFractions[i]) * maxDistance);
-    // default to -1 for "scene collision" if we don't know which object was
-    // involved
-    hit.objectId = -1;
+    // default to RIGID_STAGE_ID for "scene collision" if we don't know which
+    // object was involved
+    hit.objectId = RIGID_STAGE_ID;
     auto rawColObjIdIter =
         collisionObjToObjIds_->find(allResults.m_collisionObjects[i]);
     if (rawColObjIdIter != collisionObjToObjIds_->end()) {
@@ -524,7 +521,7 @@ void BulletPhysicsManager::lookUpObjectIdAndLinkId(
 
   *linkId = -1;
   // If the lookup fails, default to the stage. TODO: better error-handling.
-  *objectId = -1;
+  *objectId = RIGID_STAGE_ID;
   auto rawColObjIdIter = collisionObjToObjIds_->find(colObj);
   if (rawColObjIdIter != collisionObjToObjIds_->end()) {
     int rawObjectId = rawColObjIdIter->second;
@@ -558,8 +555,8 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
     const btPersistentManifold* manifold =
         dispatcher->getInternalManifoldPointer()[i];
 
-    int objectIdA = -2;  // stage is -1
-    int objectIdB = -2;
+    int objectIdA = ID_UNDEFINED;
+    int objectIdB = ID_UNDEFINED;
     int linkIndexA = -1;  // -1 if not a multibody
     int linkIndexB = -1;
 

@@ -203,12 +203,9 @@ int PhysicsManager::addObjectAndSaveAttributes(
 
   if (objInstAttributes == nullptr) {
     // Create objInstAttributes and populate with start values from
-    objInstAttributes =
-        resourceManager_.getSceneInstanceAttributesManager()
-            ->createEmptyInstanceAttributes(objAttributes->getHandle());
-    // TODO do we need to save this to curSceneInstanceAttributes responsible
-    // for this scene?
-    // TODO : add attributes to instance attributes mappings.
+    objInstAttributes = resourceManager_.getSceneInstanceAttributesManager()
+                            ->createEmptyInstanceAttributes(
+                                objAttributes->getHandle(), objAttributes);
   }
 
   // create and add object using provided object attributes
@@ -231,8 +228,7 @@ int PhysicsManager::addObjectAndSaveAttributes(
   objPtr->setSceneInstanceAttr(objInstAttributes);
   // merge scene instance user-defined configurations with the new object's, if
   // scene instance specifies any set articulated object's user-defined
-  // attributes, if any exist in scene
-  // instance.
+  // attributes, if any exist in scene instance.
   objPtr->mergeUserAttributes(objInstAttributes->getUserConfiguration());
   // determine and set if this object should be COM Corrected or not
   metadata::attributes::SceneInstanceTranslationOrigin instanceCOMOrigin =
@@ -534,11 +530,10 @@ int PhysicsManager::addArticulatedObjectAndSaveAttributes(
   if (aObjInstAttributes == nullptr) {
     aObjInstAttributes =
         resourceManager_.getSceneInstanceAttributesManager()
-            ->createEmptyAOInstanceAttributes(artObjAttributes->getHandle());
+            ->createEmptyAOInstanceAttributes(artObjAttributes->getHandle(),
+                                              artObjAttributes);
     // TODO do we need to save this to curSceneInstanceAttributes responsible
     // for this scene?
-
-    // TODO : add attributes to instance attributes mappings.
   }
 
   int aObjID = addArticulatedObjectInternal(artObjAttributes, drawables,
@@ -691,8 +686,14 @@ void PhysicsManager::removeObject(const int objectId,
   deallocateObjectID(objectId);
   if (deleteObjectNode) {
     delete objectNode;
-  } else if (deleteVisualNode && visualNode) {
-    delete visualNode;
+  } else if (visualNode) {
+    if (deleteVisualNode) {
+      delete visualNode;
+    } else {
+      // Clear out the object ID that was set for the owning visual node,
+      // setting to stage ID
+      visualNode->setBaseObjectId(RIGID_STAGE_ID);
+    }
   }
   // remove wrapper if one is present
   if (rigidObjectManager_->getObjectLibHasHandle(objName)) {

@@ -32,7 +32,7 @@ class EquirectangularShader : public CubeMapShaderBase {
    * @param[in] viewportSize the size of the viewport
    * @return itself for method chaining
    */
-  EquirectangularShader& setViewportSize(esp::vec2i viewportSize);
+  EquirectangularShader& setViewportSize(const Mn::Vector2i& viewportSize);
 
  protected:
   // ======= uniforms =======

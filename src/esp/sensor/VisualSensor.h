@@ -27,11 +27,17 @@ namespace sensor {
 
 using Mn::Math::Literals::operator""_degf;
 
+/**
+ * @brief This enum describes the type of information the Semantic Sensor will
+ * render. This is an alias for the idx enum defined in scene node.
+ */
+using SemanticSensorTarget = esp::scene::SceneNodeSemanticDataIDX;
+
 struct VisualSensorSpec : public SensorSpec {
   /**
    * @brief height x width
    */
-  vec2i resolution = {128, 128};
+  Mn::Vector2i resolution = {128, 128};
   /**
    * @brief Number of components in buffer values, eg. 4 channels for RGBA
    */
@@ -52,12 +58,20 @@ struct VisualSensorSpec : public SensorSpec {
    * @brief color used to clear the framebuffer
    */
   Mn::Color4 clearColor = {0, 0, 0, 1};
+
+  /**
+   * @brief the type of semantic information being rendered by the semantic
+   * sensor. Ignored by non-semantic sensors
+   */
+  SemanticSensorTarget semanticTarget = SemanticSensorTarget::SEMANTIC_ID;
+
   VisualSensorSpec();
   void sanityCheck() const override;
   bool isVisualSensorSpec() const override { return true; }
   bool operator==(const VisualSensorSpec& a) const;
   ESP_SMART_POINTERS(VisualSensorSpec)
 };
+
 // Represents a sensor that provides visual data from the environment to an
 // agent
 class VisualSensor : public Sensor {
@@ -160,7 +174,7 @@ class VisualSensor : public Sensor {
     visualSensorSpec_->resolution = {height, width};
   }
 
-  void setResolution(vec2i resolution) {
+  void setResolution(const Magnum::Vector2i& resolution) {
     CORRADE_ASSERT(resolution[0] > 0 && resolution[1] > 0,
                    "VisualSensor::setResolution(): resolution height and "
                    "width must be greater than 0", );

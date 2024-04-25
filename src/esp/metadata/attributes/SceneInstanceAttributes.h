@@ -16,9 +16,15 @@ enum class MotionType;
 }
 namespace metadata {
 namespace managers {
+class SceneInstanceAttributesManager;
 enum class SceneInstanceTranslationOrigin;
 }  // namespace managers
 namespace attributes {
+
+class AbstractObjectAttributes;
+class ArticulatedObjectAttributes;
+class ObjectAttributes;
+class StageAttributes;
 
 /**
  * @brief This class describes an instance of a stage, object or articulated
@@ -220,6 +226,21 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
                          io::JsonAllocator& allocator) const override;
 
  protected:
+  friend class esp::metadata::managers::SceneInstanceAttributesManager;
+  /**
+   * @brief Called only from SceneInstanceAttributesManager, to create and
+   * initialize an instance attributes from an existing object
+   * attributes.
+   *
+   * Called internally. SceneObjectInstanceAttributes handle is also the
+   * handle of the underlying @ref AbstractObjectAttributes for the object being
+   * instanced. This initializes the instance attributes with the values from
+   * the passed object attributes.
+   */
+  explicit SceneObjectInstanceAttributes(
+      const std::string& handle,
+      const std::shared_ptr<AbstractObjectAttributes>& baseObjAttribs);
+
   /**
    * @brief Retrieve a comma-separated informational string about the contents
    * of this managed object.
@@ -267,8 +288,8 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
 class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
  public:
   /**
-   * @brief SceneObjectInstanceAttributes handle is also the handle of the
-   * underlying @ref AbstractObjectAttributes for the object being instanced.
+   * @brief SceneAOInstanceAttributes handle is also the handle of the
+   * underlying @ref ArticulatedObjectAttributes for the object being instanced.
    */
   explicit SceneAOInstanceAttributes(const std::string& handle);
 
@@ -452,6 +473,21 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
   }
 
  protected:
+  friend class esp::metadata::managers::SceneInstanceAttributesManager;
+  /**
+   * @brief Called only from SceneInstanceAttributesManager, to create and
+   * initialize an instance attributes from an existing object
+   * attributes.
+   *
+   * SceneAOInstanceAttributes handle is also the handle of the
+   * underlying @ref ArticulatedObjectAttributes for the object being
+   * instanced. This initializes the instance attributes with the values from
+   * the passed object attributes.
+   */
+  SceneAOInstanceAttributes(
+      const std::string& handle,
+      const std::shared_ptr<ArticulatedObjectAttributes>& aObjAttribs);
+
   /**
    * @brief Retrieve a comma-separated informational string about the contents
    * of this SceneAOInstanceAttributes object.

@@ -9,7 +9,6 @@
 
 #include "esp/core/Buffer.h"
 #include "esp/core/Esp.h"
-#include "esp/core/EspEigen.h"
 
 #include "esp/sensor/configure.h"
 
@@ -58,8 +57,8 @@ struct SensorSpec {
   std::string uuid = "";
   SensorType sensorType = SensorType::None;
   SensorSubType sensorSubType = SensorSubType::None;
-  vec3f position = {0, 1.5, 0};
-  vec3f orientation = {0, 0, 0};
+  Magnum::Vector3 position = {0, 1.5, 0};
+  Magnum::Vector3 orientation = {0, 0, 0};
   std::string noiseModel = "None";
   SensorSpec() = default;
   virtual ~SensorSpec() = default;

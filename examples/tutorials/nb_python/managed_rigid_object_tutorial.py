@@ -81,7 +81,7 @@ def make_configuration():
     rgba_camera_3rdperson_spec.sensor_type = habitat_sim.SensorType.COLOR
     rgba_camera_3rdperson_spec.resolution = camera_resolution
     rgba_camera_3rdperson_spec.position = [0.0, 1.0, 0.3]
-    rgba_camera_3rdperson_spec.orientation = [-45, 0.0, 0.0]
+    rgba_camera_3rdperson_spec.orientation = [-45.0, 0.0, 0.0]
     rgba_camera_3rdperson_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
     sensor_specs.append(rgba_camera_3rdperson_spec)
 

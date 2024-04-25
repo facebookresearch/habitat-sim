@@ -16,7 +16,7 @@ XML_PROGRAMLISTING     = NO
 ##! M_CLASS_TREE_EXPAND_LEVELS = 2
 
 ##! M_LINKS_NAVBAR1 = \
-##!  "<a href="pages.html">Pages</a> <a href="new-actions.html">Add new actions</a> <a href="attributesJSON.html">Attributes JSON</a> <a href="stereo-agent.html">Stereo agent</a> <a href="lighting-setups.html">Lighting Setups</a> <a href="image-extractor.html">Image extraction</a> <a href="rigid-object-tutorial.html">Rigid Object Tutorial</a>" \
+##!  "<a href="pages.html">Pages</a> <a href="new-actions.html">Add new actions</a> <a href="attributesJSON.html">Attributes JSON</a> <a href="stereo-agent.html">Stereo agent</a> <a href="lighting-setups.html">Lighting Setups</a> <a href="rigid-object-tutorial.html">Rigid Object Tutorial</a>" \
 ##!  "<a href="classes.html">Classes</a>"
 ##! M_LINKS_NAVBAR2 = \
 ##!  "<a href="cpp.html">C++ API</a>" \

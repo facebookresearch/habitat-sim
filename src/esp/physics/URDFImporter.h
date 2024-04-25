@@ -8,16 +8,12 @@
 #define ESP_PHYSICS_URDFIMPORTER_H_
 
 #include "esp/metadata/URDFParser.h"
+#include "esp/metadata/attributes/ArticulatedObjectAttributes.h"
 
 namespace esp {
 namespace assets {
 class ResourceManager;
 }
-namespace metadata {
-namespace attributes {
-class ArticulatedObjectAttributes;
-}
-}  // namespace metadata
 
 namespace physics {
 
@@ -59,18 +55,11 @@ class URDFImporter {
    * a URDF file and cache the resulting model. Note: when applying uniform
    * scaling to a 3D model consider scale^3 mass scaling to approximate uniform
    * density.
-   * @param filename The filepath for the URDF and key for the cached model.
-   * @param globalScale A global, uniform 3D scale. Does not affect mass. Can be
-   * applied to update cached models.
-   * @param massScale A uniform scaling of link masses. Can be applied to update
-   * cached models.
+   * @param urdfFilepath The filepath for the URDF and key for the cached model.
    * @param forceReload If true, reload the URDF from file, replacing the cached
    * model.
    */
-  bool loadURDF(
-      const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
-          artObjAttributes,
-      bool forceReload = false);
+  bool loadURDF(const std::string& urdfFilepath, bool forceReload = false);
 
   // NOTE: all of these getter/setters act on the current "activeModel_"
   virtual std::shared_ptr<metadata::URDF::Model> getModel() const {
@@ -146,7 +135,9 @@ class URDFImporter {
    * @brief Load/import any required render and collision assets for the
    * acrive metadata::URDF::Model before instantiating it.
    */
-  void importURDFAssets();
+  void importURDFAssets(
+      const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&
+          artObjAttributes);
 
   //! importer model conversion flags
   int flags = 0;

@@ -416,7 +416,7 @@ def test_velocity_control():
     cfg_settings["scene"] = "NONE"
     hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
     with habitat_sim.Simulator(hab_cfg) as sim:
-        sim.set_gravity(np.array([0.0, 0.0, 0.0]))
+        sim.set_gravity(mn.Vector3(0.0, 0.0, 0.0))
         # get the rigid object attributes manager, which manages
         # templates used to create objects
         obj_template_mgr = sim.get_object_template_manager()
@@ -543,7 +543,8 @@ def test_raycast():
                 atol=0.07,
             )
             assert abs(raycast_results.hits[0].ray_distance - 6.831) < 0.001
-            assert raycast_results.hits[0].object_id == -1
+            # hit stage
+            assert raycast_results.hits[0].object_id == habitat_sim.stage_id
 
             # add a primitive object to the world and test a ray away from the origin
             cube_prim_handle = obj_template_mgr.get_template_handles("cube")[0]
@@ -906,7 +907,7 @@ def test_articulated_object_add_remove():
         robot = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
         assert robot
         assert robot.is_alive
-        assert robot.object_id == 0  # first robot added
+        assert robot.object_id == habitat_sim.stage_id + 1  # first robot added
 
         # add a second robot
         robot2 = art_obj_mgr.add_articulated_object_from_urdf(
@@ -1859,7 +1860,7 @@ def test_rigid_constraints():
         assert robot.translation[1] < -3
 
         # hang AO from the world with P2P
-        constraint_settings_2.object_id_b = -1
+        constraint_settings_2.object_id_b = habitat_sim.stage_id
         constraint_settings_2.constraint_type = (
             habitat_sim.physics.RigidConstraintType.PointToPoint
         )
@@ -2032,7 +2033,7 @@ def test_bullet_collision_helper():
         assert sim.get_physics_num_active_overlapping_pairs() == 1
         assert (
             sim.get_physics_step_collision_summary()
-            == "[RigidObject, cubeSolid, id 0] vs [Stage, subpart 0], 4 points\n"
+            == "[RigidObject, cubeSolid, id 1] vs [Stage, subpart 0], 4 points\n"
         )
 
         sim.step_physics(3.0)

@@ -6,6 +6,7 @@
 
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/TestSuite/Compare/Numeric.h>
+#include <Corrade/TestSuite/Compare/String.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/Path.h>
 #include <Magnum/Math/Range.h>
@@ -54,6 +55,7 @@ struct GfxReplayTest : Cr::TestSuite::Tester {
 
   void testLightIntegration();
   void testSkinningIntegration();
+  void testDecimalPlaces();
 
   esp::logging::LoggingContext loggingContext;
 
@@ -77,6 +79,7 @@ GfxReplayTest::GfxReplayTest() {
       &GfxReplayTest::testSimulatorIntegration,
       &GfxReplayTest::testLightIntegration,
       &GfxReplayTest::testSkinningIntegration,
+      &GfxReplayTest::testDecimalPlaces,
   });
 }  // ctor
 
@@ -720,6 +723,68 @@ void GfxReplayTest::testSkinningIntegration() {
 
   // Frame 4
   CORRADE_COMPARE(keyframes[4].deletions.size(), 2);
+}
+
+void GfxReplayTest::testDecimalPlaces() {
+  const std::string testFile =
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/sphere.glb");
+
+  // record a playback string
+  const std::vector<int> decimalCounts = {1, 3, 5};
+  std::vector<std::string> keyframes = {};
+  {
+    SimulatorConfiguration simConfig{};
+    simConfig.enableGfxReplaySave = true;
+    simConfig.createRenderer = false;
+    simConfig.activeSceneName = testFile;
+    auto sim = Simulator::create_unique(simConfig);
+    CORRADE_VERIFY(sim);
+    const auto recorder = sim->getGfxReplayManager()->getRecorder();
+    CORRADE_VERIFY(recorder);
+    CORRADE_COMPARE(recorder->getMaxDecimalPlaces(),
+                    esp::gfx::replay::DEFAULT_MAX_DECIMAL_PLACES);
+
+    const std::string lightSetupKey = "";
+    esp::assets::RenderAssetInstanceCreationInfo::Flags flags;
+    flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
+    flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
+    esp::assets::RenderAssetInstanceCreationInfo creation(
+        testFile, Corrade::Containers::NullOpt, flags, lightSetupKey);
+    const esp::assets::AssetInfo info =
+        esp::assets::AssetInfo::fromPath(testFile);
+    auto* node = sim->loadAndCreateRenderAssetInstance(info, creation);
+
+    for (int i = 0; i < decimalCounts.size(); ++i) {
+      node->setTranslation(Mn::Vector3{0.0f, 0.0f, 0.0f});
+      recorder->saveKeyframe();
+      node->setTranslation(Mn::Vector3{0.555555555f, 0.0f, 0.0f});
+      recorder->saveKeyframe();
+
+      recorder->setMaxDecimalPlaces(decimalCounts[i]);
+      CORRADE_COMPARE(recorder->getMaxDecimalPlaces(), decimalCounts[i]);
+      auto keyframe =
+          recorder->writeIncrementalSavedKeyframesToStringArray().back();
+      keyframes.push_back(keyframe);
+    }
+  }
+
+  // read the playback strings
+  {
+    CORRADE_COMPARE_AS(keyframes[0], "0.5",
+                       Cr::TestSuite::Compare::StringContains);
+    CORRADE_COMPARE_AS(keyframes[0], "0.55",
+                       Cr::TestSuite::Compare::StringNotContains);
+
+    CORRADE_COMPARE_AS(keyframes[1], "0.555",
+                       Cr::TestSuite::Compare::StringContains);
+    CORRADE_COMPARE_AS(keyframes[1], "0.5555",
+                       Cr::TestSuite::Compare::StringNotContains);
+
+    CORRADE_COMPARE_AS(keyframes[2], "0.55555",
+                       Cr::TestSuite::Compare::StringContains);
+    CORRADE_COMPARE_AS(keyframes[2], "0.555555",
+                       Cr::TestSuite::Compare::StringNotContains);
+  }
 }
 
 }  // namespace

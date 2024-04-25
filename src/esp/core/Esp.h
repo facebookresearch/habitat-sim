@@ -77,8 +77,8 @@ inline std::shared_ptr<Derived> shared_from(Derived* derived) {
 /** @brief Returned on failed creation or lookup of an ID. */
 constexpr int ID_UNDEFINED = -1;
 
-/** @brief Undefined or invalid attribute in physics property query. */
-constexpr double PHYSICS_ATTR_UNDEFINED = -1.0;
+/** @brief Object ID of the rigid stage.*/
+constexpr int RIGID_STAGE_ID = 0;
 
 static const double NO_TIME = 0.0;
 

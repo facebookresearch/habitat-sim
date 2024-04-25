@@ -15,7 +15,6 @@
 #include <string>
 #include <vector>
 #include "Corrade/Containers/Optional.h"
-#include "attributes/ArticulatedObjectAttributes.h"
 #include "esp/core/Configuration.h"
 
 /** @file
@@ -363,82 +362,7 @@ class Model {
    */
   float getMassScaling() const { return m_massScaling; }
 
-  /**
-   * @brief Set the path to the render asset to attach to this URDF model.
-   */
-  void setRenderAsset(Cr::Containers::Optional<std::string> renderAsset) {
-    m_renderAsset = std::move(renderAsset);
-  }
-
-  /**
-   * @brief Get the path to the render asset to attach to this URDF model.
-   */
-  Cr::Containers::Optional<std::string> getRenderAsset() const {
-    return m_renderAsset;
-  }
-
-  /**
-   * @brief Set the semantic ID of the URDF model.
-   */
-  void setSemanticId(int semanticId) { m_semanticId = semanticId; }
-
-  /**
-   * @brief Get the semantic ID of this URDF model.
-   */
-  int getSemanticId() const { return m_semanticId; }
-
-  /**
-   * @brief Set hint to render articulated object primitives even if a render
-   * asset is present.
-   */
-  void setRenderLinkVisualShapes(bool renderLinkVisualShapes) {
-    m_renderLinkVisualShapes = renderLinkVisualShapes;
-  }
-
-  /**
-   * @brief Get hint to render articulated object visual shapes as defined in
-   * the URDF even if a render asset/skin is present.
-   */
-  bool getRenderLinkVisualShapes() const { return m_renderLinkVisualShapes; }
-
-  /**
-   * @brief This function will set the
-   * @ref metadata::attributes::ArticulatedObjectAttributes used to create this model.
-   */
-  void setModelInitAttributes(
-      metadata::attributes::ArticulatedObjectAttributes::ptr artObjAttributes);
-
-  /**
-   * @brief Gets a smart pointer reference to a copy of the user-specified
-   * configuration data from a config file. Habitat does not parse or
-   * process this data, but it will be available to the user via python
-   * bindings for each object.
-   */
-  std::shared_ptr<core::config::Configuration> getUserConfiguration() const {
-    return initializationAttributes_->getUserConfiguration();
-  }
-
-  /**
-   * @brief Get a copy of the template used to initialize this object.
-   *
-   * @return A copy of the @ref esp::metadata::attributes::ArticulatedObjectAttributes
-   * template used to create this object.
-   */
-  std::shared_ptr<metadata::attributes::ArticulatedObjectAttributes>
-  getInitializationAttributes() const {
-    return initializationAttributes_;
-  };
-
  protected:
-  /**
-   * @brief Json-based attributes defining characteristics of this model not
-   * specified in the source XML/URDF. Primarily to support default user-defined
-   * attributes. This data is read in from a json file with the same base name
-   * as the source XML/URDF for this model but the extension ".ao_config.json".
-   */
-  metadata::attributes::ArticulatedObjectAttributes::ptr
-      initializationAttributes_ = nullptr;
-
   // scaling values which can be applied to the model after parsing
   //! Global euclidean scaling applied to the model's transforms, asset scales,
   //! and prismatic joint limits. Does not affect mass.
@@ -446,16 +370,6 @@ class Model {
 
   //! Mass scaling of the model's Link inertias.
   float m_massScaling = 1.0;
-
-  //! Path to a render asset associated with this articulated object.
-  Cr::Containers::Optional<std::string> m_renderAsset = Cr::Containers::NullOpt;
-
-  //! Semantic ID of this model.
-  int m_semanticId = 0;
-
-  //! Forces link visual shapes to be rendered even if a render asset(skin) is
-  //! present.
-  bool m_renderLinkVisualShapes = false;
 
   //! Scale the transformation and parameters of a Shape
   void scaleShape(Shape& shape, float scale);
@@ -610,9 +524,7 @@ class Parser {
 
   // parse a loaded URDF string into relevant general data structures
   // return false if the string is not a valid urdf or other error causes abort
-  bool parseURDF(const metadata::attributes::ArticulatedObjectAttributes::ptr&
-                     artObjAttributes,
-                 std::shared_ptr<Model>& model);
+  bool parseURDF(const std::string& filename, std::shared_ptr<Model>& model);
 
   // This is no longer used, instead set the urdf and physics subsystem to
   // veryverbose, i.e. export HABITAT_SIM_LOG="urdf,physics=veryverbose" bool

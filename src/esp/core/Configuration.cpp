@@ -223,6 +223,31 @@ std::string ConfigValue::getAsString() const {
   }  // switch
 }  // ConfigValue::getAsString
 
+bool operator==(const ConfigValue& a, const ConfigValue& b) {
+  if (a._type != b._type) {
+    return false;
+  }
+  // Types are equal, check values
+  // if trivial type, compare data arrays
+  if (a._type < ConfigStoredType::_nonTrivialTypes) {
+    return std::equal(std::begin(a._data), std::end(a._data),
+                      std::begin(b._data));
+  } else {
+    // Nontrivial, get values as appropriate
+    if (a._type == ConfigStoredType::String) {
+      return a.get<std::string>() == b.get<std::string>();
+    } else {
+      // Shouldn't get here
+      CORRADE_ASSERT_UNREACHABLE(
+          "Unknown/unsupported Type in ConfigValue equality check", false);
+    }
+  }
+}
+
+bool operator!=(const ConfigValue& a, const ConfigValue& b) {
+  return !(a == b);
+}
+
 io::JsonGenericValue ConfigValue::writeToJsonObject(
     io::JsonAllocator& allocator) const {
   // unknown is checked before this function is called, so does not need support
@@ -306,6 +331,154 @@ Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value) {
                << "|" << value.getType() << Mn::Debug::nospace << ")";
 }
 
+int Configuration::loadOneConfigFromJson(int numConfigSettings,
+                                         const std::string& key,
+                                         const io::JsonGenericValue& jsonObj) {
+  // increment, assuming is valid object
+  ++numConfigSettings;
+  if (jsonObj.IsDouble()) {
+    set(key, jsonObj.GetDouble());
+  } else if (jsonObj.IsNumber()) {
+    set(key, jsonObj.GetInt());
+  } else if (jsonObj.IsString()) {
+    set(key, jsonObj.GetString());
+  } else if (jsonObj.IsBool()) {
+    set(key, jsonObj.GetBool());
+  } else if (jsonObj.IsArray() && jsonObj.Size() > 0) {
+    // non-empty array of numeric values - first attempt to put them into a
+    // magnum vector or matrix
+    if (jsonObj[0].IsNumber()) {
+      // numeric vector, quaternion or matrix
+      if (jsonObj.Size() == 2) {
+        // All size 2 numeric arrays are mapped to Mn::Vector2
+        Mn::Vector2 val{};
+        if (io::fromJsonValue(jsonObj, val)) {
+          set(key, val);
+        }
+      } else if (jsonObj.Size() == 3) {
+        // All size 3 numeric arrays are mapped to Mn::Vector3
+        Mn::Vector3 val{};
+        if (io::fromJsonValue(jsonObj, val)) {
+          set(key, val);
+        }
+      } else if (jsonObj.Size() == 4) {
+        // JSON numeric array of size 4 can be either vector4, quaternion or
+        // color4, so must get type of object that exists with key
+        // NOTE : to properly make use of vector4 and color4 configValues
+        // loaded from JSON, the owning Configuration must be
+        // pre-initialized in its constructor with a default value at the
+        // target key. Otherwise for backwards compatibility, we default to
+        // reading a quaternion
+
+        // Check if this configuration has pre-defined field with given key
+        if (hasValue(key)) {
+          ConfigStoredType valType = get(key).getType();
+          if (valType == ConfigStoredType::MagnumQuat) {
+            // if predefined object is neither
+            Mn::Quaternion val{};
+            if (io::fromJsonValue(jsonObj, val)) {
+              set(key, val);
+            }
+          } else if (valType == ConfigStoredType::MagnumVec4) {
+            // if object exists already @ key and its type is Vector4
+            Mn::Vector4 val{};
+            if (io::fromJsonValue(jsonObj, val)) {
+              set(key, val);
+            }
+          } else {
+            // unknown predefined type of config of size 4
+            // this indicates incomplete implementation of size 4
+            // configuration type.
+            // decrement count for key:obj due to not being handled vector
+            --numConfigSettings;
+
+            ESP_WARNING()
+                << "Config cell in JSON document contains key" << key
+                << "referencing an existing configuration element of size "
+                   "4 of unknown type:"
+                << getNameForStoredType(valType) << "so skipping.";
+          }
+        } else {
+          // This supports fields that do not yet exist.
+          // Check if label contains substrings inferring expected type,
+          // otherwise assume this field is a mn::Vector4
+
+          auto lcaseKey = Cr::Utility::String::lowercase(key);
+          // labels denoting quaternions
+          if ((lcaseKey.find("quat") != std::string::npos) ||
+              (lcaseKey.find("rotat") != std::string::npos) ||
+              (lcaseKey.find("orient") != std::string::npos)) {
+            // object label contains quaternion tag, treat as a
+            // Mn::Quaternion
+            Mn::Quaternion val{};
+            if (io::fromJsonValue(jsonObj, val)) {
+              set(key, val);
+            }
+          } else {
+            // if unrecognized label for user-defined field, default the
+            // value to be treated as a Mn::Vector4
+            Mn::Vector4 val{};
+            if (io::fromJsonValue(jsonObj, val)) {
+              set(key, val);
+            }
+          }
+        }
+      } else if (jsonObj.Size() == 9) {
+        // assume is 3x3 matrix
+        Mn::Matrix3 mat{};
+        if (io::fromJsonValue(jsonObj, mat)) {
+          set(key, mat);
+        }
+      } else {
+        // The array does not match any currently supported magnum
+        // objects, so place in indexed subconfig of values.
+        // create a new subgroup
+        std::shared_ptr<core::config::Configuration> subGroupPtr =
+            getSubconfigCopy<core::config::Configuration>(key);
+
+        for (size_t i = 0; i < jsonObj.Size(); ++i) {
+          const std::string subKey =
+              Cr::Utility::formatString("{}_{:.02d}", key, i);
+          numConfigSettings += subGroupPtr->loadOneConfigFromJson(
+              numConfigSettings, subKey, jsonObj[i]);
+        }
+        setSubconfigPtr<core::config::Configuration>(key, subGroupPtr);
+      }
+      // value in array is a number of specified length, else it is a string, an
+      // object or a nested array
+    } else {
+      // create a new subgroup
+      std::shared_ptr<core::config::Configuration> subGroupPtr =
+          getSubconfigCopy<core::config::Configuration>(key);
+
+      for (size_t i = 0; i < jsonObj.Size(); ++i) {
+        const std::string subKey =
+            Cr::Utility::formatString("{}_{:.02d}", key, i);
+        numConfigSettings += subGroupPtr->loadOneConfigFromJson(
+            numConfigSettings, subKey, jsonObj[i]);
+      }
+      setSubconfigPtr<core::config::Configuration>(key, subGroupPtr);
+    }
+  } else if (jsonObj.IsObject()) {
+    // support nested objects
+    // create a new subgroup
+    std::shared_ptr<core::config::Configuration> subGroupPtr =
+        getSubconfigCopy<core::config::Configuration>(key);
+    numConfigSettings += subGroupPtr->loadFromJson(jsonObj);
+    // save subgroup's subgroup configuration in original config
+    setSubconfigPtr<core::config::Configuration>(key, subGroupPtr);
+    //
+  } else {
+    // TODO support other types?
+    // decrement count for key:obj due to not being handled type
+    --numConfigSettings;
+    ESP_WARNING() << "Config cell in JSON document contains key" << key
+                  << "referencing an unknown/unparsable value type, so "
+                     "skipping this key.";
+  }
+  return numConfigSettings;
+}  // namespace config
+
 int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
   // count number of valid user config settings found
   int numConfigSettings = 0;
@@ -313,154 +486,9 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
        it != jsonObj.MemberEnd(); ++it) {
     // for each key, attempt to parse
     const std::string key{it->name.GetString()};
-    const auto& obj = it->value;
-    // increment, assuming is valid object
-    ++numConfigSettings;
 
-    if (obj.IsDouble()) {
-      set(key, obj.GetDouble());
-    } else if (obj.IsNumber()) {
-      set(key, obj.GetInt());
-    } else if (obj.IsString()) {
-      set(key, obj.GetString());
-    } else if (obj.IsBool()) {
-      set(key, obj.GetBool());
-    } else if (obj.IsArray() && obj.Size() > 0) {
-      // non-empty array of numeric values
-      if (obj[0].IsNumber()) {
-        // numeric vector, quaternion or matrix
-        if (obj.Size() == 2) {
-          // All size 2 numeric arrays are mapped to Mn::Vector2
-          Mn::Vector2 val{};
-          if (io::fromJsonValue(obj, val)) {
-            set(key, val);
-          }
-        } else if (obj.Size() == 3) {
-          // All size 3 numeric arrays are mapped to Mn::Vector3
-          Mn::Vector3 val{};
-          if (io::fromJsonValue(obj, val)) {
-            set(key, val);
-          }
-        } else if (obj.Size() == 4) {
-          // JSON numeric array of size 4 can be either vector4, quaternion or
-          // color4, so must get type of object that exists with key
-          // NOTE : to properly make use of vector4 and color4 configValues
-          // loaded from JSON, the owning Configuration must be
-          // pre-initialized in its constructor with a default value at the
-          // target key. Otherwise for backwards compatibility, we default to
-          // reading a quaternion
-
-          // Check if this configuration has pre-defined field with given key
-          if (hasValue(key)) {
-            ConfigStoredType valType = get(key).getType();
-            if (valType == ConfigStoredType::MagnumQuat) {
-              // if predefined object is neither
-              Mn::Quaternion val{};
-              if (io::fromJsonValue(obj, val)) {
-                set(key, val);
-              }
-            } else if (valType == ConfigStoredType::MagnumVec4) {
-              // if object exists already @ key and its type is Vector4
-              Mn::Vector4 val{};
-              if (io::fromJsonValue(obj, val)) {
-                set(key, val);
-              }
-            } else {
-              // unknown predefined type of config of size 4
-              // this indicates incomplete implementation of size 4
-              // configuration type.
-              // decrement count for key:obj due to not being handled vector
-              --numConfigSettings;
-
-              ESP_WARNING()
-                  << "Config cell in JSON document contains key" << key
-                  << "referencing an existing configuration element of size "
-                     "4 of unknown type:"
-                  << getNameForStoredType(valType) << "so skipping.";
-            }
-          } else {
-            // This supports fields that do not yet exist.
-            // Check if label contains substrings inferring expected type,
-            // otherwise assume this field is a mn::Vector4
-
-            auto lcaseKey = Cr::Utility::String::lowercase(key);
-            // labels denoting quaternions
-            if ((lcaseKey.find("quat") != std::string::npos) ||
-                (lcaseKey.find("rotat") != std::string::npos) ||
-                (lcaseKey.find("orient") != std::string::npos)) {
-              // object label contains quaternion tag, treat as a
-              // Mn::Quaternion
-              Mn::Quaternion val{};
-              if (io::fromJsonValue(obj, val)) {
-                set(key, val);
-              }
-            } else {
-              // if unrecognized label for user-defined field, default the
-              // value to be treated as a Mn::Vector4
-              Mn::Vector4 val{};
-              if (io::fromJsonValue(obj, val)) {
-                set(key, val);
-              }
-            }
-          }
-        } else if (obj.Size() == 9) {
-          // assume is 3x3 matrix
-          Mn::Matrix3 mat{};
-          if (io::fromJsonValue(obj, mat)) {
-            set(key, mat);
-          }
-        } else {
-          // decrement count for key:obj due to not being handled vector
-          --numConfigSettings;
-          // TODO support numeric array in JSON
-          ESP_WARNING()
-              << "Config cell in JSON document contains key" << key
-              << "referencing an unsupported numeric array of length :"
-              << obj.Size() << "so skipping.";
-        }
-      } else if (obj[0].IsString()) {
-        // Array of strings
-
-        // create a new subgroup
-        std::shared_ptr<core::config::Configuration> subGroupPtr =
-            getSubconfigCopy<core::config::Configuration>(key);
-
-        for (size_t i = 0; i < obj.Size(); ++i) {
-          std::string dest;
-          if (!io::fromJsonValue(obj[i], dest)) {
-            ESP_ERROR() << "Failed to parse array element" << i
-                        << "in non-numeric list of values keyed by" << key
-                        << "so skipping this value.";
-          } else {
-            const std::string subKey =
-                Cr::Utility::formatString("{}_{:.02d}", key, i);
-            subGroupPtr->set(subKey, dest);
-            // Increment for each sub-config object
-            ++numConfigSettings;
-          }
-        }
-
-        // Incremented numConfigSettings for this config already.
-        // save subgroup's subgroup configuration in original config
-        setSubconfigPtr<core::config::Configuration>(key, subGroupPtr);
-      }
-    } else if (obj.IsObject()) {
-      // support nested objects
-      // create a new subgroup
-      std::shared_ptr<core::config::Configuration> subGroupPtr =
-          getSubconfigCopy<core::config::Configuration>(key);
-      numConfigSettings += subGroupPtr->loadFromJson(obj);
-      // save subgroup's subgroup configuration in original config
-      setSubconfigPtr<core::config::Configuration>(key, subGroupPtr);
-      //
-    } else {
-      // TODO support other types?
-      // decrement count for key:obj due to not being handled type
-      --numConfigSettings;
-      ESP_WARNING() << "Config cell in JSON document contains key" << key
-                    << "referencing an unknown/unparsable value type, so "
-                       "skipping this key.";
-    }
+    numConfigSettings +=
+        loadOneConfigFromJson(numConfigSettings, key, it->value);
   }
   return numConfigSettings;
 }  // Configuration::loadFromJson

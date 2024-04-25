@@ -3,7 +3,6 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "Sensor.h"
-#include <Magnum/EigenIntegration/Integration.h>
 #include "esp/core/Check.h"
 #include "esp/scene/SceneGraph.h"
 
@@ -35,9 +34,9 @@ void SensorSpec::sanityCheck() const {
                      sensorSubType < SensorSubType::SensorSubTypeCount,
                  "SensorSpec::sanityCheck(): sensorSubType"
                      << int32_t(sensorType) << "is illegal", );
-  CORRADE_ASSERT((abs(position.array()) >= 0).any(),
+  CORRADE_ASSERT((Mn::Math::abs(position) >= Mn::Vector3{0.0f}).any(),
                  "SensorSpec::sanityCheck(): position is illegal", );
-  CORRADE_ASSERT((abs(orientation.array()) >= 0).any(),
+  CORRADE_ASSERT((Mn::Math::abs(orientation) >= Mn::Vector3{0.0f}).any(),
                  "SensorSpec::sanityCheck(): orientation is illegal", );
   CORRADE_ASSERT(!noiseModel.empty(),
                  "SensorSpec::sanityCheck(): noiseModel is unitialized", );
@@ -76,7 +75,7 @@ void Sensor::setTransformationFromSpec() {
 
   node().resetTransformation();
 
-  node().translate(Magnum::Vector3(spec_->position));
+  node().translate(spec_->position);
   node().rotateX(Magnum::Rad(spec_->orientation[0]));
   node().rotateY(Magnum::Rad(spec_->orientation[1]));
   node().rotateZ(Magnum::Rad(spec_->orientation[2]));

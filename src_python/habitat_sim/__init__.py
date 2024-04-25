@@ -6,7 +6,7 @@
 
 import builtins
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 if not getattr(builtins, "__HSIM_SETUP__", False):
     # TODO: kept only for compatibility with existing code. Please gradually remove
@@ -59,6 +59,7 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         audio_enabled,
         built_with_bullet,
         cuda_enabled,
+        stage_id,
     )
     from habitat_sim.nav import (  # noqa: F401
         GreedyFollowerCodes,

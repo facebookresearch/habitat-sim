@@ -155,10 +155,10 @@ settle down.
     /* Account for DPI scaling, i.e. take the actual framebuffer resolution
        divided by the environment grid size instead of the resolution specified
        in the arguments */
-    pinholeCameraSpec->resolution = Mn::EigenIntegration::cast<esp::vec2i>(
+    pinholeCameraSpec->resolution = {
         (framebufferSize() /
          esp::sim::AbstractReplayRenderer::environmentGridSize(fileCount))
-            .flipped());
+            .flipped()};
     pinholeCameraSpec->uuid = sensorName;
     sensorSpecifications = {pinholeCameraSpec};
   }

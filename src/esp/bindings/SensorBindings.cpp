@@ -66,7 +66,12 @@ void initSensorBindings(py::module& m) {
       .value("FISHEYE", SensorSubType::Fisheye)
       .value("EQUIRECTANGULAR", SensorSubType::Equirectangular)
       .value("IMPULSERESPONSE", SensorSubType::ImpulseResponse);
-  ;
+
+  // NOTE : esp::sensor::SemanticSensorTarget is an alias for
+  // esp::scene::SceneNodeSemanticDataIDX.
+  py::enum_<SemanticSensorTarget>(m, "SemanticSensorTarget")
+      .value("SEMANTIC_ID", SemanticSensorTarget::SEMANTIC_ID)
+      .value("OBJECT_ID", SemanticSensorTarget::OBJECT_ID);
 
   py::enum_<FisheyeSensorModelType>(m, "FisheyeSensorModelType")
       .value("DOUBLE_SPHERE", FisheyeSensorModelType::DoubleSphere);
@@ -105,7 +110,11 @@ void initSensorBindings(py::module& m) {
       .def_readwrite("resolution", &VisualSensorSpec::resolution)
       .def_readwrite("gpu2gpu_transfer", &VisualSensorSpec::gpu2gpuTransfer)
       .def_readwrite("channels", &VisualSensorSpec::channels)
-      .def_readwrite("clear_color", &CameraSensorSpec::clearColor);
+      .def_readwrite(
+          "semantic_target", &VisualSensorSpec::semanticTarget,
+          R"(The type of information rendered by the semantic sensor. If this sensor is not semantic,
+            this is ignored. Acceptable values : [SEMANTIC_ID(default), OBJECT_ID])")
+      .def_readwrite("clear_color", &VisualSensorSpec::clearColor);
 
   // ====CameraSensorSpec ====
   py::class_<CameraSensorSpec, CameraSensorSpec::ptr, VisualSensorSpec>(

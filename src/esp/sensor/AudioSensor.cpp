@@ -77,7 +77,7 @@ void AudioSensor::reset() {
   impulseResponse_.clear();
 }
 
-void AudioSensor::setAudioSourceTransform(const vec3f& sourcePos) {
+void AudioSensor::setAudioSourceTransform(const Magnum::Vector3& sourcePos) {
   ESP_DEBUG() << logHeader_
               << "Setting the audio source position : " << sourcePos << "]";
   lastSourcePos_ = sourcePos;
@@ -85,8 +85,9 @@ void AudioSensor::setAudioSourceTransform(const vec3f& sourcePos) {
   newSource_ = true;
 }
 
-void AudioSensor::setAudioListenerTransform(const vec3f& agentPos,
-                                            const vec4f& agentRotQuat) {
+void AudioSensor::setAudioListenerTransform(
+    const Magnum::Vector3& agentPos,
+    const Magnum::Vector4& agentRotQuat) {
   ESP_DEBUG() << logHeader_ << "Setting the agent transform : position ["
               << agentPos << "], rotQuat[" << agentRotQuat << "]";
 
@@ -99,11 +100,11 @@ void AudioSensor::setAudioListenerTransform(const vec3f& agentPos,
   // changed,
   //    add a listener
   if (newInitialization_ || (lastAgentPos_ != agentPos) ||
-      !(lastAgentRot_.isApprox(agentRotQuat))) {
+      (lastAgentRot_ != agentRotQuat)) {
     audioSimulator_->AddListener(
-        RLRAudioPropagation::Vector3f{agentPos(0), agentPos(1), agentPos(2)},
-        RLRAudioPropagation::Quaternion{agentRotQuat(0), agentRotQuat(1),
-                                        agentRotQuat(2), agentRotQuat(3)},
+        RLRAudioPropagation::Vector3f{agentPos[0], agentPos[1], agentPos[2]},
+        RLRAudioPropagation::Quaternion{agentRotQuat[0], agentRotQuat[1],
+                                        agentRotQuat[2], agentRotQuat[3]},
         audioSensorSpec_->channelLayout_);
   }
 }
@@ -143,7 +144,7 @@ void AudioSensor::runSimulation(sim::Simulator& sim) {
     ESP_DEBUG() << logHeader_
                 << "Adding source at position : " << lastSourcePos_;
     audioSimulator_->AddSource(RLRAudioPropagation::Vector3f{
-        lastSourcePos_(0), lastSourcePos_(1), lastSourcePos_(2)});
+        lastSourcePos_[1], lastSourcePos_[2], lastSourcePos_[3]});
   }
 
   // Run the audio simulation
