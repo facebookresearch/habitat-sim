@@ -246,7 +246,9 @@ void initAttributesBindings(py::module& m) {
       .def(py::init(&MarkerSet::create<>));
 
   py::class_<MarkerSets, MarkerSets::ptr>(m, "MarkerSets")
-      .def(py::init(&MarkerSets::create<>));
+      .def(py::init(&MarkerSets::create<>))
+      .def_property_readonly("num_marker_sets", &MarkerSets::getNumMarkerSets,
+                             R"(The current number of Markersets present.)");
 
   // ==== ArticulatedObjectAttributes ====
   py::class_<ArticulatedObjectAttributes, AbstractAttributes,

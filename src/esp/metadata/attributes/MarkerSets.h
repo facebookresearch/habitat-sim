@@ -31,48 +31,13 @@ class LinkMarkerSubset : public esp::core::config::Configuration {
   }
 
   /**
-   * @brief whether the given @p markerName exists as a marker in
-   * this LinkMarkerSubset.
-   *
-   * @param markerName The desired marker set's name.
-   * @return whether the name is found as a marker value.
-   */
-  bool hasNamedMarker(const std::string& markerName) const {
-    return getSubconfigView("markers")->hasValue(markerName);
-  }
-
-  /**
-   * @brief Retrieve the marker point specified by the given @p markerName
-   */
-  Mn::Vector3 getNamedMarker(const std::string& markerName) const {
-    return getSubconfigView("markers")->get<Mn::Vector3>(markerName);
-  }
-
-  /**
-   * @brief Adds passed marker. Uses naming convention from load - key for this
-   * marker will be "markers_{numCurrentMarkers}"
-   */
-  void addMarker(const Magnum::Vector3& marker) {
-    auto markersPtr = editSubconfig<Configuration>("markers");
-    const std::string markerKey = Cr::Utility::formatString(
-        "markers_{:.02d}", markersPtr->getNumValues());
-    markersPtr->set(markerKey, marker);
-  }
-
-  /**
-   * @brief Retrieve a listing of all the marker handles in this
-   * LinkMarkerSubset.
-   */
-  std::vector<std::string> getAllMarkerNames() const {
-    return getSubconfigView("markers")->getKeys();
-  }
-
-  /**
    * @brief Returns a list of all markers in this LinkMarkerSubset
    */
-  std::vector<Mn::Vector3> getAllMarkers() const {
+  std::vector<Mn::Vector3> getMarkers() const {
     const auto markersPtr = getSubconfigView("markers");
     std::vector<std::string> markerTags = markersPtr->getKeys();
+    // Sort the keys
+    std::sort(markerTags.begin(), markerTags.end());
     std::vector<Mn::Vector3> res;
     res.reserve(markerTags.size());
     for (const auto& tag : markerTags) {
@@ -82,11 +47,14 @@ class LinkMarkerSubset : public esp::core::config::Configuration {
   }
 
   /**
-   * @brief Remove a named marker.
+   * @brief Set the list of marker points
    */
-  Mn::Vector3 removeMarker(const std::string& markerKey) {
-    return editSubconfig<Configuration>("markers")->remove<Mn::Vector3>(
-        markerKey);
+  void setMarkers(const std::vector<Mn::Vector3>& markers) {
+    auto markersPtr = editSubconfig<Configuration>("markers");
+    for (std::size_t i = 0; i < markers.size(); ++i) {
+      const std::string key = Cr::Utility::formatString("{:.03d}", i);
+      markersPtr->set(key, markers[i]);
+    }
   }
 
   ESP_SMART_POINTERS(LinkMarkerSubset)
