@@ -386,13 +386,13 @@ class ConfigValue {
   EnableIf<isConfigValTypePointerBased(configValTypeFor<T>()), void>
   setInternal(const T& value) {
     T** tmpDst = reinterpret_cast<T**>(_data);
-    *tmpDst = new T{value};
+    *tmpDst = new T(value);
   }
 
   template <typename T>
   EnableIf<!isConfigValTypePointerBased(configValTypeFor<T>()), void>
   setInternal(const T& value) {
-    new (_data) T{value};
+    new (_data) T(value);
   }
 
   template <typename T>
@@ -430,8 +430,9 @@ class ConfigValue {
 MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value);
 
 /**
- * @brief This class holds configuration data in a map of ConfigValues, and also
- * supports nested configurations via a map of smart pointers to this type.
+ * @brief This class holds configuration data in a map of ConfigValues, and
+ * also supports nested configurations via a map of smart pointers to this
+ * type.
  */
 class Configuration {
  public:
@@ -636,8 +637,8 @@ class Configuration {
    * @brief Remove value specified by @p key and return it if it exists.
    * Otherwise throw a warning and return a default value.
    * @param key The key of the value desired to be retrieved/removed.
-   * @return The erased value, held at @p key if found.  If not found, or not of
-   * expected type, gives a warning and returns a default value.
+   * @return The erased value, held at @p key if found.  If not found, or not
+   * of expected type, gives a warning and returns a default value.
    */
 
   ConfigValue remove(const std::string& key) {
@@ -675,8 +676,9 @@ class Configuration {
   }
 
   /**
-   * @brief Return number of value and subconfig entries in this Configuration.
-   * This only counts each subconfiguration entry as a single entry.
+   * @brief Return number of value and subconfig entries in this
+   * Configuration. This only counts each subconfiguration entry as a single
+   * entry.
    */
   int getNumEntries() const { return configMap_.size() + valueMap_.size(); }
 
@@ -692,8 +694,8 @@ class Configuration {
     return num;
   }
   /**
-   * @brief Return number of subconfig entries in this Configuration. This only
-   * counts each subconfiguration entry as a single entry.
+   * @brief Return number of subconfig entries in this Configuration. This
+   * only counts each subconfiguration entry as a single entry.
    */
   int getNumSubconfigs() const { return configMap_.size(); }
 
@@ -715,8 +717,8 @@ class Configuration {
   int getNumValues() const { return valueMap_.size(); }
 
   /**
-   * @brief Return total number of values held by this Configuration and all its
-   * subconfigs.
+   * @brief Return total number of values held by this Configuration and all
+   * its subconfigs.
    */
   int getConfigTreeNumValues() const {
     int num = valueMap_.size();
@@ -802,8 +804,8 @@ class Configuration {
    * @tparam Type to return. Must inherit from @ref
    * esp::core::config::Configuration
    * @param name The name of the configuration to retrieve.
-   * @return A pointer to a copy of the configuration having the requested name,
-   * cast to the appropriate type, or nullptr if not found.
+   * @return A pointer to a copy of the configuration having the requested
+   * name, cast to the appropriate type, or nullptr if not found.
    */
 
   template <typename T>
@@ -821,8 +823,8 @@ class Configuration {
   }
 
   /**
-   * @brief return pointer to read-only sub-configuration of given @p name. Will
-   * fail if configuration with given name dne.
+   * @brief return pointer to read-only sub-configuration of given @p name.
+   * Will fail if configuration with given name dne.
    * @param name The name of the desired configuration.
    */
   std::shared_ptr<const Configuration> getSubconfigView(
@@ -860,8 +862,9 @@ class Configuration {
   }
 
   /**
-   * @brief move specified subgroup config into configMap at desired name. Will
-   * replace any subconfiguration at given name without warning if present.
+   * @brief move specified subgroup config into configMap at desired name.
+   * Will replace any subconfiguration at given name without warning if
+   * present.
    * @param name The name of the subconfiguration to add
    * @param configPtr A pointer to a subconfiguration to add.
    */
@@ -892,8 +895,8 @@ class Configuration {
   }
 
   /**
-   * @brief Retrieve the number of entries held by the subconfig with the given
-   * name
+   * @brief Retrieve the number of entries held by the subconfig with the
+   * given name
    * @param name The name of the subconfig to query. If not found, returns 0
    * with a warning.
    * @return The number of entries in the named subconfig
@@ -908,8 +911,8 @@ class Configuration {
   }
 
   /**
-   * @brief Retrieve the number of entries held by the subconfig with the given
-   * name, recursing subordinate subconfigs
+   * @brief Retrieve the number of entries held by the subconfig with the
+   * given name, recursing subordinate subconfigs
    * @param name The name of the subconfig to query. If not found, returns 0
    * with a warning.
    * @return The number of entries in the named subconfig, including all
@@ -966,8 +969,8 @@ class Configuration {
   // ==================== load from and save to json =========================
 
   /**
-   * @brief Load values into this Configuration from the passed @p jsonObj. Will
-   * recurse for subconfigurations.
+   * @brief Load values into this Configuration from the passed @p jsonObj.
+   * Will recurse for subconfigurations.
    * @param jsonObj The JSON object to read from for the data for this
    * configuration.
    * @return The number of fields successfully read and populated.
@@ -975,22 +978,23 @@ class Configuration {
   int loadFromJson(const io::JsonGenericValue& jsonObj);
 
   /**
-   * @brief Build and return a json object holding the values and nested objects
-   * holding the subconfigs of this Configuration.
+   * @brief Build and return a json object holding the values and nested
+   * objects holding the subconfigs of this Configuration.
    */
   io::JsonGenericValue writeToJsonObject(io::JsonAllocator& allocator) const;
 
   /**
-   * @brief Populate a json object with all the first-level values held in this
-   * configuration.  May be overridden to handle special cases for root-level
-   * configuration of Attributes classes derived from Configuration.
+   * @brief Populate a json object with all the first-level values held in
+   * this configuration.  May be overridden to handle special cases for
+   * root-level configuration of Attributes classes derived from
+   * Configuration.
    */
   virtual void writeValuesToJson(io::JsonGenericValue& jsonObj,
                                  io::JsonAllocator& allocator) const;
 
   /**
-   * @brief Populate a json object with all the data from the subconfigurations,
-   * held in json sub-objects, for this Configuration.
+   * @brief Populate a json object with all the data from the
+   * subconfigurations, held in json sub-objects, for this Configuration.
    */
   virtual void writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
                                      io::JsonAllocator& allocator) const;
@@ -1022,8 +1026,8 @@ class Configuration {
   }
 
   /**
-   * @brief Return all the values in this cfg in a formatted string. Subconfigs
-   * will be displaced by a tab.
+   * @brief Return all the values in this cfg in a formatted string.
+   * Subconfigs will be displaced by a tab.
    * @param newLineStr The string to put at the end of each newline. As
    * subconfigs are called, add a tab to this.
    */
@@ -1037,8 +1041,8 @@ class Configuration {
    * @param numVals number of values/configs loaded so far
    * @param key key to use to search @p jsonObj and also to set value or
    * subconfig within this Configuration.
-   * @return the number of total fields successfully loaded after this function
-   * executes.
+   * @return the number of total fields successfully loaded after this
+   * function executes.
    */
   int loadOneConfigFromJson(int numVals,
                             const std::string& key,
@@ -1117,9 +1121,9 @@ MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug,
 /**
  * @brief Retrieves a shared pointer to a copy of the subConfig @ref
  * esp::core::config::Configuration that has the passed @p name . This will
- * create a pointer to a new sub-configuration if none exists already with that
- * name, but will not add this Configuration to this Configuration's internal
- * storage.
+ * create a pointer to a new sub-configuration if none exists already with
+ * that name, but will not add this Configuration to this Configuration's
+ * internal storage.
  *
  * @param name The name of the configuration to retrieve.
  * @return A pointer to a copy of the configuration having the requested

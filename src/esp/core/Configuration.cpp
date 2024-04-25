@@ -54,26 +54,15 @@ void copyConstructorFunc(
     char* const dst) {  // NOLINT(readability-non-const-parameter)
   const T* const* tmpSrc = reinterpret_cast<const T* const*>(src);
   T** tmpDst = reinterpret_cast<T**>(dst);
-  if (*tmpDst != nullptr) {
-    // Clean up whatever may be in dst
-    (*tmpDst)->~T();
-    *tmpDst = nullptr;
-  }
   if (*tmpSrc != nullptr) {
-    *tmpDst = new T{**tmpSrc};
+    *tmpDst = new T(**tmpSrc);
   }
 }
 template <class T>
 void moveConstructorFunc(
     char* const src,    // NOLINT(readability-non-const-parameter)
     char* const dst) {  // NOLINT(readability-non-const-parameter)
-  T** tmpDst = reinterpret_cast<T**>(dst);
   T** tmpSrc = reinterpret_cast<T**>(src);
-  if (*tmpDst != nullptr) {
-    // Clean up whatever may be in dst
-    (*tmpDst)->~T();
-    *tmpDst = nullptr;
-  }
   new (dst) T* {std::move(*tmpSrc)};
 }
 template <class T>
@@ -81,7 +70,7 @@ void destructorFunc(
     char* const src) {  // NOLINT(readability-non-const-parameter)
   T** tmpSrc = reinterpret_cast<T**>(src);
   if (*tmpSrc != nullptr) {
-    (*tmpSrc)->~T();
+    delete *tmpSrc;
     *tmpSrc = nullptr;
   }
 }
