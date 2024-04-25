@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
+
 #ifndef ESP_METADATA_ATTRIBUTES_MARKERSETS_H_
 #define ESP_METADATA_ATTRIBUTES_MARKERSETS_H_
 
@@ -22,6 +23,71 @@ namespace attributes {
 class LinkMarkerSubset : public esp::core::config::Configuration {
  public:
   LinkMarkerSubset() : Configuration() {}
+  /**
+   * @brief Returns the number of existing markers in this LinkMarkerSubset.
+   */
+  int getNumMarkers() const {
+    return getSubconfigView("markers")->getNumValues();
+  }
+
+  /**
+   * @brief whether the given @p markerName exists as a marker in
+   * this LinkMarkerSubset.
+   *
+   * @param markerName The desired marker set's name.
+   * @return whether the name is found as a marker value.
+   */
+  bool hasNamedMarker(const std::string& markerName) const {
+    return getSubconfigView("markers")->hasValue(markerName);
+  }
+
+  /**
+   * @brief Retrieve the marker point specified by the given @p markerName
+   */
+  Mn::Vector3 getNamedMarker(const std::string& markerName) const {
+    return getSubconfigView("markers")->get<Mn::Vector3>(markerName);
+  }
+
+  /**
+   * @brief Adds passed marker. Uses naming convention from load - key for this
+   * marker will be "markers_{numCurrentMarkers}"
+   */
+  void addMarker(const Magnum::Vector3& marker) {
+    auto markersPtr = editSubconfig<Configuration>("markers");
+    const std::string markerKey = Cr::Utility::formatString(
+        "markers_{:.02d}", markersPtr->getNumValues());
+    markersPtr->set(markerKey, marker);
+  }
+
+  /**
+   * @brief Retrieve a listing of all the marker handles in this
+   * LinkMarkerSubset.
+   */
+  std::vector<std::string> getAllMarkerNames() const {
+    return getSubconfigView("markers")->getKeys();
+  }
+
+  /**
+   * @brief Returns a list of all markers in this LinkMarkerSubset
+   */
+  std::vector<Mn::Vector3> getAllMarkers() const {
+    const auto markersPtr = getSubconfigView("markers");
+    std::vector<std::string> markerTags = markersPtr->getKeys();
+    std::vector<Mn::Vector3> res;
+    res.reserve(markerTags.size());
+    for (const auto& tag : markerTags) {
+      res.emplace_back(std::move(markersPtr->get<Mn::Vector3>(tag)));
+    }
+    return res;
+  }
+
+  /**
+   * @brief Remove a named marker.
+   */
+  Mn::Vector3 removeMarker(const std::string& markerKey) {
+    return editSubconfig<Configuration>("markers")->remove<Mn::Vector3>(
+        markerKey);
+  }
 
   ESP_SMART_POINTERS(LinkMarkerSubset)
 };  // class LinkMarkerSubset
@@ -81,12 +147,19 @@ class LinkMarkerSets : public esp::core::config::Configuration {
     return editSubconfig<LinkMarkerSubset>(linkSubsetName);
   }
 
+  /**
+   * @brief Removes named LinkMarkerSubset. Does nothing if DNE.
+   */
+  void removeNamedMarkerSet(const std::string& linkSubsetName) {
+    removeSubconfig(linkSubsetName);
+  }
+
   ESP_SMART_POINTERS(LinkMarkerSets)
 };  // class LinkMarkerSets
 
 /**
  * @brief This class provides an alias for the nested configuration tree used
- * for a single markerset, covering 1 or more links
+ * for a single MarkerSet, covering 1 or more links
  */
 class MarkerSet : public esp::core::config::Configuration {
  public:
@@ -137,12 +210,19 @@ class MarkerSet : public esp::core::config::Configuration {
     return editSubconfig<LinkMarkerSets>(linkSetName);
   }
 
+  /**
+   * @brief Removes named LinkMarkerSets. Does nothing if DNE.
+   */
+  void removeNamedMarkerSet(const std::string& linkSetName) {
+    removeSubconfig(linkSetName);
+  }
+
   ESP_SMART_POINTERS(MarkerSet)
 };  // class MarkerSet
 
 /**
  * @brief This class provides an alias for the nested configuration tree used
- * for markersets.
+ * to hold multiple MarkerSets.
  */
 class MarkerSets : public esp::core::config::Configuration {
  public:
@@ -165,14 +245,14 @@ class MarkerSets : public esp::core::config::Configuration {
   }
 
   /**
-   * @brief Retrieve a listing of all the markerset handles in this collection.
+   * @brief Retrieve a listing of all the MarkerSet handles in this collection.
    */
   std::vector<std::string> getAllMarkerSetNames() const {
     return getSubconfigKeys();
   }
 
   /**
-   * @brief Retrivess a copy of the named markerset, if it exists, and nullptr
+   * @brief Retrivess a copy of the named MarkerSet, if it exists, and nullptr
    * if it does not.
    */
   MarkerSet::ptr getNamedMarkerSetCopy(const std::string& markerSetName) {
@@ -190,6 +270,17 @@ class MarkerSets : public esp::core::config::Configuration {
   MarkerSet::ptr editNamedMarkerSet(const std::string& markerSetName) {
     return editSubconfig<MarkerSet>(markerSetName);
   }
+
+  /**
+   * @brief Removes named MarkerSet. Does nothing if DNE.
+   */
+  void removeNamedMarkerSet(const std::string& markerSetName) {
+    removeSubconfig(markerSetName);
+  }
+
+  /**
+   * @brief Remove the specified MarkerSet
+   */
 
   ESP_SMART_POINTERS(MarkerSets)
 };  // class MarkerSets

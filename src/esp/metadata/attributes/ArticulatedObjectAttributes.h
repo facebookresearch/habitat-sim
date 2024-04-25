@@ -6,6 +6,7 @@
 #define ESP_METADATA_ATTRIBUTES_ARTICULATEDOBJECTATTRIBUTES_H_
 
 #include "AttributesBase.h"
+#include "MarkerSets.h"
 
 namespace esp {
 namespace metadata {
@@ -254,8 +255,8 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
    * @brief Gets a smart pointer reference to a copy of the marker_sets
    * configuration data from config file.
    */
-  std::shared_ptr<Configuration> getMarkerSetsConfiguration() const {
-    return getSubconfigCopy<Configuration>("marker_sets");
+  std::shared_ptr<MarkerSets> getMarkerSetsConfiguration() const {
+    return getSubconfigCopy<MarkerSets>("marker_sets");
   }
 
   /**
@@ -263,8 +264,8 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
    * configuration data from config file. This method is for editing the
    * configuration.
    */
-  std::shared_ptr<Configuration> editMarkerSetsConfiguration() {
-    return editSubconfig<Configuration>("marker_sets");
+  std::shared_ptr<MarkerSets> editMarkerSetsConfiguration() {
+    return editSubconfig<MarkerSets>("marker_sets");
   }
 
  protected:

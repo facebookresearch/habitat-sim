@@ -11,6 +11,7 @@
 #include "esp/metadata/attributes/ArticulatedObjectAttributes.h"
 #include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/metadata/attributes/LightLayoutAttributes.h"
+#include "esp/metadata/attributes/MarkerSets.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
 #include "esp/metadata/attributes/PbrShaderAttributes.h"
 #include "esp/metadata/attributes/PhysicsManagerAttributes.h"
@@ -33,6 +34,10 @@ using Attrs::CylinderPrimitiveAttributes;
 using Attrs::IcospherePrimitiveAttributes;
 using Attrs::LightInstanceAttributes;
 using Attrs::LightLayoutAttributes;
+using Attrs::LinkMarkerSets;
+using Attrs::LinkMarkerSubset;
+using Attrs::MarkerSet;
+using Attrs::MarkerSets;
 using Attrs::ObjectAttributes;
 using Attrs::PbrShaderAttributes;
 using Attrs::PhysicsManagerAttributes;
@@ -228,6 +233,20 @@ void initAttributesBindings(py::module& m) {
              metadata::attributes::ArticulatedObjectLinkOrder::URDFOrder)
       .value("TREE_TRAVERSAL",
              metadata::attributes::ArticulatedObjectLinkOrder::TreeTraversal);
+
+  // ==== Markersets and subordinate classes ===
+
+  py::class_<LinkMarkerSubset, LinkMarkerSubset::ptr>(m, "LinkMarkerSubset")
+      .def(py::init(&LinkMarkerSubset::create<>));
+
+  py::class_<LinkMarkerSets, LinkMarkerSets::ptr>(m, "LinkMarkerSets")
+      .def(py::init(&LinkMarkerSets::create<>));
+
+  py::class_<MarkerSet, MarkerSet::ptr>(m, "MarkerSet")
+      .def(py::init(&MarkerSet::create<>));
+
+  py::class_<MarkerSets, MarkerSets::ptr>(m, "MarkerSets")
+      .def(py::init(&MarkerSets::create<>));
 
   // ==== ArticulatedObjectAttributes ====
   py::class_<ArticulatedObjectAttributes, AbstractAttributes,

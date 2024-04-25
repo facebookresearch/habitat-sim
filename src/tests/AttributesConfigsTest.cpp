@@ -109,7 +109,7 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
    * @param markerSetsHierarchy The hieraarchy the marker sets should follow.
    */
   void testMarkerSetsConfigVals(
-      std::shared_ptr<esp::core::config::Configuration> markerSetsConfig,
+      std::shared_ptr<esp::metadata::attributes::MarkerSets> markerSetsConfig,
       const MarkerSetTestMap&  // markers in link subset
           markerSetsHierarchy);
 
@@ -307,7 +307,7 @@ void AttributesConfigsTest::testUserDefinedConfigVals(
 }  // AttributesConfigsTest::testUserDefinedConfigVals
 
 void AttributesConfigsTest::testMarkerSetsConfigVals(
-    std::shared_ptr<esp::core::config::Configuration> markerSetsConfig,
+    std::shared_ptr<esp::metadata::attributes::MarkerSets> markerSetsConfig,
     const MarkerSetTestMap&  // markers in link subset
         markerSetsHierarchy) {
   for (const auto& markerSetInfoEntry : markerSetsHierarchy) {
