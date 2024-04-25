@@ -385,7 +385,8 @@ class ConfigValue {
   template <typename T>
   EnableIf<isConfigValTypePointerBased(configValTypeFor<T>()), void>
   setInternal(const T& value) {
-    new (_data) T* {new T{value}};
+    T** tmpDst = reinterpret_cast<T**>(_data);
+    *tmpDst = new T{value};
   }
 
   template <typename T>

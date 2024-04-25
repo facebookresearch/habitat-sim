@@ -52,18 +52,38 @@ template <class T>
 void copyConstructorFunc(
     const char* const src,
     char* const dst) {  // NOLINT(readability-non-const-parameter)
-  new (dst) T* {new T{**reinterpret_cast<const T* const*>(src)}};
+  const T* const* tmpSrc = reinterpret_cast<const T* const*>(src);
+  T** tmpDst = reinterpret_cast<T**>(dst);
+  if (*tmpDst != nullptr) {
+    // Clean up whatever may be in dst
+    (*tmpDst)->~T();
+    *tmpDst = nullptr;
+  }
+  if (*tmpSrc != nullptr) {
+    *tmpDst = new T{**tmpSrc};
+  }
 }
 template <class T>
 void moveConstructorFunc(
     char* const src,    // NOLINT(readability-non-const-parameter)
     char* const dst) {  // NOLINT(readability-non-const-parameter)
-  new (dst) T* {std::move(*reinterpret_cast<T**>(src))};
+  T** tmpDst = reinterpret_cast<T**>(dst);
+  T** tmpSrc = reinterpret_cast<T**>(src);
+  if (*tmpDst != nullptr) {
+    // Clean up whatever may be in dst
+    (*tmpDst)->~T();
+    *tmpDst = nullptr;
+  }
+  new (dst) T* {std::move(*tmpSrc)};
 }
 template <class T>
 void destructorFunc(
     char* const src) {  // NOLINT(readability-non-const-parameter)
-  (*reinterpret_cast<T**>(src))->~T();
+  T** tmpSrc = reinterpret_cast<T**>(src);
+  if (*tmpSrc != nullptr) {
+    (*tmpSrc)->~T();
+    *tmpSrc = nullptr;
+  }
 }
 template <class T>
 bool comparisonFunc(const char* const a, const char* const b) {
