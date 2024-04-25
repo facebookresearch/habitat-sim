@@ -105,22 +105,38 @@ class AOAttributesManager
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
   /**
-   * @brief Add a copy of the @ref
-   * esp::metadata::attributes::ArticulatedObjectAttributes shared_ptr object to
-   * the @ref objectLibrary_.
+   * @brief This method will perform any essential updating to the managed
+   * object before registration is performed. If this updating fails,
+   * registration will also fail.
    *
    * @param AOAttributesTemplate The attributes template.
    * @param AOAttributesHandle The key for referencing the template in the
    * @ref objectLibrary_.
    * @param forceRegistration Will register object even if conditional
    * registration checks fail.
-   * @return The index in the @ref objectLibrary_ of object
-   * template.
+   * @return Whether the preregistration has succeeded and what handle to use to
+   * register the object if it has.
    */
-  int registerObjectFinalize(
+  core::managedContainers::ManagedObjectPreregistration
+  preRegisterObjectFinalize(
       attributes::ArticulatedObjectAttributes::ptr AOAttributesTemplate,
       const std::string& AOAttributesHandle,
       CORRADE_UNUSED bool) override;
+
+  /**
+   * @brief Not required for this manager.
+   *
+   * This method will perform any final manager-related handling after
+   * successfully registering an object.
+   *
+   * See @ref esp::attributes::managers::ObjectAttributesManager for an example.
+   *
+   * @param objectID the ID of the successfully registered managed object
+   * @param objectHandle The name of the managed objbect
+   */
+  void postRegisterObjectHandling(
+      CORRADE_UNUSED int objectID,
+      CORRADE_UNUSED const std::string& objectHandle) override {}
 
   /**
    * @brief Any articulated-object-attributes-specific resetting that needs to

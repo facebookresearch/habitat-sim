@@ -187,7 +187,8 @@ AssetAttributesManager::getOrCreateTemplateFromHandle(
   return resTemplate;
 }  // AssetAttributesManager::createTemplateFromHandle
 
-int AssetAttributesManager::registerObjectFinalize(
+core::managedContainers::ManagedObjectPreregistration
+AssetAttributesManager::preRegisterObjectFinalize(
     AbstractPrimitiveAttributes::ptr primAttributesTemplate,
     const std::string&,
     bool) {
@@ -199,14 +200,12 @@ int AssetAttributesManager::registerObjectFinalize(
         << "` is not configured properly for specified prmitive `"
         << primAttributesTemplate->getPrimObjClassName()
         << "`, so Primitive asset attributes NOT registered.";
-    return ID_UNDEFINED;
+    return core::managedContainers::ManagedObjectPreregistration::Failed;
   }
-
-  // return either the ID of the existing template referenced by
-  // primAttributesHandle, or the next available ID if not found.
-  int primTemplateID = this->addObjectToLibrary(
-      std::move(primAttributesTemplate), primAttributesHandle);
-  return primTemplateID;
+  // Ignore any handle being passed for registration, and use the object's
+  // handle instead
+  return core::managedContainers::ManagedObjectPreregistration::
+      Success_Use_Object_Handle;
 }  // AssetAttributesManager::registerObjectFinalize
 
 AbstractPrimitiveAttributes::ptr AssetAttributesManager::buildObjectFromJSONDoc(

@@ -115,21 +115,41 @@ class PhysicsObjectBaseManager
   }  // RigidObjectManager::initNewObjectInternal(
 
   /**
-   * @brief implementation of managed object type-specific registration
+   * @brief Not required for this manager.
+   *
+   * This method will perform any essential updating to the managed object
+   * before registration is performed. If this updating fails, registration will
+   * also fail.
    * @param object the managed object to be registered
    * @param objectHandle the name to register the managed object with.
    * Expected to be valid.
    * @param forceRegistration Will register object even if conditional
    * registration checks fail.
-   * @return The unique ID of the managed object being registered, or
-   * ID_UNDEFINED if failed
+   * @return Whether the preregistration has succeeded and what handle to use to
+   * register the object if it has.
    */
-  int registerObjectFinalize(ObjWrapperPtr object,
-                             const std::string& objectHandle,
-                             CORRADE_UNUSED bool forceRegistration) override {
-    // Add wrapper to template library
-    return this->addObjectToLibrary(std::move(object), objectHandle);
-  }  // PhysicsObjectBaseManager::registerObjectFinalize
+  core::managedContainers::ManagedObjectPreregistration
+  preRegisterObjectFinalize(CORRADE_UNUSED ObjWrapperPtr object,
+                            CORRADE_UNUSED const std::string& objectHandle,
+                            CORRADE_UNUSED bool forceRegistration) override {
+    // No pre-registration conditioning performed
+    return core::managedContainers::ManagedObjectPreregistration::Success;
+  }
+
+  /**
+   * @brief Not required for this manager.
+   *
+   * This method will perform any final manager-related handling after
+   * successfully registering an object.
+   *
+   * See @ref esp::attributes::managers::ObjectAttributesManager for an example.
+   *
+   * @param objectID the ID of the successfully registered managed object
+   * @param objectHandle The name of the managed objbect
+   */
+  void postRegisterObjectHandling(
+      CORRADE_UNUSED int objectID,
+      CORRADE_UNUSED const std::string& objectHandle) override {}
 
   /**
    * @brief return a reference to physicsManager_, or null ptr if it does not

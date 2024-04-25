@@ -46,7 +46,8 @@ void StageAttributesManager::createDefaultPrimBasedAttributesTemplates() {
   this->undeletableObjectNames_.insert(std::move(tmpltHandle));
 }  // StageAttributesManager::createDefaultPrimBasedAttributesTemplates
 
-int StageAttributesManager::registerObjectFinalize(
+core::managedContainers::ManagedObjectPreregistration
+StageAttributesManager::preRegisterObjectFinalize(
     StageAttributes::ptr stageAttributes,
     const std::string& stageAttributesHandle,
     bool forceRegistration) {
@@ -55,7 +56,7 @@ int StageAttributesManager::registerObjectFinalize(
         << "Attributes template named `" << stageAttributesHandle
         << "` does not have a valid render asset handle specified, so "
            "StageAttributes registration is aborted.";
-    return ID_UNDEFINED;
+    return core::managedContainers::ManagedObjectPreregistration::Failed;
   }
 
   // Handles for rendering and collision assets
@@ -92,7 +93,7 @@ int StageAttributesManager::registerObjectFinalize(
         << stageAttributesHandle
         << "does not correspond to any existing file or primitive render "
            "asset, so StageAttributes registration is aborted.";
-    return ID_UNDEFINED;
+    return core::managedContainers::ManagedObjectPreregistration::Failed;
   }
 
   if (StageAttributesManager::isValidPrimitiveAttributes(
@@ -125,12 +126,8 @@ int StageAttributesManager::registerObjectFinalize(
   // Clear dirty flag from when asset handles are changed
   stageAttributes->setIsClean();
 
-  // adds template to library, and returns either the ID of the existing
-  // template referenced by stageAttributesHandle, or the next available ID
-  // if not found.
-  int stageTemplateID = this->addObjectToLibrary(std::move(stageAttributes),
-                                                 stageAttributesHandle);
-  return stageTemplateID;
+  return core::managedContainers::ManagedObjectPreregistration::Success;
+
 }  // StageAttributesManager::registerAttributesTemplate
 
 StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
