@@ -41,7 +41,7 @@ class LinkMarkerSubset : public esp::core::config::Configuration {
     std::vector<Mn::Vector3> res;
     res.reserve(markerTags.size());
     for (const auto& tag : markerTags) {
-      res.emplace_back(std::move(markersPtr->get<Mn::Vector3>(tag)));
+      res.emplace_back(markersPtr->get<Mn::Vector3>(tag));
     }
     return res;
   }
