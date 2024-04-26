@@ -52,7 +52,7 @@ class LinkMarkerSubset : public esp::core::config::Configuration {
   void setMarkers(const std::vector<Mn::Vector3>& markers) {
     auto markersPtr = editSubconfig<Configuration>("markers");
     for (std::size_t i = 0; i < markers.size(); ++i) {
-      const std::string key = Cr::Utility::formatString("{:.03d}", i);
+      const std::string& key = Cr::Utility::formatString("{:.03d}", i);
       markersPtr->set(key, markers[i]);
     }
   }
@@ -172,7 +172,7 @@ class LinkMarkerSets : public esp::core::config::Configuration {
     std::unordered_map<std::string, std::vector<Mn::Vector3>> resMap;
     const auto& subsetKeys = getSubconfigKeys();
     for (const auto& key : subsetKeys) {
-      resMap[key] = std::move(getLinkSubsetMarkers(key));
+      resMap[key] = getLinkSubsetMarkers(key);
     }
     return resMap;
   }  // getAllMarkers
@@ -183,7 +183,7 @@ class LinkMarkerSets : public esp::core::config::Configuration {
    * link's marker subsets.
    */
   int rekeyAllMarkers() {
-    int res;
+    int res = 0;
     const auto& subsetKeys = getSubconfigKeys();
     for (const auto& key : subsetKeys) {
       res += editNamedLinkSubset(key)->rekeyAllMarkers();
@@ -268,7 +268,7 @@ class MarkerSet : public esp::core::config::Configuration {
    * @brief Set a specified link's specified subset's markers.
    */
   void setLinkSubsetMarkers(const std::string& linkSetName,
-                            const std::string linkSubsetName,
+                            const std::string& linkSubsetName,
                             const std::vector<Mn::Vector3>& markers) {
     editNamedLinkSets(linkSetName)
         ->setLinkSubsetMarkers(linkSubsetName, markers);
@@ -293,7 +293,6 @@ class MarkerSet : public esp::core::config::Configuration {
                      std::string,
                      std::unordered_map<std::string, std::vector<Mn::Vector3>>>&
                          markerMap) {
-    const auto& subsetKeys = getSubconfigKeys();
     for (const auto& markers : markerMap) {
       setLinkSetMarkers(markers.first, markers.second);
     }
@@ -329,7 +328,7 @@ class MarkerSet : public esp::core::config::Configuration {
         resMap;
     const auto& subsetKeys = getSubconfigKeys();
     for (const auto& linkName : subsetKeys) {
-      resMap[linkName] = std::move(getLinkSetMarkers(linkName));
+      resMap[linkName] = getLinkSetMarkers(linkName);
     }
     return resMap;
   }  // getAllMarkers
@@ -340,7 +339,7 @@ class MarkerSet : public esp::core::config::Configuration {
    * markerset.
    */
   int rekeyAllMarkers() {
-    int res;
+    int res = 0;
     const auto& subsetKeys = getSubconfigKeys();
     for (const auto& key : subsetKeys) {
       res += editNamedLinkSets(key)->rekeyAllMarkers();
@@ -425,7 +424,7 @@ class MarkerSets : public esp::core::config::Configuration {
    */
   void setMarkerSetLinkSubsetMarkers(const std::string& markerSetName,
                                      const std::string& linkSetName,
-                                     const std::string linkSubsetName,
+                                     const std::string& linkSubsetName,
                                      const std::vector<Mn::Vector3>& markers) {
     editNamedMarkerSet(markerSetName)
         ->setLinkSubsetMarkers(linkSetName, linkSubsetName, markers);
@@ -518,7 +517,7 @@ class MarkerSets : public esp::core::config::Configuration {
         resMap;
     const auto& subsetKeys = getSubconfigKeys();
     for (const auto& markerSetName : subsetKeys) {
-      resMap[markerSetName] = std::move(getMarkerSetMarkers(markerSetName));
+      resMap[markerSetName] = getMarkerSetMarkers(markerSetName);
     }
     return resMap;
   }  // getAllMarkers
@@ -528,7 +527,7 @@ class MarkerSets : public esp::core::config::Configuration {
    * @return returns how many markers have been processed with new keys.
    */
   int rekeyAllMarkers() {
-    int res;
+    int res = 0;
     const auto& subsetKeys = getSubconfigKeys();
     for (const auto& key : subsetKeys) {
       res += editNamedMarkerSet(key)->rekeyAllMarkers();
