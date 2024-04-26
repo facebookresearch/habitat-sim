@@ -109,6 +109,16 @@ class LinkMarkerSets : public esp::core::config::Configuration {
   }
 
   /**
+   * @brief Retrieve a view of the naamed LinkMarkerSubset, if it exists, and
+   * nullptr if it does not.
+   */
+  LinkMarkerSubset::cptr getNamedLinkMarkerSubsetView(
+      const std::string& linkSubsetName) const {
+    return std::static_pointer_cast<const LinkMarkerSubset>(
+        getSubconfigView(linkSubsetName));
+  }
+
+  /**
    * @brief Retrieves a reference to a (potentially newly created)
    * LinkMarkerSubset with the given @p linkSubsetName , which can be modified
    * and the modifications will be retained.
@@ -127,6 +137,47 @@ class LinkMarkerSets : public esp::core::config::Configuration {
   void removeNamedMarkerSet(const std::string& linkSubsetName) {
     removeSubconfig(linkSubsetName);
   }
+
+  /**
+   * @brief Set the specified name's subset markers to the given marker values.
+   */
+  void setLinkSubsetMarkers(const std::string& linkSubsetName,
+                            const std::vector<Mn::Vector3>& markers) {
+    editNamedLinkMarkerSubset(linkSubsetName)->setMarkers(markers);
+  }
+
+  /**
+   * @brief Set the markers of all the subsets specified by name in the passed
+   * map.
+   */
+  void setAllMarkers(
+      const std::unordered_map<std::string, std::vector<Mn::Vector3>>&
+          markerMap) {
+    for (const auto& markers : markerMap) {
+      setLinkSubsetMarkers(markers.first, markers.second);
+    }
+  }
+
+  /**
+   * @brief Retrieve all the markers for the named link subset for this link
+   */
+  std::vector<Mn::Vector3> getLinkSubsetMarkers(const std::string& key) const {
+    return getNamedLinkMarkerSubsetView(key)->getMarkers();
+  }
+
+  /**
+   * @brief this retrieves all the markers across all subests for this link
+   */
+  std::unordered_map<std::string, std::vector<Mn::Vector3>> getAllMarkers()
+      const {
+    std::unordered_map<std::string, std::vector<Mn::Vector3>> resMap;
+    const auto& subsetKeys = getSubconfigKeys();
+    for (const auto& key : subsetKeys) {
+      resMap[key] = std::move(getLinkSubsetMarkers(key));
+    }
+    return resMap;
+  }  // getAllMarkers
+
   /**
    * @brief Rekeys all marker collections to have vector IDXs as string keys
    * @return returns how many markers have been processed with new keys in this
@@ -186,6 +237,16 @@ class MarkerSet : public esp::core::config::Configuration {
   }
 
   /**
+   * @brief Retrieve a view of the naamed LinkMarkerSet, if it exists, and
+   * nullptr if it does not.
+   */
+  LinkMarkerSets::cptr getNamedLinkMarkerSetsView(
+      const std::string& linkSetName) const {
+    return std::static_pointer_cast<const LinkMarkerSets>(
+        getSubconfigView(linkSetName));
+  }
+
+  /**
    * @brief Retrieves a reference to a (potentially newly created)
    * LinkMarkerSets with the given @p linkSetName , which can be modified and
    * the modifications will be retained.
@@ -203,6 +264,76 @@ class MarkerSet : public esp::core::config::Configuration {
   void removeNamedMarkerSet(const std::string& linkSetName) {
     removeSubconfig(linkSetName);
   }
+
+  /**
+   * @brief Set a specified link's specified subset's markers.
+   */
+  void setLinkSubsetMarkers(const std::string& linkSetName,
+                            const std::string linkSubsetName,
+                            const std::vector<Mn::Vector3>& markers) {
+    editNamedLinkMarkerSets(linkSetName)
+        ->setLinkSubsetMarkers(linkSubsetName, markers);
+  }
+
+  /**
+   * @brief Sets all the specified name's link markers to the given marker
+   * values specified by the link subset name.
+   */
+  void setLinkSetMarkers(
+      const std::string& linkSetName,
+      const std::unordered_map<std::string, std::vector<Mn::Vector3>>&
+          markers) {
+    editNamedLinkMarkerSets(linkSetName)->setAllMarkers(markers);
+  }
+
+  /**
+   * @brief Set the markers of all the links specified by name in the passed
+   * map.
+   */
+  void setAllMarkers(const std::unordered_map<
+                     std::string,
+                     std::unordered_map<std::string, std::vector<Mn::Vector3>>>&
+                         markerMap) {
+    const auto& subsetKeys = getSubconfigKeys();
+    for (const auto& markers : markerMap) {
+      setLinkSetMarkers(markers.first, markers.second);
+    }
+  }
+
+  /**
+   * @brief Get the markers for a specified link's specified subset.
+   */
+  std::vector<Mn::Vector3> getLinkSubsetMarkers(
+      const std::string& linkName,
+      const std::string& linkSubsetName) const {
+    return getNamedLinkMarkerSetsView(linkName)->getLinkSubsetMarkers(
+        linkSubsetName);
+  }
+
+  /**
+   * @brief Retrieve all the markers for the named link within this markerset
+   */
+  std::unordered_map<std::string, std::vector<Mn::Vector3>> getLinkSetMarkers(
+      const std::string& linkName) const {
+    return getNamedLinkMarkerSetsView(linkName)->getAllMarkers();
+  }
+
+  /**
+   * @brief this retrieves all the markers for across all links in this
+   * markerset
+   */
+  std::unordered_map<std::string,
+                     std::unordered_map<std::string, std::vector<Mn::Vector3>>>
+  getAllMarkers() const {
+    std::unordered_map<
+        std::string, std::unordered_map<std::string, std::vector<Mn::Vector3>>>
+        resMap;
+    const auto& subsetKeys = getSubconfigKeys();
+    for (const auto& linkName : subsetKeys) {
+      resMap[linkName] = std::move(getLinkSetMarkers(linkName));
+    }
+    return resMap;
+  }  // getAllMarkers
 
   /**
    * @brief Rekeys all marker collections to have vector IDXs as string keys
@@ -261,6 +392,16 @@ class MarkerSets : public esp::core::config::Configuration {
   }
 
   /**
+   * @brief Retrieve a view of the naamed MarkerSet, if it exists, and
+   * nullptr if it does not.
+   */
+  MarkerSet::cptr getNamedMarkerSetView(
+      const std::string& markerSetName) const {
+    return std::static_pointer_cast<const MarkerSet>(
+        getSubconfigView(markerSetName));
+  }
+
+  /**
    * @brief Retrieves a reference to a (potentially newly created) MarkerSet
    * with the given @p markerSetName , which can be modified and the
    * modifications will be retained.
@@ -278,6 +419,110 @@ class MarkerSets : public esp::core::config::Configuration {
   void removeNamedMarkerSet(const std::string& markerSetName) {
     removeSubconfig(markerSetName);
   }
+
+  /**
+   * @brief Set a specified MarkerSet's specified link's specified subset's
+   * markers.
+   */
+  void setMarkerSetLinkSubsetMarkers(const std::string& markerSetName,
+                                     const std::string& linkSetName,
+                                     const std::string linkSubsetName,
+                                     const std::vector<Mn::Vector3>& markers) {
+    editNamedMarkerSet(markerSetName)
+        ->setLinkSubsetMarkers(linkSetName, linkSubsetName, markers);
+  }
+
+  /**
+   * @brief Sets all the specified marker's specified link's subsets' markers to
+   * the given marker values specified in the map.
+   */
+  void setMarkerSetLinkSetMarkers(
+      const std::string& markerSetName,
+      const std::string& linkSetName,
+      const std::unordered_map<std::string, std::vector<Mn::Vector3>>&
+          markers) {
+    editNamedMarkerSet(markerSetName)->setLinkSetMarkers(linkSetName, markers);
+  }
+
+  /**
+   * @brief Sets all the specified MarkerSet's links' subset markers to the
+   * given marker values specified in the map.
+   */
+  void setMarkerSetMarkers(
+      const std::string& markerSetName,
+      const std::unordered_map<
+          std::string,
+          std::unordered_map<std::string, std::vector<Mn::Vector3>>>& markers) {
+    editNamedMarkerSet(markerSetName)->setAllMarkers(markers);
+  }
+
+  /**
+   * @brief Set the markers of all the links specified by name in the passed
+   * map.
+   */
+  void setAllMarkers(
+      const std::unordered_map<
+          std::string,
+          std::unordered_map<
+              std::string,
+              std::unordered_map<std::string, std::vector<Mn::Vector3>>>>&
+          markerMap) {
+    for (const auto& markers : markerMap) {
+      setMarkerSetMarkers(markers.first, markers.second);
+    }
+  }
+
+  /**
+   * @brief Return a single MarkerSet's Link's Subset of markers
+   */
+  std::vector<Mn::Vector3> getMarkerSetLinkSubsetMarkers(
+      const std::string& markerSetName,
+      const std::string& linkSetName,
+      const std::string& linkSubsetName) const {
+    return getNamedMarkerSetView(markerSetName)
+        ->getLinkSubsetMarkers(linkSetName, linkSubsetName);
+  }
+  /**
+   * @brief Return all of a MarkerSet's Link's Subsets of markers
+   */
+
+  std::unordered_map<std::string, std::vector<Mn::Vector3>>
+  getMarkerSetLinkSetMarkers(const std::string& markerSetName,
+                             const std::string& linkSetName) const {
+    return getNamedMarkerSetView(markerSetName)->getLinkSetMarkers(linkSetName);
+  }
+
+  /**
+   * @brief Retrieve all the markers for the named markerset
+   */
+  std::unordered_map<std::string,
+                     std::unordered_map<std::string, std::vector<Mn::Vector3>>>
+  getMarkerSetMarkers(const std::string& markerSetName) const {
+    return getNamedMarkerSetView(markerSetName)->getAllMarkers();
+  }
+
+  /**
+   * @brief this retrieves all the markers across all the markersets, keyed by
+   * MarkerSet name, Link Id and Link subset name
+   */
+  std::unordered_map<
+      std::string,
+      std::unordered_map<
+          std::string,
+          std::unordered_map<std::string, std::vector<Mn::Vector3>>>>
+  getAllMarkers() const {
+    std::unordered_map<
+        std::string,
+        std::unordered_map<
+            std::string,
+            std::unordered_map<std::string, std::vector<Mn::Vector3>>>>
+        resMap;
+    const auto& subsetKeys = getSubconfigKeys();
+    for (const auto& markerSetName : subsetKeys) {
+      resMap[markerSetName] = std::move(getMarkerSetMarkers(markerSetName));
+    }
+    return resMap;
+  }  // getAllMarkers
 
   /**
    * @brief Rekeys all marker collections to have vector IDXs as string keys
