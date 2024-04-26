@@ -262,7 +262,8 @@ class HabitatSimInteractiveViewer(Application):
         self.rec_access_filter_threshold = 0.12  # empirically chosen
         self.rec_color_mode = RecColorMode.FILTERING
         # map receptacle to parent objects
-        self.rec_to_poh: Dict[hab_receptacle.Receptacle, str] = {}
+        self.rec_to_poth: Dict[hab_receptacle.Receptacle, str] = {}
+        self.poh_to_rec: Dict[str, List[hab_receptacle.Receptacle]] = {}
         # contains filtering metadata and classification of meshes filtered automatically and manually
         self.rec_filter_data = None
         # TODO need to determine filter path for each scene during tabbing?
@@ -390,7 +391,7 @@ class HabitatSimInteractiveViewer(Application):
                 f"WARNING: No rec filter file configured for scene {self.sim.curr_scene_name}."
             )
 
-    def get_closest_tri_receptacle(
+    def get_closest_receptacle(
         self, pos: mn.Vector3, max_dist: float = 3.5
     ) -> Optional[hab_receptacle.TriangleMeshReceptacle]:
         """
@@ -405,19 +406,45 @@ class HabitatSimInteractiveViewer(Application):
             return None
         closest_rec = None
         closest_rec_dist = max_dist
-        for receptacle in self.receptacles:
+        recs = (
+            self.receptacles
+            if (
+                self.selected_object is None
+                or self.selected_object.handle not in self.poh_to_rec
+            )
+            else self.poh_to_rec[self.selected_object.handle]
+        )
+        for receptacle in recs:
             g_trans = receptacle.get_global_transform(self.sim)
             # transform the query point once instead of all verts
             local_point = g_trans.inverted().transform_point(pos)
             if (g_trans.translation - pos).length() < max_dist:
                 # receptacles object transform should be close to the point
-                for vert in receptacle.mesh_data.attribute(
-                    mn.trade.MeshAttribute.POSITION
-                ):
-                    v_dist = (local_point - vert).length()
-                    if v_dist < closest_rec_dist:
-                        closest_rec_dist = v_dist
-                        closest_rec = receptacle
+                if isinstance(receptacle, hab_receptacle.TriangleMeshReceptacle):
+                    for vert in receptacle.mesh_data.attribute(
+                        mn.trade.MeshAttribute.POSITION
+                    ):
+                        v_dist = (local_point - vert).length()
+                        if v_dist < closest_rec_dist:
+                            closest_rec_dist = v_dist
+                            closest_rec = receptacle
+                else:
+                    global_keypoints = None
+                    if isinstance(receptacle, hab_receptacle.AABBReceptacle):
+                        global_keypoints = sutils.get_global_keypoints_from_bb(
+                            receptacle.bounds, g_trans
+                        )
+                    elif isinstance(receptacle, hab_receptacle.AnyObjectReceptacle):
+                        global_keypoints = sutils.get_bb_corners(
+                            receptacle._get_global_bb(self.sim)
+                        )
+
+                    for g_point in global_keypoints:
+                        v_dist = (pos - g_point).length()
+                        if v_dist < closest_rec_dist:
+                            closest_rec_dist = v_dist
+                            closest_rec = receptacle
+
         return closest_rec
 
     def compute_rec_filter_state(
@@ -459,7 +486,7 @@ class HabitatSimInteractiveViewer(Application):
             rec_unique_name = rec.unique_name
             # respect already marked receptacles
             if rec_unique_name not in self.rec_filter_data["manually_filtered"]:
-                rec_dat = self._cpo.gt_data[self.rec_to_poh[rec]]["receptacles"][
+                rec_dat = self._cpo.gt_data[self.rec_to_poth[rec]]["receptacles"][
                     rec.name
                 ]
                 rec_shape_data = rec_dat["shape_id_results"][filter_shape]
@@ -531,11 +558,14 @@ class HabitatSimInteractiveViewer(Application):
             if "collision_stand-in" not in rec.parent_object_handle
         ]
         for receptacle in self.receptacles:
-            if receptacle not in self.rec_to_poh:
+            if receptacle not in self.rec_to_poth:
                 po_handle = sutils.get_obj_from_handle(
                     self.sim, receptacle.parent_object_handle
                 ).creation_attributes.handle
-                self.rec_to_poh[receptacle] = po_handle
+                self.rec_to_poth[receptacle] = po_handle
+                if receptacle.parent_object_handle not in self.poh_to_rec:
+                    self.poh_to_rec[receptacle.parent_object_handle] = []
+                self.poh_to_rec[receptacle.parent_object_handle].append(receptacle)
 
     def add_col_proxy_object(
         self, obj_instance: habitat_sim.physics.ManagedRigidObject
@@ -667,7 +697,7 @@ class HabitatSimInteractiveViewer(Application):
 
                 rec_dat = None
                 if self.cpo_initialized:
-                    rec_dat = self._cpo.gt_data[self.rec_to_poh[receptacle]][
+                    rec_dat = self._cpo.gt_data[self.rec_to_poth[receptacle]][
                         "receptacles"
                     ][receptacle.name]
 
@@ -1510,6 +1540,7 @@ class HabitatSimInteractiveViewer(Application):
                         orientation_sample="up",
                         num_objects=(1, 10),
                     )
+                    obj_samp.receptacle_instances = self.receptacles
                     rec_set_obj = hab_receptacle.ReceptacleSet(
                         "rec set", [""], [], rec_set_unique_names, []
                     )
@@ -1700,6 +1731,10 @@ class HabitatSimInteractiveViewer(Application):
                 print("This is the stage.")
             else:
                 obj = sutils.get_obj_from_id(self.sim, hit_id)
+                link_id = None
+                if obj.object_id != hit_id:
+                    # this is a link
+                    link_id = obj.link_object_ids[hit_id]
                 self.selected_object = obj
                 print(f"Object: {obj.handle}")
                 if self.receptacles is not None:
@@ -1707,13 +1742,22 @@ class HabitatSimInteractiveViewer(Application):
                         if rec.parent_object_handle == obj.handle:
                             print(f"    - Receptacle: {rec.name}")
                 if shift_pressed:
-                    self.selected_rec = self.get_closest_tri_receptacle(
+                    if obj.handle not in self.poh_to_rec:
+                        new_rec = hab_receptacle.AnyObjectReceptacle(
+                            obj.handle + "_aor",
+                            parent_object_handle=obj.handle,
+                            parent_link=link_id,
+                        )
+                        self.receptacles.append(new_rec)
+                        self.poh_to_rec[obj.handle] = [new_rec]
+                        self.rec_to_poth[new_rec] = obj.creation_attributes.handle
+                    self.selected_rec = self.get_closest_receptacle(
                         self.mouse_cast_results.hits[0].point
                     )
                     if self.selected_rec is not None:
                         print(f"Selected Receptacle: {self.selected_rec.name}")
                 elif alt_pressed:
-                    filtered_rec = self.get_closest_tri_receptacle(
+                    filtered_rec = self.get_closest_receptacle(
                         self.mouse_cast_results.hits[0].point
                     )
                     if filtered_rec is not None:
