@@ -237,13 +237,51 @@ void initAttributesBindings(py::module& m) {
   // ==== Markersets and subordinate classes ===
 
   py::class_<LinkMarkerSubset, LinkMarkerSubset::ptr>(m, "LinkMarkerSubset")
-      .def(py::init(&LinkMarkerSubset::create<>));
+      .def(py::init(&LinkMarkerSubset::create<>))
+      .def_property_readonly(
+          "num_markers", &LinkMarkerSubset::getNumMarkers,
+          R"(The current number of markers present in this subset.)")
+      .def("get_markers", &LinkMarkerSubset::getMarkers,
+           R"(Get an ordered list of all the 3D point markers in this subset)")
+      .def(
+          "set_markers", &LinkMarkerSubset::setMarkers,
+          R"(Set the markers for this subset to be the passed list of 3D points)",
+          "markers"_a);
 
   py::class_<LinkMarkerSets, LinkMarkerSets::ptr>(m, "LinkMarkerSets")
-      .def(py::init(&LinkMarkerSets::create<>));
+      .def(py::init(&LinkMarkerSets::create<>))
+      .def_property_readonly(
+          "num_subsets", &LinkMarkerSets::getNumLinkSubsets,
+          R"(The current number of marker subsets present in this link description.)")
+      .def(
+          "has_named_subset", &LinkMarkerSets::hasNamedLinkSubset,
+          R"(Whether or not this link has a marker subset with the given name)",
+          "subset_name"_a)
+      .def("get_all_subset_names", &LinkMarkerSets::getAllLinkSubsetNames,
+           R"(Get a list of all the subset names associated with this link)")
+      .def("get_named_link_subset", &LinkMarkerSets::editNamedLinkSubset,
+           R"(Get an editable reference to the specified LinkMarkerSubset, or
+          None if it does not exist.)",
+           "subset_name"_a)
+      .def("set_subset_markers", &LinkMarkerSets::setLinkSubsetMarkers,
+           R"(Sets the markers for this link's named subset)", "subset_name"_a,
+           "marker_list"_a)
+      .def("get_subset_markers", &LinkMarkerSets::getLinkSubsetMarkers,
+           R"(Gets the markers for the named subset of this link)",
+           "subset_name"_a)
+      .def("set_all_markers", &LinkMarkerSets::setAllMarkers,
+           R"(Sets the markers for all the subsets of this link to the
+          passed dictionary of values, keyed by subset name)",
+           "subset_dict"_a)
+      .def("get_all_markers", &LinkMarkerSets::getAllMarkers,
+           R"(Get a dictionary keyed by subset name where each value is a
+            list of the marker points for that subset)");
 
   py::class_<MarkerSet, MarkerSet::ptr>(m, "MarkerSet")
-      .def(py::init(&MarkerSet::create<>));
+      .def(py::init(&MarkerSet::create<>))
+      .def_property_readonly(
+          "num_link_sets", &MarkerSet::getNumLinkSets,
+          R"(The current number of per-link marker subsets present in this Markerset.)");
 
   py::class_<MarkerSets, MarkerSets::ptr>(m, "MarkerSets")
       .def(py::init(&MarkerSets::create<>))
