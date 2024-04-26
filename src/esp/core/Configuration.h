@@ -1078,6 +1078,11 @@ class Configuration {
    */
   int rekeyAllValues();
 
+  /**
+   * @brief Clear all key-value pairs from this Configuration's valueMap
+   */
+  void _clearAllValues() { valueMap_.clear(); }
+
  protected:
   /**
    * @brief Process passed json object into this Configuration, using passed

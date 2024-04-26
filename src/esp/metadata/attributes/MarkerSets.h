@@ -51,6 +51,8 @@ class LinkMarkerSubset : public esp::core::config::Configuration {
    */
   void setMarkers(const std::vector<Mn::Vector3>& markers) {
     auto markersPtr = editSubconfig<Configuration>("markers");
+    // Remove all existing markers
+    markersPtr->_clearAllValues();
     for (std::size_t i = 0; i < markers.size(); ++i) {
       const std::string& key = Cr::Utility::formatString("{:.03d}", i);
       markersPtr->set(key, markers[i]);
