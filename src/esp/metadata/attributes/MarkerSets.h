@@ -12,7 +12,7 @@ namespace attributes {
 /** @file
  * @brief Class @ref esp::metadata::attributes::Markersets,
  * Class @ref esp::metadata::attributes::MarkerSet,
- * Class @ref esp::metadata::attributes::LinkMarkerSets,
+ * Class @ref esp::metadata::attributes::LinkMarkerSet,
  * Class @ref esp::metadata::attributes::LinkMarkerSubset
  */
 
@@ -73,9 +73,9 @@ class LinkMarkerSubset : public esp::core::config::Configuration {
  * for a single link's 1 or more marker subsets that should be attached to the
  * named link.
  */
-class LinkMarkerSets : public esp::core::config::Configuration {
+class LinkMarkerSet : public esp::core::config::Configuration {
  public:
-  LinkMarkerSets() : Configuration() {}
+  LinkMarkerSet() : Configuration() {}
 
   /**
    * @brief Returns the number of existing LinkSubset in this collection.
@@ -135,7 +135,7 @@ class LinkMarkerSets : public esp::core::config::Configuration {
   /**
    * @brief Removes named LinkMarkerSubset. Does nothing if DNE.
    */
-  void removeNamedMarkerSet(const std::string& linkSubsetName) {
+  void removeNamedLinkSet(const std::string& linkSubsetName) {
     removeSubconfig(linkSubsetName);
   }
 
@@ -193,8 +193,8 @@ class LinkMarkerSets : public esp::core::config::Configuration {
     return res;
   }
 
-  ESP_SMART_POINTERS(LinkMarkerSets)
-};  // class LinkMarkerSets
+  ESP_SMART_POINTERS(LinkMarkerSet)
+};  // class LinkMarkerSet
 
 /**
  * @brief This class provides an alias for the nested configuration tree used
@@ -205,74 +205,73 @@ class MarkerSet : public esp::core::config::Configuration {
   MarkerSet() : Configuration() {}
 
   /**
-   * @brief Returns the number of existing LinkMarkerSets in this collection.
+   * @brief Returns the number of existing LinkMarkerSet in this collection.
    */
   int getNumLinkSets() const { return getNumSubconfigs(); }
 
   /**
-   * @brief whether the given @p linkSetName exists as a LinkMarkerSets in this
+   * @brief whether the given @p linkSetName exists as a LinkMarkerSet in this
    * collection.
    *
-   * @param linkSetName The desired LinkMarkerSets' name.
-   * @return whether the name is found as a LinkMarkerSets subconfiguration.
+   * @param linkSetName The desired LinkMarkerSet' name.
+   * @return whether the name is found as a LinkMarkerSet subconfiguration.
    */
-  bool hasNamedLinkSets(const std::string& linkSetName) const {
+  bool hasNamedLinkSet(const std::string& linkSetName) const {
     return hasSubconfig(linkSetName);
   }
 
   /**
-   * @brief Retrieve a listing of all the LinkMarkerSets handles in this
+   * @brief Retrieve a listing of all the LinkMarkerSet handles in this
    * collection.
    */
-  std::vector<std::string> getAllLinkMarkerSetsNames() const {
+  std::vector<std::string> getAllLinkSetNames() const {
     return getSubconfigKeys(true);
   }
 
   /**
-   * @brief Retrivess a copy of the named LinkMarkerSets, if it exists, and
+   * @brief Retrivess a copy of the named LinkMarkerSet, if it exists, and
    * nullptr if it does not.
    */
-  LinkMarkerSets::ptr getNamedLinkMarkerSetsCopy(
-      const std::string& linkSetName) {
-    return getSubconfigCopy<LinkMarkerSets>(linkSetName);
+  LinkMarkerSet::ptr getNamedLinkSetCopy(const std::string& linkSetName) {
+    return getSubconfigCopy<LinkMarkerSet>(linkSetName);
   }
 
   /**
    * @brief Retrieve a view of the naamed LinkMarkerSet, if it exists, and
    * nullptr if it does not.
    */
-  LinkMarkerSets::cptr getNamedLinkMarkerSetsView(
+  LinkMarkerSet::cptr getNamedLinkSetView(
       const std::string& linkSetName) const {
-    return std::static_pointer_cast<const LinkMarkerSets>(
+    return std::static_pointer_cast<const LinkMarkerSet>(
         getSubconfigView(linkSetName));
   }
 
   /**
    * @brief Retrieves a reference to a (potentially newly created)
-   * LinkMarkerSets with the given @p linkSetName , which can be modified and
+   * LinkMarkerSet with the given @p linkSetName , which can be modified and
    * the modifications will be retained.
    *
    * @param linkSetName The desired marker set's name.
    * @return a reference to the marker set.
    */
-  LinkMarkerSets::ptr editNamedLinkSets(const std::string& linkSetName) {
-    return editSubconfig<LinkMarkerSets>(linkSetName);
+  LinkMarkerSet::ptr editNamedLinkSet(const std::string& linkSetName) {
+    return editSubconfig<LinkMarkerSet>(linkSetName);
   }
 
   /**
-   * @brief Removes named LinkMarkerSets. Does nothing if DNE.
+   * @brief Removes named LinkMarkerSet. Does nothing if DNE.
    */
-  void removeNamedMarkerSet(const std::string& linkSetName) {
+  void removeNamedLinkSet(const std::string& linkSetName) {
     removeSubconfig(linkSetName);
   }
 
   /**
    * @brief Set a specified link's specified subset's markers.
    */
-  void setLinkSubsetMarkers(const std::string& linkSetName,
-                            const std::string& linkSubsetName,
-                            const std::vector<Mn::Vector3>& markers) {
-    editNamedLinkSets(linkSetName)
+  void setLinkSetSubsetMarkers(const std::string& linkSetName,
+                               const std::string& linkSubsetName,
+                               const std::vector<Mn::Vector3>& markers) {
+    editNamedLinkSet(linkSetName)
         ->setLinkSubsetMarkers(linkSubsetName, markers);
   }
 
@@ -284,7 +283,7 @@ class MarkerSet : public esp::core::config::Configuration {
       const std::string& linkSetName,
       const std::unordered_map<std::string, std::vector<Mn::Vector3>>&
           markers) {
-    editNamedLinkSets(linkSetName)->setAllMarkers(markers);
+    editNamedLinkSet(linkSetName)->setAllMarkers(markers);
   }
 
   /**
@@ -303,11 +302,10 @@ class MarkerSet : public esp::core::config::Configuration {
   /**
    * @brief Get the markers for a specified link's specified subset.
    */
-  std::vector<Mn::Vector3> getLinkSubsetMarkers(
+  std::vector<Mn::Vector3> getLinkSetSubsetMarkers(
       const std::string& linkName,
       const std::string& linkSubsetName) const {
-    return getNamedLinkMarkerSetsView(linkName)->getLinkSubsetMarkers(
-        linkSubsetName);
+    return getNamedLinkSetView(linkName)->getLinkSubsetMarkers(linkSubsetName);
   }
 
   /**
@@ -315,7 +313,7 @@ class MarkerSet : public esp::core::config::Configuration {
    */
   std::unordered_map<std::string, std::vector<Mn::Vector3>> getLinkSetMarkers(
       const std::string& linkName) const {
-    return getNamedLinkMarkerSetsView(linkName)->getAllMarkers();
+    return getNamedLinkSetView(linkName)->getAllMarkers();
   }
 
   /**
@@ -344,7 +342,7 @@ class MarkerSet : public esp::core::config::Configuration {
     int res = 0;
     const auto& subsetKeys = getSubconfigKeys();
     for (const auto& key : subsetKeys) {
-      res += editNamedLinkSets(key)->rekeyAllMarkers();
+      res += editNamedLinkSet(key)->rekeyAllMarkers();
     }
     return res;
   }
@@ -424,12 +422,13 @@ class MarkerSets : public esp::core::config::Configuration {
    * @brief Set a specified MarkerSet's specified link's specified subset's
    * markers.
    */
-  void setMarkerSetLinkSubsetMarkers(const std::string& markerSetName,
-                                     const std::string& linkSetName,
-                                     const std::string& linkSubsetName,
-                                     const std::vector<Mn::Vector3>& markers) {
+  void setMarkerSetLinkSetSubsetMarkers(
+      const std::string& markerSetName,
+      const std::string& linkSetName,
+      const std::string& linkSubsetName,
+      const std::vector<Mn::Vector3>& markers) {
     editNamedMarkerSet(markerSetName)
-        ->setLinkSubsetMarkers(linkSetName, linkSubsetName, markers);
+        ->setLinkSetSubsetMarkers(linkSetName, linkSubsetName, markers);
   }
 
   /**
@@ -475,12 +474,12 @@ class MarkerSets : public esp::core::config::Configuration {
   /**
    * @brief Return a single MarkerSet's Link's Subset of markers
    */
-  std::vector<Mn::Vector3> getMarkerSetLinkSubsetMarkers(
+  std::vector<Mn::Vector3> getMarkerSetLinkSetSubsetMarkers(
       const std::string& markerSetName,
       const std::string& linkSetName,
       const std::string& linkSubsetName) const {
     return getNamedMarkerSetView(markerSetName)
-        ->getLinkSubsetMarkers(linkSetName, linkSubsetName);
+        ->getLinkSetSubsetMarkers(linkSetName, linkSubsetName);
   }
   /**
    * @brief Return all of a MarkerSet's Link's Subsets of markers
