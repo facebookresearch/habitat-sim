@@ -35,9 +35,9 @@ class LinkMarkerSubset : public esp::core::config::Configuration {
    */
   std::vector<Mn::Vector3> getMarkers() const {
     const auto markersPtr = getSubconfigView("markers");
-    std::vector<std::string> markerTags = markersPtr->getKeys();
-    // Sort the keys
-    std::sort(markerTags.begin(), markerTags.end());
+    // Get all vector3 keys from subconfig in sorted vector
+    std::vector<std::string> markerTags = markersPtr->getKeysByType(
+        esp::core::config::ConfigValType::MagnumVec3, true);
     std::vector<Mn::Vector3> res;
     res.reserve(markerTags.size());
     for (const auto& tag : markerTags) {
@@ -72,7 +72,7 @@ class LinkMarkerSets : public esp::core::config::Configuration {
   /**
    * @brief Returns the number of existing LinkMarkerSubset in this collection.
    */
-  int getNumLinkMarkeSubsets() const { return getNumSubconfigs(); }
+  int getNumLinkMarkerSubsets() const { return getNumSubconfigs(); }
 
   /**
    * @brief whether the given @p linkSubsetName exists as a LinkMarkerSubset in
@@ -81,7 +81,7 @@ class LinkMarkerSets : public esp::core::config::Configuration {
    * @param linkSubsetName The desired marker set's name.
    * @return whether the name is found as a LinkMarkerSubset subconfiguration.
    */
-  bool hasNamedLinkMarkeSubset(const std::string& linkSubsetName) const {
+  bool hasNamedLinkMarkerSubset(const std::string& linkSubsetName) const {
     return hasSubconfig(linkSubsetName);
   }
 
@@ -89,15 +89,15 @@ class LinkMarkerSets : public esp::core::config::Configuration {
    * @brief Retrieve a listing of all the LinkMarkerSubset handles in this
    * collection.
    */
-  std::vector<std::string> getAllLinkMarkeSubsetNames() const {
-    return getSubconfigKeys();
+  std::vector<std::string> getAllLinkMarkerSubsetNames() const {
+    return getSubconfigKeys(true);
   }
 
   /**
    * @brief Retrivess a copy of the named LinkMarkerSubset, if it exists, and
    * nullptr if it does not.
    */
-  LinkMarkerSubset::ptr getNamedLinkMarkeSubsetCopy(
+  LinkMarkerSubset::ptr getNamedLinkMarkerSubsetCopy(
       const std::string& linkSubsetName) {
     return getSubconfigCopy<LinkMarkerSubset>(linkSubsetName);
   }
@@ -110,7 +110,7 @@ class LinkMarkerSets : public esp::core::config::Configuration {
    * @param linkSubsetName The desired LinkMarkerSubset set's name.
    * @return a reference to the LinkMarkerSubset set.
    */
-  LinkMarkerSubset::ptr editNamedLinkMarkeSubset(
+  LinkMarkerSubset::ptr editNamedLinkMarkerSubset(
       const std::string& linkSubsetName) {
     return editSubconfig<LinkMarkerSubset>(linkSubsetName);
   }
@@ -154,7 +154,7 @@ class MarkerSet : public esp::core::config::Configuration {
    * collection.
    */
   std::vector<std::string> getAllLinkMarkerSetsNames() const {
-    return getSubconfigKeys();
+    return getSubconfigKeys(true);
   }
 
   /**
@@ -216,7 +216,7 @@ class MarkerSets : public esp::core::config::Configuration {
    * @brief Retrieve a listing of all the MarkerSet handles in this collection.
    */
   std::vector<std::string> getAllMarkerSetNames() const {
-    return getSubconfigKeys();
+    return getSubconfigKeys(true);
   }
 
   /**

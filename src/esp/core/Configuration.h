@@ -24,7 +24,7 @@ namespace core {
 
 namespace config {
 
-constexpr int CONFIG_VAL_SIZE = 8;  // 2 * 4
+constexpr int CONFIG_VAL_SIZE = 8;  // 2 * 4(DWORDs)
 
 /**
  * @brief This enum lists every type of value that can be currently stored
@@ -556,36 +556,49 @@ class Configuration {
 
   /**
    * @brief Retrieve list of keys present in this @ref Configuration's
-   * valueMap_.  Subconfigs are not included.
+   * valueMap_. Subconfigs are not included.
+   * @return a vector of strings representing the subconfig keys for this
+   * configuration.
    */
-  std::vector<std::string> getKeys() const {
+  std::vector<std::string> getKeys(bool sorted = false) const {
     std::vector<std::string> keys;
     keys.reserve(valueMap_.size());
     for (const auto& entry : valueMap_) {
       keys.push_back(entry.first);
+    }
+    if (sorted) {
+      std::sort(keys.begin(), keys.end());
     }
     return keys;
   }
 
   /**
    * @brief This function returns this @ref Configuration's subconfig keys.
+   * @param sorted whether the keys should be sorted or not.
+   * @return a vector of strings representing the subconfig keys for this
+   * configuration.
    */
-  std::vector<std::string> getSubconfigKeys() const {
+  std::vector<std::string> getSubconfigKeys(bool sorted = false) const {
     std::vector<std::string> keys;
     keys.reserve(configMap_.size());
     for (const auto& entry : configMap_) {
       keys.push_back(entry.first);
+    }
+    if (sorted) {
+      std::sort(keys.begin(), keys.end());
     }
     return keys;
   }
 
   /**
    * @brief Retrieve a list of all the keys in this @ref Configuration pointing
-  to values of passed type @p storedType.
+   * to values of passed type @p storedType.
    * @param storedType The desired type of value whose key should be returned.
+   * @param sorted whether the keys should be sorted or not.
    * @return vector of string keys pointing to values of desired @p storedType
    */
-  std::vector<std::string> getStoredKeys(ConfigValType storedType) const {
+  std::vector<std::string> getKeysByType(ConfigValType storedType,
+                                         bool sorted = false) const {
     std::vector<std::string> keys;
     // reserve space for all keys
     keys.reserve(valueMap_.size());
@@ -595,6 +608,12 @@ class Configuration {
         ++count;
         keys.push_back(entry.first);
       }
+    }
+    if (valueMap_.size() > count) {
+      keys.shrink_to_fit();
+    }
+    if (sorted) {
+      std::sort(keys.begin(), keys.end());
     }
     return keys;
   }
@@ -674,6 +693,8 @@ class Configuration {
                   << getNameForStoredType(desiredType);
     return {};
   }
+
+  // ************************* Queries **************************
 
   /**
    * @brief Return number of value and subconfig entries in this
@@ -858,7 +879,7 @@ class Configuration {
                   "Configuration : Desired subconfig must be derived from "
                   "core::config::Configuration");
     // retrieve existing (or create new) subgroup, with passed name
-    return std::static_pointer_cast<T>(addSubgroup(name));
+    return std::static_pointer_cast<T>(addOrEditSubgroup(name).first->second);
   }
 
   /**
@@ -946,7 +967,8 @@ class Configuration {
     for (const auto& subConfig : src->configMap_) {
       const auto name = subConfig.first;
       // make if DNE and merge src subconfig
-      addSubgroup(name)->overwriteWithConfig(subConfig.second);
+      addOrEditSubgroup(name).first->second->overwriteWithConfig(
+          subConfig.second);
     }
   }
 
@@ -1033,6 +1055,29 @@ class Configuration {
    */
   std::string getAllValsAsString(const std::string& newLineStr = "\n") const;
 
+  /**
+   * @brief Find the subconfiguration with the given handle and rekey it such
+   * that all the value entries it contains are keyed by sequential numeric
+   * strings. These keys will preserve the order of the original keys.
+   *
+   * NOTE : all values regardless of type in this subconfig will be rekeyed.
+   * This function is primarily intended to be used on subconfigs holding a
+   * collection of the same type of date, to facilitate accessing this data as a
+   * sorted list.
+   *
+   * @param subconfigKey The key of this Configuration's subconfig whose values'
+   * keys we wish to have rekeyed.
+   * @return the number of values whose keys have been changed.
+   */
+  int rekeySubconfigValues(const std::string& subconfigKey);
+
+  /**
+   * @brief Rekey all the value entries in this Configuration such that all
+   * their keys are sequential numeric strings that presever the order of their
+   * original strings.
+   */
+  int rekeyAllValues();
+
  protected:
   /**
    * @brief Process passed json object into this Configuration, using passed
@@ -1083,12 +1128,17 @@ class Configuration {
   }
 
   /**
-   * @brief if no subgroup with given name this will make one, otherwise does
-   * nothing.
-   * @param name Desired name of new subgroup.
-   * @return whether a group was made or not
+   * @brief Retrieves named subgroup; if no subgroup with given name exists this
+   * will make one.
+   * @param name Name of desired existing or new subgroup.
+   * @return The resultant pair after attempting to emplace a Configuration at
+   * the requested location given by @p name. Consists of an iterator to the
+   * Configuration, and a boolean value that denotes whether this is a new
+   * Configuration or it existed already.
    */
-  std::shared_ptr<Configuration> addSubgroup(const std::string& name) {
+
+  std::pair<ConfigMapType::iterator, bool> addOrEditSubgroup(
+      const std::string& name) {
     // Attempt to insert an empty pointer
     auto result = configMap_.emplace(name, std::shared_ptr<Configuration>{});
     // If name not already present (insert succeeded) then add new
@@ -1096,7 +1146,7 @@ class Configuration {
     if (result.second) {
       result.first->second = std::make_shared<Configuration>();
     }
-    return result.first->second;
+    return result;
   }
 
   /**
