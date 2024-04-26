@@ -267,6 +267,14 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
   std::shared_ptr<MarkerSets> editMarkerSetsConfiguration() {
     return editSubconfig<MarkerSets>("marker_sets");
   }
+  /**
+   * @brief Rekey all the markers in the marker_sets subconfiguration such that
+   * each point is keyed by a sequential numeric string that preserves the
+   * natural ordering of the key strings.
+   */
+  int rekeyAllMarkerSets() {
+    return editSubconfig<MarkerSets>("marker_sets")->rekeyAllMarkers();
+  }
 
  protected:
   /**

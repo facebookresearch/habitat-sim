@@ -57,6 +57,12 @@ class LinkMarkerSubset : public esp::core::config::Configuration {
     }
   }
 
+  /**
+   * @brief Rekeys all markers to have vector IDXs as string keys
+   * @return returns how many markers have been processed with new keys.
+   */
+  int rekeyAllMarkers() { return rekeySubconfigValues("markers"); }
+
   ESP_SMART_POINTERS(LinkMarkerSubset)
 };  // class LinkMarkerSubset
 
@@ -120,6 +126,19 @@ class LinkMarkerSets : public esp::core::config::Configuration {
    */
   void removeNamedMarkerSet(const std::string& linkSubsetName) {
     removeSubconfig(linkSubsetName);
+  }
+  /**
+   * @brief Rekeys all marker collections to have vector IDXs as string keys
+   * @return returns how many markers have been processed with new keys in this
+   * link's marker subsets.
+   */
+  int rekeyAllMarkers() {
+    int res;
+    const auto& subsetKeys = getSubconfigKeys();
+    for (const auto& key : subsetKeys) {
+      res += editSubconfig<LinkMarkerSubset>(key)->rekeyAllMarkers();
+    }
+    return res;
   }
 
   ESP_SMART_POINTERS(LinkMarkerSets)
@@ -185,6 +204,20 @@ class MarkerSet : public esp::core::config::Configuration {
     removeSubconfig(linkSetName);
   }
 
+  /**
+   * @brief Rekeys all marker collections to have vector IDXs as string keys
+   * @return returns how many markers have been processed with new keys in this
+   * markerset.
+   */
+  int rekeyAllMarkers() {
+    int res;
+    const auto& subsetKeys = getSubconfigKeys();
+    for (const auto& key : subsetKeys) {
+      res += editSubconfig<LinkMarkerSets>(key)->rekeyAllMarkers();
+    }
+    return res;
+  }
+
   ESP_SMART_POINTERS(MarkerSet)
 };  // class MarkerSet
 
@@ -244,6 +277,19 @@ class MarkerSets : public esp::core::config::Configuration {
    */
   void removeNamedMarkerSet(const std::string& markerSetName) {
     removeSubconfig(markerSetName);
+  }
+
+  /**
+   * @brief Rekeys all marker collections to have vector IDXs as string keys
+   * @return returns how many markers have been processed with new keys.
+   */
+  int rekeyAllMarkers() {
+    int res;
+    const auto& subsetKeys = getSubconfigKeys();
+    for (const auto& key : subsetKeys) {
+      res += editSubconfig<MarkerSet>(key)->rekeyAllMarkers();
+    }
+    return res;
   }
 
   /**

@@ -98,6 +98,25 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
       bool registerTemplate = true) = 0;
 
  protected:
+  /**
+   * @brief Parse Marker_sets object in json, if present.
+   * @param attribs (out) an existing attributes to be modified.
+   * @param jsonConfig json document to parse
+   * @return true if tag is found, of appropriate configuration, and holds
+   * actual values.
+   */
+  bool parseMarkerSets(const AbsObjAttrPtr& attribs,
+                       const io::JsonGenericValue& jsonConfig) const {
+    // check for the existing of markersets
+    bool hasMarkersets =
+        this->parseSubconfigJsonVals("marker_sets", attribs, jsonConfig);
+    if (hasMarkersets) {
+      // Cast markerset Configuration to MarkerSets object and reorder all
+      // markers
+      attribs->rekeyAllMarkerSets();
+    }
+    return hasMarkersets;
+  }
   //======== Common JSON import functions ========
 
   /**
@@ -346,6 +365,9 @@ auto AbstractObjectAttributesManager<T, Access>::
       jsonDoc, "shader_type", "ShaderTypeNamesMap", false,
       attributes::ShaderTypeNamesMap,
       [attributes](const std::string& val) { attributes->setShaderType(val); });
+
+  // Markersets for stages or objects
+  this->parseMarkerSets(attributes, jsonDoc);
 
   return attributes;
 }  // AbstractObjectAttributesManager<AbsObjAttrPtr>::setAbstractObjectAttributesFromJson
