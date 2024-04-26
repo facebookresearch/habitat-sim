@@ -44,6 +44,27 @@ JsonGenericValue toJsonValue(const Magnum::Matrix3& mat,
 bool fromJsonValue(const JsonGenericValue& obj, Magnum::Matrix3& val);
 
 /**
+ * @brief Specialization to handle Magnum::Matrix4 values. Parses passed value
+ * into JsonGenericValue.
+ *
+ * @param mat Source Magnum::Matrix3 to parse into Json
+ * @param allocator
+ * @return Json value containing data
+ */
+JsonGenericValue toJsonValue(const Magnum::Matrix4& mat,
+                             JsonAllocator& allocator);
+/**
+ * @brief Specialization to handle Magnum::Matrix4 values. Populate passed @p
+ * val with value. Returns whether successfully populated, or not. Logs an error
+ * if inappropriate type.
+ *
+ * @param obj json value to parse
+ * @param val destination value to be populated
+ * @return whether successful or not
+ */
+bool fromJsonValue(const JsonGenericValue& obj, Magnum::Matrix4& val);
+
+/**
  * @brief Specialization to handle Magnum::Vector2 values. Parses passed value
  * into JsonGenericValue.
  *

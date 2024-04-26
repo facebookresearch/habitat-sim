@@ -6,7 +6,7 @@ import magnum as mn
 import numpy as np
 
 import habitat_sim
-from habitat_sim.bindings import ConfigStoredType, Configuration
+from habitat_sim.bindings import Configuration, ConfigValType
 
 
 def test_config_eq():
@@ -99,7 +99,7 @@ def test_core_configuration():
     for i in range(len(breadcrumbs) - 1):
         subconfig_to_check = subconfig_to_check.get_subconfig(breadcrumbs[i])
     # check at final subconfig
-    assert subconfig_to_check.has_key_to_type(breadcrumbs[-1], ConfigStoredType.String)
+    assert subconfig_to_check.has_key_to_type(breadcrumbs[-1], ConfigValType.String)
     # check value is as expected
     assert subconfig_to_check.get(breadcrumbs[-1]) == string_to_add
 
@@ -125,7 +125,7 @@ def test_core_configuration():
         subconfig_to_check = subconfig_to_check.get_subconfig(breadcrumbs2[i])
     # check at final subconfig
     assert subconfig_to_check.has_key_to_type(
-        breadcrumbs2[-1], ConfigStoredType.MagnumVec3
+        breadcrumbs2[-1], ConfigValType.MagnumVec3
     )
     # check value is as expected
     assert subconfig_to_check.get(breadcrumbs2[-1]) == vec_to_add
@@ -140,16 +140,16 @@ def test_core_configuration():
     subconfig_new = config.get_subconfig_copy("subconfig_new")
     subconfig_new.set("test_string", "this is a test string")
 
-    assert subconfig_new.has_key_to_type("test_string", ConfigStoredType.String)
+    assert subconfig_new.has_key_to_type("test_string", ConfigValType.String)
     assert not config.get_subconfig("subconfig_new").has_key_to_type(
-        "test_string", ConfigStoredType.String
+        "test_string", ConfigValType.String
     )
 
     # now adde subconfig into config
     config.save_subconfig("subconfig_new", subconfig_new)
     # now nested subconfig should have key
     assert config.get_subconfig("subconfig_new").has_key_to_type(
-        "test_string", ConfigStoredType.String
+        "test_string", ConfigValType.String
     )
 
 
