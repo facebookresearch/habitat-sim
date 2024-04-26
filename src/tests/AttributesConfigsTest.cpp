@@ -32,6 +32,7 @@ using esp::physics::MotionType;
 
 using AttrMgrs::AttributesManager;
 using Attrs::ArticulatedObjectAttributes;
+using Attrs::MarkerSets;
 using Attrs::ObjectAttributes;
 using Attrs::PbrShaderAttributes;
 using Attrs::PhysicsManagerAttributes;
@@ -109,7 +110,7 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
    * @param markerSetsHierarchy The hieraarchy the marker sets should follow.
    */
   void testMarkerSetsConfigVals(
-      std::shared_ptr<esp::metadata::attributes::MarkerSets> markerSetsConfig,
+      std::shared_ptr<Attrs::MarkerSets> markerSetsConfig,
       const MarkerSetTestMap&  // markers in link subset
           markerSetsHierarchy);
 
@@ -118,31 +119,27 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
    * loading process is working as expected.
    */
   void testPhysicsAttrVals(
-      std::shared_ptr<esp::metadata::attributes::PhysicsManagerAttributes>
-          physMgrAttr);
+      std::shared_ptr<Attrs::PhysicsManagerAttributes> physMgrAttr);
 
   /**
    * @brief This test will verify that the PBR/IBL shader config attributes'
    * managers' JSON loading process is working as expected.
    */
   void testPbrShaderAttrVals(
-      std::shared_ptr<esp::metadata::attributes::PbrShaderAttributes>
-          pbrShaderAttr);
+      std::shared_ptr<Attrs::PbrShaderAttributes> pbrShaderAttr);
   /**
    * @brief This test will verify that the Light Attributes' managers' JSON
    * loading process is working as expected.
    */
   void testLightAttrVals(
-      std::shared_ptr<esp::metadata::attributes::LightLayoutAttributes>
-          lightLayoutAttr);
+      std::shared_ptr<Attrs::LightLayoutAttributes> lightLayoutAttr);
 
   /**
    * @brief This test will verify that the Scene Instance Attributes' managers'
    * JSON loading process is working as expected.
    */
   void testSceneInstanceAttrVals(
-      std::shared_ptr<esp::metadata::attributes::SceneInstanceAttributes>
-          sceneInstAttr);
+      std::shared_ptr<Attrs::SceneInstanceAttributes> sceneInstAttr);
 
   /**
    * @brief This test will verify that the root-level scene instance user
@@ -155,31 +152,27 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
    * loading process is working as expected.
    */
   void testSemanticAttrVals(
-      std::shared_ptr<esp::metadata::attributes::SemanticAttributes>
-          semanticAttr,
+      std::shared_ptr<Attrs::SemanticAttributes> semanticAttr,
       const std::string& assetPath);
   /**
    * @brief This test will verify that the Stage attributes' managers' JSON
    * loading process is working as expected.
    */
-  void testStageAttrVals(
-      std::shared_ptr<esp::metadata::attributes::StageAttributes> stageAttr,
-      const std::string& assetPath);
+  void testStageAttrVals(std::shared_ptr<Attrs::StageAttributes> stageAttr,
+                         const std::string& assetPath);
 
   /**
    * @brief This test will verify that the Object attributes' managers' JSON
    * loading process is working as expected.
    */
-  void testObjectAttrVals(
-      std::shared_ptr<esp::metadata::attributes::ObjectAttributes> objAttr,
-      const std::string& assetPath);
+  void testObjectAttrVals(std::shared_ptr<Attrs::ObjectAttributes> objAttr,
+                          const std::string& assetPath);
   /**
    * @brief This test will verify that the Articulated Object attributes'
    * managers' JSON loading process is working as expected.
    */
   void testArticulatedObjectAttrVals(
-      std::shared_ptr<esp::metadata::attributes::ArticulatedObjectAttributes>
-          artObjAttr,
+      std::shared_ptr<Attrs::ArticulatedObjectAttributes> artObjAttr,
       const std::string& assetPath,
       const std::string& urdfPath);
 
@@ -307,7 +300,7 @@ void AttributesConfigsTest::testUserDefinedConfigVals(
 }  // AttributesConfigsTest::testUserDefinedConfigVals
 
 void AttributesConfigsTest::testMarkerSetsConfigVals(
-    std::shared_ptr<esp::metadata::attributes::MarkerSets> markerSetsConfig,
+    std::shared_ptr<Attrs::MarkerSets> markerSetsConfig,
     const MarkerSetTestMap&  // markers in link subset
         markerSetsHierarchy) {
   for (const auto& markerSetInfoEntry : markerSetsHierarchy) {
@@ -358,8 +351,7 @@ void AttributesConfigsTest::testMarkerSetsConfigVals(
 /////////////  Begin JSON String-based tests
 
 void AttributesConfigsTest::testPhysicsAttrVals(
-    std::shared_ptr<esp::metadata::attributes::PhysicsManagerAttributes>
-        physMgrAttr) {
+    std::shared_ptr<Attrs::PhysicsManagerAttributes> physMgrAttr) {
   // match values set in test JSON
 
   CORRADE_COMPARE(physMgrAttr->getGravity(), Mn::Vector3(1, 2, 3));
@@ -442,8 +434,7 @@ void AttributesConfigsTest::testPhysicsJSONLoad() {
 }  // AttributesConfigsTest::testPhysicsJSONLoad
 
 void AttributesConfigsTest::testPbrShaderAttrVals(
-    std::shared_ptr<esp::metadata::attributes::PbrShaderAttributes>
-        pbrShaderAttr) {
+    std::shared_ptr<Attrs::PbrShaderAttributes> pbrShaderAttr) {
   CORRADE_VERIFY(!pbrShaderAttr->getEnableDirectLighting());
   CORRADE_VERIFY(!pbrShaderAttr->getEnableIBL());
 
@@ -574,8 +565,7 @@ void AttributesConfigsTest::testPbrShaderAttrJSONLoad() {
 }  // AttributesConfigsTest::testPbrShaderAttrJSONLoad
 
 void AttributesConfigsTest::testLightAttrVals(
-    std::shared_ptr<esp::metadata::attributes::LightLayoutAttributes>
-        lightLayoutAttr) {
+    std::shared_ptr<Attrs::LightLayoutAttributes> lightLayoutAttr) {
   // test light layout attributes-level user config vals
   testUserDefinedConfigVals(lightLayoutAttr->getUserConfiguration(), 4,
                             "light attribs defined string", true, 23, 2.3,
@@ -730,8 +720,7 @@ void AttributesConfigsTest::testSceneInstanceRootUserDefinedAttrVals(
 }  // AttributesConfigsTest::testSceneInstanceRootUserDefinedAttrVals
 
 void AttributesConfigsTest::testSceneInstanceAttrVals(
-    std::shared_ptr<esp::metadata::attributes::SceneInstanceAttributes>
-        sceneAttr) {
+    std::shared_ptr<Attrs::SceneInstanceAttributes> sceneAttr) {
   // match values set in test JSON
   CORRADE_COMPARE(
       static_cast<int>(sceneAttr->getTranslationOrigin()),
@@ -1138,7 +1127,7 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
 
 }  // AttributesConfigsTest::testSceneInstanceJSONLoad
 void AttributesConfigsTest::testSemanticAttrVals(
-    std::shared_ptr<esp::metadata::attributes::SemanticAttributes> semanticAttr,
+    std::shared_ptr<Attrs::SemanticAttributes> semanticAttr,
     const std::string& assetPath) {
   CORRADE_COMPARE(
       semanticAttr->getSemanticDescriptorFilename(),
@@ -1307,7 +1296,7 @@ void AttributesConfigsTest::testSemanticJSONLoad() {
 }  // AttributesConfigsTest::testSemanticJSONLoad
 
 void AttributesConfigsTest::testStageAttrVals(
-    std::shared_ptr<esp::metadata::attributes::StageAttributes> stageAttr,
+    std::shared_ptr<Attrs::StageAttributes> stageAttr,
     const std::string& assetPath) {
   // match values set in test JSON
   CORRADE_COMPARE(stageAttr->getScale(), Mn::Vector3(2, 3, 4));
@@ -1587,7 +1576,7 @@ void AttributesConfigsTest::testStageJSONLoad() {
 }  // AttributesConfigsTest::testStageJSONLoad(
 
 void AttributesConfigsTest::testObjectAttrVals(
-    std::shared_ptr<esp::metadata::attributes::ObjectAttributes> objAttr,
+    std::shared_ptr<Attrs::ObjectAttributes> objAttr,
     const std::string& assetPath) {
   // match values set in test JSON
 
@@ -1872,8 +1861,7 @@ void AttributesConfigsTest::testObjectJSONLoad() {
 }  // AttributesConfigsTest::testObjectJSONLoadTest
 
 void AttributesConfigsTest::testArticulatedObjectAttrVals(
-    std::shared_ptr<esp::metadata::attributes::ArticulatedObjectAttributes>
-        artObjAttr,
+    std::shared_ptr<Attrs::ArticulatedObjectAttributes> artObjAttr,
     const std::string& assetPath,
     const std::string& urdfPath) {
   // match values set in test JSON
