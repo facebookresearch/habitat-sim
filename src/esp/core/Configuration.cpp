@@ -496,7 +496,7 @@ int Configuration::loadOneConfigFromJson(int numConfigSettings,
 
         for (size_t i = 0; i < jsonObj.Size(); ++i) {
           const std::string subKey =
-              Cr::Utility::formatString("{}_{:.02d}", key, i);
+              Cr::Utility::formatString("{}_{:.03d}", key, i);
           numConfigSettings += subGroupPtr->loadOneConfigFromJson(
               numConfigSettings, subKey, jsonObj[i]);
         }
@@ -511,7 +511,7 @@ int Configuration::loadOneConfigFromJson(int numConfigSettings,
 
       for (size_t i = 0; i < jsonObj.Size(); ++i) {
         const std::string subKey =
-            Cr::Utility::formatString("{}_{:.02d}", key, i);
+            Cr::Utility::formatString("{}_{:.03d}", key, i);
         numConfigSettings += subGroupPtr->loadOneConfigFromJson(
             numConfigSettings, subKey, jsonObj[i]);
       }
@@ -662,7 +662,7 @@ int Configuration::rekeyAllValues() {
   // Get all sorted key-value pairs of values
   std::map<std::string, ConfigValue> sortedValMap(valueMap_.begin(),
                                                   valueMap_.end());
-  // clear out existing value map
+  // clear out existing value map - subconfigs are not touched.
   valueMap_.clear();
   // place sorted values with newly constructed keys
   int keyIter = 0;

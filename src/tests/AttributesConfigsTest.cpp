@@ -278,7 +278,7 @@ void AttributesConfigsTest::testUserDefinedConfigVals(
   // ["test_00", "test_01", "test_02", "test_03"],
   for (int i = 0; i < strListSize; ++i) {
     const std::string subKey =
-        Cr::Utility::formatString("user_str_array_{:.02d}", i);
+        Cr::Utility::formatString("user_str_array_{:.03d}", i);
     const std::string fieldVal = Cr::Utility::formatString("test_{:.02d}", i);
 
     CORRADE_COMPARE(userStrListSubconfig->get<std::string>(subKey), fieldVal);
