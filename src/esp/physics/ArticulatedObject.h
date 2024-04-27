@@ -180,6 +180,11 @@ class ArticulatedLink : public RigidBase {
    */
   bool finalizeObject() override { return true; }
 
+  Magnum::Vector3 getScale() const override {
+    ESP_DEBUG() << "ArticulatedLink does not currently support this.";
+    return {};
+  }
+
   void setTransformation(
       CORRADE_UNUSED const Magnum::Matrix4& transformation) override {
     ESP_DEBUG() << "ArticulatedLink can't do this.";
