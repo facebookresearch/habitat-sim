@@ -97,22 +97,35 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
       Mn::Quaternion quatValue,
       Mn::Vector4 vec4Value);
 
-  typedef std::unordered_map<std::string, Mn::Vector3> MarkersTestMap;
-  typedef std::unordered_map<std::string, MarkersTestMap> SubsetTestMap;
-  typedef std::unordered_map<std::string, SubsetTestMap> LinksTestMap;
-  typedef std::unordered_map<std::string, LinksTestMap> MarkerSetTestMap;
+  /**
+   * @brief Collection of markers making up a single MarkerSet
+   */
+  typedef std::unordered_map<std::string, Mn::Vector3> MarkerSetTestMap;
+  /**
+   * @brief Collection of MarkerSet making up a single LinkSet
+   */
+  typedef std::unordered_map<std::string, MarkerSetTestMap> LinkSetTestMap;
+  /**
+   * @brief Collection of LinkSets making up a single TaskSet
+   */
+  typedef std::unordered_map<std::string, LinkSetTestMap> TaskSetTestMap;
+  /**
+   * @brief Collection of TaskSets making up the entire MarkerSets construction.
+   */
+  typedef std::unordered_map<std::string, TaskSetTestMap> AllMarkerSetsTestMap;
 
   /**
    * @brief This method will test the marker-sets configurations being loaded in
    * stage, object and ao configs.
    * @param markerSetsConfig The marker-sets configuration object whose contents
    * are to be tested.
-   * @param markerSetsHierarchy The hieraarchy the marker sets should follow.
+   * @param markerSetsInfoHierarchy The hieraarchy the marker sets should
+   * follow.
    */
   void testMarkerSetsConfigVals(
       std::shared_ptr<Attrs::MarkerSets> markerSetsConfig,
-      const MarkerSetTestMap&  // markers in link subset
-          markerSetsHierarchy);
+      const AllMarkerSetsTestMap&  // markers in link subset
+          markerSetsInfoHierarchy);
 
   /**
    * @brief This test will verify that the physics attributes' managers' JSON
@@ -301,37 +314,37 @@ void AttributesConfigsTest::testUserDefinedConfigVals(
 
 void AttributesConfigsTest::testMarkerSetsConfigVals(
     std::shared_ptr<Attrs::MarkerSets> markerSetsConfig,
-    const MarkerSetTestMap&  // markers in link subset
-        markerSetsHierarchy) {
-  for (const auto& markerSetInfoEntry : markerSetsHierarchy) {
+    const AllMarkerSetsTestMap& markerSetsInfoHierarchy) {
+  // Testing as nested subconfigs
+  for (const auto& taskSetInfoEntry : markerSetsInfoHierarchy) {
     // Key is first
-    const std::string markerSetKey = markerSetInfoEntry.first;
-    CORRADE_VERIFY(markerSetsConfig->hasSubconfig(markerSetKey));
-    // Retrive named markerset
-    const auto markerSet = markerSetsConfig->getSubconfigView(markerSetKey);
-    CORRADE_VERIFY(markerSet);
-    // Submap
-    const auto& markerSetInfoMap = markerSetInfoEntry.second;
-    for (const auto& linkEntry : markerSetInfoMap) {
-      const std::string linkIDKey = linkEntry.first;
-      CORRADE_VERIFY(markerSet->hasSubconfig(linkIDKey));
+    const std::string taskSetKey = taskSetInfoEntry.first;
+    CORRADE_VERIFY(markerSetsConfig->hasSubconfig(taskSetKey));
+    // Retrive named TaskSet
+    const auto taskSet = markerSetsConfig->getSubconfigView(taskSetKey);
+    CORRADE_VERIFY(taskSet);
+    // Submap of test data
+    const auto& taskSetInfoMap = taskSetInfoEntry.second;
+    for (const auto& linkSetInfoEntry : taskSetInfoMap) {
+      const std::string linkSetKey = linkSetInfoEntry.first;
+      CORRADE_VERIFY(taskSet->hasSubconfig(linkSetKey));
       // Retrieve named per-link markerset
-      const auto linkMarkerSet = markerSet->getSubconfigView(linkIDKey);
-      CORRADE_VERIFY(linkMarkerSet);
-      // Per link subsets
-      const auto& linkSetInfoMap = linkEntry.second;
-      for (const auto& linkSubsetEntry : linkSetInfoMap) {
-        const std::string subsetIDKey = linkSubsetEntry.first;
-        CORRADE_VERIFY(linkMarkerSet->hasSubconfig(subsetIDKey));
-        // Retrive a specific link's subset
-        const auto linkSubset = linkMarkerSet->getSubconfigView(subsetIDKey);
-        CORRADE_VERIFY(linkSubset);
+      const auto linkSet = taskSet->getSubconfigView(linkSetKey);
+      CORRADE_VERIFY(linkSet);
+      // Per linkmarker sets
+      const auto& linkSetInfoMap = linkSetInfoEntry.second;
+      for (const auto& markerSetInfoEntry : linkSetInfoMap) {
+        const std::string markerSetKey = markerSetInfoEntry.first;
+        CORRADE_VERIFY(linkSet->hasSubconfig(markerSetKey));
+        // Retrive a specific link's markerSet
+        const auto markerSet = linkSet->getSubconfigView(markerSetKey);
+        CORRADE_VERIFY(markerSet);
         // Verify that subconfig named "markers' exists"
-        CORRADE_VERIFY(linkSubset->hasSubconfig("markers"));
-        // Get array of markers
-        const auto& markers = linkSubset->getSubconfigView("markers");
+        CORRADE_VERIFY(markerSet->hasSubconfig("markers"));
+        // Get the set of markers
+        const auto& markers = markerSet->getSubconfigView("markers");
         // key-value map that should match mapping of markers in link subset
-        const auto& markersInfo = linkSubsetEntry.second;
+        const auto& markersInfo = markerSetInfoEntry.second;
         // Verify there are the expected number of marker points
         CORRADE_COMPARE(markers->getNumValues(), markersInfo.size());
         // Verify that subconfig has each marker point
@@ -342,10 +355,11 @@ void AttributesConfigsTest::testMarkerSetsConfigVals(
           const Mn::Vector3 markerPoint = markerInfo.second;
           // Make sure marker point is present
           CORRADE_COMPARE(markers->get<Mn::Vector3>(markerKey), markerPoint);
-        }  // for each marker within subset
-      }    // for each subset within link set
-    }      // for each link set in marker set
-  }        // for each marker_set
+        }  // for each marker within marker set
+      }    // for each marker set within link set
+    }      // for each link set in task set
+  }        // for each task set within MarkerSets aggregation
+  // TODO : test as MarkerSets class hierarchy
 }  // AttributesConfigsTest::testMarkerSetsConfigVals
 
 /////////////  Begin JSON String-based tests
@@ -1338,72 +1352,72 @@ void AttributesConfigsTest::testStageAttrVals(
   {
     // Test marker sets
 
-    MarkersTestMap subset_id_000_stage_name(
+    MarkerSetTestMap marker_set_000_stage_name(
         {{"003", Mn::Vector3{4.1, 5.2, 6.3}},
          {"002", Mn::Vector3{3.1, 4.2, 5.3}},
          {"001", Mn::Vector3{2.1, 3.2, 4.3}},
          {"000", Mn::Vector3{1.1, 2.2, 3.3}}});
 
-    MarkersTestMap subset_id_001_stage_name(
+    MarkerSetTestMap marker_set_001_stage_name(
         {{"003", Mn::Vector3{4.2, 5.3, 6.4}},
          {"002", Mn::Vector3{3.2, 4.3, 5.4}},
          {"001", Mn::Vector3{2.2, 3.3, 4.4}},
          {"000", Mn::Vector3{1.2, 2.3, 3.4}}});
 
-    SubsetTestMap link_id_00_stage_name(
-        {{"subset_id_000_stage_name", subset_id_000_stage_name},
-         {"subset_id_001_stage_name", subset_id_001_stage_name}});
+    LinkSetTestMap link_set_00_stage_name(
+        {{"marker_set_000_stage_name", marker_set_000_stage_name},
+         {"marker_set_001_stage_name", marker_set_001_stage_name}});
 
-    LinksTestMap marker_set_0_stage_name{
-        {{"link_id_00_stage_name", link_id_00_stage_name}}};
+    TaskSetTestMap task_set_0_stage_name{
+        {{"link_set_00_stage_name", link_set_00_stage_name}}};
 
-    MarkersTestMap subset_id_100_stage_name(
+    MarkerSetTestMap marker_set_100_stage_name(
         {{"003", Mn::Vector3{14.1, 15.2, 16.3}},
          {"002", Mn::Vector3{13.1, 14.2, 15.3}},
          {"001", Mn::Vector3{12.1, 13.2, 14.3}},
          {"000", Mn::Vector3{11.1, 12.2, 13.3}}});
 
-    MarkersTestMap subset_id_101_stage_name(
+    MarkerSetTestMap marker_set_101_stage_name(
         {{"003", Mn::Vector3{14.2, 15.3, 16.4}},
          {"002", Mn::Vector3{13.2, 14.3, 15.4}},
          {"001", Mn::Vector3{12.2, 13.3, 14.4}},
          {"000", Mn::Vector3{11.2, 12.3, 13.4}}});
 
-    MarkersTestMap subset_id_102_stage_name(
+    MarkerSetTestMap marker_set_102_stage_name(
         {{"003", Mn::Vector3{124.2, 125.3, 126.4}},
          {"002", Mn::Vector3{123.2, 124.3, 125.4}},
          {"001", Mn::Vector3{122.2, 123.3, 124.4}},
          {"000", Mn::Vector3{121.2, 122.3, 123.4}}});
 
-    SubsetTestMap link_id_10_stage_name(
-        {{"subset_id_100_stage_name", subset_id_100_stage_name},
-         {"subset_id_101_stage_name", subset_id_101_stage_name},
-         {"subset_id_102_stage_name", subset_id_102_stage_name}});
+    LinkSetTestMap link_set_10_stage_name(
+        {{"marker_set_100_stage_name", marker_set_100_stage_name},
+         {"marker_set_101_stage_name", marker_set_101_stage_name},
+         {"marker_set_102_stage_name", marker_set_102_stage_name}});
 
-    MarkersTestMap subset_id_110_stage_name(
+    MarkerSetTestMap marker_set_110_stage_name(
         {{"003", Mn::Vector3{14.3, 15.4, 16.5}},
          {"002", Mn::Vector3{13.3, 14.4, 15.5}},
          {"001", Mn::Vector3{12.3, 13.4, 14.5}},
          {"000", Mn::Vector3{11.3, 12.4, 13.5}}});
 
-    MarkersTestMap subset_id_111_stage_name(
+    MarkerSetTestMap marker_set_111_stage_name(
         {{"003", Mn::Vector3{14.4, 15.5, 16.6}},
          {"002", Mn::Vector3{13.4, 14.5, 15.6}},
          {"004", Mn::Vector3{15.4, 16.5, 17.6}},
          {"001", Mn::Vector3{12.4, 13.5, 14.6}},
          {"000", Mn::Vector3{11.4, 12.5, 13.6}}});
 
-    SubsetTestMap link_id_11_stage_name(
-        {{"subset_id_110_stage_name", subset_id_110_stage_name},
-         {"subset_id_110_stage_name", subset_id_110_stage_name}});
+    LinkSetTestMap link_set_11_stage_name(
+        {{"marker_set_110_stage_name", marker_set_110_stage_name},
+         {"marker_set_110_stage_name", marker_set_110_stage_name}});
 
-    LinksTestMap marker_set_1_stage_name(
-        {{"link_id_10_stage_name", link_id_10_stage_name},
-         {"link_id_11_stage_name", link_id_11_stage_name}});
+    TaskSetTestMap task_set_1_stage_name(
+        {{"link_set_10_stage_name", link_set_10_stage_name},
+         {"link_set_11_stage_name", link_set_11_stage_name}});
 
-    MarkerSetTestMap markerSetMap(
-        {{"marker_set_0_stage_name", marker_set_0_stage_name},
-         {"marker_set_1_stage_name", marker_set_1_stage_name}});
+    AllMarkerSetsTestMap markerSetMap(
+        {{"task_set_0_stage_name", task_set_0_stage_name},
+         {"task_set_1_stage_name", task_set_1_stage_name}});
 
     testMarkerSetsConfigVals(stageAttr->getMarkerSetsConfiguration(),
                              markerSetMap);
@@ -1433,9 +1447,9 @@ void AttributesConfigsTest::testStageJSONLoad() {
   "nav_asset":"testJSONNavMeshAsset.glb",
   "shader_type" : "material",
   "marker_sets" : {
-      "marker_set_0_stage_name" : {
-          "link_id_00_stage_name" : {
-              "subset_id_000_stage_name" : {
+      "task_set_0_stage_name" : {
+          "link_set_00_stage_name" : {
+              "marker_set_000_stage_name" : {
                 "markers" : [
                     [1.1, 2.2, 3.3],
                     [2.1, 3.2, 4.3],
@@ -1443,7 +1457,7 @@ void AttributesConfigsTest::testStageJSONLoad() {
                     [4.1, 5.2, 6.3]
                   ]
               },
-              "subset_id_001_stage_name" : {
+              "marker_set_001_stage_name" : {
                 "markers" : {
                     "0":[1.2, 2.3, 3.4],
                     "1":[2.2, 3.3, 4.4],
@@ -1453,9 +1467,9 @@ void AttributesConfigsTest::testStageJSONLoad() {
               }
           }
       },
-      "marker_set_1_stage_name" : {
-          "link_id_10_stage_name" : {
-              "subset_id_100_stage_name" : {
+      "task_set_1_stage_name" : {
+          "link_set_10_stage_name" : {
+              "marker_set_100_stage_name" : {
                 "markers" : [
                     [11.1, 12.2, 13.3],
                     [12.1, 13.2, 14.3],
@@ -1463,7 +1477,7 @@ void AttributesConfigsTest::testStageJSONLoad() {
                     [14.1, 15.2, 16.3]
                   ]
               },
-              "subset_id_101_stage_name" : {
+              "marker_set_101_stage_name" : {
                 "markers" : {
                     "0":[11.2, 12.3, 13.4],
                     "1":[12.2, 13.3, 14.4],
@@ -1471,7 +1485,7 @@ void AttributesConfigsTest::testStageJSONLoad() {
                     "3":[14.2, 15.3, 16.4]
                 }
               },
-              "subset_id_102_stage_name" : {
+              "marker_set_102_stage_name" : {
                 "markers" : {
                     "0":[121.2, 122.3, 123.4],
                     "1":[122.2, 123.3, 124.4],
@@ -1480,8 +1494,8 @@ void AttributesConfigsTest::testStageJSONLoad() {
                 }
               }
           },
-          "link_id_11_stage_name" : {
-              "subset_id_110_stage_name" : {
+          "link_set_11_stage_name" : {
+              "marker_set_110_stage_name" : {
                 "markers" : {
                     "0":[11.3, 12.4, 13.5],
                     "1":[12.3, 13.4, 14.5],
@@ -1489,7 +1503,7 @@ void AttributesConfigsTest::testStageJSONLoad() {
                     "3":[14.3, 15.4, 16.5]
                 }
               },
-              "subset_id_111_stage_name" : {
+              "marker_set_111_stage_name" : {
                 "markers" : [
                     [11.4, 12.5, 13.6],
                     [12.4, 13.5, 14.6],
@@ -1610,81 +1624,81 @@ void AttributesConfigsTest::testObjectAttrVals(
   {
     // Test marker sets
 
-    MarkersTestMap subset_id_000_obj_name(
+    MarkerSetTestMap marker_set_000_obj_name(
         {{"003", Mn::Vector3{4.1, 5.2, 6.3}},
          {"002", Mn::Vector3{3.1, 4.2, 5.3}},
          {"001", Mn::Vector3{2.1, 3.2, 4.3}},
          {"000", Mn::Vector3{1.1, 2.2, 3.3}}});
 
-    MarkersTestMap subset_id_001_obj_name(
+    MarkerSetTestMap marker_set_001_obj_name(
         {{"003", Mn::Vector3{4.2, 5.3, 6.4}},
          {"002", Mn::Vector3{3.2, 4.3, 5.4}},
          {"001", Mn::Vector3{2.2, 3.3, 4.4}},
          {"000", Mn::Vector3{1.2, 2.3, 3.4}}});
 
-    SubsetTestMap link_id_00_obj_name(
-        {{"subset_id_000_obj_name", subset_id_000_obj_name},
-         {"subset_id_001_obj_name", subset_id_001_obj_name}});
+    LinkSetTestMap link_set_00_obj_name(
+        {{"marker_set_000_obj_name", marker_set_000_obj_name},
+         {"marker_set_001_obj_name", marker_set_001_obj_name}});
 
-    MarkersTestMap subset_id_010_obj_name(
+    MarkerSetTestMap marker_set_010_obj_name(
         {{"003", Mn::Vector3{4.3, 5.4, 6.5}},
          {"002", Mn::Vector3{3.3, 4.4, 5.5}},
          {"001", Mn::Vector3{2.3, 3.4, 4.5}},
          {"000", Mn::Vector3{1.3, 2.4, 3.5}}});
 
-    MarkersTestMap subset_id_011_obj_name(
+    MarkerSetTestMap marker_set_011_obj_name(
         {{"003", Mn::Vector3{4.4, 5.5, 6.6}},
          {"002", Mn::Vector3{3.4, 4.5, 5.6}},
          {"001", Mn::Vector3{2.4, 3.5, 4.6}},
          {"000", Mn::Vector3{1.4, 2.5, 3.6}}});
 
-    SubsetTestMap link_id_01_obj_name(
-        {{"subset_id_010_obj_name", subset_id_010_obj_name},
-         {"subset_id_011_obj_name", subset_id_011_obj_name}});
+    LinkSetTestMap link_set_01_obj_name(
+        {{"marker_set_010_obj_name", marker_set_010_obj_name},
+         {"marker_set_011_obj_name", marker_set_011_obj_name}});
 
-    LinksTestMap marker_set_0_obj_name{
-        {{"link_id_00_obj_name", link_id_00_obj_name},
-         {"link_id_01_obj_name", link_id_01_obj_name}}};
+    TaskSetTestMap task_set_0_obj_name{
+        {{"link_set_00_obj_name", link_set_00_obj_name},
+         {"link_set_01_obj_name", link_set_01_obj_name}}};
 
-    MarkersTestMap subset_id_100_obj_name(
+    MarkerSetTestMap marker_set_100_obj_name(
         {{"003", Mn::Vector3{14.1, 15.2, 16.3}},
          {"002", Mn::Vector3{13.1, 14.2, 15.3}},
          {"001", Mn::Vector3{12.1, 13.2, 14.3}},
          {"000", Mn::Vector3{11.1, 12.2, 13.3}}});
 
-    MarkersTestMap subset_id_101_obj_name(
+    MarkerSetTestMap marker_set_101_obj_name(
         {{"003", Mn::Vector3{14.2, 15.3, 16.4}},
          {"002", Mn::Vector3{13.2, 14.3, 15.4}},
          {"001", Mn::Vector3{12.2, 13.3, 14.4}},
          {"000", Mn::Vector3{11.2, 12.3, 13.4}}});
 
-    SubsetTestMap link_id_10_obj_name(
-        {{"subset_id_100_obj_name", subset_id_100_obj_name},
-         {"subset_id_101_obj_name", subset_id_101_obj_name}});
+    LinkSetTestMap link_set_10_obj_name(
+        {{"marker_set_100_obj_name", marker_set_100_obj_name},
+         {"marker_set_101_obj_name", marker_set_101_obj_name}});
 
-    MarkersTestMap subset_id_110_obj_name(
+    MarkerSetTestMap marker_set_110_obj_name(
         {{"003", Mn::Vector3{14.3, 15.4, 16.5}},
          {"002", Mn::Vector3{13.3, 14.4, 15.5}},
          {"001", Mn::Vector3{12.3, 13.4, 14.5}},
          {"000", Mn::Vector3{11.3, 12.4, 13.5}}});
 
-    MarkersTestMap subset_id_111_obj_name(
+    MarkerSetTestMap marker_set_111_obj_name(
         {{"003", Mn::Vector3{14.4, 15.5, 16.6}},
          {"002", Mn::Vector3{13.4, 14.5, 15.6}},
          {"001", Mn::Vector3{12.4, 13.5, 14.6}},
          {"000", Mn::Vector3{11.4, 12.5, 13.6}}});
 
-    SubsetTestMap link_id_11_obj_name(
-        {{"subset_id_110_obj_name", subset_id_110_obj_name},
-         {"subset_id_110_obj_name", subset_id_110_obj_name}});
+    LinkSetTestMap link_set_11_obj_name(
+        {{"marker_set_110_obj_name", marker_set_110_obj_name},
+         {"marker_set_110_obj_name", marker_set_110_obj_name}});
 
-    LinksTestMap marker_set_1_obj_name(
-        {{"link_id_10_obj_name", link_id_10_obj_name},
-         {"link_id_11_obj_name", link_id_11_obj_name}});
+    TaskSetTestMap task_set_1_obj_name(
+        {{"link_set_10_obj_name", link_set_10_obj_name},
+         {"link_set_11_obj_name", link_set_11_obj_name}});
 
-    MarkerSetTestMap markerSetMap(
-        {{"marker_set_0_obj_name", marker_set_0_obj_name},
-         {"marker_set_1_obj_name", marker_set_1_obj_name}});
+    AllMarkerSetsTestMap markerSetMap(
+        {{"task_set_0_obj_name", task_set_0_obj_name},
+         {"task_set_1_obj_name", task_set_1_obj_name}});
 
     testMarkerSetsConfigVals(objAttr->getMarkerSetsConfiguration(),
                              markerSetMap);
@@ -1720,9 +1734,9 @@ void AttributesConfigsTest::testObjectJSONLoad() {
   "COM": [0.1,0.2,0.3],
   "shader_type" : "phong",
   "marker_sets" : {
-      "marker_set_0_obj_name" : {
-          "link_id_00_obj_name" : {
-              "subset_id_000_obj_name" : {
+      "task_set_0_obj_name" : {
+          "link_set_00_obj_name" : {
+              "marker_set_000_obj_name" : {
                 "markers" : [
                     [1.1, 2.2, 3.3],
                     [2.1, 3.2, 4.3],
@@ -1730,7 +1744,7 @@ void AttributesConfigsTest::testObjectJSONLoad() {
                     [4.1, 5.2, 6.3]
                   ]
               },
-              "subset_id_001_obj_name" : {
+              "marker_set_001_obj_name" : {
                 "markers" : {
                     "0":[1.2, 2.3, 3.4],
                     "1":[2.2, 3.3, 4.4],
@@ -1739,8 +1753,8 @@ void AttributesConfigsTest::testObjectJSONLoad() {
                 }
               }
           },
-          "link_id_01_obj_name" : {
-              "subset_id_010_obj_name" : {
+          "link_set_01_obj_name" : {
+              "marker_set_010_obj_name" : {
                 "markers" : {
                     "0":[1.3, 2.4, 3.5],
                     "1":[2.3, 3.4, 4.5],
@@ -1748,7 +1762,7 @@ void AttributesConfigsTest::testObjectJSONLoad() {
                     "3":[4.3, 5.4, 6.5]
                 }
               },
-              "subset_id_011_obj_name" : {
+              "marker_set_011_obj_name" : {
                 "markers" : [
                     [1.4, 2.5, 3.6],
                     [2.4, 3.5, 4.6],
@@ -1758,9 +1772,9 @@ void AttributesConfigsTest::testObjectJSONLoad() {
               }
           }
       },
-      "marker_set_1_obj_name" : {
-          "link_id_10_obj_name" : {
-              "subset_id_100_obj_name" : {
+      "task_set_1_obj_name" : {
+          "link_set_10_obj_name" : {
+              "marker_set_100_obj_name" : {
                 "markers" : [
                     [11.1, 12.2, 13.3],
                     [12.1, 13.2, 14.3],
@@ -1768,7 +1782,7 @@ void AttributesConfigsTest::testObjectJSONLoad() {
                     [14.1, 15.2, 16.3]
                   ]
               },
-              "subset_id_101_obj_name" : {
+              "marker_set_101_obj_name" : {
                 "markers" : {
                     "0":[11.2, 12.3, 13.4],
                     "1":[12.2, 13.3, 14.4],
@@ -1777,8 +1791,8 @@ void AttributesConfigsTest::testObjectJSONLoad() {
                 }
               }
           },
-          "link_id_11_obj_name" : {
-              "subset_id_110_obj_name" : {
+          "link_set_11_obj_name" : {
+              "marker_set_110_obj_name" : {
                 "markers" : {
                     "0":[11.3, 12.4, 13.5],
                     "1":[12.3, 13.4, 14.5],
@@ -1786,7 +1800,7 @@ void AttributesConfigsTest::testObjectJSONLoad() {
                     "3":[14.3, 15.4, 16.5]
                 }
               },
-              "subset_id_111_obj_name" : {
+              "marker_set_111_obj_name" : {
                 "markers" : [
                     [11.4, 12.5, 13.6],
                     [12.4, 13.5, 14.6],
@@ -1897,105 +1911,105 @@ void AttributesConfigsTest::testArticulatedObjectAttrVals(
   {
     // Test marker sets
 
-    MarkersTestMap subset_id_000_ao_name(
+    MarkerSetTestMap marker_set_000_ao_name(
         {{"003", Mn::Vector3{14.1, 5.2, 6.3}},
          {"002", Mn::Vector3{13.1, 4.2, 5.3}},
          {"001", Mn::Vector3{12.1, 3.2, 4.3}},
          {"000", Mn::Vector3{11.1, 2.2, 3.3}}});
 
-    MarkersTestMap subset_id_001_ao_name(
+    MarkerSetTestMap marker_set_001_ao_name(
         {{"003", Mn::Vector3{14.2, 5.3, 6.4}},
          {"002", Mn::Vector3{13.2, 4.3, 5.4}},
          {"001", Mn::Vector3{12.2, 3.3, 4.4}},
          {"000", Mn::Vector3{11.2, 2.3, 3.4}}});
 
-    SubsetTestMap link_id_00_ao_name(
-        {{"subset_id_000_ao_name", subset_id_000_ao_name},
-         {"subset_id_001_ao_name", subset_id_001_ao_name}});
+    LinkSetTestMap link_set_00_ao_name(
+        {{"marker_set_000_ao_name", marker_set_000_ao_name},
+         {"marker_set_001_ao_name", marker_set_001_ao_name}});
 
-    MarkersTestMap subset_id_010_ao_name(
+    MarkerSetTestMap marker_set_010_ao_name(
         {{"003", Mn::Vector3{14.3, 5.4, 6.5}},
          {"002", Mn::Vector3{13.3, 4.4, 5.5}},
          {"001", Mn::Vector3{12.3, 3.4, 4.5}},
          {"000", Mn::Vector3{11.3, 2.4, 3.5}}});
 
-    MarkersTestMap subset_id_011_ao_name(
+    MarkerSetTestMap marker_set_011_ao_name(
         {{"003", Mn::Vector3{14.4, 5.5, 6.6}},
          {"002", Mn::Vector3{13.4, 4.5, 5.6}},
          {"001", Mn::Vector3{12.4, 3.5, 4.6}},
          {"000", Mn::Vector3{11.4, 2.5, 3.6}}});
 
-    SubsetTestMap link_id_01_ao_name(
-        {{"subset_id_010_ao_name", subset_id_010_ao_name},
-         {"subset_id_011_ao_name", subset_id_011_ao_name}});
+    LinkSetTestMap link_set_01_ao_name(
+        {{"marker_set_010_ao_name", marker_set_010_ao_name},
+         {"marker_set_011_ao_name", marker_set_011_ao_name}});
 
-    MarkersTestMap subset_id_020_ao_name(
+    MarkerSetTestMap marker_set_020_ao_name(
         {{"003", Mn::Vector3{24.3, 5.4, 6.5}},
          {"002", Mn::Vector3{23.3, 4.4, 5.5}},
          {"001", Mn::Vector3{22.3, 3.4, 4.5}},
          {"000", Mn::Vector3{21.3, 2.4, 3.5}}});
 
-    MarkersTestMap subset_id_021_ao_name(
+    MarkerSetTestMap marker_set_021_ao_name(
         {{"003", Mn::Vector3{24.4, 5.5, 6.6}},
          {"002", Mn::Vector3{23.4, 4.5, 5.6}},
          {"001", Mn::Vector3{22.4, 3.5, 4.6}},
          {"000", Mn::Vector3{21.4, 2.5, 3.6}}});
 
-    MarkersTestMap subset_id_022_ao_name(
+    MarkerSetTestMap marker_set_022_ao_name(
         {{"003", Mn::Vector3{224.4, 5.5, 6.6}},
          {"002", Mn::Vector3{223.4, 4.5, 5.6}},
          {"001", Mn::Vector3{222.4, 3.5, 4.6}},
          {"000", Mn::Vector3{221.4, 2.5, 3.6}}});
 
-    SubsetTestMap link_id_02_ao_name(
-        {{"subset_id_020_ao_name", subset_id_020_ao_name},
-         {"subset_id_021_ao_name", subset_id_021_ao_name},
-         {"subset_id_022_ao_name", subset_id_022_ao_name}});
+    LinkSetTestMap link_set_02_ao_name(
+        {{"marker_set_020_ao_name", marker_set_020_ao_name},
+         {"marker_set_021_ao_name", marker_set_021_ao_name},
+         {"marker_set_022_ao_name", marker_set_022_ao_name}});
 
-    LinksTestMap marker_set_0_ao_name{
-        {{"link_id_00_ao_name", link_id_00_ao_name},
-         {"link_id_01_ao_name", link_id_01_ao_name},
-         {"link_id_02_ao_name", link_id_02_ao_name}}};
+    TaskSetTestMap task_set_0_ao_name{
+        {{"link_set_00_ao_name", link_set_00_ao_name},
+         {"link_set_01_ao_name", link_set_01_ao_name},
+         {"link_set_02_ao_name", link_set_02_ao_name}}};
 
-    MarkersTestMap subset_id_100_ao_name(
+    MarkerSetTestMap marker_set_100_ao_name(
         {{"003", Mn::Vector3{114.1, 15.2, 16.3}},
          {"002", Mn::Vector3{113.1, 14.2, 15.3}},
          {"001", Mn::Vector3{112.1, 13.2, 14.3}},
          {"000", Mn::Vector3{111.1, 12.2, 13.3}}});
 
-    MarkersTestMap subset_id_101_ao_name(
+    MarkerSetTestMap marker_set_101_ao_name(
         {{"003", Mn::Vector3{114.2, 15.3, 16.4}},
          {"002", Mn::Vector3{113.2, 14.3, 15.4}},
          {"001", Mn::Vector3{112.2, 13.3, 14.4}},
          {"000", Mn::Vector3{111.2, 12.3, 13.4}}});
 
-    SubsetTestMap link_id_10_ao_name(
-        {{"subset_id_100_ao_name", subset_id_100_ao_name},
-         {"subset_id_101_ao_name", subset_id_101_ao_name}});
+    LinkSetTestMap link_set_10_ao_name(
+        {{"marker_set_100_ao_name", marker_set_100_ao_name},
+         {"marker_set_101_ao_name", marker_set_101_ao_name}});
 
-    MarkersTestMap subset_id_110_ao_name(
+    MarkerSetTestMap marker_set_110_ao_name(
         {{"003", Mn::Vector3{114.3, 15.4, 16.5}},
          {"002", Mn::Vector3{113.3, 14.4, 15.5}},
          {"001", Mn::Vector3{112.3, 13.4, 14.5}},
          {"000", Mn::Vector3{111.3, 12.4, 13.5}}});
 
-    MarkersTestMap subset_id_111_ao_name(
+    MarkerSetTestMap marker_set_111_ao_name(
         {{"003", Mn::Vector3{114.4, 15.5, 16.6}},
          {"002", Mn::Vector3{113.4, 14.5, 15.6}},
          {"001", Mn::Vector3{112.4, 13.5, 14.6}},
          {"000", Mn::Vector3{111.4, 12.5, 13.6}}});
 
-    SubsetTestMap link_id_11_ao_name(
-        {{"subset_id_110_ao_name", subset_id_110_ao_name},
-         {"subset_id_110_ao_name", subset_id_110_ao_name}});
+    LinkSetTestMap link_set_11_ao_name(
+        {{"marker_set_110_ao_name", marker_set_110_ao_name},
+         {"marker_set_110_ao_name", marker_set_110_ao_name}});
 
-    LinksTestMap marker_set_1_ao_name(
-        {{"link_id_10_ao_name", link_id_10_ao_name},
-         {"link_id_11_ao_name", link_id_11_ao_name}});
+    TaskSetTestMap task_set_1_ao_name(
+        {{"link_set_10_ao_name", link_set_10_ao_name},
+         {"link_set_11_ao_name", link_set_11_ao_name}});
 
-    MarkerSetTestMap markerSetMap(
-        {{"marker_set_0_ao_name", marker_set_0_ao_name},
-         {"marker_set_1_ao_name", marker_set_1_ao_name}});
+    AllMarkerSetsTestMap markerSetMap(
+        {{"task_set_0_ao_name", task_set_0_ao_name},
+         {"task_set_1_ao_name", task_set_1_ao_name}});
 
     testMarkerSetsConfigVals(artObjAttr->getMarkerSetsConfiguration(),
                              markerSetMap);
@@ -2019,9 +2033,9 @@ void AttributesConfigsTest::testArticulatedObjectJSONLoad() {
   "render_mode": "skin",
   "shader_type" : "pbr",
   "marker_sets" : {
-      "marker_set_0_ao_name" : {
-          "link_id_00_ao_name" : {
-              "subset_id_000_ao_name" : {
+      "task_set_0_ao_name" : {
+          "link_set_00_ao_name" : {
+              "marker_set_000_ao_name" : {
                 "markers" : [
                     [11.1, 2.2, 3.3],
                     [12.1, 3.2, 4.3],
@@ -2029,7 +2043,7 @@ void AttributesConfigsTest::testArticulatedObjectJSONLoad() {
                     [14.1, 5.2, 6.3]
                   ]
               },
-              "subset_id_001_ao_name" : {
+              "marker_set_001_ao_name" : {
                 "markers" : {
                     "0":[11.2, 2.3, 3.4],
                     "1":[12.2, 3.3, 4.4],
@@ -2038,8 +2052,8 @@ void AttributesConfigsTest::testArticulatedObjectJSONLoad() {
                 }
               }
           },
-          "link_id_01_ao_name" : {
-              "subset_id_010_ao_name" : {
+          "link_set_01_ao_name" : {
+              "marker_set_010_ao_name" : {
                 "markers" : {
                     "0":[11.3, 2.4, 3.5],
                     "1":[12.3, 3.4, 4.5],
@@ -2047,7 +2061,7 @@ void AttributesConfigsTest::testArticulatedObjectJSONLoad() {
                     "3":[14.3, 5.4, 6.5]
                 }
               },
-              "subset_id_011_ao_name" : {
+              "marker_set_011_ao_name" : {
                 "markers" : [
                     [11.4, 2.5, 3.6],
                     [12.4, 3.5, 4.6],
@@ -2056,8 +2070,8 @@ void AttributesConfigsTest::testArticulatedObjectJSONLoad() {
                   ]
               }
           },
-          "link_id_02_ao_name" : {
-              "subset_id_020_ao_name" : {
+          "link_set_02_ao_name" : {
+              "marker_set_020_ao_name" : {
                 "markers" : {
                     "0":[21.3, 2.4, 3.5],
                     "1":[22.3, 3.4, 4.5],
@@ -2065,7 +2079,7 @@ void AttributesConfigsTest::testArticulatedObjectJSONLoad() {
                     "3":[24.3, 5.4, 6.5]
                 }
               },
-              "subset_id_021_ao_name" : {
+              "marker_set_021_ao_name" : {
                 "markers" : [
                     [21.4, 2.5, 3.6],
                     [22.4, 3.5, 4.6],
@@ -2073,7 +2087,7 @@ void AttributesConfigsTest::testArticulatedObjectJSONLoad() {
                     [24.4, 5.5, 6.6]
                   ]
               },
-              "subset_id_022_ao_name" : {
+              "marker_set_022_ao_name" : {
                 "markers" : [
                     [221.4, 2.5, 3.6],
                     [222.4, 3.5, 4.6],
@@ -2083,9 +2097,9 @@ void AttributesConfigsTest::testArticulatedObjectJSONLoad() {
               }
           }
       },
-      "marker_set_1_ao_name" : {
-          "link_id_10_ao_name" : {
-              "subset_id_100_ao_name" : {
+      "task_set_1_ao_name" : {
+          "link_set_10_ao_name" : {
+              "marker_set_100_ao_name" : {
                 "markers" : [
                     [111.1, 12.2, 13.3],
                     [112.1, 13.2, 14.3],
@@ -2093,7 +2107,7 @@ void AttributesConfigsTest::testArticulatedObjectJSONLoad() {
                     [114.1, 15.2, 16.3]
                   ]
               },
-              "subset_id_101_ao_name" : {
+              "marker_set_101_ao_name" : {
                 "markers" : {
                     "0":[111.2, 12.3, 13.4],
                     "1":[112.2, 13.3, 14.4],
@@ -2102,8 +2116,8 @@ void AttributesConfigsTest::testArticulatedObjectJSONLoad() {
                 }
               }
           },
-          "link_id_11_ao_name" : {
-              "subset_id_110_ao_name" : {
+          "link_set_11_ao_name" : {
+              "marker_set_110_ao_name" : {
                 "markers" : {
                     "0":[111.3, 12.4, 13.5],
                     "1":[112.3, 13.4, 14.5],
@@ -2111,7 +2125,7 @@ void AttributesConfigsTest::testArticulatedObjectJSONLoad() {
                     "3":[114.3, 15.4, 16.5]
                 }
               },
-              "subset_id_111_ao_name" : {
+              "marker_set_111_ao_name" : {
                 "markers" : [
                     [111.4, 12.5, 13.6],
                     [112.4, 13.5, 14.6],

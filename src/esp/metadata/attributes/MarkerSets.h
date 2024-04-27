@@ -11,29 +11,29 @@ namespace metadata {
 namespace attributes {
 /** @file
  * @brief Class @ref esp::metadata::attributes::Markersets,
- * Class @ref esp::metadata::attributes::MarkerSet,
- * Class @ref esp::metadata::attributes::LinkMarkerSet,
- * Class @ref esp::metadata::attributes::LinkMarkerSubset
+ * Class @ref esp::metadata::attributes::TaskSet,
+ * Class @ref esp::metadata::attributes::LinkSet,
+ * Class @ref esp::metadata::attributes::MarkerSet
  */
 
 /**
- * @brief This class provides an alias for a single configuration holding 1 or
- * more marker points for a particular link.
+ * @brief This class provides an alias for a single Configuration holding 1 or
+ * more marker points within a particular LinkSet.
  */
-class LinkMarkerSubset : public esp::core::config::Configuration {
+class MarkerSet : public esp::core::config::Configuration {
  public:
-  LinkMarkerSubset() : Configuration() {}
+  MarkerSet() : Configuration() {}
   /**
-   * @brief Returns the number of existing markers in this LinkMarkerSubset.
+   * @brief Returns the number of existing marker points in this MarkerSet.
    */
-  int getNumMarkers() const {
+  int getNumPoints() const {
     return getSubconfigView("markers")->getNumValues();
   }
 
   /**
-   * @brief Returns a list of all markers in this LinkMarkerSubset
+   * @brief Returns a list of all the marker points in this MarkerSet
    */
-  std::vector<Mn::Vector3> getMarkers() const {
+  std::vector<Mn::Vector3> getAllPoints() const {
     const auto markersPtr = getSubconfigView("markers");
     // Get all vector3 keys from subconfig in sorted vector
     std::vector<std::string> markerTags = markersPtr->getKeysByType(
@@ -47,11 +47,11 @@ class LinkMarkerSubset : public esp::core::config::Configuration {
   }
 
   /**
-   * @brief Set the list of marker points
+   * @brief Set the list of all the marker points for this MarkerSet
    */
-  void setMarkers(const std::vector<Mn::Vector3>& markers) {
+  void setAllPoints(const std::vector<Mn::Vector3>& markers) {
     auto markersPtr = editSubconfig<Configuration>("markers");
-    // Remove all existing markers
+    // Remove all existing marker points
     markersPtr->_clearAllValues();
     for (std::size_t i = 0; i < markers.size(); ++i) {
       const std::string& key = Cr::Utility::formatString("{:.03d}", i);
@@ -60,332 +60,53 @@ class LinkMarkerSubset : public esp::core::config::Configuration {
   }
 
   /**
-   * @brief Rekeys all markers to have vector IDXs as string keys
-   * @return returns how many markers have been processed with new keys.
+   * @brief Rekeys all marker points to have vector IDXs as string keys,
+   * retaining their original keys' natural ordering.
+   * @return returns how many marker points have been processed with new keys.
    */
   int rekeyAllMarkers() { return rekeySubconfigValues("markers"); }
-
-  ESP_SMART_POINTERS(LinkMarkerSubset)
-};  // class LinkMarkerSubset
-
-/**
- * @brief This class provides an alias for the nested configuration tree used
- * for a single link's 1 or more marker subsets that should be attached to the
- * named link.
- */
-class LinkMarkerSet : public esp::core::config::Configuration {
- public:
-  LinkMarkerSet() : Configuration() {}
-
-  /**
-   * @brief Returns the number of existing LinkSubset in this collection.
-   */
-  int getNumLinkSubsets() const { return getNumSubconfigs(); }
-
-  /**
-   * @brief whether the given @p linkSubsetName exists as a LinkSubset in
-   * this collection.
-   *
-   * @param linkSubsetName The desired marker set's name.
-   * @return whether the name is found as a LinkSubset subconfiguration.
-   */
-  bool hasNamedLinkSubset(const std::string& linkSubsetName) const {
-    return hasSubconfig(linkSubsetName);
-  }
-
-  /**
-   * @brief Retrieve a listing of all the LinkSubset handles in this
-   * collection.
-   */
-  std::vector<std::string> getAllLinkSubsetNames() const {
-    return getSubconfigKeys(true);
-  }
-
-  /**
-   * @brief Retrivess a copy of the named LinkSubset, if it exists, and
-   * nullptr if it does not.
-   */
-  LinkMarkerSubset::ptr getNamedLinkSubsetCopy(
-      const std::string& linkSubsetName) {
-    return getSubconfigCopy<LinkMarkerSubset>(linkSubsetName);
-  }
-
-  /**
-   * @brief Retrieve a view of the naamed LinkSubset, if it exists, and
-   * nullptr if it does not.
-   */
-  LinkMarkerSubset::cptr getNamedLinkSubsetView(
-      const std::string& linkSubsetName) const {
-    return std::static_pointer_cast<const LinkMarkerSubset>(
-        getSubconfigView(linkSubsetName));
-  }
-
-  /**
-   * @brief Retrieves a reference to a (potentially newly created)
-   * LinkMarkerSubset with the given @p linkSubsetName , which can be modified
-   * and the modifications will be retained.
-   *
-   * @param linkSubsetName The desired LinkMarkerSubset set's name.
-   * @return a reference to the LinkMarkerSubset set.
-   */
-  LinkMarkerSubset::ptr editNamedLinkSubset(const std::string& linkSubsetName) {
-    return editSubconfig<LinkMarkerSubset>(linkSubsetName);
-  }
-
-  /**
-   * @brief Removes named LinkMarkerSubset. Does nothing if DNE.
-   */
-  void removeNamedLinkSet(const std::string& linkSubsetName) {
-    removeSubconfig(linkSubsetName);
-  }
-
-  /**
-   * @brief Set the specified name's subset markers to the given marker values.
-   */
-  void setLinkSubsetMarkers(const std::string& linkSubsetName,
-                            const std::vector<Mn::Vector3>& markers) {
-    editNamedLinkSubset(linkSubsetName)->setMarkers(markers);
-  }
-
-  /**
-   * @brief Set the markers of all the subsets specified by name in the passed
-   * map.
-   */
-  void setAllMarkers(
-      const std::unordered_map<std::string, std::vector<Mn::Vector3>>&
-          markerMap) {
-    for (const auto& markers : markerMap) {
-      setLinkSubsetMarkers(markers.first, markers.second);
-    }
-  }
-
-  /**
-   * @brief Retrieve all the markers for the named link subset for this link
-   */
-  std::vector<Mn::Vector3> getLinkSubsetMarkers(const std::string& key) const {
-    return getNamedLinkSubsetView(key)->getMarkers();
-  }
-
-  /**
-   * @brief this retrieves all the markers across all subests for this link
-   */
-  std::unordered_map<std::string, std::vector<Mn::Vector3>> getAllMarkers()
-      const {
-    std::unordered_map<std::string, std::vector<Mn::Vector3>> resMap;
-    const auto& subsetKeys = getSubconfigKeys();
-    for (const auto& key : subsetKeys) {
-      resMap[key] = getLinkSubsetMarkers(key);
-    }
-    return resMap;
-  }  // getAllMarkers
-
-  /**
-   * @brief Rekeys all marker collections to have vector IDXs as string keys
-   * @return returns how many markers have been processed with new keys in this
-   * link's marker subsets.
-   */
-  int rekeyAllMarkers() {
-    int res = 0;
-    const auto& subsetKeys = getSubconfigKeys();
-    for (const auto& key : subsetKeys) {
-      res += editNamedLinkSubset(key)->rekeyAllMarkers();
-    }
-    return res;
-  }
-
-  ESP_SMART_POINTERS(LinkMarkerSet)
-};  // class LinkMarkerSet
-
-/**
- * @brief This class provides an alias for the nested configuration tree used
- * for a single MarkerSet, covering 1 or more links
- */
-class MarkerSet : public esp::core::config::Configuration {
- public:
-  MarkerSet() : Configuration() {}
-
-  /**
-   * @brief Returns the number of existing LinkMarkerSet in this collection.
-   */
-  int getNumLinkSets() const { return getNumSubconfigs(); }
-
-  /**
-   * @brief whether the given @p linkSetName exists as a LinkMarkerSet in this
-   * collection.
-   *
-   * @param linkSetName The desired LinkMarkerSet' name.
-   * @return whether the name is found as a LinkMarkerSet subconfiguration.
-   */
-  bool hasNamedLinkSet(const std::string& linkSetName) const {
-    return hasSubconfig(linkSetName);
-  }
-
-  /**
-   * @brief Retrieve a listing of all the LinkMarkerSet handles in this
-   * collection.
-   */
-  std::vector<std::string> getAllLinkSetNames() const {
-    return getSubconfigKeys(true);
-  }
-
-  /**
-   * @brief Retrivess a copy of the named LinkMarkerSet, if it exists, and
-   * nullptr if it does not.
-   */
-  LinkMarkerSet::ptr getNamedLinkSetCopy(const std::string& linkSetName) {
-    return getSubconfigCopy<LinkMarkerSet>(linkSetName);
-  }
-
-  /**
-   * @brief Retrieve a view of the naamed LinkMarkerSet, if it exists, and
-   * nullptr if it does not.
-   */
-  LinkMarkerSet::cptr getNamedLinkSetView(
-      const std::string& linkSetName) const {
-    return std::static_pointer_cast<const LinkMarkerSet>(
-        getSubconfigView(linkSetName));
-  }
-
-  /**
-   * @brief Retrieves a reference to a (potentially newly created)
-   * LinkMarkerSet with the given @p linkSetName , which can be modified and
-   * the modifications will be retained.
-   *
-   * @param linkSetName The desired marker set's name.
-   * @return a reference to the marker set.
-   */
-  LinkMarkerSet::ptr editNamedLinkSet(const std::string& linkSetName) {
-    return editSubconfig<LinkMarkerSet>(linkSetName);
-  }
-
-  /**
-   * @brief Removes named LinkMarkerSet. Does nothing if DNE.
-   */
-  void removeNamedLinkSet(const std::string& linkSetName) {
-    removeSubconfig(linkSetName);
-  }
-
-  /**
-   * @brief Set a specified link's specified subset's markers.
-   */
-  void setLinkSetSubsetMarkers(const std::string& linkSetName,
-                               const std::string& linkSubsetName,
-                               const std::vector<Mn::Vector3>& markers) {
-    editNamedLinkSet(linkSetName)
-        ->setLinkSubsetMarkers(linkSubsetName, markers);
-  }
-
-  /**
-   * @brief Sets all the specified name's link markers to the given marker
-   * values specified by the link subset name.
-   */
-  void setLinkSetMarkers(
-      const std::string& linkSetName,
-      const std::unordered_map<std::string, std::vector<Mn::Vector3>>&
-          markers) {
-    editNamedLinkSet(linkSetName)->setAllMarkers(markers);
-  }
-
-  /**
-   * @brief Set the markers of all the links specified by name in the passed
-   * map.
-   */
-  void setAllMarkers(const std::unordered_map<
-                     std::string,
-                     std::unordered_map<std::string, std::vector<Mn::Vector3>>>&
-                         markerMap) {
-    for (const auto& markers : markerMap) {
-      setLinkSetMarkers(markers.first, markers.second);
-    }
-  }
-
-  /**
-   * @brief Get the markers for a specified link's specified subset.
-   */
-  std::vector<Mn::Vector3> getLinkSetSubsetMarkers(
-      const std::string& linkName,
-      const std::string& linkSubsetName) const {
-    return getNamedLinkSetView(linkName)->getLinkSubsetMarkers(linkSubsetName);
-  }
-
-  /**
-   * @brief Retrieve all the markers for the named link within this markerset
-   */
-  std::unordered_map<std::string, std::vector<Mn::Vector3>> getLinkSetMarkers(
-      const std::string& linkName) const {
-    return getNamedLinkSetView(linkName)->getAllMarkers();
-  }
-
-  /**
-   * @brief this retrieves all the markers for across all links in this
-   * markerset
-   */
-  std::unordered_map<std::string,
-                     std::unordered_map<std::string, std::vector<Mn::Vector3>>>
-  getAllMarkers() const {
-    std::unordered_map<
-        std::string, std::unordered_map<std::string, std::vector<Mn::Vector3>>>
-        resMap;
-    const auto& subsetKeys = getSubconfigKeys();
-    for (const auto& linkName : subsetKeys) {
-      resMap[linkName] = getLinkSetMarkers(linkName);
-    }
-    return resMap;
-  }  // getAllMarkers
-
-  /**
-   * @brief Rekeys all marker collections to have vector IDXs as string keys
-   * @return returns how many markers have been processed with new keys in this
-   * markerset.
-   */
-  int rekeyAllMarkers() {
-    int res = 0;
-    const auto& subsetKeys = getSubconfigKeys();
-    for (const auto& key : subsetKeys) {
-      res += editNamedLinkSet(key)->rekeyAllMarkers();
-    }
-    return res;
-  }
 
   ESP_SMART_POINTERS(MarkerSet)
 };  // class MarkerSet
 
 /**
- * @brief This class provides an alias for the nested configuration tree used
- * to hold multiple MarkerSets.
+ * @brief This class provides an alias for the nested Configuration tree used
+ * for a single link's 1 or more NarkerSets that should be attached to the
+ * named link.
  */
-class MarkerSets : public esp::core::config::Configuration {
+class LinkSet : public esp::core::config::Configuration {
  public:
-  MarkerSets() : Configuration() {}
+  LinkSet() : Configuration() {}
 
   /**
-   * @brief Returns the number of existing MarkerSets in this collection.
+   * @brief Returns the number of existing MarkerSets in this LinkSet.
    */
   int getNumMarkerSets() const { return getNumSubconfigs(); }
 
   /**
-   * @brief whether the given @p markerSetName exists as a markerSet in this
-   * collection.
+   * @brief whether the given @p markerSetName exists as a MarkerSet in
+   * this LinkSet.
    *
    * @param markerSetName The desired marker set's name.
-   * @return whether the name is found as a MarkerSet subconfiguration.
+   * @return whether the name is found as a MarkerSet subConfiguration.
    */
-  bool hasNamedMarkerSet(const std::string& markerSetName) const {
+  bool hasMarkerSet(const std::string& markerSetName) const {
     return hasSubconfig(markerSetName);
   }
 
   /**
-   * @brief Retrieve a listing of all the MarkerSet handles in this collection.
+   * @brief Retrieve a listing of all the MarkerSet handles in this
+   * LinkSet.
    */
   std::vector<std::string> getAllMarkerSetNames() const {
     return getSubconfigKeys(true);
   }
 
   /**
-   * @brief Retrivess a copy of the named MarkerSet, if it exists, and nullptr
-   * if it does not.
+   * @brief Retrivess a copy of the named MarkerSet, if it exists, and
+   * nullptr if it does not.
    */
-  MarkerSet::ptr getNamedMarkerSetCopy(const std::string& markerSetName) {
+  MarkerSet::ptr getMarkerSetCopy(const std::string& markerSetName) {
     return getSubconfigCopy<MarkerSet>(markerSetName);
   }
 
@@ -393,73 +114,394 @@ class MarkerSets : public esp::core::config::Configuration {
    * @brief Retrieve a view of the naamed MarkerSet, if it exists, and
    * nullptr if it does not.
    */
-  MarkerSet::cptr getNamedMarkerSetView(
-      const std::string& markerSetName) const {
+  MarkerSet::cptr getMarkerSetView(const std::string& markerSetName) const {
     return std::static_pointer_cast<const MarkerSet>(
         getSubconfigView(markerSetName));
   }
 
   /**
-   * @brief Retrieves a reference to a (potentially newly created) MarkerSet
-   * with the given @p markerSetName , which can be modified and the
-   * modifications will be retained.
+   * @brief Retrieves a reference to a (potentially newly created)
+   * MarkerSet with the given @p markerSetName , which can be modified
+   * and the modifications will be retained.
    *
-   * @param markerSetName The desired marker set's name.
-   * @return a reference to the marker set.
+   * @param markerSetName The desired MarkerSet name.
+   * @return a reference to the MarkerSet.
    */
-  MarkerSet::ptr editNamedMarkerSet(const std::string& markerSetName) {
+  MarkerSet::ptr editMarkerSet(const std::string& markerSetName) {
     return editSubconfig<MarkerSet>(markerSetName);
   }
 
   /**
    * @brief Removes named MarkerSet. Does nothing if DNE.
    */
-  void removeNamedMarkerSet(const std::string& markerSetName) {
+  void removeLinkSet(const std::string& markerSetName) {
     removeSubconfig(markerSetName);
   }
 
   /**
-   * @brief Set a specified MarkerSet's specified link's specified subset's
-   * markers.
+   * @brief Set the specified MarkerSet's points to the given values.
+   * @param markerSetName the name of the MarkerSet
+   * @param markerList the list of the specified MarkerSet's points.
    */
-  void setMarkerSetLinkSetSubsetMarkers(
-      const std::string& markerSetName,
-      const std::string& linkSetName,
-      const std::string& linkSubsetName,
-      const std::vector<Mn::Vector3>& markers) {
-    editNamedMarkerSet(markerSetName)
-        ->setLinkSetSubsetMarkers(linkSetName, linkSubsetName, markers);
+  void setMarkerSetPoints(const std::string& markerSetName,
+                          const std::vector<Mn::Vector3>& markerList) {
+    editMarkerSet(markerSetName)->setAllPoints(markerList);
   }
 
   /**
-   * @brief Sets all the specified marker's specified link's subsets' markers to
-   * the given marker values specified in the map.
+   * @brief Set the marker points of all the MarkerSets specified by name in the
+   * passed map.
+   * @param markerMap a map holding all the MarkerSet points within this
+   * LinkSet, with MarkerSet name as the key, referncing a vector of 3d points,
    */
-  void setMarkerSetLinkSetMarkers(
-      const std::string& markerSetName,
+  void setAllMarkerPoints(
+      const std::unordered_map<std::string, std::vector<Mn::Vector3>>&
+          markerMap) {
+    for (const auto& markers : markerMap) {
+      setMarkerSetPoints(markers.first, markers.second);
+    }
+  }
+
+  /**
+   * @brief Retrieve all the marker points for the specified MarkerSet in this
+   * LinkSet
+   * @return a vector of 3d points
+   */
+  std::vector<Mn::Vector3> getMarkerSetPoints(const std::string& key) const {
+    return getMarkerSetView(key)->getAllPoints();
+  }
+
+  /**
+   * @brief Retrieve all the marker points across all MarkerSets for this link,
+   * as a map.
+   * @return a map holding all the MarkerSet points within this LinkSet, with
+   * MarkerSet name as the key, referncing a vector of 3d points
+   */
+  std::unordered_map<std::string, std::vector<Mn::Vector3>> getAllMarkerPoints()
+      const {
+    std::unordered_map<std::string, std::vector<Mn::Vector3>> resMap;
+    const auto& subsetKeys = getSubconfigKeys();
+    for (const auto& key : subsetKeys) {
+      resMap[key] = getMarkerSetPoints(key);
+    }
+    return resMap;
+  }  // getAllMarkerPoints
+
+  /**
+   * @brief Rekeys all marker collections to have vector IDXs as string keys
+   * @return returns how many markers have been processed with new keys in this
+   * LinkSet's MarkerSets.
+   */
+  int rekeyAllMarkers() {
+    int res = 0;
+    const auto& subsetKeys = getSubconfigKeys();
+    for (const auto& key : subsetKeys) {
+      res += editMarkerSet(key)->rekeyAllMarkers();
+    }
+    return res;
+  }
+
+  ESP_SMART_POINTERS(LinkSet)
+};  // class LinkSet
+
+/**
+ * @brief This class provides an alias for the nested Configuration tree used
+ * for a single TaskSet, holding 1 or more LinkSets
+ */
+class TaskSet : public esp::core::config::Configuration {
+ public:
+  TaskSet() : Configuration() {}
+
+  /**
+   * @brief Returns the number of existing LinkSets in this collection.
+   */
+  int getNumLinkSets() const { return getNumSubconfigs(); }
+
+  /**
+   * @brief Whether the given @p linkSetName exists as a LinkSet in this
+   * collection.
+   *
+   * @param linkSetName The desired LinkSet' name.
+   * @return whether the name is found as a LinkSet subConfiguration.
+   */
+  bool hasLinkSet(const std::string& linkSetName) const {
+    return hasSubconfig(linkSetName);
+  }
+
+  /**
+   * @brief Retrieve a listing of all the LinkSet handles in this
+   * collection.
+   */
+  std::vector<std::string> getAllLinkSetNames() const {
+    return getSubconfigKeys(true);
+  }
+
+  /**
+   * @brief Retrivess a copy of the named LinkSet, if it exists, and
+   * nullptr if it does not.
+   */
+  LinkSet::ptr getLinkSetCopy(const std::string& linkSetName) {
+    return getSubconfigCopy<LinkSet>(linkSetName);
+  }
+
+  /**
+   * @brief Retrieve a view of the naamed LinkSet, if it exists, and
+   * nullptr if it does not.
+   */
+  LinkSet::cptr getLinkSetView(const std::string& linkSetName) const {
+    return std::static_pointer_cast<const LinkSet>(
+        getSubconfigView(linkSetName));
+  }
+
+  /**
+   * @brief Retrieves a reference to a (potentially newly created)
+   * LinkSet with the given @p linkSetName , which can be modified and
+   * the modifications will be retained.
+   *
+   * @param linkSetName The desired LinkSet's name.
+   * @return a reference to the LinkSet.
+   */
+  LinkSet::ptr editLinkSet(const std::string& linkSetName) {
+    return editSubconfig<LinkSet>(linkSetName);
+  }
+
+  /**
+   * @brief Removes named LinkSet. Does nothing if DNE.
+   */
+  void removeLinkSet(const std::string& linkSetName) {
+    removeSubconfig(linkSetName);
+  }
+
+  /**
+   * @brief Set a specified LinkSet's specified MarkerSet's points to the given
+   * list of points.
+   * @param linkSetName the name of the LinkSet
+   * @param markerSetName the name of the MarkerSet within @p linkSetName
+   * @param markerList the list of the specified MarkerSet's points.
+   */
+  void setLinkMarkerSetPoints(const std::string& linkSetName,
+                              const std::string& markerSetName,
+                              const std::vector<Mn::Vector3>& markerList) {
+    editLinkSet(linkSetName)->setMarkerSetPoints(markerSetName, markerList);
+  }
+
+  /**
+   * @brief Sets all the MarkerSet points in the specified LinkSet to the given
+   * marker values specified in the map.
+   * @param linkSetName the name of the LinkSet within @p taskSetName
+   * @param markerMap a map holding all the MarkerSet points within the
+   * specified LinkSet, with MarkerSet name as the key, referncing a vector of
+   * 3d points,
+   */
+  void setLinkSetPoints(
       const std::string& linkSetName,
       const std::unordered_map<std::string, std::vector<Mn::Vector3>>&
           markers) {
-    editNamedMarkerSet(markerSetName)->setLinkSetMarkers(linkSetName, markers);
+    editLinkSet(linkSetName)->setAllMarkerPoints(markers);
   }
 
   /**
-   * @brief Sets all the specified MarkerSet's links' subset markers to the
-   * given marker values specified in the map.
+   * @brief Sets all the LinkSet's MarkerSets' points in this TaskSet
+   * to the given marker values specified in the map.
+   * @param markerMap an unordered map keyed by LinkSet name of unordered maps,
+   * each keyed by MarkerSet name of Markers as a vector of 3d points.
    */
-  void setMarkerSetMarkers(
-      const std::string& markerSetName,
+  void setAllMarkerPoints(
       const std::unordered_map<
           std::string,
-          std::unordered_map<std::string, std::vector<Mn::Vector3>>>& markers) {
-    editNamedMarkerSet(markerSetName)->setAllMarkers(markers);
+          std::unordered_map<std::string, std::vector<Mn::Vector3>>>&
+          markerMap) {
+    for (const auto& markers : markerMap) {
+      setLinkSetPoints(markers.first, markers.second);
+    }
   }
 
   /**
-   * @brief Set the markers of all the links specified by name in the passed
-   * map.
+   * @brief Retrieve the specified LinkSet's MarkerSet as a vector of 3d
+   * points.
+   * @param linkSetName the name of the LinkSet
+   * @param markerSetName the name of the MarkerSet within @p linkSetName
+   * @return a vector of 3d points
    */
-  void setAllMarkers(
+  std::vector<Mn::Vector3> getLinkMarkerSetPoints(
+      const std::string& linkSetName,
+      const std::string& markerSetName) const {
+    return getLinkSetView(linkSetName)->getMarkerSetPoints(markerSetName);
+  }
+
+  /**
+   * @brief Retrieve all the MarkerSet points for the specified LinkSet within
+   * this TaskSet.
+   * @param linkSetName the name of the LinkSet
+   * @return  a map holding all the MarkerSet points within the
+   * specified LinkSet, with MarkerSet name as the key, referncing a vector of
+   * 3d points.
+   */
+  std::unordered_map<std::string, std::vector<Mn::Vector3>> getLinkSetPoints(
+      const std::string& linkSetName) const {
+    return getLinkSetView(linkSetName)->getAllMarkerPoints();
+  }
+
+  /**
+   * @brief this retrieves all the marker points across all the LinkSets in this
+   * TaskSet.
+   * @return an unordered map keyed by LinkSet name of unordered maps, each
+   * keyed by MarkerSet name of Markers as a vector of 3d points.
+   */
+  std::unordered_map<std::string,
+                     std::unordered_map<std::string, std::vector<Mn::Vector3>>>
+  getAllMarkerPoints() const {
+    std::unordered_map<
+        std::string, std::unordered_map<std::string, std::vector<Mn::Vector3>>>
+        resMap;
+    const auto& subsetKeys = getSubconfigKeys();
+    for (const auto& linkSetName : subsetKeys) {
+      resMap[linkSetName] = getLinkSetPoints(linkSetName);
+    }
+    return resMap;
+  }  // getAllMarkerPoints
+
+  /**
+   * @brief Rekeys all marker collections to have vector IDXs as string keys
+   * @return returns how many markers have been processed with new keys in this
+   * TaskSet.
+   */
+  int rekeyAllMarkers() {
+    int res = 0;
+    const auto& subsetKeys = getSubconfigKeys();
+    for (const auto& key : subsetKeys) {
+      res += editLinkSet(key)->rekeyAllMarkers();
+    }
+    return res;
+  }
+
+  ESP_SMART_POINTERS(TaskSet)
+};  // class TaskSet
+
+/**
+ * @brief This class provides an alias for the nested Configuration tree used
+ * to hold multiple TaskSets.
+ */
+class MarkerSets : public esp::core::config::Configuration {
+ public:
+  MarkerSets() : Configuration() {}
+
+  /**
+   * @brief Returns the number of existing TaskSets in this collection.
+   */
+  int getNumTaskSets() const { return getNumSubconfigs(); }
+
+  /**
+   * @brief whether the given @p taskSetName exists as a TaskSet in this
+   * collection.
+   *
+   * @param taskSetName The desired TaskSet's name.
+   * @return whether the name is found as a TaskSet subConfiguration.
+   */
+  bool hasTaskSet(const std::string& taskSetName) const {
+    return hasSubconfig(taskSetName);
+  }
+
+  /**
+   * @brief Retrieve a listing of all the TaskSet handles in this collection.
+   */
+  std::vector<std::string> getAllTaskSetNames() const {
+    return getSubconfigKeys(true);
+  }
+
+  /**
+   * @brief Retrivess a copy of the named TaskSet, if it exists, and nullptr
+   * if it does not.
+   */
+  TaskSet::ptr getTaskSetCopy(const std::string& taskSetName) {
+    return getSubconfigCopy<TaskSet>(taskSetName);
+  }
+
+  /**
+   * @brief Retrieve a view of the naamed TaskSet, if it exists, and
+   * nullptr if it does not.
+   */
+  TaskSet::cptr getTaskSetView(const std::string& taskSetName) const {
+    return std::static_pointer_cast<const TaskSet>(
+        getSubconfigView(taskSetName));
+  }
+
+  /**
+   * @brief Retrieves a reference to a (potentially newly created) TaskSet
+   * with the given @p taskSetName , which can be modified and the
+   * modifications will be retained.
+   *
+   * @param taskSetName The desired TaskSet's name.
+   * @return a reference to the TaskSet.
+   */
+  TaskSet::ptr editTaskSet(const std::string& taskSetName) {
+    return editSubconfig<TaskSet>(taskSetName);
+  }
+
+  /**
+   * @brief Removes named TaskSet. Does nothing if DNE.
+   */
+  void removeTaskSet(const std::string& taskSetName) {
+    removeSubconfig(taskSetName);
+  }
+
+  /**
+   * @brief Set the specified TaskSet's specified LinkSet's specified
+   * MarkerSet's marker points.
+   * @param taskSetName the name of the TaskSet
+   * @param linkSetName the name of the LinkSet within @p taskSetName
+   * @param markerSetName the name of the MarkerSet within @p linkSetName
+   * @param markerList the list of the specified MarkerSet' points.
+   */
+  void setTaskLinkMarkerSetPoints(const std::string& taskSetName,
+                                  const std::string& linkSetName,
+                                  const std::string& markerSetName,
+                                  const std::vector<Mn::Vector3>& markerList) {
+    editTaskSet(taskSetName)
+        ->setLinkMarkerSetPoints(linkSetName, markerSetName, markerList);
+  }
+
+  /**
+   * @brief Sets all the MarkerSet points in the specified TaskSet's specified
+   * LinkSet to the given marker values specified in the map.
+   * @param taskSetName the name of the TaskSet
+   * @param linkSetName the name of the LinkSet within @p taskSetName
+   * @param markerMap a map holding all the MarkerSet points within the
+   * specified LinkSet, with MarkerSet name as the key, referncing a vector of
+   * 3d points,
+   */
+  void setTaskLinkSetPoints(
+      const std::string& taskSetName,
+      const std::string& linkSetName,
+      const std::unordered_map<std::string, std::vector<Mn::Vector3>>&
+          markerMap) {
+    editTaskSet(taskSetName)->setLinkSetPoints(linkSetName, markerMap);
+  }
+
+  /**
+   * @brief Sets all the LinkSet's MarkerSets' points in the specified TaskSet
+   * to the given marker values specified in the map.
+   * @param taskSetName the name of the TaskSet
+   * @param markerMap an unordered map keyed by LinkSet name of unordered maps,
+   * each keyed by MarkerSet name of Markers as a vector of 3d points.
+   */
+  void setTaskSetPoints(
+      const std::string& taskSetName,
+      const std::unordered_map<
+          std::string,
+          std::unordered_map<std::string, std::vector<Mn::Vector3>>>&
+          markerMap) {
+    editTaskSet(taskSetName)->setAllMarkerPoints(markerMap);
+  }
+
+  /**
+   * @brief Set all the marker points across every TaskSet using the values in
+   * the passed map.
+   * @param markerMap an unordered map keyed by TaskSet name, of unordered maps,
+   * each keyed by LinkSet name, of unordered maps, each keyed by MarkerSet name
+   * of Markers as a vector of 3d points.
+   */
+  void setAllMarkerPoints(
       const std::unordered_map<
           std::string,
           std::unordered_map<
@@ -467,49 +509,68 @@ class MarkerSets : public esp::core::config::Configuration {
               std::unordered_map<std::string, std::vector<Mn::Vector3>>>>&
           markerMap) {
     for (const auto& markers : markerMap) {
-      setMarkerSetMarkers(markers.first, markers.second);
+      setTaskSetPoints(markers.first, markers.second);
     }
   }
 
   /**
-   * @brief Return a single MarkerSet's Link's Subset of markers
+   * @brief Retrieve a single TaskSet's LinkSet's MarkerSet as a vector of 3d
+   * points.
+   * @param taskSetName the name of the TaskSet
+   * @param linkSetName the name of the LinkSet within @p taskSetName
+   * @param markerSetName the name of the MarkerSet within @p linkSetName
+   * @return a vector of 3d points
    */
-  std::vector<Mn::Vector3> getMarkerSetLinkSetSubsetMarkers(
-      const std::string& markerSetName,
+  std::vector<Mn::Vector3> getTaskLinkMarkerSetPoints(
+      const std::string& taskSetName,
       const std::string& linkSetName,
-      const std::string& linkSubsetName) const {
-    return getNamedMarkerSetView(markerSetName)
-        ->getLinkSetSubsetMarkers(linkSetName, linkSubsetName);
+      const std::string& markerSetName) const {
+    return getTaskSetView(taskSetName)
+        ->getLinkMarkerSetPoints(linkSetName, markerSetName);
   }
+
   /**
-   * @brief Return all of a MarkerSet's Link's Subsets of markers
+   * @brief Retrieve all of the MarkerSets for a particular LinkSet within the
+   * specified TaskSet, as an unordered map keyed by MarkerSet name of
+   * Markers as a vector of 3d points.
+   * @param taskSetName the name of the TaskSet
+   * @param linkSetName the name of the LinkSet within @p taskSetName
+   * @return a map holding all the MarkerSet points within the specified
+   * LinkSet, with MarkerSet name as the key, referncing a vector of 3d points,
    */
 
   std::unordered_map<std::string, std::vector<Mn::Vector3>>
-  getMarkerSetLinkSetMarkers(const std::string& markerSetName,
-                             const std::string& linkSetName) const {
-    return getNamedMarkerSetView(markerSetName)->getLinkSetMarkers(linkSetName);
+  getTaskLinkSetPoints(const std::string& taskSetName,
+                       const std::string& linkSetName) const {
+    return getTaskSetView(taskSetName)->getLinkSetPoints(linkSetName);
   }
 
   /**
-   * @brief Retrieve all the markers for the named markerset
+   * @brief Retrieve all the marker points for the named TaskSet, as an
+   * unordered map keyed by LinkSet name of unordered maps, each keyed by
+   * MarkerSet name of Markers as a vector of 3d points.
+   * @param taskSetName the name of the TaskSet
+   * @return an unordered map keyed by LinkSet name of unordered maps, each
+   * keyed by MarkerSet name of Markers as a vector of 3d points.
    */
   std::unordered_map<std::string,
                      std::unordered_map<std::string, std::vector<Mn::Vector3>>>
-  getMarkerSetMarkers(const std::string& markerSetName) const {
-    return getNamedMarkerSetView(markerSetName)->getAllMarkers();
+  getTaskSetPoints(const std::string& taskSetName) const {
+    return getTaskSetView(taskSetName)->getAllMarkerPoints();
   }
 
   /**
-   * @brief this retrieves all the markers across all the markersets, keyed by
-   * MarkerSet name, Link Id and Link subset name
+   * @brief Retrieve all the MarkerSet points across all the TaskSets.
+   * @return an unordered map keyed by TaskSet name, of unordered maps, each
+   * keyed by LinkSet name, of unordered maps, each keyed by MarkerSet name of
+   * Markers as a vector of 3d points.
    */
   std::unordered_map<
       std::string,
       std::unordered_map<
           std::string,
           std::unordered_map<std::string, std::vector<Mn::Vector3>>>>
-  getAllMarkers() const {
+  getAllMarkerPoints() const {
     std::unordered_map<
         std::string,
         std::unordered_map<
@@ -517,28 +578,24 @@ class MarkerSets : public esp::core::config::Configuration {
             std::unordered_map<std::string, std::vector<Mn::Vector3>>>>
         resMap;
     const auto& subsetKeys = getSubconfigKeys();
-    for (const auto& markerSetName : subsetKeys) {
-      resMap[markerSetName] = getMarkerSetMarkers(markerSetName);
+    for (const auto& taskSetName : subsetKeys) {
+      resMap[taskSetName] = getTaskSetPoints(taskSetName);
     }
     return resMap;
-  }  // getAllMarkers
+  }  // getAllMarkerPoints
 
   /**
    * @brief Rekeys all marker collections to have vector IDXs as string keys
-   * @return returns how many markers have been processed with new keys.
+   * @return returns how many marker points have been processed with new keys.
    */
   int rekeyAllMarkers() {
     int res = 0;
     const auto& subsetKeys = getSubconfigKeys();
     for (const auto& key : subsetKeys) {
-      res += editNamedMarkerSet(key)->rekeyAllMarkers();
+      res += editTaskSet(key)->rekeyAllMarkers();
     }
     return res;
   }
-
-  /**
-   * @brief Remove the specified MarkerSet
-   */
 
   ESP_SMART_POINTERS(MarkerSets)
 };  // class MarkerSets
