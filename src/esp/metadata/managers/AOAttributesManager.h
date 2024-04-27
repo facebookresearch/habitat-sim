@@ -88,8 +88,9 @@ class AOAttributesManager
     bool hasMarkersets =
         this->parseSubconfigJsonVals("marker_sets", attribs, jsonConfig);
     if (hasMarkersets) {
-      // Cast markerset Configuration to MarkerSets object and reorder all
-      // markers
+      // Cast "marker_sets" Configuration to MarkerSets object and rekey all
+      // markers to make keys consistent while preserving the natural order of
+      // their original keys.
       attribs->rekeyAllMarkerSets();
     }
     return hasMarkersets;
