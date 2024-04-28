@@ -598,9 +598,11 @@ def clone_repo_source(
             subprocess.check_call(shlex.split(prune_command), cwd=version_dir)
         except subprocess.CalledProcessError as e:
             # a response of status code 127 suggests a git-lfs version
-            # that does not support the -f flag 
+            # that does not support the -f flag
             if "status 127" in e:
-                subprocess.check_call(shlex.split("git lfs prune --recent"), cwd=version_dir)
+                subprocess.check_call(
+                    shlex.split("git lfs prune --recent"), cwd=version_dir
+                )
 
 
 def checkout_repo_tag(repo: Repo, version_dir: str, tag: str):
