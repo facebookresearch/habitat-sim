@@ -36,7 +36,8 @@ std::string removeMaterialOverrideFromFilepathAndWarn(const std::string& src) {
 
 static_assert(std::is_nothrow_move_constructible<Player>::value, "");
 
-void AbstractPlayerImplementation::setNodeSemanticId(NodeHandle, unsigned) {}
+void AbstractPlayerImplementation::setNodeMetadata(NodeHandle,
+                                                   const InstanceMetadata&) {}
 
 void AbstractPlayerImplementation::changeLightSetup(const LightSetup&) {}
 
@@ -75,10 +76,15 @@ Mn::Matrix4 AbstractSceneGraphPlayerImplementation::hackGetNodeTransform(
   return (*reinterpret_cast<scene::SceneNode*>(node)).transformation();
 }
 
-void AbstractSceneGraphPlayerImplementation::setNodeSemanticId(
+void AbstractSceneGraphPlayerImplementation::setNodeMetadata(
     const NodeHandle node,
-    const unsigned id) {
-  setSemanticIdForSubtree(reinterpret_cast<scene::SceneNode*>(node), id);
+    const InstanceMetadata& metadata) {
+  setSemanticInfoForSubtree(reinterpret_cast<scene::SceneNode*>(node),
+                            {
+                                metadata.semanticId,
+                                metadata.objectId,
+                                ID_UNDEFINED,
+                            });
 }
 
 void AbstractPlayerImplementation::createRigInstance(
@@ -238,6 +244,12 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     creationInfos_[instanceKey] = adjustedCreation;
   }
 
+  for (const auto& pair : keyframe.metadata) {
+    const auto& instanceKey = pair.first;
+    implementation_->setNodeMetadata(createdInstances_[instanceKey],
+                                     pair.second);
+  }
+
   hackProcessDeletions(keyframe);
 
   for (const auto& pair : keyframe.stateUpdates) {
@@ -250,7 +262,6 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     const auto& state = pair.second;
     implementation_->setNodeTransform(node, state.absTransform.translation,
                                       state.absTransform.rotation);
-    implementation_->setNodeSemanticId(node, state.semanticId);
   }
 
   for (const auto& rigUpdate : keyframe.rigUpdates) {

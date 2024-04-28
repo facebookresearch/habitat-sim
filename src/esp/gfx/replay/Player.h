@@ -112,13 +112,14 @@ class AbstractPlayerImplementation {
   virtual Mn::Matrix4 hackGetNodeTransform(NodeHandle node) const = 0;
 
   /**
-   * @brief Set node semantic ID
+   * @brief Set node metadata.
    *
    * The @p handle is expected to be returned from an earlier call to
    * @ref loadAndCreateRenderAssetInstance() on the same instance. Default
    * implementation does nothing.
    */
-  virtual void setNodeSemanticId(NodeHandle node, unsigned id);
+  virtual void setNodeMetadata(NodeHandle node,
+                               const InstanceMetadata& metadata);
 
   /**
    * @brief Change light setup
@@ -176,7 +177,8 @@ class AbstractSceneGraphPlayerImplementation
 
   Mn::Matrix4 hackGetNodeTransform(NodeHandle node) const override;
 
-  void setNodeSemanticId(NodeHandle node, unsigned id) override;
+  void setNodeMetadata(NodeHandle node,
+                       const InstanceMetadata& metadata) override;
 };
 
 /**

@@ -36,6 +36,8 @@ JsonGenericValue toJsonValue(const gfx::replay::Keyframe& keyframe,
     io::addMember(obj, "creations", creationsArray, allocator);
   }
 
+  io::addMember(obj, "metadata", keyframe.metadata, allocator);
+
   io::addMember(obj, "deletions", keyframe.deletions, allocator);
 
   if (!keyframe.stateUpdates.empty()) {
@@ -115,6 +117,8 @@ bool fromJsonValue(const JsonGenericValue& obj,
       keyframe.creations.emplace_back(std::move(pair));
     }
   }
+
+  io::readMember(obj, "metadata", keyframe.metadata);
 
   io::readMember(obj, "deletions", keyframe.deletions);
 

@@ -76,6 +76,9 @@ void Recorder::onCreateRenderAssetInstance(
   RenderAssetInstanceKey instanceKey = getNewInstanceKey();
   getKeyframe().creations.emplace_back(instanceKey, creation);
 
+  InstanceMetadata metadata{node->getBaseObjectId(), node->getSemanticId()};
+  getKeyframe().metadata.emplace_back(instanceKey, metadata);
+
   // Constructing NodeDeletionHelper here is equivalent to calling
   // node->addFeature. We keep a pointer to deletionHelper so we can delete it
   // manually later if necessary.
@@ -214,7 +217,7 @@ RenderAssetInstanceState Recorder::getInstanceState(
     const scene::SceneNode* node) {
   const auto absTransformMat = node->absoluteTransformation();
   const auto transform = ::createReplayTransform(absTransformMat);
-  return RenderAssetInstanceState{transform, node->getSemanticId()};
+  return RenderAssetInstanceState{transform};
 }
 
 void Recorder::updateStates() {

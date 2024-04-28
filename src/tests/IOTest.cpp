@@ -437,7 +437,7 @@ void IOTest::testJsonEspTypes() {
         {Magnum::Vector3(1.f, 2.f, 3.f),
          Magnum::Quaternion::rotation(Magnum::Rad{1.f},
                                       Magnum::Vector3(0.f, 1.f, 0.f))},
-        4};
+    };
     esp::io::addMember(d, "state", state, allocator);
     // read and compare RenderAssetInstanceState
     esp::gfx::replay::RenderAssetInstanceState state2;
