@@ -165,6 +165,15 @@ def test_empty_scene(sensor_type):
     ) as sim:
         _ = sim.get_sensor_observations()
 
+
+@pytest.mark.parametrize(
+    "sensor_type",
+    [
+        habitat_sim.SensorType.COLOR,
+        habitat_sim.SensorType.DEPTH,
+        habitat_sim.SensorType.SEMANTIC,
+    ],
+)
 def test_empty_scene_no_device(sensor_type):
     backend_cfg = habitat_sim.SimulatorConfiguration()
     backend_cfg.scene_id = "NONE"
@@ -177,4 +186,4 @@ def test_empty_scene_no_device(sensor_type):
     with habitat_sim.Simulator(
         habitat_sim.Configuration(backend_cfg, [agent_cfg])
     ) as sim:
-        _ = sim.get_sensor_observations()        
+        _ = sim.get_sensor_observations()
