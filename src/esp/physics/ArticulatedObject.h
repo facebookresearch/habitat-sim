@@ -174,16 +174,17 @@ class ArticulatedLink : public RigidBase {
     return true;
   }
 
+  void initializeArticulatedLink(const std::string& _linkName,
+                                 const Mn::Vector3& _scale) {
+    linkName = _linkName;
+    setScale(_scale);
+  }
+
   /**
    * @brief Finalize the creation of the link.
    * @return whether successful finalization.
    */
   bool finalizeObject() override { return true; }
-
-  Magnum::Vector3 getScale() const override {
-    ESP_DEBUG() << "ArticulatedLink does not currently support this.";
-    return {};
-  }
 
   void setTransformation(
       CORRADE_UNUSED const Magnum::Matrix4& transformation) override {
@@ -449,6 +450,40 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    */
   std::unordered_map<int, int> getLinkObjectIds() const {
     return objectIdToLinkId_;
+  }
+
+  /**
+   * @brief Given the list of passed points in this object's local space, return
+   * those points transformed to world space.
+   * @param points vector of points in object local space
+   * @param linkID Unused for rigids.
+   * @return vector of points transformed into world space
+   */
+  std::vector<Mn::Vector3> transformLocalPointsToWorld(
+      const std::vector<Mn::Vector3>& points,
+      int linkID) const override {
+    auto linkIter = links_.find(linkID);
+    if (linkIter != links_.end()) {
+      return linkIter->second->transformLocalPointsToWorld(points, linkID);
+    }
+    return points;
+  }
+
+  /**
+   * @brief Given the list of passed points in world space, return
+   * those points transformed to this object's local space.
+   * @param points vector of points in world space
+   * @param linkID Unused for rigids.
+   * @return vector of points transformed to be in local space
+   */
+  std::vector<Mn::Vector3> transformWorldPointsToLocal(
+      const std::vector<Mn::Vector3>& points,
+      int linkID) const override {
+    auto linkIter = links_.find(linkID);
+    if (linkIter != links_.end()) {
+      return linkIter->second->transformWorldPointsToLocal(points, linkID);
+    }
+    return points;
   }
 
   /**

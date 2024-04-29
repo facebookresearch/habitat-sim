@@ -87,6 +87,7 @@ void BulletArticulatedObject::initializeFromURDF(
 
   // cache the global scaling from the source model
   globalScale_ = urdfModel->getGlobalScaling();
+  setScale(Mn::Vector3{globalScale_, globalScale_, globalScale_});
 
   u2b.convertURDFToBullet(rootTransformInWorldSpace, bWorld_.get(),
                           linkCompoundShapes_, linkChildShapes_);
@@ -145,6 +146,7 @@ void BulletArticulatedObject::initializeFromURDF(
         }
         linkObject = baseLink_.get();
       }
+      linkObject->initializeArticulatedLink(urdfLink->m_name, getScale());
       linkObject->linkName = urdfLink->m_name;
 
       linkObject->node().setType(esp::scene::SceneNodeType::OBJECT);
