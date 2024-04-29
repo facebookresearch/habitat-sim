@@ -244,6 +244,11 @@ class HabitatSimInteractiveViewer(Application):
         # cache most recently loaded URDF file for quick-reload
         self.cached_urdf = ""
 
+        # marker set cache to prevent parsing metadata every frame
+        self.marker_sets: Dict[str, Dict[int, Dict[str, List[mn.Vector3]]]] = None
+        self.debug_random_colors: List[mn.Color4] = []
+        self.selected_marker_set_index = 0
+
         # Cycle mouse utilities
         self.mouse_interaction = MouseMode.LOOK
         self.mouse_grabber: Optional[MouseGrabber] = None
@@ -597,6 +602,33 @@ class HabitatSimInteractiveViewer(Application):
                 normal=camera_position - cp.position_on_b_in_ws,
             )
 
+    def draw_marker_sets_debug(self, debug_line_render: Any) -> None:
+        """
+        Draw the global state of all configured marker sets.
+        """
+        camera_position = self.render_camera.render_camera.node.absolute_translation
+        marker_set_counter = 0
+        for ao_handle in self.marker_sets:
+            ao = sutils.get_obj_from_handle(self.sim, ao_handle)
+            for link_id in self.marker_sets[ao_handle]:
+                for marker_set_name in self.marker_sets[ao_handle][link_id]:
+                    if len(self.debug_random_colors) <= marker_set_counter:
+                        self.debug_random_colors.append(
+                            mn.Color4(mn.Vector3(np.random.random(3)))
+                        )
+                    marker_set_color = self.debug_random_colors[marker_set_counter]
+                    marker_set_counter += 1
+                    global_marker_set = sutils.get_global_link_marker_set(
+                        ao, link_id, marker_set_name, self.marker_sets[ao_handle]
+                    )
+                    for global_marker_pos in global_marker_set:
+                        debug_line_render.draw_circle(
+                            translation=global_marker_pos,
+                            radius=0.005,
+                            color=marker_set_color,
+                            normal=camera_position - global_marker_pos,
+                        )
+
     def draw_region_debug(self, debug_line_render: Any) -> None:
         """
         Draw the semantic region wireframes.
@@ -644,6 +676,8 @@ class HabitatSimInteractiveViewer(Application):
                         mn.Vector3(np.random.random(3))
                     )
             self.draw_region_debug(debug_line_render)
+        if self.marker_sets is not None:
+            self.draw_marker_sets_debug(debug_line_render)
         if self.receptacles is not None and self.display_receptacles:
             if self.rec_filter_data is None and self.cpo_initialized:
                 self.compute_rec_filter_state(
@@ -1010,7 +1044,7 @@ class HabitatSimInteractiveViewer(Application):
                     self.replay_renderer.preload_file(composite_file)
 
         self.ao_link_map = sutils.get_ao_link_id_map(self.sim)
-
+        # self.marker_sets = sutils.parse_scene_marker_sets(self.sim)
         self.dbv = DebugVisualizer(self.sim)
 
         Timer.start()
@@ -1315,8 +1349,20 @@ class HabitatSimInteractiveViewer(Application):
             self.semantic_region_debug_draw_state = new_state_idx
 
         elif key == pressed.M:
-            self.cycle_mouse_mode()
-            logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
+            if (
+                shift_pressed
+                and self.selected_object is not None
+                and isinstance(self.selected_object, physics.ManagedArticulatedObject)
+                and self.selected_object.handle in self.marker_sets
+            ):
+                sutils.write_ao_marker_sets(
+                    self.selected_object, self.marker_sets[self.selected_object.handle]
+                )
+                sutils.write_ao_marker_set_to_template(self.sim, self.selected_object)
+                print(f"Saved config for {self.selected_object.handle}.")
+            else:
+                self.cycle_mouse_mode()
+                logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
 
         elif key == pressed.N:
             # (default) - toggle navmesh visualization
@@ -1377,6 +1423,7 @@ class HabitatSimInteractiveViewer(Application):
                             obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
                             obj.translation = obj.translation - mn.Vector3(200, 0, 0)
                             obj.motion_type = habitat_sim.physics.MotionType.STATIC
+
             else:
                 if self.col_proxy_objs is None:
                     self.col_proxy_objs = []
@@ -1503,6 +1550,16 @@ class HabitatSimInteractiveViewer(Application):
                         if self.selected_object.handle == rec.parent_object_handle
                     ]
                 if rec_set is not None:
+                    if len(self.clutter_object_handles) == 0:
+                        for obj_name in self.clutter_object_set:
+                            matching_handles = self.sim.metadata_mediator.object_template_manager.get_template_handles(
+                                obj_name
+                            )
+                            assert (
+                                len(matching_handles) > 0
+                            ), f"No matching template for '{obj_name}' in the dataset."
+                            self.clutter_object_handles.append(matching_handles[0])
+
                     rec_set_unique_names = [rec.unique_name for rec in rec_set]
                     obj_samp = ObjectSampler(
                         self.clutter_object_handles,
@@ -1513,8 +1570,9 @@ class HabitatSimInteractiveViewer(Application):
                     rec_set_obj = hab_receptacle.ReceptacleSet(
                         "rec set", [""], [], rec_set_unique_names, []
                     )
+                    obj_count_dict = {rec.unique_name: 200 for rec in rec_set}
                     recep_tracker = hab_receptacle.ReceptacleTracker(
-                        {},
+                        obj_count_dict,
                         {"rec set": rec_set_obj},
                     )
                     new_objs = obj_samp.sample(
@@ -1564,16 +1622,78 @@ class HabitatSimInteractiveViewer(Application):
         event.accepted = True
         self.redraw()
 
+    def calc_mouse_cast_results(self, screen_location: mn.Vector3) -> None:
+        render_camera = self.render_camera.render_camera
+        ray = render_camera.unproject(self.get_mouse_position(screen_location))
+        self.mouse_cast_results = self.sim.cast_ray(ray=ray)
+
+    def mouse_grab_handler(self, is_right_btn: bool):
+        ao_link = -1
+        hit_info = self.mouse_cast_results.hits[0]
+
+        if hit_info.object_id > habitat_sim.stage_id:
+            obj = sutils.get_obj_from_id(self.sim, hit_info.object_id, self.ao_link_map)
+
+            if obj is None:
+                raise AssertionError(
+                    "hit object_id is not valid. Did not find object or link."
+                )
+
+            if obj.object_id == hit_info.object_id:
+                # ro or ao base
+                object_pivot = obj.transformation.inverted().transform_point(
+                    hit_info.point
+                )
+                object_frame = obj.rotation.inverted()
+            elif isinstance(obj, physics.ManagedArticulatedObject):
+                # link
+                ao_link = obj.link_object_ids[hit_info.object_id]
+                object_pivot = (
+                    obj.get_link_scene_node(ao_link)
+                    .transformation.inverted()
+                    .transform_point(hit_info.point)
+                )
+                object_frame = obj.get_link_scene_node(ao_link).rotation.inverted()
+
+            print(f"Grabbed object {obj.handle}")
+            if ao_link >= 0:
+                print(f"    link id {ao_link}")
+
+            # setup the grabbing constraints
+            node = self.default_agent.scene_node
+            constraint_settings = physics.RigidConstraintSettings()
+
+            constraint_settings.object_id_a = obj.object_id
+            constraint_settings.link_id_a = ao_link
+            constraint_settings.pivot_a = object_pivot
+            constraint_settings.frame_a = (
+                object_frame.to_matrix() @ node.rotation.to_matrix()
+            )
+            constraint_settings.frame_b = node.rotation.to_matrix()
+            constraint_settings.pivot_b = hit_info.point
+
+            # by default use a point 2 point constraint
+            if is_right_btn:
+                constraint_settings.constraint_type = physics.RigidConstraintType.Fixed
+
+            grip_depth = (
+                hit_info.point
+                - self.render_camera.render_camera.node.absolute_translation
+            ).length()
+
+            self.mouse_grabber = MouseGrabber(
+                constraint_settings,
+                grip_depth,
+                self.sim,
+            )
+
     def mouse_move_event(self, event: Application.MouseMoveEvent) -> None:
         """
         Handles `Application.MouseMoveEvent`. When in LOOK mode, enables the left
         mouse button to steer the agent's facing direction. When in GRAB mode,
         continues to update the grabber's object position with our agents position.
         """
-
-        render_camera = self.render_camera.render_camera
-        ray = render_camera.unproject(self.get_mouse_position(event.position))
-        self.mouse_cast_results = self.sim.cast_ray(ray=ray)
+        self.calc_mouse_cast_results(event.position)
 
         button = Application.MouseMoveEvent.Buttons
         # if interactive mode -> LOOK MODE
@@ -1610,81 +1730,12 @@ class HabitatSimInteractiveViewer(Application):
         mod = Application.InputEvent.Modifier
         shift_pressed = bool(event.modifiers & mod.SHIFT)
         alt_pressed = bool(event.modifiers & mod.ALT)
+        self.calc_mouse_cast_results(event.position)
 
         # if interactive mode is True -> GRAB MODE
         if self.mouse_interaction == MouseMode.GRAB and physics_enabled:
-            render_camera = self.render_camera.render_camera
-            ray = render_camera.unproject(self.get_mouse_position(event.position))
-            raycast_results = self.sim.cast_ray(ray=ray)
-
-            if raycast_results.has_hits():
-                ao_link = -1
-                hit_info = raycast_results.hits[0]
-
-                if hit_info.object_id > habitat_sim.stage_id:
-                    obj = sutils.get_obj_from_id(
-                        self.sim, hit_info.object_id, self.ao_link_map
-                    )
-
-                    if obj is None:
-                        raise AssertionError(
-                            "hit object_id is not valid. Did not find object or link."
-                        )
-
-                    if obj.object_id == hit_info.object_id:
-                        # ro or ao base
-                        object_pivot = obj.transformation.inverted().transform_point(
-                            hit_info.point
-                        )
-                        object_frame = obj.rotation.inverted()
-                    elif isinstance(obj, physics.ManagedArticulatedObject):
-                        # link
-                        ao_link = obj.link_object_ids[hit_info.object_id]
-                        object_pivot = (
-                            obj.get_link_scene_node(ao_link)
-                            .transformation.inverted()
-                            .transform_point(hit_info.point)
-                        )
-                        object_frame = obj.get_link_scene_node(
-                            ao_link
-                        ).rotation.inverted()
-
-                    print(f"Grabbed object {obj.handle}")
-                    if ao_link >= 0:
-                        print(f"    link id {ao_link}")
-
-                    # setup the grabbing constraints
-                    node = self.default_agent.scene_node
-                    constraint_settings = physics.RigidConstraintSettings()
-
-                    constraint_settings.object_id_a = obj.object_id
-                    constraint_settings.link_id_a = ao_link
-                    constraint_settings.pivot_a = object_pivot
-                    constraint_settings.frame_a = (
-                        object_frame.to_matrix() @ node.rotation.to_matrix()
-                    )
-                    constraint_settings.frame_b = node.rotation.to_matrix()
-                    constraint_settings.pivot_b = hit_info.point
-
-                    # by default use a point 2 point constraint
-                    if event.button == button.RIGHT:
-                        constraint_settings.constraint_type = (
-                            physics.RigidConstraintType.Fixed
-                        )
-
-                    grip_depth = (
-                        hit_info.point - render_camera.node.absolute_translation
-                    ).length()
-
-                    self.mouse_grabber = MouseGrabber(
-                        constraint_settings,
-                        grip_depth,
-                        self.sim,
-                    )
-
-                # end if didn't hit the scene
-            # end has raycast hit
-        # end has physics enabled
+            if self.mouse_cast_results.has_hits():
+                self.mouse_grab_handler(event.button == button.RIGHT)
         elif (
             self.mouse_interaction == MouseMode.LOOK
             and physics_enabled
@@ -1767,6 +1818,85 @@ class HabitatSimInteractiveViewer(Application):
                             sutils.close_link(obj, default_link)
                         else:
                             sutils.open_link(obj, default_link)
+        elif (
+            self.mouse_interaction == MouseMode.MARKER
+            and physics_enabled
+            and self.mouse_cast_results is not None
+            and self.mouse_cast_results.has_hits()
+        ):
+            hit_info = self.mouse_cast_results.hits[0]
+            obj = sutils.get_obj_from_id(self.sim, hit_info.object_id, self.ao_link_map)
+            print(f"Marker : Mouse click : {hit_info}")
+            if (
+                isinstance(obj, physics.ManagedArticulatedObject)
+                and obj.object_id != hit_info.object_id
+            ):
+                # this is an ArticulatedLink, so we can add markers'
+                link_ix = obj.link_object_ids[hit_info.object_id]
+                link_node = obj.get_link_scene_node(link_ix)
+                local_hit_point = link_node.transformation.inverted().transform_point(
+                    hit_info.point
+                )
+                if self.marker_sets is not None:
+                    if obj.handle not in self.marker_sets:
+                        self.marker_sets[obj.handle] = {}
+                    if link_ix not in self.marker_sets[obj.handle]:
+                        self.marker_sets[obj.handle][link_ix] = {}
+                    existing_set_names = list(
+                        self.marker_sets[obj.handle][link_ix].keys()
+                    )
+                    selected_set_name = None
+                    if self.selected_marker_set_index >= len(existing_set_names):
+                        self.selected_marker_set_index = len(existing_set_names)
+                        selected_set_name = f"handle_{self.selected_marker_set_index}"
+                    else:
+                        selected_set_name = existing_set_names[
+                            self.selected_marker_set_index
+                        ]
+                    if (
+                        event.button == button.RIGHT
+                        and selected_set_name in existing_set_names
+                    ):
+                        # remove instead of add
+                        closest_marker_index = None
+                        closest_marker_dist = 9999
+                        for m_ix in range(
+                            len(
+                                self.marker_sets[obj.handle][link_ix][selected_set_name]
+                            )
+                        ):
+                            m_dist = (
+                                local_hit_point
+                                - self.marker_sets[obj.handle][link_ix][
+                                    selected_set_name
+                                ][m_ix]
+                            ).length()
+                            if m_dist < closest_marker_dist:
+                                closest_marker_dist = m_dist
+                                closest_marker_index = m_ix
+                        if closest_marker_index is not None:
+                            del self.marker_sets[obj.handle][link_ix][
+                                selected_set_name
+                            ][closest_marker_index]
+                    elif event.button == button.LEFT:
+                        # add a point
+                        if (
+                            selected_set_name
+                            not in self.marker_sets[obj.handle][link_ix]
+                        ):
+                            self.marker_sets[obj.handle][link_ix][
+                                selected_set_name
+                            ] = []
+                        self.marker_sets[obj.handle][link_ix][selected_set_name].append(
+                            local_hit_point
+                        )
+            else:
+                obj_name = "stage"
+                if obj is not None:
+                    obj_name = obj.handle
+                print(
+                    f"Can't add marker, hit non link object ({hit_info.object_id}): '{obj_name}'."
+                )
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
@@ -1822,6 +1952,14 @@ class HabitatSimInteractiveViewer(Application):
                 # update location of grabbed object
                 self.mouse_grabber.grip_depth += scroll_delta
                 self.update_grab_position(self.get_mouse_position(event.position))
+        elif self.mouse_interaction == MouseMode.MARKER:
+            if scroll_mod_val > 0:
+                self.selected_marker_set_index += 1
+            else:
+                self.selected_marker_set_index = max(
+                    self.selected_marker_set_index - 1, 0
+                )
+
         self.redraw()
         event.accepted = True
 
@@ -1869,6 +2007,8 @@ class HabitatSimInteractiveViewer(Application):
         if self.mouse_interaction == MouseMode.LOOK:
             self.mouse_interaction = MouseMode.GRAB
         elif self.mouse_interaction == MouseMode.GRAB:
+            self.mouse_interaction = MouseMode.MARKER
+        elif self.mouse_interaction == MouseMode.MARKER:
             self.mouse_interaction = MouseMode.LOOK
 
     def navmesh_config_and_recompute(self) -> None:
@@ -1919,6 +2059,8 @@ class HabitatSimInteractiveViewer(Application):
             mouse_mode_string = "LOOK"
         elif self.mouse_interaction == MouseMode.GRAB:
             mouse_mode_string = "GRAB"
+        elif self.mouse_interaction == MouseMode.MARKER:
+            mouse_mode_string = "MARKER"
         self.window_text.render(
             f"""
 {self.fps} FPS
@@ -1926,6 +2068,7 @@ Scene ID : {os.path.split(self.cfg.sim_cfg.scene_id)[1].split('.scene_instance')
 Sensor Type: {sensor_type_string}
 Sensor Subtype: {sensor_subtype_string}
 Mouse Interaction Mode: {mouse_mode_string}
+Selected marker_set index: {self.selected_marker_set_index}
 Unstable Objects: {self.num_unstable_objects} of {len(self.clutter_object_instances)}
             """
         )
@@ -2015,6 +2158,7 @@ class MouseMode(Enum):
     LOOK = 0
     GRAB = 1
     MOTION = 2
+    MARKER = 3
 
 
 class MouseGrabber:
