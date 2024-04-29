@@ -161,12 +161,16 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
   }
 
   // allocate ids for links
+  ArticulatedLink& rootObject = articulatedObject->getLink(-1);
+  rootObject.node().setBaseObjectId(articulatedObject->getObjectID());
   for (int linkIx = 0; linkIx < articulatedObject->btMultiBody_->getNumLinks();
        ++linkIx) {
     int linkObjectId = allocateObjectID();
     articulatedObject->objectIdToLinkId_[linkObjectId] = linkIx;
     collisionObjToObjIds_->emplace(
         articulatedObject->btMultiBody_->getLinkCollider(linkIx), linkObjectId);
+    ArticulatedLink& linkObject = articulatedObject->getLink(linkIx);
+    linkObject.node().setBaseObjectId(linkObjectId);
   }
 
   // render visual shapes if either no skinned mesh is present or if the config
