@@ -9,6 +9,7 @@
 #include <Corrade/Containers/Reference.h>
 #include "esp/core/RigidState.h"
 #include "esp/gfx/ShaderManager.h"
+#include "esp/metadata/attributes/MarkerSets.h"
 #include "esp/metadata/attributes/SceneInstanceAttributes.h"
 #include "esp/physics/CollisionGroupHelper.h"
 
@@ -495,7 +496,6 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * @brief This function will overwrite this object's existing user-defined
    * attributes with @p attr.
    * @param attr A ptr to the user defined attributes specified for this object.
-   * merge into them.
    */
   void setUserAttributes(core::config::Configuration::ptr attr) {
     userAttributes_ = std::move(attr);
@@ -504,11 +504,37 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief This function will merge this object's existing user-defined
    * attributes with @p attr by overwriting it with @p attr.
-   * @param attr A ptr to the user defined attributes specified for this object.
-   * merge into them.
+   * @param attr A ptr to the user defined attributes that are to be merged into
+   * this object's existing user-defined attributes.
    */
   void mergeUserAttributes(const core::config::Configuration::ptr& attr) {
     userAttributes_->overwriteWithConfig(attr);
+  }
+
+  /**
+   * @brief Get a reference to the existing MarkerSets for this object.
+   */
+  metadata::attributes::MarkerSets::ptr getMarkerSets() const {
+    return markerSets_;
+  }
+
+  /**
+   * @brief This function will overwrite this object's existing MarkerSets
+   * attributes with @p attr.
+   * @param attr A ptr to the MarkerSets attributes specified for this object.
+   */
+  void setMarkerSets(metadata::attributes::MarkerSets::ptr attr) {
+    markerSets_ = std::move(attr);
+  }
+
+  /**
+   * @brief This function will merge this object's existing MarkerSets
+   * attributes with @p attr by overwriting it with @p attr.
+   * @param attr A ptr to the user defined attributes specified for this object.
+   * with mergee into them.
+   */
+  void mergeMarkerSets(const metadata::attributes::MarkerSets::ptr& attr) {
+    markerSets_->overwriteWithConfig(attr);
   }
 
   /** @brief Get the scale of the object set during initialization.
@@ -609,6 +635,13 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * user to access and save important information and metadata.
    */
   core::config::Configuration::ptr userAttributes_ = nullptr;
+
+  /**
+   * @brief Stores a reference to the markersets for this object, held as a
+   * smart pointer to a MarkerSets construct, which is an alia for
+   * a @ref esp::core::config::Configuration.
+   */
+  metadata::attributes::MarkerSets::ptr markerSets_ = nullptr;
 
   /**
    * @brief Saved attributes when the object was initialized.
