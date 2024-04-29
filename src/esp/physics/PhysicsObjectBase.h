@@ -253,7 +253,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     lsPoints.reserve(points.size());
     Mn::Vector3 objScale = getScale();
     Mn::Matrix4 worldTransform = getTransformation();
-    for (const auto wsPoint : points) {
+    for (const auto& wsPoint : points) {
       lsPoints.emplace_back(worldTransform.inverted().transformPoint(wsPoint) /
                             objScale);
     }
