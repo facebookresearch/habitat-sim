@@ -42,7 +42,9 @@ struct WindowlessContext::Impl {
 
 #if defined(CORRADE_TARGET_UNIX) && !defined(CORRADE_TARGET_APPLE)
 #ifdef MAGNUM_TARGET_EGL
-    config.setCudaDevice(device);
+    if (device != -1) {
+      config.setCudaDevice(device);
+    }
 #else  // NO MAGNUM_TARGET_EGL
     if (device != 0)
       Mn::Fatal{} << "GLX context does not support multiple GPUs. Please "
