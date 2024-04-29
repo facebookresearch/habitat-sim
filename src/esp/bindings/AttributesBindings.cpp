@@ -257,7 +257,7 @@ void initAttributesBindings(py::module& m) {
       .def("has_markerset", &LinkSet::hasMarkerSet,
            R"(Whether or not this LinkSet has a MarkerSet with the given name)",
            "markerset_name"_a)
-      .def("get_all_pointset_names", &LinkSet::getAllMarkerSetNames,
+      .def("get_all_markerset_names", &LinkSet::getAllMarkerSetNames,
            R"(Get a list of all the MarkerSet names within this LinkSet)")
       .def("get_markerset", &LinkSet::editMarkerSet,
            R"(Get an editable reference to the specified MarkerSet, possibly
