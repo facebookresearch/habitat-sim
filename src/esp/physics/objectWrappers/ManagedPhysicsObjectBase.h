@@ -135,6 +135,12 @@ class AbstractManagedPhysicsObject
     }
     return nullptr;
   }
+  core::config::Configuration::ptr getMarkerSets() const {
+    if (auto sp = this->getObjectReference()) {
+      return sp->getMarkerSets();
+    }
+    return nullptr;
+  }
   // ==== Transformations ===
 
   Magnum::Matrix4 getTransformation() const {
