@@ -1687,6 +1687,101 @@ class HabitatSimInteractiveViewer(Application):
                 self.sim,
             )
 
+    def place_marker_in_obj_marker_sets(self):
+        pass
+
+    def place_marker_at_hit_location(self, is_left_btn):
+        hit_info = self.mouse_cast_results.hits[0]
+
+        # object or ao at hit location. If none, hit stage
+        obj = sutils.get_obj_from_id(self.sim, hit_info.object_id, self.ao_link_map)
+        print(
+            f"Marker : Mouse click object : {hit_info.object_id} : Point : {hit_info.point} "
+        )
+
+        if obj is None:
+            if obj is not None:
+                pass
+            print(
+                f"Currently can't add a marker to the stage : ID : ({hit_info.object_id})."
+            )
+
+        else:
+            # obj_marker_sets = obj.get
+            if (
+                isinstance(obj, physics.ManagedArticulatedObject)
+                and obj.object_id != hit_info.object_id
+            ):
+                # this is an ArticulatedLink, so we can add markers'
+                link_ix = obj.link_object_ids[hit_info.object_id]
+                link_node = obj.get_link_scene_node(link_ix)
+                local_hit_point = link_node.transformation.inverted().transform_point(
+                    hit_info.point
+                )
+                local_hit_point_list = obj.transform_world_pts_to_local(
+                    [hit_info.point], link_ix
+                )
+                local_hit_point_tmp = local_hit_point_list[0]
+                print(
+                    f"Marker on AO {obj.handle} link Idx : {link_ix} : world point : {hit_info.point} orig local_hit_point : {local_hit_point} my local_hit_point {local_hit_point_tmp}"
+                )
+
+                if self.marker_sets is not None:
+                    if obj.handle not in self.marker_sets:
+                        self.marker_sets[obj.handle] = {}
+                    if link_ix not in self.marker_sets[obj.handle]:
+                        self.marker_sets[obj.handle][link_ix] = {}
+                    existing_set_names = list(
+                        self.marker_sets[obj.handle][link_ix].keys()
+                    )
+                    selected_set_name = None
+                    if self.selected_marker_set_index >= len(existing_set_names):
+                        self.selected_marker_set_index = len(existing_set_names)
+                        selected_set_name = f"handle_{self.selected_marker_set_index}"
+                    else:
+                        selected_set_name = existing_set_names[
+                            self.selected_marker_set_index
+                        ]
+                    if not is_left_btn and selected_set_name in existing_set_names:
+                        # remove instead of add
+                        closest_marker_index = None
+                        closest_marker_dist = 9999
+                        for m_ix in range(
+                            len(
+                                self.marker_sets[obj.handle][link_ix][selected_set_name]
+                            )
+                        ):
+                            m_dist = (
+                                local_hit_point
+                                - self.marker_sets[obj.handle][link_ix][
+                                    selected_set_name
+                                ][m_ix]
+                            ).length()
+                            if m_dist < closest_marker_dist:
+                                closest_marker_dist = m_dist
+                                closest_marker_index = m_ix
+                        if closest_marker_index is not None:
+                            del self.marker_sets[obj.handle][link_ix][
+                                selected_set_name
+                            ][closest_marker_index]
+                    elif is_left_btn:
+                        # add a point
+                        if (
+                            selected_set_name
+                            not in self.marker_sets[obj.handle][link_ix]
+                        ):
+                            self.marker_sets[obj.handle][link_ix][
+                                selected_set_name
+                            ] = []
+                        self.marker_sets[obj.handle][link_ix][selected_set_name].append(
+                            local_hit_point
+                        )
+            else:
+                # Object is a rigid object
+                print(
+                    f"Try to add marker to rigid object : ID : ({hit_info.object_id})."
+                )
+
     def mouse_move_event(self, event: Application.MouseMoveEvent) -> None:
         """
         Handles `Application.MouseMoveEvent`. When in LOOK mode, enables the left
@@ -1745,7 +1840,9 @@ class HabitatSimInteractiveViewer(Application):
         ):
             self.selected_object = None
             self.selected_rec = None
-            hit_id = self.mouse_cast_results.hits[0].object_id
+            hit_info = self.mouse_cast_results.hits[0]
+            print(f"Marker : Mouse click object : {hit_info.object_id}")
+            hit_id = hit_info.object_id
             # right click in look mode to print object information
             if hit_id == habitat_sim.stage_id:
                 print("This is the stage.")
@@ -1758,15 +1855,11 @@ class HabitatSimInteractiveViewer(Application):
                         if rec.parent_object_handle == obj.handle:
                             print(f"    - Receptacle: {rec.name}")
                 if shift_pressed:
-                    self.selected_rec = self.get_closest_tri_receptacle(
-                        self.mouse_cast_results.hits[0].point
-                    )
+                    self.selected_rec = self.get_closest_tri_receptacle(hit_info.point)
                     if self.selected_rec is not None:
                         print(f"Selected Receptacle: {self.selected_rec.name}")
                 elif alt_pressed:
-                    filtered_rec = self.get_closest_tri_receptacle(
-                        self.mouse_cast_results.hits[0].point
-                    )
+                    filtered_rec = self.get_closest_tri_receptacle(hit_info.point)
                     if filtered_rec is not None:
                         filtered_rec_name = filtered_rec.unique_name
                         print(f"Modified Receptacle Filter State: {filtered_rec_name}")
@@ -1824,79 +1917,7 @@ class HabitatSimInteractiveViewer(Application):
             and self.mouse_cast_results is not None
             and self.mouse_cast_results.has_hits()
         ):
-            hit_info = self.mouse_cast_results.hits[0]
-            obj = sutils.get_obj_from_id(self.sim, hit_info.object_id, self.ao_link_map)
-            print(f"Marker : Mouse click : {hit_info}")
-            if (
-                isinstance(obj, physics.ManagedArticulatedObject)
-                and obj.object_id != hit_info.object_id
-            ):
-                # this is an ArticulatedLink, so we can add markers'
-                link_ix = obj.link_object_ids[hit_info.object_id]
-                link_node = obj.get_link_scene_node(link_ix)
-                local_hit_point = link_node.transformation.inverted().transform_point(
-                    hit_info.point
-                )
-                if self.marker_sets is not None:
-                    if obj.handle not in self.marker_sets:
-                        self.marker_sets[obj.handle] = {}
-                    if link_ix not in self.marker_sets[obj.handle]:
-                        self.marker_sets[obj.handle][link_ix] = {}
-                    existing_set_names = list(
-                        self.marker_sets[obj.handle][link_ix].keys()
-                    )
-                    selected_set_name = None
-                    if self.selected_marker_set_index >= len(existing_set_names):
-                        self.selected_marker_set_index = len(existing_set_names)
-                        selected_set_name = f"handle_{self.selected_marker_set_index}"
-                    else:
-                        selected_set_name = existing_set_names[
-                            self.selected_marker_set_index
-                        ]
-                    if (
-                        event.button == button.RIGHT
-                        and selected_set_name in existing_set_names
-                    ):
-                        # remove instead of add
-                        closest_marker_index = None
-                        closest_marker_dist = 9999
-                        for m_ix in range(
-                            len(
-                                self.marker_sets[obj.handle][link_ix][selected_set_name]
-                            )
-                        ):
-                            m_dist = (
-                                local_hit_point
-                                - self.marker_sets[obj.handle][link_ix][
-                                    selected_set_name
-                                ][m_ix]
-                            ).length()
-                            if m_dist < closest_marker_dist:
-                                closest_marker_dist = m_dist
-                                closest_marker_index = m_ix
-                        if closest_marker_index is not None:
-                            del self.marker_sets[obj.handle][link_ix][
-                                selected_set_name
-                            ][closest_marker_index]
-                    elif event.button == button.LEFT:
-                        # add a point
-                        if (
-                            selected_set_name
-                            not in self.marker_sets[obj.handle][link_ix]
-                        ):
-                            self.marker_sets[obj.handle][link_ix][
-                                selected_set_name
-                            ] = []
-                        self.marker_sets[obj.handle][link_ix][selected_set_name].append(
-                            local_hit_point
-                        )
-            else:
-                obj_name = "stage"
-                if obj is not None:
-                    obj_name = obj.handle
-                print(
-                    f"Can't add marker, hit non link object ({hit_info.object_id}): '{obj_name}'."
-                )
+            self.place_marker_at_hit_location(event.button == button.LEFT)
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
@@ -2108,6 +2129,7 @@ In GRAB mode (with 'enable-physics'):
         (+CTRL) rotate object fixed constraint frame (pitch)
         (+ALT+CTRL) rotate object fixed constraint frame (roll)
         (+SHIFT) amplify scroll magnitude
+In MARKER mode :
 
 
 Key Commands:
