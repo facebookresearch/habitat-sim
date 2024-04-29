@@ -6,6 +6,7 @@
 #define ESP_METADATA_ATTRIBUTES_ARTICULATEDOBJECTATTRIBUTES_H_
 
 #include "AttributesBase.h"
+#include "MarkerSets.h"
 
 namespace esp {
 namespace metadata {
@@ -249,6 +250,31 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
    */
   void writeValuesToJson(io::JsonGenericValue& jsonObj,
                          io::JsonAllocator& allocator) const override;
+
+  /**
+   * @brief Gets a smart pointer reference to a copy of the marker_sets
+   * configuration data from config file.
+   */
+  std::shared_ptr<MarkerSets> getMarkerSetsConfiguration() const {
+    return getSubconfigCopy<MarkerSets>("marker_sets");
+  }
+
+  /**
+   * @brief Gets a smart pointer reference to the actual marker_sets
+   * configuration data from config file. This method is for editing the
+   * configuration.
+   */
+  std::shared_ptr<MarkerSets> editMarkerSetsConfiguration() {
+    return editSubconfig<MarkerSets>("marker_sets");
+  }
+  /**
+   * @brief Rekey all the markers in the marker_sets subconfiguration such that
+   * each point is keyed by a sequential numeric string that preserves the
+   * natural ordering of the key strings.
+   */
+  int rekeyAllMarkerSets() {
+    return editSubconfig<MarkerSets>("marker_sets")->rekeyAllMarkers();
+  }
 
  protected:
   /**

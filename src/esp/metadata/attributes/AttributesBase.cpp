@@ -31,12 +31,13 @@ AbstractAttributes::AbstractAttributes(const std::string& attributesClassKey,
                                        const std::string& handle)
     : Configuration() {
   // set up an existing subgroup for user_defined attributes
-  addSubgroup("user_defined");
+  addOrEditSubgroup("user_defined");
   AbstractAttributes::setClassKey(attributesClassKey);
   AbstractAttributes::setHandle(handle);
   // set initial vals, will be overwritten when registered
   set("ID", 0);
   set("fileDirectory", "");
+  set("actualFilename", "");
 }
 
 }  // namespace attributes

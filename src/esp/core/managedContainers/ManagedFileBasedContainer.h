@@ -54,7 +54,9 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
       : ManagedContainer<T, Access>(metadataType), JSONTypeExt_(JSONTypeExt) {}
 
   /**
-   * @brief Creates an instance of a managed object from a JSON file.
+   * @brief Creates an instance of a managed object from a JSON file, by first
+   * loading the file into a @ref JsonDocument and then parsing that document
+   * via @ref buildManagedObjectFromDoc.
    *
    * @param filename the name of the file describing the object managed object.
    * Assumes it exists and fails if it does not.
@@ -78,6 +80,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     // convert doc to const value
     const io::JsonGenericValue config = docConfig->GetObject();
     ManagedFileIOPtr attr = this->buildManagedObjectFromDoc(filename, config);
+    attr->setActualFilename(filename);
     return this->postCreateRegister(std::move(attr), registerObject);
   }  // ManagedFileBasedContainer::createObjectFromJSONFile
 
@@ -127,7 +130,8 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
         << "> : Failure loading attributes from document `" << filename
         << "` of unknown type `" << typeid(U).name()
         << "` so unable to build object.";
-  }
+  }  // ManagedFileBasedContainer::buildManagedObjectFromDoc
+
   /**
    * @brief Method to load a Managed Object's data from a file.  This is the
    * JSON specialization, using type inference.
@@ -180,7 +184,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     // Managed file-based object to save
     ManagedFileIOPtr obj = this->template getObjectInternal<T>(objectHandle);
     return this->saveManagedObjectToFile(obj, overwrite);
-  }  // saveManagedObjectToFile
+  }  // ManagedFileBasedContainer::saveManagedObjectToFile
 
   /**
    * @brief Saves the passed @p managedObject to a JSON file using a
@@ -220,46 +224,77 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
 
     // Managed file-based object to save
     ManagedFileIOPtr obj = this->template getObjectInternal<T>(objectHandle);
-    return this->saveManagedObjectToFile(obj, fullFilename);
-  }
+    return this->saveManagedObjectToFile(obj, fullFilename, false);
+  }  // ManagedFileBasedContainer::saveManagedObjectToFile
+
+  /**
+   * @brief Saves the passed @p managedObject to a JSON file using the
+   * specified @p filename, with appropriate type extension appended if not
+   * present. Will overwrite any file with same name found. If the directory
+   * component is not specified in the filename, will use the source directory
+   * of the managedObject specified.
+   *
+   * @param managedObject The object to save.
+   * @param filename The name of the file to save to. Will overwrite any
+   * file that has the same name.
+   * @param createDir Whether to create the destination directory if DNE.
+   * @return Whether save was successful
+   */
+
+  bool saveManagedObjectToFile(const ManagedFileIOPtr& managedObject,
+                               const std::string& filename,
+                               bool createDir) const {
+    // get file directory from passed desired filename, if present
+    std::string fileDirectory = Cr::Utility::Path::split(filename).first();
+    // if no directory given then use object's local directory
+    if (fileDirectory.empty()) {
+      fileDirectory = managedObject->getFileDirectory();
+    }
+
+    return this->saveManagedObjectToFile(managedObject, fileDirectory, filename,
+                                         createDir);
+  }  // ManagedFileBasedContainer::saveManagedObjectToFile
 
   /**
    * @brief Saves the passed @p managedObject to a JSON file using the
    * specified, fully-qualified @p fullFilename, with appropriate type extension
    * appended if not present. Will overwrite any file with same name found.
-   * @param managedObject Theobject to save.
-   * @param fullFilename The name of the file to save to.  Will overwrite any
-   * file that has the same name.
+   * @param managedObject The object to save.
+   * @param fileDirectory The destination directory to save the new file.
+   * @param fileName The name of the file to save to - may contain relative path
+   * information. Will overwrite any file that has the same name in the given
+   * destination directory.
+   * @param createDir Whether to create the destination directory if DNE.
    * @return Whether save was successful
    */
-
   bool saveManagedObjectToFile(const ManagedFileIOPtr& managedObject,
-                               const std::string& fullFilename) const {
+                               const std::string& fileDirectory,
+                               const std::string& fileName,
+                               bool createDir) const {
     namespace FileUtil = Cr::Utility::Path;
-    // get file directory from passed desired filename.
-    std::string fileDirectory = FileUtil::split(fullFilename).first();
-    // if no directory given then use object's local directory
-    if (fileDirectory.empty()) {
-      fileDirectory = managedObject->getFileDirectory();
-    }
-    // construct filename candidate from given fully qualified filename
-    // This will make sure written file will have appropriate extension
-    const std::string fileName =
+    // construct filename candidate from given filename
+    // This will make sure written file will have appropriate extension (by
+    // removing any extensions that might exist in fileName)
+    const std::string fileNameWithExtension =
         FileUtil::splitExtension(
-            FileUtil::splitExtension(FileUtil::split(fullFilename).second())
+            FileUtil::splitExtension(FileUtil::split(fileName).second())
                 .first())
             .first() +
         "." + this->JSONTypeExt_;
-
     if (!FileUtil::exists(fileDirectory)) {
-      // output directory not found
-      ESP_ERROR(Mn::Debug::Flag::NoSpace)
-          << "<" << this->objectType_ << "> : Destination directory `"
-          << fileDirectory << "` does not exist to save `"
-          << managedObject->getSimplifiedHandle()
-          << "` object with requested filename `" << fileName
-          << "`, so aborting save to file.";
-      return false;
+      // If the directory does not exist, create a new directory if requested.
+      bool newDirSuccess = createDir && FileUtil::make(fileDirectory);
+      if (!newDirSuccess) {
+        // output directory not found
+        ESP_ERROR(Mn::Debug::Flag::NoSpace)
+            << "<" << this->objectType_ << "> : Destination directory `"
+            << fileDirectory << "` does not exist "
+            << (createDir ? ",and was unable to be created, " : "")
+            << "to save `" << managedObject->getSimplifiedHandle()
+            << "` object with requested filename `" << fileName
+            << "`, so aborting save to file.";
+        return false;
+      }
     }
 
     // construct fully qualified filename
@@ -338,6 +373,10 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
         ESP_DEBUG(Mn::Debug::Flag::NoSpace)
             << "<" << this->objectType_ << "> : Attempt to save to Filename `"
             << fullFilename << "` Successful.";
+        // update the filename to be the most recent save location of this
+        // attributes. Note : this will not be "permanent" for the object unless
+        // it is registered after this save.
+        managedObject->setActualFilename(fullFilename);
       } else {
         ESP_ERROR(Mn::Debug::Flag::NoSpace)
             << "<" << this->objectType_ << "> : Attempt to save to Filename `"
@@ -350,7 +389,8 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
       ESP_ERROR(Mn::Debug::Flag::NoSpace)
           << "<" << this->objectType_ << "> : Attempt to save to Filename `"
           << fullFilename
-          << "` failed due to derived document describing object being empty.";
+          << "` failed due to derived document describing object being "
+             "empty.";
 
       // don't save an empty file/
       return false;
@@ -393,9 +433,9 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   /**
    * @brief Verify passd @p docString represents a legal document of type U.
    * Returns parsed document in passed argument @p resDoc if successful. This
-   * requires appropriate specialization for each type name/type of destination
-   * document, so if this specific method is executed it means no appropriate
-   * specialization exists for passed type U of document.
+   * requires appropriate specialization for each type name/type of
+   * destination document, so if this specific method is executed it means no
+   * appropriate specialization exists for passed type U of document.
    *
    * @tparam type of document to parse into
    * @param docName name of potential document to load
@@ -595,6 +635,8 @@ bool ManagedFileBasedContainer<T, Access>::saveManagedObjectToFile(
   // first strip object's file directory from objectHandle
   std::size_t pos = objectHandle.find(fileDirectory);
   std::string fileNameRaw;
+  // Doing this to retain subdirectories embedded in the object handle but not
+  // present in file directory
   if ((fileDirectory.empty()) || (pos == std::string::npos)) {
     // directory not found, construct filename from simplified object handle
     fileNameRaw = FileUtil::split(objectHandle).second();

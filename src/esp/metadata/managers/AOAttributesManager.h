@@ -75,6 +75,28 @@ class AOAttributesManager
 
  protected:
   /**
+   * @brief Parse Marker_sets object in json, if present.
+   * @param attribs (out) an existing attributes to be modified.
+   * @param jsonConfig json document to parse
+   * @return true if tag is found, of appropriate configuration, and holds
+   * actual values.
+   */
+  bool parseMarkerSets(
+      const attributes::ArticulatedObjectAttributes::ptr& attribs,
+      const io::JsonGenericValue& jsonConfig) const {
+    // check for the existing of markersets
+    bool hasMarkersets =
+        this->parseSubconfigJsonVals("marker_sets", attribs, jsonConfig);
+    if (hasMarkersets) {
+      // Cast "marker_sets" Configuration to MarkerSets object and rekey all
+      // markers to make keys consistent while preserving the natural order of
+      // their original keys.
+      attribs->rekeyAllMarkerSets();
+    }
+    return hasMarkersets;
+  }
+
+  /**
    * @brief Used Internally.  Create and configure newly-created attributes with
    * any default values, before any specific values are set.
    *
@@ -105,22 +127,38 @@ class AOAttributesManager
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
   /**
-   * @brief Add a copy of the @ref
-   * esp::metadata::attributes::ArticulatedObjectAttributes shared_ptr object to
-   * the @ref objectLibrary_.
+   * @brief This method will perform any essential updating to the managed
+   * object before registration is performed. If this updating fails,
+   * registration will also fail.
    *
    * @param AOAttributesTemplate The attributes template.
    * @param AOAttributesHandle The key for referencing the template in the
    * @ref objectLibrary_.
    * @param forceRegistration Will register object even if conditional
    * registration checks fail.
-   * @return The index in the @ref objectLibrary_ of object
-   * template.
+   * @return Whether the preregistration has succeeded and what handle to use to
+   * register the object if it has.
    */
-  int registerObjectFinalize(
+  core::managedContainers::ManagedObjectPreregistration
+  preRegisterObjectFinalize(
       attributes::ArticulatedObjectAttributes::ptr AOAttributesTemplate,
       const std::string& AOAttributesHandle,
       CORRADE_UNUSED bool) override;
+
+  /**
+   * @brief Not required for this manager.
+   *
+   * This method will perform any final manager-related handling after
+   * successfully registering an object.
+   *
+   * See @ref esp::attributes::managers::ObjectAttributesManager for an example.
+   *
+   * @param objectID the ID of the successfully registered managed object
+   * @param objectHandle The name of the managed objbect
+   */
+  void postRegisterObjectHandling(
+      CORRADE_UNUSED int objectID,
+      CORRADE_UNUSED const std::string& objectHandle) override {}
 
   /**
    * @brief Any articulated-object-attributes-specific resetting that needs to

@@ -137,10 +137,9 @@ class StageAttributesManager
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
   /**
-   * @brief Add a @ref std::shared_ptr<attributesType> object to the
-   * @ref objectLibrary_.  Verify that render and collision handles have been
-   * set properly.  We are doing this since these values can be modified by the
-   * user.
+   * @brief This method will perform any essential updating to the managed
+   * object before registration is performed. If this updating fails,
+   * registration will also fail.
    *
    * @param StageAttributesTemplate The attributes template.
    * @param StageAttributesHandle The key for referencing the template in the
@@ -151,10 +150,26 @@ class StageAttributesManager
    * template.
    */
 
-  int registerObjectFinalize(
+  core::managedContainers::ManagedObjectPreregistration
+  preRegisterObjectFinalize(
       attributes::StageAttributes::ptr StageAttributesTemplate,
       const std::string& StageAttributesHandle,
       bool forceRegistration) override;
+
+  /**
+   * @brief Not required for this manager.
+   *
+   * This method will perform any final manager-related handling after
+   * successfully registering an object.
+   *
+   * See @ref esp::attributes::managers::ObjectAttributesManager for an example.
+   *
+   * @param objectID the ID of the successfully registered managed object
+   * @param objectHandle The name of the managed objbect
+   */
+  void postRegisterObjectHandling(
+      CORRADE_UNUSED int objectID,
+      CORRADE_UNUSED const std::string& objectHandle) override {}
 
   /**
    * @brief Any scene-attributes-specific resetting that needs to happen on

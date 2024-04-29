@@ -220,6 +220,47 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   }
 
   /**
+   * @brief Given the list of passed points in this object's local space, return
+   * those points transformed to world space.
+   * @param points vector of points in object local space
+   * @param linkID Unused for rigids.
+   * @return vector of points transformed into world space
+   */
+  virtual std::vector<Mn::Vector3> transformLocalPointsToWorld(
+      const std::vector<Mn::Vector3>& points,
+      CORRADE_UNUSED int linkID) const {
+    std::vector<Mn::Vector3> wsPoints;
+    wsPoints.reserve(points.size());
+    Mn::Vector3 objScale = getScale();
+    Mn::Matrix4 worldTransform = getTransformation();
+    for (const auto& lsPoint : points) {
+      wsPoints.emplace_back(worldTransform.transformPoint(lsPoint * objScale));
+    }
+    return wsPoints;
+  }
+
+  /**
+   * @brief Given the list of passed points in world space, return
+   * those points transformed to this object's local space.
+   * @param points vector of points in world space
+   * @param linkID Unused for rigids.
+   * @return vector of points transformed to be in local space
+   */
+  virtual std::vector<Mn::Vector3> transformWorldPointsToLocal(
+      const std::vector<Mn::Vector3>& points,
+      CORRADE_UNUSED int linkID) const {
+    std::vector<Mn::Vector3> lsPoints;
+    lsPoints.reserve(points.size());
+    Mn::Vector3 objScale = getScale();
+    Mn::Matrix4 worldTransform = getTransformation();
+    for (const auto wsPoint : points) {
+      lsPoints.emplace_back(worldTransform.inverted().transformPoint(wsPoint) /
+                            objScale);
+    }
+    return lsPoints;
+  }
+
+  /**
    * @brief Get the 3D position of the object.
    */
   virtual Magnum::Vector3 getTranslation() const {
@@ -470,6 +511,11 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     userAttributes_->overwriteWithConfig(attr);
   }
 
+  /** @brief Get the scale of the object set during initialization.
+   * @return The scaling for the object relative to its initially loaded meshes.
+   */
+  virtual Magnum::Vector3 getScale() const { return _creationScale; }
+
  protected:
   /** @brief Accessed internally. Get an appropriately cast copy of the @ref
    * metadata::attributes::SceneObjectInstanceAttributes used to place the
@@ -570,6 +616,13 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   metadata::attributes::AbstractAttributes::ptr initializationAttributes_ =
       nullptr;
 
+  /**
+   * @brief Set the object's creation scale
+   */
+  void setScale(const Magnum::Vector3& creationScale) {
+    _creationScale = creationScale;
+  }
+
  private:
   /**
    * @brief This object's instancing attributes, if any were used during its
@@ -577,6 +630,11 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   std::shared_ptr<const metadata::attributes::SceneObjectInstanceAttributes>
       _initObjInstanceAttrs = nullptr;
+
+  /**
+   * @brief The scale applied to this object on creation
+   */
+  Mn::Vector3 _creationScale{1.0f, 1.0f, 1.0f};
 
  public:
   ESP_SMART_POINTERS(PhysicsObjectBase)

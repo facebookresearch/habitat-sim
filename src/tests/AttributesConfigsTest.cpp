@@ -32,6 +32,7 @@ using esp::physics::MotionType;
 
 using AttrMgrs::AttributesManager;
 using Attrs::ArticulatedObjectAttributes;
+using Attrs::MarkerSets;
 using Attrs::ObjectAttributes;
 using Attrs::PbrShaderAttributes;
 using Attrs::PhysicsManagerAttributes;
@@ -97,35 +98,61 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
       Mn::Vector4 vec4Value);
 
   /**
+   * @brief Collection of markers making up a single MarkerSet
+   */
+  typedef std::unordered_map<std::string, Mn::Vector3> MarkerSetTestMap;
+  /**
+   * @brief Collection of MarkerSet making up a single LinkSet
+   */
+  typedef std::unordered_map<std::string, MarkerSetTestMap> LinkSetTestMap;
+  /**
+   * @brief Collection of LinkSets making up a single TaskSet
+   */
+  typedef std::unordered_map<std::string, LinkSetTestMap> TaskSetTestMap;
+  /**
+   * @brief Collection of TaskSets making up the entire MarkerSets construction.
+   */
+  typedef std::unordered_map<std::string, TaskSetTestMap> AllMarkerSetsTestMap;
+
+  /**
+   * @brief This method will test the marker-sets configurations being loaded in
+   * stage, object and ao configs.
+   * @param markerSetsConfig The marker-sets configuration object whose contents
+   * are to be tested.
+   * @param markerSetsInfoHierarchy The hieraarchy the marker sets should
+   * follow.
+   */
+  void testMarkerSetsConfigVals(
+      std::shared_ptr<Attrs::MarkerSets> markerSetsConfig,
+      const AllMarkerSetsTestMap&  // markers in link subset
+          markerSetsInfoHierarchy);
+
+  /**
    * @brief This test will verify that the physics attributes' managers' JSON
    * loading process is working as expected.
    */
   void testPhysicsAttrVals(
-      std::shared_ptr<esp::metadata::attributes::PhysicsManagerAttributes>
-          physMgrAttr);
+      std::shared_ptr<Attrs::PhysicsManagerAttributes> physMgrAttr);
 
   /**
    * @brief This test will verify that the PBR/IBL shader config attributes'
    * managers' JSON loading process is working as expected.
    */
   void testPbrShaderAttrVals(
-      std::shared_ptr<esp::metadata::attributes::PbrShaderAttributes>
-          pbrShaderAttr);
+      std::shared_ptr<Attrs::PbrShaderAttributes> pbrShaderAttr);
   /**
    * @brief This test will verify that the Light Attributes' managers' JSON
    * loading process is working as expected.
    */
   void testLightAttrVals(
-      std::shared_ptr<esp::metadata::attributes::LightLayoutAttributes>
-          lightLayoutAttr);
+      std::shared_ptr<Attrs::LightLayoutAttributes> lightLayoutAttr);
 
   /**
    * @brief This test will verify that the Scene Instance Attributes' managers'
    * JSON loading process is working as expected.
    */
   void testSceneInstanceAttrVals(
-      std::shared_ptr<esp::metadata::attributes::SceneInstanceAttributes>
-          sceneInstAttr);
+      std::shared_ptr<Attrs::SceneInstanceAttributes> sceneInstAttr);
 
   /**
    * @brief This test will verify that the root-level scene instance user
@@ -138,31 +165,27 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
    * loading process is working as expected.
    */
   void testSemanticAttrVals(
-      std::shared_ptr<esp::metadata::attributes::SemanticAttributes>
-          semanticAttr,
+      std::shared_ptr<Attrs::SemanticAttributes> semanticAttr,
       const std::string& assetPath);
   /**
    * @brief This test will verify that the Stage attributes' managers' JSON
    * loading process is working as expected.
    */
-  void testStageAttrVals(
-      std::shared_ptr<esp::metadata::attributes::StageAttributes> stageAttr,
-      const std::string& assetPath);
+  void testStageAttrVals(std::shared_ptr<Attrs::StageAttributes> stageAttr,
+                         const std::string& assetPath);
 
   /**
    * @brief This test will verify that the Object attributes' managers' JSON
    * loading process is working as expected.
    */
-  void testObjectAttrVals(
-      std::shared_ptr<esp::metadata::attributes::ObjectAttributes> objAttr,
-      const std::string& assetPath);
+  void testObjectAttrVals(std::shared_ptr<Attrs::ObjectAttributes> objAttr,
+                          const std::string& assetPath);
   /**
    * @brief This test will verify that the Articulated Object attributes'
    * managers' JSON loading process is working as expected.
    */
   void testArticulatedObjectAttrVals(
-      std::shared_ptr<esp::metadata::attributes::ArticulatedObjectAttributes>
-          artObjAttr,
+      std::shared_ptr<Attrs::ArticulatedObjectAttributes> artObjAttr,
       const std::string& assetPath,
       const std::string& urdfPath);
 
@@ -261,7 +284,7 @@ void AttributesConfigsTest::testUserDefinedConfigVals(
   // ["test_00", "test_01", "test_02", "test_03"],
   for (int i = 0; i < strListSize; ++i) {
     const std::string subKey =
-        Cr::Utility::formatString("user_str_array_{:.02d}", i);
+        Cr::Utility::formatString("user_str_array_{:.03d}", i);
     const std::string fieldVal = Cr::Utility::formatString("test_{:.02d}", i);
 
     CORRADE_COMPARE(userStrListSubconfig->get<std::string>(subKey), fieldVal);
@@ -289,11 +312,60 @@ void AttributesConfigsTest::testUserDefinedConfigVals(
 
 }  // AttributesConfigsTest::testUserDefinedConfigVals
 
+void AttributesConfigsTest::testMarkerSetsConfigVals(
+    std::shared_ptr<Attrs::MarkerSets> markerSetsConfig,
+    const AllMarkerSetsTestMap& markerSetsInfoHierarchy) {
+  // Testing as nested subconfigs
+  for (const auto& taskSetInfoEntry : markerSetsInfoHierarchy) {
+    // Key is first
+    const std::string taskSetKey = taskSetInfoEntry.first;
+    CORRADE_VERIFY(markerSetsConfig->hasSubconfig(taskSetKey));
+    // Retrive named TaskSet
+    const auto taskSet = markerSetsConfig->getSubconfigView(taskSetKey);
+    CORRADE_VERIFY(taskSet);
+    // Submap of test data
+    const auto& taskSetInfoMap = taskSetInfoEntry.second;
+    for (const auto& linkSetInfoEntry : taskSetInfoMap) {
+      const std::string linkSetKey = linkSetInfoEntry.first;
+      CORRADE_VERIFY(taskSet->hasSubconfig(linkSetKey));
+      // Retrieve named per-link markerset
+      const auto linkSet = taskSet->getSubconfigView(linkSetKey);
+      CORRADE_VERIFY(linkSet);
+      // Per linkmarker sets
+      const auto& linkSetInfoMap = linkSetInfoEntry.second;
+      for (const auto& markerSetInfoEntry : linkSetInfoMap) {
+        const std::string markerSetKey = markerSetInfoEntry.first;
+        CORRADE_VERIFY(linkSet->hasSubconfig(markerSetKey));
+        // Retrive a specific link's markerSet
+        const auto markerSet = linkSet->getSubconfigView(markerSetKey);
+        CORRADE_VERIFY(markerSet);
+        // Verify that subconfig named "markers' exists"
+        CORRADE_VERIFY(markerSet->hasSubconfig("markers"));
+        // Get the set of markers
+        const auto& markers = markerSet->getSubconfigView("markers");
+        // key-value map that should match mapping of markers in link subset
+        const auto& markersInfo = markerSetInfoEntry.second;
+        // Verify there are the expected number of marker points
+        CORRADE_COMPARE(markers->getNumValues(), markersInfo.size());
+        // Verify that subconfig has each marker point
+        for (const auto& markerInfo : markersInfo) {
+          const std::string markerKey = markerInfo.first;
+          // Verify markers contains a value with passed key
+          CORRADE_VERIFY(markers->hasValue(markerKey));
+          const Mn::Vector3 markerPoint = markerInfo.second;
+          // Make sure marker point is present
+          CORRADE_COMPARE(markers->get<Mn::Vector3>(markerKey), markerPoint);
+        }  // for each marker within marker set
+      }    // for each marker set within link set
+    }      // for each link set in task set
+  }        // for each task set within MarkerSets aggregation
+  // TODO : test as MarkerSets class hierarchy
+}  // AttributesConfigsTest::testMarkerSetsConfigVals
+
 /////////////  Begin JSON String-based tests
 
 void AttributesConfigsTest::testPhysicsAttrVals(
-    std::shared_ptr<esp::metadata::attributes::PhysicsManagerAttributes>
-        physMgrAttr) {
+    std::shared_ptr<Attrs::PhysicsManagerAttributes> physMgrAttr) {
   // match values set in test JSON
 
   CORRADE_COMPARE(physMgrAttr->getGravity(), Mn::Vector3(1, 2, 3));
@@ -376,8 +448,7 @@ void AttributesConfigsTest::testPhysicsJSONLoad() {
 }  // AttributesConfigsTest::testPhysicsJSONLoad
 
 void AttributesConfigsTest::testPbrShaderAttrVals(
-    std::shared_ptr<esp::metadata::attributes::PbrShaderAttributes>
-        pbrShaderAttr) {
+    std::shared_ptr<Attrs::PbrShaderAttributes> pbrShaderAttr) {
   CORRADE_VERIFY(!pbrShaderAttr->getEnableDirectLighting());
   CORRADE_VERIFY(!pbrShaderAttr->getEnableIBL());
 
@@ -508,8 +579,7 @@ void AttributesConfigsTest::testPbrShaderAttrJSONLoad() {
 }  // AttributesConfigsTest::testPbrShaderAttrJSONLoad
 
 void AttributesConfigsTest::testLightAttrVals(
-    std::shared_ptr<esp::metadata::attributes::LightLayoutAttributes>
-        lightLayoutAttr) {
+    std::shared_ptr<Attrs::LightLayoutAttributes> lightLayoutAttr) {
   // test light layout attributes-level user config vals
   testUserDefinedConfigVals(lightLayoutAttr->getUserConfiguration(), 4,
                             "light attribs defined string", true, 23, 2.3,
@@ -664,8 +734,7 @@ void AttributesConfigsTest::testSceneInstanceRootUserDefinedAttrVals(
 }  // AttributesConfigsTest::testSceneInstanceRootUserDefinedAttrVals
 
 void AttributesConfigsTest::testSceneInstanceAttrVals(
-    std::shared_ptr<esp::metadata::attributes::SceneInstanceAttributes>
-        sceneAttr) {
+    std::shared_ptr<Attrs::SceneInstanceAttributes> sceneAttr) {
   // match values set in test JSON
   CORRADE_COMPARE(
       static_cast<int>(sceneAttr->getTranslationOrigin()),
@@ -1072,7 +1141,7 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
 
 }  // AttributesConfigsTest::testSceneInstanceJSONLoad
 void AttributesConfigsTest::testSemanticAttrVals(
-    std::shared_ptr<esp::metadata::attributes::SemanticAttributes> semanticAttr,
+    std::shared_ptr<Attrs::SemanticAttributes> semanticAttr,
     const std::string& assetPath) {
   CORRADE_COMPARE(
       semanticAttr->getSemanticDescriptorFilename(),
@@ -1241,7 +1310,7 @@ void AttributesConfigsTest::testSemanticJSONLoad() {
 }  // AttributesConfigsTest::testSemanticJSONLoad
 
 void AttributesConfigsTest::testStageAttrVals(
-    std::shared_ptr<esp::metadata::attributes::StageAttributes> stageAttr,
+    std::shared_ptr<Attrs::StageAttributes> stageAttr,
     const std::string& assetPath) {
   // match values set in test JSON
   CORRADE_COMPARE(stageAttr->getScale(), Mn::Vector3(2, 3, 4));
@@ -1280,47 +1349,188 @@ void AttributesConfigsTest::testStageAttrVals(
       Mn::Quaternion({1.5f, 2.6f, 3.7f}, 0.1f),
       Mn::Vector4(14.5f, 15.6f, 16.7f, 17.9f));
 
+  {
+    // Test marker sets
+
+    MarkerSetTestMap marker_set_000_stage_name(
+        {{"003", Mn::Vector3{4.1, 5.2, 6.3}},
+         {"002", Mn::Vector3{3.1, 4.2, 5.3}},
+         {"001", Mn::Vector3{2.1, 3.2, 4.3}},
+         {"000", Mn::Vector3{1.1, 2.2, 3.3}}});
+
+    MarkerSetTestMap marker_set_001_stage_name(
+        {{"003", Mn::Vector3{4.2, 5.3, 6.4}},
+         {"002", Mn::Vector3{3.2, 4.3, 5.4}},
+         {"001", Mn::Vector3{2.2, 3.3, 4.4}},
+         {"000", Mn::Vector3{1.2, 2.3, 3.4}}});
+
+    LinkSetTestMap link_set_00_stage_name(
+        {{"marker_set_000_stage_name", marker_set_000_stage_name},
+         {"marker_set_001_stage_name", marker_set_001_stage_name}});
+
+    TaskSetTestMap task_set_0_stage_name{
+        {{"link_set_00_stage_name", link_set_00_stage_name}}};
+
+    MarkerSetTestMap marker_set_100_stage_name(
+        {{"003", Mn::Vector3{14.1, 15.2, 16.3}},
+         {"002", Mn::Vector3{13.1, 14.2, 15.3}},
+         {"001", Mn::Vector3{12.1, 13.2, 14.3}},
+         {"000", Mn::Vector3{11.1, 12.2, 13.3}}});
+
+    MarkerSetTestMap marker_set_101_stage_name(
+        {{"003", Mn::Vector3{14.2, 15.3, 16.4}},
+         {"002", Mn::Vector3{13.2, 14.3, 15.4}},
+         {"001", Mn::Vector3{12.2, 13.3, 14.4}},
+         {"000", Mn::Vector3{11.2, 12.3, 13.4}}});
+
+    MarkerSetTestMap marker_set_102_stage_name(
+        {{"003", Mn::Vector3{124.2, 125.3, 126.4}},
+         {"002", Mn::Vector3{123.2, 124.3, 125.4}},
+         {"001", Mn::Vector3{122.2, 123.3, 124.4}},
+         {"000", Mn::Vector3{121.2, 122.3, 123.4}}});
+
+    LinkSetTestMap link_set_10_stage_name(
+        {{"marker_set_100_stage_name", marker_set_100_stage_name},
+         {"marker_set_101_stage_name", marker_set_101_stage_name},
+         {"marker_set_102_stage_name", marker_set_102_stage_name}});
+
+    MarkerSetTestMap marker_set_110_stage_name(
+        {{"003", Mn::Vector3{14.3, 15.4, 16.5}},
+         {"002", Mn::Vector3{13.3, 14.4, 15.5}},
+         {"001", Mn::Vector3{12.3, 13.4, 14.5}},
+         {"000", Mn::Vector3{11.3, 12.4, 13.5}}});
+
+    MarkerSetTestMap marker_set_111_stage_name(
+        {{"003", Mn::Vector3{14.4, 15.5, 16.6}},
+         {"002", Mn::Vector3{13.4, 14.5, 15.6}},
+         {"004", Mn::Vector3{15.4, 16.5, 17.6}},
+         {"001", Mn::Vector3{12.4, 13.5, 14.6}},
+         {"000", Mn::Vector3{11.4, 12.5, 13.6}}});
+
+    LinkSetTestMap link_set_11_stage_name(
+        {{"marker_set_110_stage_name", marker_set_110_stage_name},
+         {"marker_set_110_stage_name", marker_set_110_stage_name}});
+
+    TaskSetTestMap task_set_1_stage_name(
+        {{"link_set_10_stage_name", link_set_10_stage_name},
+         {"link_set_11_stage_name", link_set_11_stage_name}});
+
+    AllMarkerSetsTestMap markerSetMap(
+        {{"task_set_0_stage_name", task_set_0_stage_name},
+         {"task_set_1_stage_name", task_set_1_stage_name}});
+
+    testMarkerSetsConfigVals(stageAttr->getMarkerSetsConfiguration(),
+                             markerSetMap);
+  }
   // remove json-string built attributes added for test
   testRemoveAttributesBuiltByJSONString(stageAttributesManager_,
                                         stageAttr->getHandle());
 }  // AttributesConfigsTest::testStageAttrVals
 void AttributesConfigsTest::testStageJSONLoad() {
   // build JSON sample config
-  const std::string& jsonString =
-      R"({
-        "scale":[2,3,4],
-        "margin": 0.9,
-        "friction_coefficient": 0.321,
-        "restitution_coefficient": 0.456,
-        "force_flat_shading": false,
-        "units_to_meters": 1.1,
-        "up":[2.1, 0, 0],
-        "front":[0, 2.1, 0],
-        "has_semantic_textures":true,
-        "render_asset": "testJSONRenderAsset.glb",
-        "collision_asset": "testJSONCollisionAsset.glb",
-        "is_collidable": false,
-        "gravity": [9,8,7],
-        "origin":[1,2,3],
-        "semantic_asset":"testJSONSemanticAsset.glb",
-        "nav_asset":"testJSONNavMeshAsset.glb",
-        "shader_type" : "material",
-        "user_defined" : {
-            "user_str_array" : ["test_00", "test_01", "test_02", "test_03"],
-            "user_string" : "stage defined string",
-            "user_bool" : false,
-            "user_int" : 3,
-            "user_double" : 0.8,
-            "user_vec2" : [2.3, 4.5],
-            "user_vec3" : [5.4, 7.6, 10.1],
-            "user_vec4" : [14.5, 15.6, 16.7, 17.9],
-            "user_quat" : [0.1, 1.5, 2.6, 3.7]
-        }
-      })";
+  const std::string& jsonString = R"({
+  "scale":[2,3,4],
+  "margin": 0.9,
+  "friction_coefficient": 0.321,
+  "restitution_coefficient": 0.456,
+  "force_flat_shading": false,
+  "units_to_meters": 1.1,
+  "up":[2.1, 0, 0],
+  "front":[0, 2.1, 0],
+  "has_semantic_textures":true,
+  "render_asset": "testJSONRenderAsset.glb",
+  "collision_asset": "testJSONCollisionAsset.glb",
+  "is_collidable": false,
+  "gravity": [9,8,7],
+  "origin":[1,2,3],
+  "semantic_asset":"testJSONSemanticAsset.glb",
+  "nav_asset":"testJSONNavMeshAsset.glb",
+  "shader_type" : "material",
+  "marker_sets" : {
+      "task_set_0_stage_name" : {
+          "link_set_00_stage_name" : {
+              "marker_set_000_stage_name" : {
+                "markers" : [
+                    [1.1, 2.2, 3.3],
+                    [2.1, 3.2, 4.3],
+                    [3.1, 4.2, 5.3],
+                    [4.1, 5.2, 6.3]
+                  ]
+              },
+              "marker_set_001_stage_name" : {
+                "markers" : {
+                    "0":[1.2, 2.3, 3.4],
+                    "1":[2.2, 3.3, 4.4],
+                    "2":[3.2, 4.3, 5.4],
+                    "3":[4.2, 5.3, 6.4]
+                }
+              }
+          }
+      },
+      "task_set_1_stage_name" : {
+          "link_set_10_stage_name" : {
+              "marker_set_100_stage_name" : {
+                "markers" : [
+                    [11.1, 12.2, 13.3],
+                    [12.1, 13.2, 14.3],
+                    [13.1, 14.2, 15.3],
+                    [14.1, 15.2, 16.3]
+                  ]
+              },
+              "marker_set_101_stage_name" : {
+                "markers" : {
+                    "0":[11.2, 12.3, 13.4],
+                    "1":[12.2, 13.3, 14.4],
+                    "2":[13.2, 14.3, 15.4],
+                    "3":[14.2, 15.3, 16.4]
+                }
+              },
+              "marker_set_102_stage_name" : {
+                "markers" : {
+                    "0":[121.2, 122.3, 123.4],
+                    "1":[122.2, 123.3, 124.4],
+                    "2":[123.2, 124.3, 125.4],
+                    "3":[124.2, 125.3, 126.4]
+                }
+              }
+          },
+          "link_set_11_stage_name" : {
+              "marker_set_110_stage_name" : {
+                "markers" : {
+                    "0":[11.3, 12.4, 13.5],
+                    "1":[12.3, 13.4, 14.5],
+                    "2":[13.3, 14.4, 15.5],
+                    "3":[14.3, 15.4, 16.5]
+                }
+              },
+              "marker_set_111_stage_name" : {
+                "markers" : [
+                    [11.4, 12.5, 13.6],
+                    [12.4, 13.5, 14.6],
+                    [13.4, 14.5, 15.6],
+                    [14.4, 15.5, 16.6],
+                    [15.4, 16.5, 17.6]
+                  ]
+              }
+          }
+      }
+  },
+  "user_defined" : {
+      "user_str_array" : ["test_00", "test_01", "test_02", "test_03"],
+      "user_string" : "stage defined string",
+      "user_bool" : false,
+      "user_int" : 3,
+      "user_double" : 0.8,
+      "user_vec2" : [2.3, 4.5],
+      "user_vec3" : [5.4, 7.6, 10.1],
+      "user_vec4" : [14.5, 15.6, 16.7, 17.9],
+      "user_quat" : [0.1, 1.5, 2.6, 3.7]
+  }
+})";
 
   // Build an attributes based on the above json string
-  // Don't register - registration here verifies that the specified file handles
-  // in the attributes exist, or it will fail.
+  // Don't register - registration here verifies that the specified file
+  // handles in the attributes exist, or it will fail.
   auto stageAttr = stageAttributesManager_->createObjectFromJSONString(
       "new_template_from_json", jsonString, false);
   // verify exists
@@ -1380,7 +1590,7 @@ void AttributesConfigsTest::testStageJSONLoad() {
 }  // AttributesConfigsTest::testStageJSONLoad(
 
 void AttributesConfigsTest::testObjectAttrVals(
-    std::shared_ptr<esp::metadata::attributes::ObjectAttributes> objAttr,
+    std::shared_ptr<Attrs::ObjectAttributes> objAttr,
     const std::string& assetPath) {
   // match values set in test JSON
 
@@ -1411,6 +1621,89 @@ void AttributesConfigsTest::testObjectAttrVals(
       Mn::Quaternion({5.5f, 6.6f, 7.7f}, 0.7f),
       Mn::Vector4(1.5f, 1.6f, 6.7f, 7.9f));
 
+  {
+    // Test marker sets
+
+    MarkerSetTestMap marker_set_000_obj_name(
+        {{"003", Mn::Vector3{4.1, 5.2, 6.3}},
+         {"002", Mn::Vector3{3.1, 4.2, 5.3}},
+         {"001", Mn::Vector3{2.1, 3.2, 4.3}},
+         {"000", Mn::Vector3{1.1, 2.2, 3.3}}});
+
+    MarkerSetTestMap marker_set_001_obj_name(
+        {{"003", Mn::Vector3{4.2, 5.3, 6.4}},
+         {"002", Mn::Vector3{3.2, 4.3, 5.4}},
+         {"001", Mn::Vector3{2.2, 3.3, 4.4}},
+         {"000", Mn::Vector3{1.2, 2.3, 3.4}}});
+
+    LinkSetTestMap link_set_00_obj_name(
+        {{"marker_set_000_obj_name", marker_set_000_obj_name},
+         {"marker_set_001_obj_name", marker_set_001_obj_name}});
+
+    MarkerSetTestMap marker_set_010_obj_name(
+        {{"003", Mn::Vector3{4.3, 5.4, 6.5}},
+         {"002", Mn::Vector3{3.3, 4.4, 5.5}},
+         {"001", Mn::Vector3{2.3, 3.4, 4.5}},
+         {"000", Mn::Vector3{1.3, 2.4, 3.5}}});
+
+    MarkerSetTestMap marker_set_011_obj_name(
+        {{"003", Mn::Vector3{4.4, 5.5, 6.6}},
+         {"002", Mn::Vector3{3.4, 4.5, 5.6}},
+         {"001", Mn::Vector3{2.4, 3.5, 4.6}},
+         {"000", Mn::Vector3{1.4, 2.5, 3.6}}});
+
+    LinkSetTestMap link_set_01_obj_name(
+        {{"marker_set_010_obj_name", marker_set_010_obj_name},
+         {"marker_set_011_obj_name", marker_set_011_obj_name}});
+
+    TaskSetTestMap task_set_0_obj_name{
+        {{"link_set_00_obj_name", link_set_00_obj_name},
+         {"link_set_01_obj_name", link_set_01_obj_name}}};
+
+    MarkerSetTestMap marker_set_100_obj_name(
+        {{"003", Mn::Vector3{14.1, 15.2, 16.3}},
+         {"002", Mn::Vector3{13.1, 14.2, 15.3}},
+         {"001", Mn::Vector3{12.1, 13.2, 14.3}},
+         {"000", Mn::Vector3{11.1, 12.2, 13.3}}});
+
+    MarkerSetTestMap marker_set_101_obj_name(
+        {{"003", Mn::Vector3{14.2, 15.3, 16.4}},
+         {"002", Mn::Vector3{13.2, 14.3, 15.4}},
+         {"001", Mn::Vector3{12.2, 13.3, 14.4}},
+         {"000", Mn::Vector3{11.2, 12.3, 13.4}}});
+
+    LinkSetTestMap link_set_10_obj_name(
+        {{"marker_set_100_obj_name", marker_set_100_obj_name},
+         {"marker_set_101_obj_name", marker_set_101_obj_name}});
+
+    MarkerSetTestMap marker_set_110_obj_name(
+        {{"003", Mn::Vector3{14.3, 15.4, 16.5}},
+         {"002", Mn::Vector3{13.3, 14.4, 15.5}},
+         {"001", Mn::Vector3{12.3, 13.4, 14.5}},
+         {"000", Mn::Vector3{11.3, 12.4, 13.5}}});
+
+    MarkerSetTestMap marker_set_111_obj_name(
+        {{"003", Mn::Vector3{14.4, 15.5, 16.6}},
+         {"002", Mn::Vector3{13.4, 14.5, 15.6}},
+         {"001", Mn::Vector3{12.4, 13.5, 14.6}},
+         {"000", Mn::Vector3{11.4, 12.5, 13.6}}});
+
+    LinkSetTestMap link_set_11_obj_name(
+        {{"marker_set_110_obj_name", marker_set_110_obj_name},
+         {"marker_set_110_obj_name", marker_set_110_obj_name}});
+
+    TaskSetTestMap task_set_1_obj_name(
+        {{"link_set_10_obj_name", link_set_10_obj_name},
+         {"link_set_11_obj_name", link_set_11_obj_name}});
+
+    AllMarkerSetsTestMap markerSetMap(
+        {{"task_set_0_obj_name", task_set_0_obj_name},
+         {"task_set_1_obj_name", task_set_1_obj_name}});
+
+    testMarkerSetsConfigVals(objAttr->getMarkerSetsConfiguration(),
+                             markerSetMap);
+  }
+
   // remove json-string built attributes added for test
   testRemoveAttributesBuiltByJSONString(objectAttributesManager_,
                                         objAttr->getHandle());
@@ -1440,6 +1733,84 @@ void AttributesConfigsTest::testObjectJSONLoad() {
   "semantic_id" : 7,
   "COM": [0.1,0.2,0.3],
   "shader_type" : "phong",
+  "marker_sets" : {
+      "task_set_0_obj_name" : {
+          "link_set_00_obj_name" : {
+              "marker_set_000_obj_name" : {
+                "markers" : [
+                    [1.1, 2.2, 3.3],
+                    [2.1, 3.2, 4.3],
+                    [3.1, 4.2, 5.3],
+                    [4.1, 5.2, 6.3]
+                  ]
+              },
+              "marker_set_001_obj_name" : {
+                "markers" : {
+                    "0":[1.2, 2.3, 3.4],
+                    "1":[2.2, 3.3, 4.4],
+                    "2":[3.2, 4.3, 5.4],
+                    "3":[4.2, 5.3, 6.4]
+                }
+              }
+          },
+          "link_set_01_obj_name" : {
+              "marker_set_010_obj_name" : {
+                "markers" : {
+                    "0":[1.3, 2.4, 3.5],
+                    "1":[2.3, 3.4, 4.5],
+                    "2":[3.3, 4.4, 5.5],
+                    "3":[4.3, 5.4, 6.5]
+                }
+              },
+              "marker_set_011_obj_name" : {
+                "markers" : [
+                    [1.4, 2.5, 3.6],
+                    [2.4, 3.5, 4.6],
+                    [3.4, 4.5, 5.6],
+                    [4.4, 5.5, 6.6]
+                  ]
+              }
+          }
+      },
+      "task_set_1_obj_name" : {
+          "link_set_10_obj_name" : {
+              "marker_set_100_obj_name" : {
+                "markers" : [
+                    [11.1, 12.2, 13.3],
+                    [12.1, 13.2, 14.3],
+                    [13.1, 14.2, 15.3],
+                    [14.1, 15.2, 16.3]
+                  ]
+              },
+              "marker_set_101_obj_name" : {
+                "markers" : {
+                    "0":[11.2, 12.3, 13.4],
+                    "1":[12.2, 13.3, 14.4],
+                    "2":[13.2, 14.3, 15.4],
+                    "3":[14.2, 15.3, 16.4]
+                }
+              }
+          },
+          "link_set_11_obj_name" : {
+              "marker_set_110_obj_name" : {
+                "markers" : {
+                    "0":[11.3, 12.4, 13.5],
+                    "1":[12.3, 13.4, 14.5],
+                    "2":[13.3, 14.4, 15.5],
+                    "3":[14.3, 15.4, 16.5]
+                }
+              },
+              "marker_set_111_obj_name" : {
+                "markers" : [
+                    [11.4, 12.5, 13.6],
+                    [12.4, 13.5, 14.6],
+                    [13.4, 14.5, 15.6],
+                    [14.4, 15.5, 16.6]
+                  ]
+              }
+          }
+      }
+  },
   "user_defined" : {
       "user_str_array" : ["test_00", "test_01", "test_02", "test_03"],
       "user_string" : "object defined string",
@@ -1454,8 +1825,8 @@ void AttributesConfigsTest::testObjectJSONLoad() {
 })";
 
   // Build an attributes based on the above json string
-  // Don't register - registration here verifies that the specified file handles
-  // in the attributes exist, or it will fail.
+  // Don't register - registration here verifies that the specified file
+  // handles in the attributes exist, or it will fail.
   auto objAttr = objectAttributesManager_->createObjectFromJSONString(
       "new_template_from_json", jsonString, false);
   // verify exists
@@ -1504,8 +1875,7 @@ void AttributesConfigsTest::testObjectJSONLoad() {
 }  // AttributesConfigsTest::testObjectJSONLoadTest
 
 void AttributesConfigsTest::testArticulatedObjectAttrVals(
-    std::shared_ptr<esp::metadata::attributes::ArticulatedObjectAttributes>
-        artObjAttr,
+    std::shared_ptr<Attrs::ArticulatedObjectAttributes> artObjAttr,
     const std::string& assetPath,
     const std::string& urdfPath) {
   // match values set in test JSON
@@ -1538,6 +1908,113 @@ void AttributesConfigsTest::testArticulatedObjectAttrVals(
                             Mn::Quaternion({5.3f, 6.4f, 7.5f}, 0.8f),
                             Mn::Vector4(1.6f, 1.2f, 6.3f, 7.4f));
 
+  {
+    // Test marker sets
+
+    MarkerSetTestMap marker_set_000_ao_name(
+        {{"003", Mn::Vector3{14.1, 5.2, 6.3}},
+         {"002", Mn::Vector3{13.1, 4.2, 5.3}},
+         {"001", Mn::Vector3{12.1, 3.2, 4.3}},
+         {"000", Mn::Vector3{11.1, 2.2, 3.3}}});
+
+    MarkerSetTestMap marker_set_001_ao_name(
+        {{"003", Mn::Vector3{14.2, 5.3, 6.4}},
+         {"002", Mn::Vector3{13.2, 4.3, 5.4}},
+         {"001", Mn::Vector3{12.2, 3.3, 4.4}},
+         {"000", Mn::Vector3{11.2, 2.3, 3.4}}});
+
+    LinkSetTestMap link_set_00_ao_name(
+        {{"marker_set_000_ao_name", marker_set_000_ao_name},
+         {"marker_set_001_ao_name", marker_set_001_ao_name}});
+
+    MarkerSetTestMap marker_set_010_ao_name(
+        {{"003", Mn::Vector3{14.3, 5.4, 6.5}},
+         {"002", Mn::Vector3{13.3, 4.4, 5.5}},
+         {"001", Mn::Vector3{12.3, 3.4, 4.5}},
+         {"000", Mn::Vector3{11.3, 2.4, 3.5}}});
+
+    MarkerSetTestMap marker_set_011_ao_name(
+        {{"003", Mn::Vector3{14.4, 5.5, 6.6}},
+         {"002", Mn::Vector3{13.4, 4.5, 5.6}},
+         {"001", Mn::Vector3{12.4, 3.5, 4.6}},
+         {"000", Mn::Vector3{11.4, 2.5, 3.6}}});
+
+    LinkSetTestMap link_set_01_ao_name(
+        {{"marker_set_010_ao_name", marker_set_010_ao_name},
+         {"marker_set_011_ao_name", marker_set_011_ao_name}});
+
+    MarkerSetTestMap marker_set_020_ao_name(
+        {{"003", Mn::Vector3{24.3, 5.4, 6.5}},
+         {"002", Mn::Vector3{23.3, 4.4, 5.5}},
+         {"001", Mn::Vector3{22.3, 3.4, 4.5}},
+         {"000", Mn::Vector3{21.3, 2.4, 3.5}}});
+
+    MarkerSetTestMap marker_set_021_ao_name(
+        {{"003", Mn::Vector3{24.4, 5.5, 6.6}},
+         {"002", Mn::Vector3{23.4, 4.5, 5.6}},
+         {"001", Mn::Vector3{22.4, 3.5, 4.6}},
+         {"000", Mn::Vector3{21.4, 2.5, 3.6}}});
+
+    MarkerSetTestMap marker_set_022_ao_name(
+        {{"003", Mn::Vector3{224.4, 5.5, 6.6}},
+         {"002", Mn::Vector3{223.4, 4.5, 5.6}},
+         {"001", Mn::Vector3{222.4, 3.5, 4.6}},
+         {"000", Mn::Vector3{221.4, 2.5, 3.6}}});
+
+    LinkSetTestMap link_set_02_ao_name(
+        {{"marker_set_020_ao_name", marker_set_020_ao_name},
+         {"marker_set_021_ao_name", marker_set_021_ao_name},
+         {"marker_set_022_ao_name", marker_set_022_ao_name}});
+
+    TaskSetTestMap task_set_0_ao_name{
+        {{"link_set_00_ao_name", link_set_00_ao_name},
+         {"link_set_01_ao_name", link_set_01_ao_name},
+         {"link_set_02_ao_name", link_set_02_ao_name}}};
+
+    MarkerSetTestMap marker_set_100_ao_name(
+        {{"003", Mn::Vector3{114.1, 15.2, 16.3}},
+         {"002", Mn::Vector3{113.1, 14.2, 15.3}},
+         {"001", Mn::Vector3{112.1, 13.2, 14.3}},
+         {"000", Mn::Vector3{111.1, 12.2, 13.3}}});
+
+    MarkerSetTestMap marker_set_101_ao_name(
+        {{"003", Mn::Vector3{114.2, 15.3, 16.4}},
+         {"002", Mn::Vector3{113.2, 14.3, 15.4}},
+         {"001", Mn::Vector3{112.2, 13.3, 14.4}},
+         {"000", Mn::Vector3{111.2, 12.3, 13.4}}});
+
+    LinkSetTestMap link_set_10_ao_name(
+        {{"marker_set_100_ao_name", marker_set_100_ao_name},
+         {"marker_set_101_ao_name", marker_set_101_ao_name}});
+
+    MarkerSetTestMap marker_set_110_ao_name(
+        {{"003", Mn::Vector3{114.3, 15.4, 16.5}},
+         {"002", Mn::Vector3{113.3, 14.4, 15.5}},
+         {"001", Mn::Vector3{112.3, 13.4, 14.5}},
+         {"000", Mn::Vector3{111.3, 12.4, 13.5}}});
+
+    MarkerSetTestMap marker_set_111_ao_name(
+        {{"003", Mn::Vector3{114.4, 15.5, 16.6}},
+         {"002", Mn::Vector3{113.4, 14.5, 15.6}},
+         {"001", Mn::Vector3{112.4, 13.5, 14.6}},
+         {"000", Mn::Vector3{111.4, 12.5, 13.6}}});
+
+    LinkSetTestMap link_set_11_ao_name(
+        {{"marker_set_110_ao_name", marker_set_110_ao_name},
+         {"marker_set_110_ao_name", marker_set_110_ao_name}});
+
+    TaskSetTestMap task_set_1_ao_name(
+        {{"link_set_10_ao_name", link_set_10_ao_name},
+         {"link_set_11_ao_name", link_set_11_ao_name}});
+
+    AllMarkerSetsTestMap markerSetMap(
+        {{"task_set_0_ao_name", task_set_0_ao_name},
+         {"task_set_1_ao_name", task_set_1_ao_name}});
+
+    testMarkerSetsConfigVals(artObjAttr->getMarkerSetsConfiguration(),
+                             markerSetMap);
+  }
+
   // remove json-string built attributes added for test
   testRemoveAttributesBuiltByJSONString(artObjAttributesManager_,
                                         artObjAttr->getHandle());
@@ -1555,6 +2032,110 @@ void AttributesConfigsTest::testArticulatedObjectJSONLoad() {
   "link_order" : "tree_traversal",
   "render_mode": "skin",
   "shader_type" : "pbr",
+  "marker_sets" : {
+      "task_set_0_ao_name" : {
+          "link_set_00_ao_name" : {
+              "marker_set_000_ao_name" : {
+                "markers" : [
+                    [11.1, 2.2, 3.3],
+                    [12.1, 3.2, 4.3],
+                    [13.1, 4.2, 5.3],
+                    [14.1, 5.2, 6.3]
+                  ]
+              },
+              "marker_set_001_ao_name" : {
+                "markers" : {
+                    "0":[11.2, 2.3, 3.4],
+                    "1":[12.2, 3.3, 4.4],
+                    "2":[13.2, 4.3, 5.4],
+                    "3":[14.2, 5.3, 6.4]
+                }
+              }
+          },
+          "link_set_01_ao_name" : {
+              "marker_set_010_ao_name" : {
+                "markers" : {
+                    "0":[11.3, 2.4, 3.5],
+                    "1":[12.3, 3.4, 4.5],
+                    "2":[13.3, 4.4, 5.5],
+                    "3":[14.3, 5.4, 6.5]
+                }
+              },
+              "marker_set_011_ao_name" : {
+                "markers" : [
+                    [11.4, 2.5, 3.6],
+                    [12.4, 3.5, 4.6],
+                    [13.4, 4.5, 5.6],
+                    [14.4, 5.5, 6.6]
+                  ]
+              }
+          },
+          "link_set_02_ao_name" : {
+              "marker_set_020_ao_name" : {
+                "markers" : {
+                    "0":[21.3, 2.4, 3.5],
+                    "1":[22.3, 3.4, 4.5],
+                    "2":[23.3, 4.4, 5.5],
+                    "3":[24.3, 5.4, 6.5]
+                }
+              },
+              "marker_set_021_ao_name" : {
+                "markers" : [
+                    [21.4, 2.5, 3.6],
+                    [22.4, 3.5, 4.6],
+                    [23.4, 4.5, 5.6],
+                    [24.4, 5.5, 6.6]
+                  ]
+              },
+              "marker_set_022_ao_name" : {
+                "markers" : [
+                    [221.4, 2.5, 3.6],
+                    [222.4, 3.5, 4.6],
+                    [223.4, 4.5, 5.6],
+                    [224.4, 5.5, 6.6]
+                  ]
+              }
+          }
+      },
+      "task_set_1_ao_name" : {
+          "link_set_10_ao_name" : {
+              "marker_set_100_ao_name" : {
+                "markers" : [
+                    [111.1, 12.2, 13.3],
+                    [112.1, 13.2, 14.3],
+                    [113.1, 14.2, 15.3],
+                    [114.1, 15.2, 16.3]
+                  ]
+              },
+              "marker_set_101_ao_name" : {
+                "markers" : {
+                    "0":[111.2, 12.3, 13.4],
+                    "1":[112.2, 13.3, 14.4],
+                    "2":[113.2, 14.3, 15.4],
+                    "3":[114.2, 15.3, 16.4]
+                }
+              }
+          },
+          "link_set_11_ao_name" : {
+              "marker_set_110_ao_name" : {
+                "markers" : {
+                    "0":[111.3, 12.4, 13.5],
+                    "1":[112.3, 13.4, 14.5],
+                    "2":[113.3, 14.4, 15.5],
+                    "3":[114.3, 15.4, 16.5]
+                }
+              },
+              "marker_set_111_ao_name" : {
+                "markers" : [
+                    [111.4, 12.5, 13.6],
+                    [112.4, 13.5, 14.6],
+                    [113.4, 14.5, 15.6],
+                    [114.4, 15.5, 16.6]
+                  ]
+              }
+          }
+      }
+  },
   "user_defined" : {
       "user_str_array" : ["test_00", "test_01", "test_02", "test_03", "test_04"],
       "user_string" : "articulated object defined string",
@@ -1578,8 +2159,8 @@ void AttributesConfigsTest::testArticulatedObjectJSONLoad() {
   CORRADE_VERIFY(artObjAttr);
 
   // now need to change urdf filename and render asset file name to make sure
-  // they are legal so the test can proceed (needs to be actual existing file so
-  // it can be regsitered)
+  // they are legal so the test can proceed (needs to be actual existing file
+  // so it can be regsitered)
   const std::string aoURDFFlle =
       Cr::Utility::Path::join(TEST_ASSETS, "urdf/prim_chain.urdf");
   const std::string aoRenderAssetName =
