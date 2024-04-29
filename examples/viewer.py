@@ -1698,89 +1698,143 @@ class HabitatSimInteractiveViewer(Application):
         print(
             f"Marker : Mouse click object : {hit_info.object_id} : Point : {hit_info.point} "
         )
-
+        # TODO these values need to be modifiable
+        task_set_name = "faucets"
+        marker_set_name = "faucet_000"
         if obj is None:
-            if obj is not None:
-                pass
             print(
                 f"Currently can't add a marker to the stage : ID : ({hit_info.object_id})."
             )
-
+            # TODO get stage's marker_sets properly
+            obj_marker_sets = None
+            obj_handle = "stage"
+            link_ix = -1
+            link_name = "root"
+            # TODO need to support stage properly including root transformation
+            local_hit_point = hit_info.point
         else:
-            # obj_marker_sets = obj.get
+            # get a reference to the object/ao 's markerSets
+            obj_marker_sets = obj.marker_sets
+            obj_handle = obj.handle
             if (
                 isinstance(obj, physics.ManagedArticulatedObject)
                 and obj.object_id != hit_info.object_id
             ):
+                obj_type = "articulated object"
                 # this is an ArticulatedLink, so we can add markers'
                 link_ix = obj.link_object_ids[hit_info.object_id]
-                link_node = obj.get_link_scene_node(link_ix)
-                local_hit_point = link_node.transformation.inverted().transform_point(
-                    hit_info.point
-                )
+                link_name = obj.get_link_name(link_ix)
                 local_hit_point_list = obj.transform_world_pts_to_local(
                     [hit_info.point], link_ix
                 )
-                local_hit_point_tmp = local_hit_point_list[0]
-                print(
-                    f"Marker on AO {obj.handle} link Idx : {link_ix} : world point : {hit_info.point} orig local_hit_point : {local_hit_point} my local_hit_point {local_hit_point_tmp}"
-                )
+                local_hit_point = local_hit_point_list[0]
 
-                if self.marker_sets is not None:
-                    if obj.handle not in self.marker_sets:
-                        self.marker_sets[obj.handle] = {}
-                    if link_ix not in self.marker_sets[obj.handle]:
-                        self.marker_sets[obj.handle][link_ix] = {}
-                    existing_set_names = list(
-                        self.marker_sets[obj.handle][link_ix].keys()
+            else:
+                obj_type = "rigid object"
+                # this is an ArticulatedLink, so we can add markers'
+                link_ix = -1
+                link_name = "root"
+                local_hit_point_list = obj.transform_world_pts_to_local(
+                    [hit_info.point], 0
+                )
+                local_hit_point = local_hit_point_list[0]
+
+            print(
+                f"Marker on this {obj_type} : {obj_handle} link Idx : {link_ix} : link name : {link_name} world point : {hit_info.point} local_hit_point : {local_hit_point}"
+            )
+
+            if obj_marker_sets is not None:
+                # add marker if left button clicked
+                if is_left_btn:
+                    # get points for current task_set ("faucets"), link_name, marker_set_name ("faucet_000")
+                    curr_markers = obj_marker_sets.get_task_link_markerset_points(
+                        task_set_name, link_name, marker_set_name
                     )
-                    selected_set_name = None
-                    if self.selected_marker_set_index >= len(existing_set_names):
-                        self.selected_marker_set_index = len(existing_set_names)
-                        selected_set_name = f"handle_{self.selected_marker_set_index}"
-                    else:
-                        selected_set_name = existing_set_names[
-                            self.selected_marker_set_index
-                        ]
-                    if not is_left_btn and selected_set_name in existing_set_names:
-                        # remove instead of add
+                    # add point to list
+                    curr_markers.append(local_hit_point)
+                    # save list
+                    obj_marker_sets.set_task_link_markerset_points(
+                        task_set_name, link_name, marker_set_name, curr_markers
+                    )
+                else:
+                    # right click is remove
+                    if (
+                        obj_marker_sets.get_taskset(task_set_name)
+                        .get_linkset(link_name)
+                        .get_markerset(marker_set_name)
+                        .num_points
+                        > 0
+                    ):
+                        # Non-empty markerset so find closest point to target and delete
+                        curr_markers = obj_marker_sets.get_task_link_markerset_points(
+                            task_set_name, link_name, marker_set_name
+                        )
+
+                        # go through every point to find closet point
                         closest_marker_index = None
-                        closest_marker_dist = 9999
-                        for m_ix in range(
-                            len(
-                                self.marker_sets[obj.handle][link_ix][selected_set_name]
-                            )
-                        ):
-                            m_dist = (
-                                local_hit_point
-                                - self.marker_sets[obj.handle][link_ix][
-                                    selected_set_name
-                                ][m_ix]
-                            ).length()
+                        closest_marker_dist = 999999
+                        for m_idx in range(len(curr_markers)):
+                            m_dist = (local_hit_point - curr_markers[m_idx]).length()
                             if m_dist < closest_marker_dist:
                                 closest_marker_dist = m_dist
-                                closest_marker_index = m_ix
+                                closest_marker_index = m_idx
                         if closest_marker_index is not None:
-                            del self.marker_sets[obj.handle][link_ix][
-                                selected_set_name
-                            ][closest_marker_index]
-                    elif is_left_btn:
-                        # add a point
-                        if (
-                            selected_set_name
-                            not in self.marker_sets[obj.handle][link_ix]
-                        ):
-                            self.marker_sets[obj.handle][link_ix][
-                                selected_set_name
-                            ] = []
-                        self.marker_sets[obj.handle][link_ix][selected_set_name].append(
-                            local_hit_point
+                            del curr_markers[closest_marker_index]
+                        # save new list
+                        obj_marker_sets.set_task_link_markerset_points(
+                            task_set_name, link_name, marker_set_name, curr_markers
                         )
-            else:
-                # Object is a rigid object
-                print(
-                    f"Try to add marker to rigid object : ID : ({hit_info.object_id})."
-                )
+
+            # if self.marker_sets is not None:
+            #     if obj.handle not in self.marker_sets:
+            #         self.marker_sets[obj.handle] = {}
+            #     if link_ix not in self.marker_sets[obj.handle]:
+            #         self.marker_sets[obj.handle][link_ix] = {}
+            #     existing_set_names = list(
+            #         self.marker_sets[obj.handle][link_ix].keys()
+            #     )
+            #     selected_set_name = None
+            #     if self.selected_marker_set_index >= len(existing_set_names):
+            #         self.selected_marker_set_index = len(existing_set_names)
+            #         selected_set_name = f"handle_{self.selected_marker_set_index}"
+            #     else:
+            #         selected_set_name = existing_set_names[
+            #             self.selected_marker_set_index
+            #         ]
+            #     if not is_left_btn and selected_set_name in existing_set_names:
+            #         # remove instead of add
+            #         closest_marker_index = None
+            #         closest_marker_dist = 9999
+            #         for m_ix in range(
+            #             len(
+            #                 self.marker_sets[obj.handle][link_ix][selected_set_name]
+            #             )
+            #         ):
+            #             m_dist = (
+            #                 local_hit_point
+            #                 - self.marker_sets[obj.handle][link_ix][
+            #                     selected_set_name
+            #                 ][m_ix]
+            #             ).length()
+            #             if m_dist < closest_marker_dist:
+            #                 closest_marker_dist = m_dist
+            #                 closest_marker_index = m_ix
+            #         if closest_marker_index is not None:
+            #             del self.marker_sets[obj.handle][link_ix][
+            #                 selected_set_name
+            #             ][closest_marker_index]
+            #     elif is_left_btn:
+            #         # add a point
+            #         if (
+            #             selected_set_name
+            #             not in self.marker_sets[obj.handle][link_ix]
+            #         ):
+            #             self.marker_sets[obj.handle][link_ix][
+            #                 selected_set_name
+            #             ] = []
+            #         self.marker_sets[obj.handle][link_ix][selected_set_name].append(
+            #             local_hit_point
+            #         )
 
     def mouse_move_event(self, event: Application.MouseMoveEvent) -> None:
         """
