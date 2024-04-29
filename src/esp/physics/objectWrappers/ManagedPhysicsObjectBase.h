@@ -175,7 +175,7 @@ class AbstractManagedPhysicsObject
       const std::vector<Mn::Vector3>& points,
       int linkID) const {
     if (auto sp = this->getObjectReference()) {
-      sp->transformLocalPointsToWorld(points, linkID);
+      return sp->transformLocalPointsToWorld(points, linkID);
     }
     return {};
   }
@@ -192,7 +192,7 @@ class AbstractManagedPhysicsObject
       const std::vector<Mn::Vector3>& points,
       int linkID) const {
     if (auto sp = this->getObjectReference()) {
-      sp->transformWorldPointsToLocal(points, linkID);
+      return sp->transformWorldPointsToLocal(points, linkID);
     }
     return {};
   }
