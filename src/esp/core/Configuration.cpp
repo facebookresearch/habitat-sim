@@ -648,7 +648,7 @@ template <>
 std::shared_ptr<Configuration> Configuration::editSubconfig<Configuration>(
     const std::string& name) {
   // retrieve existing (or create new) subgroup, with passed name
-  return addOrEditSubgroup(name).first->second;
+  return addOrEditSubgroup<Configuration>(name).first->second;
 }
 
 template <>
@@ -675,7 +675,7 @@ int Configuration::rekeyAllValues() {
 
 int Configuration::rekeySubconfigValues(const std::string& subconfigKey) {
   std::pair<ConfigMapType::iterator, bool> rekeySubconfigEntry =
-      addOrEditSubgroup(subconfigKey);
+      addOrEditSubgroup<Configuration>(subconfigKey);
   // check if subconfig existed already - result from addOrEditSubgroup would
   // be false if add failed.
   if (rekeySubconfigEntry.second) {
