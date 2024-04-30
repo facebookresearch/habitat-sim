@@ -284,6 +284,7 @@ class HabitatSimInteractiveViewer(Application):
 
         # mouse raycast visualization
         self.mouse_cast_results = None
+        self.mouse_cast_has_hits = False
         # last clicked or None for stage
         self.selected_object = None
         self.selected_rec = None
@@ -830,7 +831,7 @@ class HabitatSimInteractiveViewer(Application):
                         dblr.pop_transform()
         # mouse raycast circle
         white = mn.Color4(mn.Vector3(1.0), 1.0)
-        if self.mouse_cast_results is not None and self.mouse_cast_results.has_hits():
+        if self.mouse_cast_has_hits:
             self.sim.get_debug_line_render().draw_circle(
                 translation=self.mouse_cast_results.hits[0].point,
                 radius=0.005,
@@ -1625,7 +1626,11 @@ class HabitatSimInteractiveViewer(Application):
     def calc_mouse_cast_results(self, screen_location: mn.Vector3) -> None:
         render_camera = self.render_camera.render_camera
         ray = render_camera.unproject(self.get_mouse_position(screen_location))
-        self.mouse_cast_results = self.sim.cast_ray(ray=ray)
+        mouse_cast_results = self.sim.cast_ray(ray=ray)
+        self.mouse_cast_has_hits = (
+            mouse_cast_results is not None and mouse_cast_results.has_hits()
+        )
+        self.mouse_cast_results = mouse_cast_results
 
     def mouse_grab_handler(self, is_right_btn: bool):
         ao_link = -1
@@ -1686,9 +1691,6 @@ class HabitatSimInteractiveViewer(Application):
                 grip_depth,
                 self.sim,
             )
-
-    def place_marker_in_obj_marker_sets(self):
-        pass
 
     def place_marker_at_hit_location(self, is_left_btn):
         hit_info = self.mouse_cast_results.hits[0]
@@ -1757,20 +1759,15 @@ class HabitatSimInteractiveViewer(Application):
                         task_set_name, link_name, marker_set_name, curr_markers
                     )
                 else:
-                    # right click is remove
-                    if (
-                        obj_marker_sets.get_taskset(task_set_name)
-                        .get_linkset(link_name)
-                        .get_markerset(marker_set_name)
-                        .num_points
-                        > 0
+                    # right click is remove marker
+                    if obj_marker_sets.has_task_link_markerset(
+                        task_set_name, link_name, marker_set_name
                     ):
                         # Non-empty markerset so find closest point to target and delete
                         curr_markers = obj_marker_sets.get_task_link_markerset_points(
                             task_set_name, link_name, marker_set_name
                         )
-
-                        # go through every point to find closet point
+                        # go through every point to find closest
                         closest_marker_index = None
                         closest_marker_dist = 999999
                         for m_idx in range(len(curr_markers)):
@@ -1783,6 +1780,10 @@ class HabitatSimInteractiveViewer(Application):
                         # save new list
                         obj_marker_sets.set_task_link_markerset_points(
                             task_set_name, link_name, marker_set_name, curr_markers
+                        )
+                    else:
+                        print(
+                            f"There are no points in MarkerSet : {marker_set_name}, LinkSet :{link_name}, TaskSet :{task_set_name} so removal aborted."
                         )
 
             # if self.marker_sets is not None:
@@ -1883,13 +1884,12 @@ class HabitatSimInteractiveViewer(Application):
 
         # if interactive mode is True -> GRAB MODE
         if self.mouse_interaction == MouseMode.GRAB and physics_enabled:
-            if self.mouse_cast_results.has_hits():
+            if self.mouse_cast_has_hits:
                 self.mouse_grab_handler(event.button == button.RIGHT)
         elif (
             self.mouse_interaction == MouseMode.LOOK
             and physics_enabled
-            and self.mouse_cast_results is not None
-            and self.mouse_cast_results.has_hits()
+            and self.mouse_cast_has_hits
             and event.button == button.RIGHT
         ):
             self.selected_object = None
@@ -1968,8 +1968,7 @@ class HabitatSimInteractiveViewer(Application):
         elif (
             self.mouse_interaction == MouseMode.MARKER
             and physics_enabled
-            and self.mouse_cast_results is not None
-            and self.mouse_cast_results.has_hits()
+            and self.mouse_cast_has_hits
         ):
             self.place_marker_at_hit_location(event.button == button.LEFT)
 
