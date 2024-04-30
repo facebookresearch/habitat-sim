@@ -734,6 +734,7 @@ class HabitatSimInteractiveViewer(Application):
                         )
             self.marker_sets_per_obj[obj_handle] = obj_marker_sets
             self.marker_sets_changed[obj_handle] = True
+            self.save_markerset_attributes(obj)
 
     def draw_marker_sets_debug(self, debug_line_render: Any) -> None:
         """
@@ -1422,6 +1423,30 @@ class HabitatSimInteractiveViewer(Application):
                 self.rec_filter_data[filter_type].remove(filtered_rec_name)
         self.rec_filter_data[filter_status].append(filtered_rec_name)
 
+    def save_markerset_attributes(self, obj) -> None:
+        init_attrs = obj.creation_attributes
+        if isinstance(obj, physics.ManagedArticulatedObject):
+            # save AO config
+            attrMgr = self.sim.metadata_mediator.ao_template_manager
+        else:
+            # save obj config
+            attrMgr = self.sim.metadata_mediator.object_template_manager
+        # put edited subconfig into initial attributes
+        markersets = init_attrs.get_marker_sets()
+        # manually copying because the markersets type is getting lost from markersets
+        edited_marker_sets = self.marker_sets_per_obj[obj.handle]
+        for subconfig_key in edited_marker_sets.get_subconfig_keys():
+            markersets.save_subconfig(
+                subconfig_key, edited_marker_sets.get_subconfig(subconfig_key)
+            )
+
+        # reregister template
+        attrMgr.register_template(init_attrs, init_attrs.handle, True)
+        # save to original location - uses saved location in attributes
+        attrMgr.save_template_by_handle(init_attrs.handle, True)
+        # clear out dirty flag
+        self.marker_sets_changed[obj.handle] = False
+
     def key_press_event(self, event: Application.KeyEvent) -> None:
         """
         Handles `Application.KeyEvent` on a key press by performing the corresponding functions.
@@ -1509,44 +1534,12 @@ class HabitatSimInteractiveViewer(Application):
             self.semantic_region_debug_draw_state = new_state_idx
 
         elif key == pressed.M:
-            if (
-                shift_pressed
-                and self.selected_object is not None
-                and (
-                    isinstance(
-                        self.selected_object,
-                        (physics.ManagedArticulatedObject, physics.ManagedRigidObject),
-                    )
-                )
-                and self.selected_object.handle in self.marker_sets_per_obj
-                # marker set has changed
-                and self.marker_sets_changed[self.selected_object.handle]
-            ):
+            if shift_pressed:
                 # save config for object handle's markersets
-                obj = self.selected_object
-                init_attrs = obj.creation_attributes
-                if isinstance(obj, physics.ManagedArticulatedObject):
-                    # save AO config
-                    attrMgr = self.sim.metadata_mediator.ao_template_manager
-                else:
-                    # save obj config
-                    attrMgr = self.sim.metadata_mediator.object_template_manager
-                # put edited subconfig into initial attributes
-                markersets = init_attrs.get_marker_sets()
-                # manually copying because the markersets type is getting lost from markersets
-                edited_marker_sets = self.marker_sets_per_obj[obj.handle]
-                for subconfig_key in edited_marker_sets.get_subconfig_keys():
-                    markersets.save_subconfig(
-                        subconfig_key, edited_marker_sets.get_subconfig(subconfig_key)
-                    )
-
-                # reregister template
-                attrMgr.register_template(init_attrs, init_attrs.handle, True)
-                # save to original location - uses saved location in attributes
-                attrMgr.save_template_by_handle(init_attrs.handle, True)
-                # clear out dirty flag
-                self.marker_sets_changed[self.selected_object.handle] = False
-
+                for obj_handle, is_dirty in self.marker_sets_changed.items:
+                    if is_dirty:
+                        obj = sutils.get_obj_from_handle(obj_handle)
+                        self.save_markerset_attributes(obj)
             else:
                 self.cycle_mouse_mode()
                 logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
