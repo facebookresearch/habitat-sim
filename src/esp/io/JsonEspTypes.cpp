@@ -36,8 +36,6 @@ JsonGenericValue toJsonValue(const gfx::replay::Keyframe& keyframe,
     io::addMember(obj, "creations", creationsArray, allocator);
   }
 
-  io::addMember(obj, "metadata", keyframe.metadata, allocator);
-
   io::addMember(obj, "deletions", keyframe.deletions, allocator);
 
   if (!keyframe.stateUpdates.empty()) {
@@ -49,6 +47,17 @@ JsonGenericValue toJsonValue(const gfx::replay::Keyframe& keyframe,
       stateUpdatesArray.PushBack(stateObj, allocator);
     }
     io::addMember(obj, "stateUpdates", stateUpdatesArray, allocator);
+  }
+
+  if (!keyframe.metadata.empty()) {
+    JsonGenericValue metadataArray(rapidjson::kArrayType);
+    for (const auto& pair : keyframe.metadata) {
+      JsonGenericValue metadataObj(rapidjson::kObjectType);
+      io::addMember(metadataObj, "instanceKey", pair.first, allocator);
+      io::addMember(metadataObj, "metadata", pair.second, allocator);
+      metadataArray.PushBack(metadataObj, allocator);
+    }
+    io::addMember(obj, "metadata", metadataArray, allocator);
   }
 
   if (!keyframe.rigUpdates.empty()) {
@@ -118,8 +127,6 @@ bool fromJsonValue(const JsonGenericValue& obj,
     }
   }
 
-  io::readMember(obj, "metadata", keyframe.metadata);
-
   io::readMember(obj, "deletions", keyframe.deletions);
 
   itr = obj.FindMember("stateUpdates");
@@ -133,6 +140,20 @@ bool fromJsonValue(const JsonGenericValue& obj,
       io::readMember(stateObj, "instanceKey", pair.first);
       io::readMember(stateObj, "state", pair.second);
       keyframe.stateUpdates.emplace_back(std::move(pair));
+    }
+  }
+
+  itr = obj.FindMember("metadata");
+  if (itr != obj.MemberEnd()) {
+    const JsonGenericValue& metadataArray = itr->value;
+    keyframe.metadata.reserve(metadataArray.Size());
+    for (const auto& metadataObj : metadataArray.GetArray()) {
+      std::pair<gfx::replay::RenderAssetInstanceKey,
+                gfx::replay::InstanceMetadata>
+          pair;
+      io::readMember(metadataObj, "instanceKey", pair.first);
+      io::readMember(metadataObj, "metadata", pair.second);
+      keyframe.metadata.emplace_back(std::move(pair));
     }
   }
 
