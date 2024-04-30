@@ -229,6 +229,21 @@ class TaskSet : public esp::core::config::Configuration {
   }
 
   /**
+   * @brief Whether the given @p markerSetName and @p linkSetName exist in this
+   * TaskSet.
+   *
+   * @param linkSetName The desired LinkSet' name.
+   * @return whether the named MarkerSet exists within the named LinkSet.
+   */
+  bool hasLinkMarkerSet(const std::string& linkSetName,
+                        const std::string& markerSetName) const {
+    if (hasSubconfig(linkSetName)) {
+      return getLinkSetView(linkSetName)->hasMarkerSet(markerSetName);
+    }
+    return false;
+  }
+
+  /**
    * @brief Retrieve a listing of all the LinkSet handles in this
    * collection.
    */
@@ -403,7 +418,46 @@ class MarkerSets : public esp::core::config::Configuration {
   }
 
   /**
-   * @brief Retrieve a listing of all the TaskSet handles in this collection.
+   * @brief Whether the given @p linkSetName and @p taskSetName exist in this
+   * collection.
+   *
+   * @param taskSetName The desired TaskSet's name.
+   * @param linkSetName The desired LinkSet's name, to be found in the given
+   * TaskSet.
+   * @return wwhether the names are found as expected.
+   */
+  bool hasTaskLinkSet(const std::string& taskSetName,
+                      const std::string& linkSetName) const {
+    if (hasSubconfig(taskSetName)) {
+      return getTaskSetView(taskSetName)->hasLinkSet(linkSetName);
+    }
+    return false;
+  }
+
+  /**
+   * @brief Whether the given hierarchy of @p markerSetName, @p linkSetName and
+   * @p taskSetName all exist in this collection.
+   *
+   * @param taskSetName The desired TaskSet's name.
+   * @param linkSetName The desired LinkSet's name, to be found in the given
+   * TaskSet.
+   * @param markerSetName The desired MarkerSet's name, to be found in the given
+   * LinkSet.
+   * @return wwhether the names are found as expected.
+   */
+  bool hasTaskLinkMarkerSet(const std::string& taskSetName,
+                            const std::string& linkSetName,
+                            const std::string& markerSetName) const {
+    if (hasSubconfig(taskSetName)) {
+      return getTaskSetView(taskSetName)
+          ->hasLinkMarkerSet(linkSetName, markerSetName);
+    }
+    return false;
+  }
+
+  /**
+   * @brief Retrieve a listing of all the TaskSet handles in this
+   * collection.
    */
   std::vector<std::string> getAllTaskSetNames() const {
     return getSubconfigKeys(true);
@@ -482,8 +536,8 @@ class MarkerSets : public esp::core::config::Configuration {
    * @brief Sets all the LinkSet's MarkerSets' points in the specified TaskSet
    * to the given marker values specified in the map.
    * @param taskSetName the name of the TaskSet
-   * @param markerMap an unordered map keyed by LinkSet name of unordered maps,
-   * each keyed by MarkerSet name of Markers as a vector of 3d points.
+   * @param markerMap an unordered map keyed by LinkSet name of unordered
+   * maps, each keyed by MarkerSet name of Markers as a vector of 3d points.
    */
   void setTaskSetPoints(
       const std::string& taskSetName,
@@ -497,9 +551,9 @@ class MarkerSets : public esp::core::config::Configuration {
   /**
    * @brief Set all the marker points across every TaskSet using the values in
    * the passed map.
-   * @param markerMap an unordered map keyed by TaskSet name, of unordered maps,
-   * each keyed by LinkSet name, of unordered maps, each keyed by MarkerSet name
-   * of Markers as a vector of 3d points.
+   * @param markerMap an unordered map keyed by TaskSet name, of unordered
+   * maps, each keyed by LinkSet name, of unordered maps, each keyed by
+   * MarkerSet name of Markers as a vector of 3d points.
    */
   void setAllMarkerPoints(
       const std::unordered_map<
@@ -536,7 +590,8 @@ class MarkerSets : public esp::core::config::Configuration {
    * @param taskSetName the name of the TaskSet
    * @param linkSetName the name of the LinkSet within @p taskSetName
    * @return a map holding all the MarkerSet points within the specified
-   * LinkSet, with MarkerSet name as the key, referncing a vector of 3d points,
+   * LinkSet, with MarkerSet name as the key, referncing a vector of 3d
+   * points,
    */
 
   std::unordered_map<std::string, std::vector<Mn::Vector3>>
