@@ -244,7 +244,6 @@ class HabitatSimInteractiveViewer(Application):
         # cache most recently loaded URDF file for quick-reload
         self.cached_urdf = ""
 
-        self.debug_random_colors: List[mn.Color4] = []
         self.selected_marker_set_index = 0
 
         # Cycle mouse utilities
@@ -296,6 +295,10 @@ class HabitatSimInteractiveViewer(Application):
 
         # load markersets for every object and ao into a cache
         self.marker_sets_per_obj = self.load_all_markersets(mm)
+        self.marker_sets_changed = {}
+        self.marker_debug_random_colors: List[mn.Color4] = []
+        for key in self.marker_sets_per_obj:
+            self.marker_sets_changed[key] = False
 
         # load appropriate filter file for scene
         self.load_scene_filter_file()
@@ -729,6 +732,7 @@ class HabitatSimInteractiveViewer(Application):
                             f"There are no points in MarkerSet : {marker_set_name}, LinkSet :{link_name}, TaskSet :{task_set_name} so removal aborted."
                         )
             self.marker_sets_per_obj[obj_handle] = obj_marker_sets
+            self.marker_sets_changed[obj_handle] = True
 
     def draw_marker_sets_debug(self, debug_line_render: Any) -> None:
         """
@@ -740,17 +744,17 @@ class HabitatSimInteractiveViewer(Application):
             marker_points_dict = obj_markerset.get_all_marker_points()
             if obj_markerset.num_tasksets > 0:
                 obj = sutils.get_obj_from_handle(self.sim, obj_handle)
-                for _task_name, task_set_dict in marker_points_dict.items():
+                for task_set_dict in marker_points_dict.values():
                     for link_name, link_set_dict in task_set_dict.items():
                         if link_name == "root":
                             link_id = -1
                         else:
                             link_id = obj.get_link_id_from_name(link_name)
-                        while len(self.debug_random_colors) <= len(link_set_dict):
-                            self.debug_random_colors.append(
+                        while len(self.marker_debug_random_colors) <= count:
+                            self.marker_debug_random_colors.append(
                                 mn.Color4(mn.Vector3(np.random.random(3)))
                             )
-                        marker_set_color = self.debug_random_colors[count]
+                        marker_set_color = self.marker_debug_random_colors[count]
                         count += 1
                         for _markerset_name, marker_pts_list in link_set_dict.items():
                             # print(f"markerset_name : {markerset_name} : marker_pts_list : {marker_pts_list} type : {type(marker_pts_list)} : len : {len(marker_pts_list)}")
@@ -765,24 +769,6 @@ class HabitatSimInteractiveViewer(Application):
                                     color=marker_set_color,
                                     normal=camera_position - global_marker_pos,
                                 )
-                # for task_set in self.marker_sets[ao_handle]:
-                #     for marker_set_name in self.marker_sets[ao_handle][link_id]:
-                #         if len(self.debug_random_colors) <= marker_set_counter:
-                #             self.debug_random_colors.append(
-                #                 mn.Color4(mn.Vector3(np.random.random(3)))
-                #             )
-                #         marker_set_color = self.debug_random_colors[marker_set_counter]
-                #         marker_set_counter += 1
-                #         global_marker_set = sutils.get_global_link_marker_set(
-                #             ao, link_id, marker_set_name, self.marker_sets[ao_handle]
-                #         )
-                #         for global_marker_pos in global_marker_set:
-                #             debug_line_render.draw_circle(
-                #                 translation=global_marker_pos,
-                #                 radius=0.005,
-                #                 color=marker_set_color,
-                #                 normal=camera_position - global_marker_pos,
-                #             )
 
     def draw_region_debug(self, debug_line_render: Any) -> None:
         """
@@ -1514,14 +1500,34 @@ class HabitatSimInteractiveViewer(Application):
                     )
                 )
                 and self.selected_object.handle in self.marker_sets_per_obj
+                # marker set has changed
+                and self.marker_sets_changed[self.selected_object.handle]
             ):
-                # save object's marker sets by querying attributes,
-                # setting markersets in attributes, and saving attributes
-                sutils.write_ao_marker_sets(
-                    self.selected_object, self.marker_sets[self.selected_object.handle]
-                )
-                sutils.write_ao_marker_set_to_template(self.sim, self.selected_object)
-                print(f"Saved config for {self.selected_object.handle}.")
+                # save config for object handle's markersets
+                obj = self.selected_object
+                init_attrs = obj.creation_attributes
+                if isinstance(obj, physics.ManagedArticulatedObject):
+                    # save AO config
+                    attrMgr = self.sim.metadata_mediator.ao_template_manager
+                else:
+                    # save obj config
+                    attrMgr = self.sim.metadata_mediator.object_template_manager
+                # put edited subconfig into initial attributes
+                markersets = init_attrs.get_marker_sets()
+                # manually copying because the markersets type is getting lost from markersets
+                edited_marker_sets = self.marker_sets_per_obj[obj.handle]
+                for subconfig_key in edited_marker_sets.get_subconfig_keys():
+                    markersets.save_subconfig(
+                        subconfig_key, edited_marker_sets.get_subconfig(subconfig_key)
+                    )
+
+                # reregister template
+                attrMgr.register_template(init_attrs, init_attrs.handle, True)
+                # save to original location - uses saved location in attributes
+                attrMgr.save_template_by_handle(init_attrs.handle, True)
+                # clear out dirty flag
+                self.marker_sets_changed[self.selected_object.handle] = False
+
             else:
                 self.cycle_mouse_mode()
                 logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
