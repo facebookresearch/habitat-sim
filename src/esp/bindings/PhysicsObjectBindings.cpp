@@ -206,6 +206,7 @@ void declareBasePhysicsObjectWrapper(py::module& m,
               .c_str())
       .def_property_readonly(
           "marker_sets", &PhysObjWrapper::getMarkerSets,
+          py::return_value_policy::reference_internal,
           ("The MarkerSets defined for " + objType + " this object.").c_str())
 
       .def_property_readonly(

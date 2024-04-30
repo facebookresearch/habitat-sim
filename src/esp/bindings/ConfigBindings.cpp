@@ -222,7 +222,8 @@ void initConfigBindings(py::module& m) {
           R"(Returns true if specified key references an existing subconfiguration within this configuration.)")
       .def(
           "remove_subconfig", &Configuration::removeSubconfig,
-          R"(Removes and returns subconfiguration corresponding to passed key, if found. Gives warning otherwise.)");
+          R"(Removes and returns subconfiguration corresponding to passed key, if found. Gives warning otherwise.)")
+      .def("__repr__", &Configuration::getAllValsAsString, "new_line"_a = "\n");
 
 }  // initConfigBindings
 

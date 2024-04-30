@@ -236,7 +236,8 @@ void initAttributesBindings(py::module& m) {
 
   // ==== Markersets and subordinate classes ===
 
-  py::class_<MarkerSet, MarkerSet::ptr>(m, "MarkerSet")
+  py::class_<MarkerSet, esp::core::config::Configuration, MarkerSet::ptr>(
+      m, "MarkerSet")
       .def(py::init(&MarkerSet::create<>))
       .def_property_readonly(
           "num_points", &MarkerSet::getNumPoints,
@@ -249,7 +250,8 @@ void initAttributesBindings(py::module& m) {
           R"(Set the marker points for this MarkerSet to be the passed list of 3D points)",
           "markers"_a);
 
-  py::class_<LinkSet, LinkSet::ptr>(m, "LinkSet")
+  py::class_<LinkSet, esp::core::config::Configuration, LinkSet::ptr>(m,
+                                                                      "LinkSet")
       .def(py::init(&LinkSet::create<>))
       .def_property_readonly(
           "num_markersets", &LinkSet::getNumMarkerSets,
@@ -279,7 +281,8 @@ void initAttributesBindings(py::module& m) {
            R"(Get a dictionary holding all the points in this LinkSet, keyed by
            MarkerSet name, referencing lists of the MarkerSet's 3d points)");
 
-  py::class_<TaskSet, TaskSet::ptr>(m, "TaskSet")
+  py::class_<TaskSet, esp::core::config::Configuration, TaskSet::ptr>(m,
+                                                                      "TaskSet")
       .def(py::init(&TaskSet::create<>))
       .def_property_readonly(
           "num_linksets", &TaskSet::getNumLinkSets,
@@ -332,7 +335,8 @@ void initAttributesBindings(py::module& m) {
           of dicts. The format is a dictionary keyed by link name of dictionaries,
           each keyed by MarkerSet name for the particular link with the value being a list
           of the marker points)");
-  py::class_<MarkerSets, MarkerSets::ptr>(m, "MarkerSets")
+  py::class_<MarkerSets, esp::core::config::Configuration, MarkerSets::ptr>(
+      m, "MarkerSets")
       .def(py::init(&MarkerSets::create<>))
       .def_property_readonly(
           "num_tasksets", &MarkerSets::getNumTaskSets,
@@ -419,7 +423,8 @@ void initAttributesBindings(py::module& m) {
       .def(py::init(&ArticulatedObjectAttributes::create<>))
       .def(py::init(&ArticulatedObjectAttributes::create<const std::string&>))
       .def("get_marker_sets",
-           &ArticulatedObjectAttributes::editMarkerSetsConfiguration,
+           static_cast<MarkerSets::ptr (ArticulatedObjectAttributes::*)(void)>(
+               &ArticulatedObjectAttributes::editMarkerSetsConfiguration),
            py::return_value_policy::reference_internal,
            R"(Returns a reference to the marker-sets configuration object for
           this Articulated Object attributes, so that it can be viewed or modified.
@@ -472,7 +477,8 @@ void initAttributesBindings(py::module& m) {
       .def(py::init(&AbstractObjectAttributes::create<const std::string&,
                                                       const std::string&>))
       .def("get_marker_sets",
-           &AbstractObjectAttributes::editMarkerSetsConfiguration,
+           static_cast<MarkerSets::ptr (AbstractObjectAttributes::*)(void)>(
+               &AbstractObjectAttributes::editMarkerSetsConfiguration),
            py::return_value_policy::reference_internal,
            R"(Returns a reference to the marker-sets configuration object for
           constructs built using this template, so that it can be viewed or modified.
