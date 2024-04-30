@@ -287,6 +287,10 @@ void initAttributesBindings(py::module& m) {
       .def("has_linkset", &TaskSet::hasLinkSet,
            R"(Whether or not this TaskSet has a LinkSet with the given name)",
            "linkset_name"_a)
+      .def(
+          "has_link_markerset", &TaskSet::hasLinkMarkerSet,
+          R"(Whether or not this TaskSet has a MarkerSet within a LinkSet with the given names)",
+          "linkset_name"_a, "markerset_dict"_a)
       .def("get_all_linkset_names", &TaskSet::getAllLinkSetNames,
            R"(Get a list of all the LinkSet names within this TaskSet)")
       .def("get_linkset", &TaskSet::editLinkSet,
@@ -294,31 +298,30 @@ void initAttributesBindings(py::module& m) {
             empty if it does not exist)",
            "linkset_name"_a)
       .def(
-          "set_link_markerset_points", &TaskSet::setLinkMarkerSetPoints,
-          R"(Set the marker points for the specified LinkSet's specified MarkerSet
-          to the given list of 3d points)",
-          "linkset_name"_a, "markerset_name"_a, "marker_list"_a)
-      .def(
           "set_linkset_points", &TaskSet::setLinkSetPoints,
           R"(Set the marker points in each of the MarkerSets for the specified LinkSet
           to the given dictionary of 3d points, keyed by the MarkerSet name)",
           "linkset_name"_a, "markerset_dict"_a)
+      .def(
+          "set_link_markerset_points", &TaskSet::setLinkMarkerSetPoints,
+          R"(Set the marker points for the specified LinkSet's specified MarkerSet
+          to the given list of 3d points)",
+          "linkset_name"_a, "markerset_name"_a, "marker_list"_a)
       .def(
           "set_all_points", &TaskSet::setAllMarkerPoints,
           R"(Set the marker points for every MarkerSet of every link in this TaskSet to the values in
           the passed dict of dicts. The format should be dictionary keyed by link name of dictionaries,
           each keyed by MarkerSet name for the particular link with the value being a list of 3d points)",
           "link_markerset_dict"_a)
-
-      .def(
-          "get_link_markerset_points", &TaskSet::getLinkMarkerSetPoints,
-          R"(Get the marker points for the specified LinkSet's specified MarkerSet as a list of 3d points)",
-          "linkset_name"_a, "markerset_name"_a)
       .def(
           "get_linkset_points", &TaskSet::getLinkSetPoints,
           R"(Get the marker points in each of the MarkerSets for the specified LinkSet
           as a dictionary of lists of 3d points, keyed by the LinkSet's MarkerSet name)",
           "linkset_name"_a)
+      .def(
+          "get_link_markerset_points", &TaskSet::getLinkMarkerSetPoints,
+          R"(Get the marker points for the specified LinkSet's specified MarkerSet as a list of 3d points)",
+          "linkset_name"_a, "markerset_name"_a)
       .def(
           "get_all_points", &TaskSet::getAllMarkerPoints,
           R"(Get the marker points for every MarkerSet of every link in this TaskSet as a dict
@@ -333,12 +336,32 @@ void initAttributesBindings(py::module& m) {
       .def("has_taskset", &MarkerSets::hasTaskSet,
            R"(Whether or not a TaskSet with the given name exists)",
            "taskset_name"_a)
+      .def("has_taskset", &MarkerSets::hasTaskLinkSet,
+           R"(Whether or not a LinkSet with the given name within the TaskSet
+          with the given name exists)",
+           "taskset_name"_a, "linkset_name"_a)
+      .def("has_task_link_markerset", &MarkerSets::hasTaskLinkMarkerSet,
+           R"(Whether or not a MarkerSet exists within an existing Linkset in
+          an existing TaskSet with the given names)",
+           "taskset_name"_a, "linkset_name"_a, "markerset_name"_a)
       .def("get_all_taskset_names", &MarkerSets::getAllTaskSetNames,
            R"(Get a list of all the existing TaskSet names)")
       .def("get_taskset", &MarkerSets::editTaskSet,
            R"(Get an editable reference to the specified TaskSet, possibly
             empty if it does not exist)",
            "taskset_name"_a)
+      .def(
+          "set_taskset_points", &MarkerSets::setTaskSetPoints,
+          R"(Set all the marker points in the specified TaskSet to the 3d point values in the
+          passed dict of dicts. The format should be a dictionary keyed by LinkSet name, of
+          dictionaries, each keyed by MarkerSet name and referencing a list of 3d points)",
+          "taskset_name"_a, "link_markerset_dict"_a)
+      .def(
+          "set_task_linkset_points", &MarkerSets::setTaskLinkSetPoints,
+          R"(Set the points in all the MarkerSets of the specified LinkSet, in the
+          specified TaskSet, to the given dictionary, keyed by each MarkerSet's name
+          and referencing a list of 3d points.)",
+          "taskset_name"_a, "linkset_name"_a, "markerset_dict"_a)
       .def(
           "set_task_link_markerset_points",
           &MarkerSets::setTaskLinkMarkerSetPoints,
@@ -347,18 +370,6 @@ void initAttributesBindings(py::module& m) {
           "taskset_name"_a, "linkset_name"_a, "markerset_name"_a,
           "marker_list"_a)
       .def(
-          "set_task_linkset_points", &MarkerSets::setTaskLinkSetPoints,
-          R"(Set the points in all the MarkerSets of the specified LinkSet, in the
-          specified TaskSet, to the given dictionary, keyed by each MarkerSet's name
-          and referencing a list of 3d points.)",
-          "taskset_name"_a, "linkset_name"_a, "markerset_dict"_a)
-      .def(
-          "set_taskset_points", &MarkerSets::setTaskSetPoints,
-          R"(Set all the marker points in the specified TaskSet to the 3d point values in the
-          passed dict of dicts. The format should be a dictionary keyed by LinkSet name, of
-          dictionaries, each keyed by MarkerSet name and referencing a list of 3d points)",
-          "taskset_name"_a, "link_markerset_dict"_a)
-      .def(
           "set_all_points", &MarkerSets::setAllMarkerPoints,
           R"(Set the marker points for every MarkerSet of every LinkSet of every TaskSet present to the values in
           the passed dict of dicts of dicts. The format should be dictionary, keyed by TaskSet name, of dictionaries,
@@ -366,24 +377,23 @@ void initAttributesBindings(py::module& m) {
           of that MarkerSet's marker points)",
           "task_link_markerset_dict"_a)
       .def(
-          "get_task_link_markerset_points",
-          &MarkerSets::getTaskLinkMarkerSetPoints,
-          R"(Get the marker points for the specified TaskSet's specified LinkSet's specified MarkerSet
-           as a list of 3d points)",
-          "taskset_name"_a, "linkset_name"_a, "markerset_name"_a)
+          "get_taskset_points", &MarkerSets::getTaskSetPoints,
+          R"(Get all the marker points in the specified TaskSet as a dict of dicts.
+          The format is a dictionary keyed by LinkSet name, of dictionaries,
+          each keyed by MarkerSet name and referencing a list of 3d points)",
+          "taskset_name"_a)
       .def(
           "get_task_linkset_points", &MarkerSets::getTaskLinkSetPoints,
           R"(Get the points in all the MarkerSets of the specified LinkSet, in the
           specified TaskSet, as a dictionary, keyed by each MarkerSet's name
           and referencing a list of 3d points.)",
           "taskset_name"_a, "linkset_name"_a)
-
       .def(
-          "get_taskset_points", &MarkerSets::getTaskSetPoints,
-          R"(Get all the marker points in the specified TaskSet as a dict of dicts.
-          The format is a dictionary keyed by LinkSet name, of dictionaries,
-          each keyed by MarkerSet name and referencing a list of 3d points)",
-          "taskset_name"_a)
+          "get_task_link_markerset_points",
+          &MarkerSets::getTaskLinkMarkerSetPoints,
+          R"(Get the marker points for the specified TaskSet's specified LinkSet's specified MarkerSet
+           as a list of 3d points)",
+          "taskset_name"_a, "linkset_name"_a, "markerset_name"_a)
       .def(
           "get_all_marker_points", &MarkerSets::getAllMarkerPoints,
           R"(Get the marker points for every MarkerSet of every link of every TaskSet present as a dict
