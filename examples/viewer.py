@@ -296,9 +296,10 @@ class HabitatSimInteractiveViewer(Application):
         # load markersets for every object and ao into a cache
         self.marker_sets_per_obj = self.load_all_markersets(mm)
         self.marker_sets_changed = {}
-        self.marker_debug_random_colors: List[mn.Color4] = []
+        self.marker_debug_random_colors = {}
         for key in self.marker_sets_per_obj:
             self.marker_sets_changed[key] = False
+            self.marker_debug_random_colors[key] = {}
 
         # load appropriate filter file for scene
         self.load_scene_filter_file()
@@ -738,27 +739,45 @@ class HabitatSimInteractiveViewer(Application):
         """
         Draw the global state of all configured marker sets.
         """
-        count = 0
         camera_position = self.render_camera.render_camera.node.absolute_translation
         for obj_handle, obj_markerset in self.marker_sets_per_obj.items():
             marker_points_dict = obj_markerset.get_all_marker_points()
             if obj_markerset.num_tasksets > 0:
                 obj = sutils.get_obj_from_handle(self.sim, obj_handle)
-                for task_set_dict in marker_points_dict.values():
+                for task_name, task_set_dict in marker_points_dict.items():
+                    if task_name not in self.marker_debug_random_colors[obj_handle]:
+                        self.marker_debug_random_colors[obj_handle][task_name] = {}
                     for link_name, link_set_dict in task_set_dict.items():
+                        if (
+                            link_name
+                            not in self.marker_debug_random_colors[obj_handle][
+                                task_name
+                            ]
+                        ):
+                            self.marker_debug_random_colors[obj_handle][task_name][
+                                link_name
+                            ] = {}
                         if link_name == "root":
                             link_id = -1
                         else:
                             link_id = obj.get_link_id_from_name(link_name)
-                        while len(self.marker_debug_random_colors) <= count:
-                            self.marker_debug_random_colors.append(
-                                mn.Color4(mn.Vector3(np.random.random(3)))
-                            )
-                        marker_set_color = self.marker_debug_random_colors[count]
-                        count += 1
-                        for _markerset_name, marker_pts_list in link_set_dict.items():
-                            # print(f"markerset_name : {markerset_name} : marker_pts_list : {marker_pts_list} type : {type(marker_pts_list)} : len : {len(marker_pts_list)}")
 
+                        for markerset_name, marker_pts_list in link_set_dict.items():
+                            # print(f"markerset_name : {markerset_name} : marker_pts_list : {marker_pts_list} type : {type(marker_pts_list)} : len : {len(marker_pts_list)}")
+                            if (
+                                markerset_name
+                                not in self.marker_debug_random_colors[obj_handle][
+                                    task_name
+                                ][link_name]
+                            ):
+                                self.marker_debug_random_colors[obj_handle][task_name][
+                                    link_name
+                                ][markerset_name] = mn.Color4(
+                                    mn.Vector3(np.random.random(3))
+                                )
+                            marker_set_color = self.marker_debug_random_colors[
+                                obj_handle
+                            ][task_name][link_name][markerset_name]
                             global_points = obj.transform_local_pts_to_world(
                                 marker_pts_list, link_id
                             )
