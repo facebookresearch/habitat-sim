@@ -879,7 +879,8 @@ class Configuration {
                   "Configuration : Desired subconfig must be derived from "
                   "core::config::Configuration");
     // retrieve existing (or create new) subgroup, with passed name
-    return std::static_pointer_cast<T>(addOrEditSubgroup(name).first->second);
+    return std::static_pointer_cast<T>(
+        addOrEditSubgroup<T>(name).first->second);
   }
 
   /**
@@ -967,7 +968,7 @@ class Configuration {
     for (const auto& subConfig : src->configMap_) {
       const auto name = subConfig.first;
       // make if DNE and merge src subconfig
-      addOrEditSubgroup(name).first->second->overwriteWithConfig(
+      addOrEditSubgroup<Configuration>(name).first->second->overwriteWithConfig(
           subConfig.second);
     }
   }
@@ -1141,15 +1142,18 @@ class Configuration {
    * Configuration, and a boolean value that denotes whether this is a new
    * Configuration or it existed already.
    */
-
+  template <typename T>
   std::pair<ConfigMapType::iterator, bool> addOrEditSubgroup(
       const std::string& name) {
+    static_assert(std::is_base_of<Configuration, T>::value,
+                  "Configuration : Desired subconfig must be derived from "
+                  "core::config::Configuration");
     // Attempt to insert an empty pointer
-    auto result = configMap_.emplace(name, std::shared_ptr<Configuration>{});
+    auto result = configMap_.emplace(name, std::shared_ptr<T>{});
     // If name not already present (insert succeeded) then add new
     // configuration
     if (result.second) {
-      result.first->second = std::make_shared<Configuration>();
+      result.first->second = std::make_shared<T>();
     }
     return result;
   }
