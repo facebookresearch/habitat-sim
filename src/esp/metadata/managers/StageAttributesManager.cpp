@@ -426,7 +426,8 @@ void StageAttributesManager::setValsFromJSONDoc(
     // if "nav mesh" is specified in stage json set value (override default).
     // navmesh filename might already be fully qualified; if not, might just be
     // file name
-    if (!Corrade::Utility::Path::exists(navmeshFName)) {
+    if (!Corrade::Utility::Path::exists(navmeshFName) &&
+        !navmeshFName.empty()) {
       navmeshFName = Cr::Utility::Path::join(stageLocFileDir, navmeshFName);
     }
     stageAttributes->setNavmeshAssetHandle(navmeshFName);
@@ -438,7 +439,8 @@ void StageAttributesManager::setValsFromJSONDoc(
     // (override default).
     // semanticSceneDescriptor filename might already be fully qualified; if
     // not, might just be file name
-    if (!Corrade::Utility::Path::exists(semanticSceneDescriptor)) {
+    if (!Corrade::Utility::Path::exists(semanticSceneDescriptor) &&
+        !semanticSceneDescriptor.empty()) {
       semanticSceneDescriptor =
           Cr::Utility::Path::join(stageLocFileDir, semanticSceneDescriptor);
     }
