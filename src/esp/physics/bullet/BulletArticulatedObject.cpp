@@ -148,6 +148,7 @@ void BulletArticulatedObject::initializeFromURDF(
       }
       linkObject->initializeArticulatedLink(urdfLink->m_name, getScale());
       linkObject->linkName = urdfLink->m_name;
+      linkNamesToIDs_[linkObject->linkName] = bulletLinkIx;
 
       linkObject->node().setType(esp::scene::SceneNodeType::OBJECT);
     }
