@@ -244,8 +244,6 @@ class HabitatSimInteractiveViewer(Application):
         # cache most recently loaded URDF file for quick-reload
         self.cached_urdf = ""
 
-        # marker set cache to prevent parsing metadata every frame
-        self.marker_sets: Dict[str, Dict[int, Dict[str, List[mn.Vector3]]]] = None
         self.debug_random_colors: List[mn.Color4] = []
         self.selected_marker_set_index = 0
 
@@ -295,6 +293,10 @@ class HabitatSimInteractiveViewer(Application):
 
         # Sim reconfigure
         self.reconfigure_sim(mm)
+
+        # load markersets for every object and ao into a cache
+        self.marker_sets_per_obj = self.load_all_markersets(mm)
+
         # load appropriate filter file for scene
         self.load_scene_filter_file()
 
@@ -603,32 +605,173 @@ class HabitatSimInteractiveViewer(Application):
                 normal=camera_position - cp.position_on_b_in_ws,
             )
 
+    def load_all_markersets(
+        self, mm: Optional[habitat_sim.metadata.MetadataMediator] = None
+    ):
+        print("Start getting all markersets")
+        # marker set cache of existing markersets for all objs in scene, keyed by object name
+        marker_sets_per_obj = {}
+        rom = self.sim.get_rigid_object_manager()
+        obj_dict = rom.get_objects_by_handle_substring("")
+        for handle, obj in obj_dict.items():
+            print(f"setting rigid markersets for {handle}")
+            marker_sets_per_obj[handle] = obj.marker_sets
+        aom = self.sim.get_articulated_object_manager()
+        obj_dict = aom.get_objects_by_handle_substring("")
+        for handle, obj in obj_dict.items():
+            print(f"setting ao markersets for {handle}")
+            marker_sets_per_obj[handle] = obj.marker_sets
+        print("Done getting all markersets")
+
+        return marker_sets_per_obj
+
+    def place_marker_at_hit_location(self, is_left_btn):
+        hit_info = self.mouse_cast_results.hits[0]
+        self.selected_object = None
+
+        # object or ao at hit location. If none, hit stage
+        obj = sutils.get_obj_from_id(self.sim, hit_info.object_id, self.ao_link_map)
+        print(
+            f"Marker : Mouse click object : {hit_info.object_id} : Point : {hit_info.point} "
+        )
+        # TODO these values need to be modifiable
+        task_set_name = "faucets"
+        marker_set_name = "faucet_000"
+        if obj is None:
+            print(
+                f"Currently can't add a marker to the stage : ID : ({hit_info.object_id})."
+            )
+            # TODO get stage's marker_sets properly
+            obj_marker_sets = None
+            obj_handle = "stage"
+            link_ix = -1
+            link_name = "root"
+            # TODO need to support stage properly including root transformation
+            local_hit_point = hit_info.point
+        else:
+            self.selected_object = obj
+            # get a reference to the object/ao 's markerSets
+            obj_marker_sets = obj.marker_sets
+            obj_handle = obj.handle
+            if (
+                isinstance(obj, physics.ManagedArticulatedObject)
+                and obj.object_id != hit_info.object_id
+            ):
+                obj_type = "articulated object"
+                # this is an ArticulatedLink, so we can add markers'
+                link_ix = obj.link_object_ids[hit_info.object_id]
+                link_name = obj.get_link_name(link_ix)
+                local_hit_point_list = obj.transform_world_pts_to_local(
+                    [hit_info.point], link_ix
+                )
+                local_hit_point = local_hit_point_list[0]
+
+            else:
+                obj_type = "rigid object"
+                # this is an ArticulatedLink, so we can add markers'
+                link_ix = -1
+                link_name = "root"
+                local_hit_point_list = obj.transform_world_pts_to_local(
+                    [hit_info.point], 0
+                )
+                local_hit_point = local_hit_point_list[0]
+
+            print(
+                f"Marker on this {obj_type} : {obj_handle} link Idx : {link_ix} : link name : {link_name} world point : {hit_info.point} local_hit_point : {local_hit_point}"
+            )
+
+            if obj_marker_sets is not None:
+                # add marker if left button clicked
+                if is_left_btn:
+                    # if the desired hierarchy does not exist, create it
+                    if not obj_marker_sets.has_task_link_markerset(
+                        task_set_name, link_name, marker_set_name
+                    ):
+                        obj_marker_sets.init_task_link_markerset(
+                            task_set_name, link_name, marker_set_name
+                        )
+                    # get points for current task_set ("faucets"), link_name, marker_set_name ("faucet_000")
+                    curr_markers = obj_marker_sets.get_task_link_markerset_points(
+                        task_set_name, link_name, marker_set_name
+                    )
+                    # add point to list
+                    curr_markers.append(local_hit_point)
+                    # save list
+                    obj_marker_sets.set_task_link_markerset_points(
+                        task_set_name, link_name, marker_set_name, curr_markers
+                    )
+                else:
+                    # right click is remove marker
+                    print(f"About to check obj {obj_handle} if it has any markersets")
+                    if obj_marker_sets.has_task_link_markerset(
+                        task_set_name, link_name, marker_set_name
+                    ):
+                        # Non-empty markerset so find closest point to target and delete
+                        curr_markers = obj_marker_sets.get_task_link_markerset_points(
+                            task_set_name, link_name, marker_set_name
+                        )
+                        # go through every point to find closest
+                        closest_marker_index = None
+                        closest_marker_dist = 999999
+                        for m_idx in range(len(curr_markers)):
+                            m_dist = (local_hit_point - curr_markers[m_idx]).length()
+                            if m_dist < closest_marker_dist:
+                                closest_marker_dist = m_dist
+                                closest_marker_index = m_idx
+                        if closest_marker_index is not None:
+                            del curr_markers[closest_marker_index]
+                        # save new list
+                        obj_marker_sets.set_task_link_markerset_points(
+                            task_set_name, link_name, marker_set_name, curr_markers
+                        )
+                    else:
+                        print(
+                            f"There are no points in MarkerSet : {marker_set_name}, LinkSet :{link_name}, TaskSet :{task_set_name} so removal aborted."
+                        )
+            self.marker_sets_per_obj[obj_handle] = obj_marker_sets
+
     def draw_marker_sets_debug(self, debug_line_render: Any) -> None:
         """
         Draw the global state of all configured marker sets.
         """
-        camera_position = self.render_camera.render_camera.node.absolute_translation
-        marker_set_counter = 0
-        for ao_handle in self.marker_sets:
-            ao = sutils.get_obj_from_handle(self.sim, ao_handle)
-            for link_id in self.marker_sets[ao_handle]:
-                for marker_set_name in self.marker_sets[ao_handle][link_id]:
-                    if len(self.debug_random_colors) <= marker_set_counter:
-                        self.debug_random_colors.append(
-                            mn.Color4(mn.Vector3(np.random.random(3)))
-                        )
-                    marker_set_color = self.debug_random_colors[marker_set_counter]
-                    marker_set_counter += 1
-                    global_marker_set = sutils.get_global_link_marker_set(
-                        ao, link_id, marker_set_name, self.marker_sets[ao_handle]
-                    )
-                    for global_marker_pos in global_marker_set:
-                        debug_line_render.draw_circle(
-                            translation=global_marker_pos,
-                            radius=0.005,
-                            color=marker_set_color,
-                            normal=camera_position - global_marker_pos,
-                        )
+
+        for obj_handle, obj_markerset in self.marker_sets_per_obj.items():
+            marker_points_dict = obj_markerset.get_all_marker_points()
+            if obj_markerset.num_tasksets > 0:
+                obj = sutils.get_obj_from_handle(self.sim, obj_handle)
+                for _task_name, task_set_dict in marker_points_dict.items():
+                    for link_name, link_set_dict in task_set_dict.items():
+                        if link_name == "root":
+                            pass
+                        else:
+                            obj.get_link_id_from_name(link_name)
+                        while len(self.debug_random_colors) <= len(link_set_dict):
+                            self.debug_random_colors.append(
+                                mn.Color4(mn.Vector3(np.random.random(3)))
+                            )
+                        for _markerset_name, marker_pts_list in link_set_dict.items():
+                            # print(f"markerset_name : {markerset_name} : marker_pts_list : {marker_pts_list} type : {type(marker_pts_list)} : len : {len(marker_pts_list)}")
+
+                            obj.transform_local_pts_to_world(marker_pts_list, link_name)
+
+                # for task_set in self.marker_sets[ao_handle]:
+                #     for marker_set_name in self.marker_sets[ao_handle][link_id]:
+                #         if len(self.debug_random_colors) <= marker_set_counter:
+                #             self.debug_random_colors.append(
+                #                 mn.Color4(mn.Vector3(np.random.random(3)))
+                #             )
+                #         marker_set_color = self.debug_random_colors[marker_set_counter]
+                #         marker_set_counter += 1
+                #         global_marker_set = sutils.get_global_link_marker_set(
+                #             ao, link_id, marker_set_name, self.marker_sets[ao_handle]
+                #         )
+                #         for global_marker_pos in global_marker_set:
+                #             debug_line_render.draw_circle(
+                #                 translation=global_marker_pos,
+                #                 radius=0.005,
+                #                 color=marker_set_color,
+                #                 normal=camera_position - global_marker_pos,
+                #             )
 
     def draw_region_debug(self, debug_line_render: Any) -> None:
         """
@@ -677,7 +820,7 @@ class HabitatSimInteractiveViewer(Application):
                         mn.Vector3(np.random.random(3))
                     )
             self.draw_region_debug(debug_line_render)
-        if self.marker_sets is not None:
+        if self.marker_sets_per_obj is not None:
             self.draw_marker_sets_debug(debug_line_render)
         if self.receptacles is not None and self.display_receptacles:
             if self.rec_filter_data is None and self.cpo_initialized:
@@ -1353,9 +1496,16 @@ class HabitatSimInteractiveViewer(Application):
             if (
                 shift_pressed
                 and self.selected_object is not None
-                and isinstance(self.selected_object, physics.ManagedArticulatedObject)
-                and self.selected_object.handle in self.marker_sets
+                and (
+                    isinstance(
+                        self.selected_object,
+                        (physics.ManagedArticulatedObject, physics.ManagedRigidObject),
+                    )
+                )
+                and self.selected_object.handle in self.marker_sets_per_obj
             ):
+                # save object's marker sets by querying attributes,
+                # setting markersets in attributes, and saving attributes
                 sutils.write_ao_marker_sets(
                     self.selected_object, self.marker_sets[self.selected_object.handle]
                 )
@@ -1691,151 +1841,6 @@ class HabitatSimInteractiveViewer(Application):
                 grip_depth,
                 self.sim,
             )
-
-    def place_marker_at_hit_location(self, is_left_btn):
-        hit_info = self.mouse_cast_results.hits[0]
-
-        # object or ao at hit location. If none, hit stage
-        obj = sutils.get_obj_from_id(self.sim, hit_info.object_id, self.ao_link_map)
-        print(
-            f"Marker : Mouse click object : {hit_info.object_id} : Point : {hit_info.point} "
-        )
-        # TODO these values need to be modifiable
-        task_set_name = "faucets"
-        marker_set_name = "faucet_000"
-        if obj is None:
-            print(
-                f"Currently can't add a marker to the stage : ID : ({hit_info.object_id})."
-            )
-            # TODO get stage's marker_sets properly
-            obj_marker_sets = None
-            obj_handle = "stage"
-            link_ix = -1
-            link_name = "root"
-            # TODO need to support stage properly including root transformation
-            local_hit_point = hit_info.point
-        else:
-            # get a reference to the object/ao 's markerSets
-            obj_marker_sets = obj.marker_sets
-            obj_handle = obj.handle
-            if (
-                isinstance(obj, physics.ManagedArticulatedObject)
-                and obj.object_id != hit_info.object_id
-            ):
-                obj_type = "articulated object"
-                # this is an ArticulatedLink, so we can add markers'
-                link_ix = obj.link_object_ids[hit_info.object_id]
-                link_name = obj.get_link_name(link_ix)
-                local_hit_point_list = obj.transform_world_pts_to_local(
-                    [hit_info.point], link_ix
-                )
-                local_hit_point = local_hit_point_list[0]
-
-            else:
-                obj_type = "rigid object"
-                # this is an ArticulatedLink, so we can add markers'
-                link_ix = -1
-                link_name = "root"
-                local_hit_point_list = obj.transform_world_pts_to_local(
-                    [hit_info.point], 0
-                )
-                local_hit_point = local_hit_point_list[0]
-
-            print(
-                f"Marker on this {obj_type} : {obj_handle} link Idx : {link_ix} : link name : {link_name} world point : {hit_info.point} local_hit_point : {local_hit_point}"
-            )
-
-            if obj_marker_sets is not None:
-                # add marker if left button clicked
-                if is_left_btn:
-                    # get points for current task_set ("faucets"), link_name, marker_set_name ("faucet_000")
-                    curr_markers = obj_marker_sets.get_task_link_markerset_points(
-                        task_set_name, link_name, marker_set_name
-                    )
-                    # add point to list
-                    curr_markers.append(local_hit_point)
-                    # save list
-                    obj_marker_sets.set_task_link_markerset_points(
-                        task_set_name, link_name, marker_set_name, curr_markers
-                    )
-                else:
-                    # right click is remove marker
-                    if obj_marker_sets.has_task_link_markerset(
-                        task_set_name, link_name, marker_set_name
-                    ):
-                        # Non-empty markerset so find closest point to target and delete
-                        curr_markers = obj_marker_sets.get_task_link_markerset_points(
-                            task_set_name, link_name, marker_set_name
-                        )
-                        # go through every point to find closest
-                        closest_marker_index = None
-                        closest_marker_dist = 999999
-                        for m_idx in range(len(curr_markers)):
-                            m_dist = (local_hit_point - curr_markers[m_idx]).length()
-                            if m_dist < closest_marker_dist:
-                                closest_marker_dist = m_dist
-                                closest_marker_index = m_idx
-                        if closest_marker_index is not None:
-                            del curr_markers[closest_marker_index]
-                        # save new list
-                        obj_marker_sets.set_task_link_markerset_points(
-                            task_set_name, link_name, marker_set_name, curr_markers
-                        )
-                    else:
-                        print(
-                            f"There are no points in MarkerSet : {marker_set_name}, LinkSet :{link_name}, TaskSet :{task_set_name} so removal aborted."
-                        )
-
-            # if self.marker_sets is not None:
-            #     if obj.handle not in self.marker_sets:
-            #         self.marker_sets[obj.handle] = {}
-            #     if link_ix not in self.marker_sets[obj.handle]:
-            #         self.marker_sets[obj.handle][link_ix] = {}
-            #     existing_set_names = list(
-            #         self.marker_sets[obj.handle][link_ix].keys()
-            #     )
-            #     selected_set_name = None
-            #     if self.selected_marker_set_index >= len(existing_set_names):
-            #         self.selected_marker_set_index = len(existing_set_names)
-            #         selected_set_name = f"handle_{self.selected_marker_set_index}"
-            #     else:
-            #         selected_set_name = existing_set_names[
-            #             self.selected_marker_set_index
-            #         ]
-            #     if not is_left_btn and selected_set_name in existing_set_names:
-            #         # remove instead of add
-            #         closest_marker_index = None
-            #         closest_marker_dist = 9999
-            #         for m_ix in range(
-            #             len(
-            #                 self.marker_sets[obj.handle][link_ix][selected_set_name]
-            #             )
-            #         ):
-            #             m_dist = (
-            #                 local_hit_point
-            #                 - self.marker_sets[obj.handle][link_ix][
-            #                     selected_set_name
-            #                 ][m_ix]
-            #             ).length()
-            #             if m_dist < closest_marker_dist:
-            #                 closest_marker_dist = m_dist
-            #                 closest_marker_index = m_ix
-            #         if closest_marker_index is not None:
-            #             del self.marker_sets[obj.handle][link_ix][
-            #                 selected_set_name
-            #             ][closest_marker_index]
-            #     elif is_left_btn:
-            #         # add a point
-            #         if (
-            #             selected_set_name
-            #             not in self.marker_sets[obj.handle][link_ix]
-            #         ):
-            #             self.marker_sets[obj.handle][link_ix][
-            #                 selected_set_name
-            #             ] = []
-            #         self.marker_sets[obj.handle][link_ix][selected_set_name].append(
-            #             local_hit_point
-            #         )
 
     def mouse_move_event(self, event: Application.MouseMoveEvent) -> None:
         """
