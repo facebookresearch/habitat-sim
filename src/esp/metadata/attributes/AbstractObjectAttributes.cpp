@@ -34,7 +34,7 @@ AbstractObjectAttributes::AbstractObjectAttributes(
   setRenderAssetHandle("");
   setCollisionAssetHandle("");
   // set up an existing subgroup for marker_sets attributes
-  addOrEditSubgroup("marker_sets");
+  addOrEditSubgroup<MarkerSets>("marker_sets");
 }  // AbstractObjectAttributes ctor
 
 std::string AbstractObjectAttributes::getObjectInfoHeaderInternal() const {
