@@ -128,13 +128,17 @@ class LinkSet : public esp::core::config::Configuration {
    * @return a reference to the MarkerSet.
    */
   MarkerSet::ptr editMarkerSet(const std::string& markerSetName) {
-    return editSubconfig<MarkerSet>(markerSetName);
+    MarkerSet::ptr ptr = editSubconfig<MarkerSet>(markerSetName);
+    if (!ptr->hasSubconfig("markers")) {
+      ptr->editSubconfig<Configuration>("markers");
+    }
+    return ptr;
   }
 
   /**
    * @brief Removes named MarkerSet. Does nothing if DNE.
    */
-  void removeLinkSet(const std::string& markerSetName) {
+  void removeMarkerSet(const std::string& markerSetName) {
     removeSubconfig(markerSetName);
   }
 
@@ -218,6 +222,18 @@ class TaskSet : public esp::core::config::Configuration {
   int getNumLinkSets() const { return getNumSubconfigs(); }
 
   /**
+   * @brief Returns the number of existing MarkerSets in this collection.
+   */
+  int getNumLinkMarkerSets() const {
+    const auto& subsetKeys = getSubconfigKeys();
+    int count = 0;
+    for (const auto& linkSetName : subsetKeys) {
+      count += getLinkSetView(linkSetName)->getNumMarkerSets();
+    }
+    return count;
+  }
+
+  /**
    * @brief Whether the given @p linkSetName exists as a LinkSet in this
    * collection.
    *
@@ -285,6 +301,18 @@ class TaskSet : public esp::core::config::Configuration {
    */
   void removeLinkSet(const std::string& linkSetName) {
     removeSubconfig(linkSetName);
+  }
+
+  /**
+   * @brief Initialize a link/markerset hierarchy with the passed names
+   *
+   * @param linkSetName the name of the LinkSet within @p taskSetName
+   * @param markerSetName the name of the MarkerSet within @p linkSetName
+   */
+
+  void initLinkMarkerSet(const std::string& linkSetName,
+                         const std::string& markerSetName) {
+    editLinkSet(linkSetName)->editMarkerSet(markerSetName);
   }
 
   /**
@@ -407,6 +435,29 @@ class MarkerSets : public esp::core::config::Configuration {
   int getNumTaskSets() const { return getNumSubconfigs(); }
 
   /**
+   * @brief Returns the number of existing LinkSets in this collection.
+   */
+  int getNumTaskLinkSets() const {
+    const auto& subsetKeys = getSubconfigKeys();
+    int count = 0;
+    for (const auto& taskSetName : subsetKeys) {
+      count += getTaskSetView(taskSetName)->getNumLinkSets();
+    }
+    return count;
+  }
+  /**
+   * @brief Returns the number of existing MarkerSets in this collection.
+   */
+  int getNumTaskLinkMarkerSets() const {
+    const auto& subsetKeys = getSubconfigKeys();
+    int count = 0;
+    for (const auto& taskSetName : subsetKeys) {
+      count += getTaskSetView(taskSetName)->getNumLinkMarkerSets();
+    }
+    return count;
+  }
+
+  /**
    * @brief whether the given @p taskSetName exists as a TaskSet in this
    * collection.
    *
@@ -497,6 +548,20 @@ class MarkerSets : public esp::core::config::Configuration {
    */
   void removeTaskSet(const std::string& taskSetName) {
     removeSubconfig(taskSetName);
+  }
+
+  /**
+   * @brief Initialize a task/link/markerset hierarchy with the passed names
+   *
+   * @param taskSetName the name of the TaskSet
+   * @param linkSetName the name of the LinkSet within @p taskSetName
+   * @param markerSetName the name of the MarkerSet within @p linkSetName
+   */
+
+  void initTaskLinkMarkerSet(const std::string& taskSetName,
+                             const std::string& linkSetName,
+                             const std::string& markerSetName) {
+    editTaskSet(taskSetName)->initLinkMarkerSet(linkSetName, markerSetName);
   }
 
   /**
