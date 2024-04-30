@@ -185,6 +185,7 @@ class Recorder {
     scene::SceneNode* node = nullptr;
     RenderAssetInstanceKey instanceKey = ID_UNDEFINED;
     Corrade::Containers::Optional<RenderAssetInstanceState> recentState;
+    Corrade::Containers::Optional<InstanceMetadata> metadata;
     NodeDeletionHelper* deletionHelper = nullptr;
     int rigId = ID_UNDEFINED;
   };
@@ -198,6 +199,7 @@ class Recorder {
   RenderAssetInstanceKey getNewInstanceKey();
   int findInstance(const scene::SceneNode* queryNode);
   RenderAssetInstanceState getInstanceState(const scene::SceneNode* node);
+  InstanceMetadata getInstanceMetadata(const scene::SceneNode* node);
   void updateStates();
   void updateInstanceStates();
   void updateRigInstanceStates();

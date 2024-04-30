@@ -132,6 +132,8 @@ void GfxReplayTest::testRecorder() {
   recorder.onLoadRenderAsset(info);
   recorder.onCreateRenderAssetInstance(node, creation);
   recorder.saveKeyframe();
+
+  node->setSemanticId(5);
   node->setTranslation(Mn::Vector3(1.f, 2.f, 3.f));
 
   // add the new override AssetInfo after 1st keyframe
@@ -163,14 +165,17 @@ void GfxReplayTest::testRecorder() {
   esp::gfx::replay::RenderAssetInstanceKey instanceKey =
       keyframes[0].creations[0].first;
   CORRADE_COMPARE(keyframes[0].stateUpdates[0].first, instanceKey);
+  CORRADE_COMPARE(keyframes[0].metadata.size(), 1);
   CORRADE_COMPARE(keyframes[0].metadata[0].second.semanticId, 7);
   CORRADE_COMPARE(keyframes[0].metadata[0].second.objectId, 9);
 
   // verify frame #1 has an updated state for node and state for new node2
   CORRADE_COMPARE(keyframes[1].stateUpdates.size(), 2);
+  CORRADE_COMPARE(keyframes[1].metadata.size(), 2);
   // verify frame #1 has our translation and semantic Id
   CORRADE_COMPARE(keyframes[1].stateUpdates[0].second.absTransform.translation,
                   Mn::Vector3(1.f, 2.f, 3.f));
+  CORRADE_COMPARE(keyframes[1].metadata[0].second.semanticId, 5);
 
   // verify override material AssetInfo is loaded correctly
   CORRADE_COMPARE(keyframes[1].loads.size(), 1);
