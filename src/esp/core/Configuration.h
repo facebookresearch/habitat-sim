@@ -243,14 +243,15 @@ MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug,
 class ConfigValue {
  private:
   /**
-   * @brief This is the type of the data represented in this ConfigValue.
+   * @brief This field holds various state flags in the higher 8 bytes and the
+   * type of the data represented in this ConfigValue in the lower 8 bytes.
    */
-  ConfigValType _type{ConfigValType::Unknown};
+  u_int64_t _typeAndFlags{0x00000000FFFFFFFF};
 
   /**
    * @brief The data this ConfigValue holds.
-   * Aligns to individual 8-byte bounds. The _type is 4 bytes, 4 bytes of
-   * padding (on 64 bit machines) and 36 bytes for data.
+   * Aligns to individual 8-byte bounds. The _typeAndFlags is 8 bytes, and 8
+   * bytes for data.
    */
   alignas(8) char _data[CONFIG_VAL_SIZE] = {0};
 
@@ -306,7 +307,7 @@ class ConfigValue {
    * @brief Whether this @ref ConfigValue is valid.
    * @return Whether or not the specified type of this @ref ConfigValue is known.
    */
-  bool isValid() const { return _type != ConfigValType::Unknown; }
+  bool isValid() const { return getType() != ConfigValType::Unknown; }
 
   /**
    * @brief Write this ConfigValue to an appropriately configured json object.
@@ -322,7 +323,7 @@ class ConfigValue {
   void set(const T& value) {
     deleteCurrentValue();
     // This will blow up at compile time if given type is not supported
-    _type = configValTypeFor<T>();
+    setType(configValTypeFor<T>());
     // These asserts are checking the integrity of the support for T's type, and
     // will fire if conditions are not met.
 
@@ -359,8 +360,8 @@ class ConfigValue {
    */
   template <typename T>
   const T& get() const {
-    ESP_CHECK(_type == configValTypeFor<T>(),
-              "Attempting to access ConfigValue of" << _type << "with type"
+    ESP_CHECK(getType() == configValTypeFor<T>(),
+              "Attempting to access ConfigValue of" << getType() << "with type"
                                                     << configValTypeFor<T>());
     return getInternal<T>();
   }
@@ -368,7 +369,15 @@ class ConfigValue {
   /**
    * @brief Returns the current type of this @ref ConfigValue
    */
-  ConfigValType getType() const { return _type; }
+  inline ConfigValType getType() const {
+    return static_cast<ConfigValType>(_typeAndFlags & 0xFFFFFFFF);
+  }
+
+  inline void setType(const ConfigValType& type) {
+    // Clear out type component
+    _typeAndFlags &= 0xFFFFFFFF00000000;
+    _typeAndFlags |= static_cast<uint64_t>(type) & 0x00000000FFFFFFFF;
+  }
 
   /**
    * @brief Retrieve a string representation of the data held in this @ref
