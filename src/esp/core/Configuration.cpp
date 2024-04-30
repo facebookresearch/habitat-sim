@@ -159,9 +159,9 @@ ConfigValue::~ConfigValue() {
 
 void ConfigValue::copyValueFrom(const ConfigValue& otr) {
   // set new type
-  _type = otr._type;
-  if (isConfigValTypePointerBased(otr._type)) {
-    pointerBasedConfigTypeHandlerFor(_type).copier(otr._data, _data);
+  _typeAndFlags = otr._typeAndFlags;
+  if (isConfigValTypePointerBased(otr.getType())) {
+    pointerBasedConfigTypeHandlerFor(getType()).copier(otr._data, _data);
   } else {
     std::memcpy(_data, otr._data, sizeof(_data));
   }
@@ -169,9 +169,9 @@ void ConfigValue::copyValueFrom(const ConfigValue& otr) {
 
 void ConfigValue::moveValueFrom(ConfigValue&& otr) {
   // set new type
-  _type = otr._type;
-  if (isConfigValTypePointerBased(otr._type)) {
-    pointerBasedConfigTypeHandlerFor(_type).mover(otr._data, _data);
+  _typeAndFlags = otr._typeAndFlags;
+  if (isConfigValTypePointerBased(otr.getType())) {
+    pointerBasedConfigTypeHandlerFor(getType()).mover(otr._data, _data);
   } else {
     // moving character buffer ends up not being much better than copy
     std::memcpy(_data, otr._data, sizeof(_data));
@@ -179,10 +179,10 @@ void ConfigValue::moveValueFrom(ConfigValue&& otr) {
 }
 
 void ConfigValue::deleteCurrentValue() {
-  if (isConfigValTypePointerBased(_type)) {
-    pointerBasedConfigTypeHandlerFor(_type).destructor(_data);
+  if (isConfigValTypePointerBased(getType())) {
+    pointerBasedConfigTypeHandlerFor(getType()).destructor(_data);
   }
-  _type = ConfigValType::Unknown;
+  setType(ConfigValType::Unknown);
 }
 
 ConfigValue& ConfigValue::operator=(const ConfigValue& otr) {
@@ -201,13 +201,13 @@ ConfigValue& ConfigValue::operator=(ConfigValue&& otr) noexcept {
 
 bool operator==(const ConfigValue& a, const ConfigValue& b) {
   // Verify types are equal
-  if (a._type != b._type) {
+  if (a._typeAndFlags != b._typeAndFlags) {
     return false;
   }
   // Pointer-backed data types need to have _data dereffed
-  if (isConfigValTypePointerBased(a._type)) {
+  if (isConfigValTypePointerBased(a.getType())) {
     // Pointer-backed data (i.e. nontrival types)
-    if (a._type == ConfigValType::String) {
+    if (a.getType() == ConfigValType::String) {
       return a.get<std::string>() == b.get<std::string>();
     } else {
       // Shouldn't get here
@@ -228,7 +228,7 @@ bool operator!=(const ConfigValue& a, const ConfigValue& b) {
 }
 
 std::string ConfigValue::getAsString() const {
-  switch (_type) {
+  switch (getType()) {
     case ConfigValType::Unknown: {
       return "Undefined value/Unknown type";
     }
@@ -343,7 +343,7 @@ io::JsonGenericValue ConfigValue::writeToJsonObject(
 bool ConfigValue::putValueInConfigGroup(
     const std::string& key,
     Cr::Utility::ConfigurationGroup& cfg) const {
-  switch (_type) {
+  switch (getType()) {
     case ConfigValType::Unknown:
       return false;
     case ConfigValType::Boolean:
