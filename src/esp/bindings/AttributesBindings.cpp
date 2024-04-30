@@ -291,6 +291,10 @@ void initAttributesBindings(py::module& m) {
           "has_link_markerset", &TaskSet::hasLinkMarkerSet,
           R"(Whether or not this TaskSet has a MarkerSet within a LinkSet with the given names)",
           "linkset_name"_a, "markerset_dict"_a)
+      .def("init_link_markerset", &TaskSet::initLinkMarkerSet,
+           R"(Initialize a MarkerSet within a LinkSet with the given names in
+          this TaskSet)",
+           "linkset_name"_a, "markerset_dict"_a)
       .def("get_all_linkset_names", &TaskSet::getAllLinkSetNames,
            R"(Get a list of all the LinkSet names within this TaskSet)")
       .def("get_linkset", &TaskSet::editLinkSet,
@@ -336,7 +340,7 @@ void initAttributesBindings(py::module& m) {
       .def("has_taskset", &MarkerSets::hasTaskSet,
            R"(Whether or not a TaskSet with the given name exists)",
            "taskset_name"_a)
-      .def("has_taskset", &MarkerSets::hasTaskLinkSet,
+      .def("has_task_linkset", &MarkerSets::hasTaskLinkSet,
            R"(Whether or not a LinkSet with the given name within the TaskSet
           with the given name exists)",
            "taskset_name"_a, "linkset_name"_a)
@@ -344,6 +348,11 @@ void initAttributesBindings(py::module& m) {
            R"(Whether or not a MarkerSet exists within an existing Linkset in
           an existing TaskSet with the given names)",
            "taskset_name"_a, "linkset_name"_a, "markerset_name"_a)
+      .def(
+          "init_task_link_markerset", &MarkerSets::initTaskLinkMarkerSet,
+          R"(Initialize a MarkerSet within a LinkSet within a new TaskSet with the given
+           names in this collection)",
+          "taskset_name"_a, "linkset_name"_a, "markerset_name"_a)
       .def("get_all_taskset_names", &MarkerSets::getAllTaskSetNames,
            R"(Get a list of all the existing TaskSet names)")
       .def("get_taskset", &MarkerSets::editTaskSet,

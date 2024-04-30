@@ -81,6 +81,13 @@ class ManagedArticulatedObject
     return {};
   }
 
+  int getLinkIdFromName(const std::string& _name) const {
+    if (auto sp = getObjectReference()) {
+      return sp->getLinkIdFromName(_name);
+    }
+    return -1;
+  }
+
   std::unordered_map<int, int> getLinkObjectIds() const {
     if (auto sp = getObjectReference()) {
       return sp->getLinkObjectIds();

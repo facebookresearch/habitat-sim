@@ -444,6 +444,15 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   }
 
   /**
+   * @brief Find the link ID for the given link name
+   */
+  int getLinkIdFromName(const std::string& _name) const {
+    auto linkIdIter = linkNamesToIDs_.find(_name);
+    CORRADE_INTERNAL_ASSERT(linkIdIter != linkNamesToIDs_.end());
+    return linkIdIter->second;
+  }
+
+  /**
    * @brief Get a map of object ids to link ids.
    *
    * @return A a map of Habitat object ids to link ids for this AO's links.
@@ -923,6 +932,9 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
 
   //! map linkId to ArticulatedLink
   std::map<int, ArticulatedLink::uptr> links_;
+
+  //! convenience mapping from link name to link id
+  std::map<std::string, int> linkNamesToIDs_;
 
   //! link object for the AO base
   ArticulatedLink::uptr baseLink_;
