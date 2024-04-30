@@ -200,9 +200,9 @@ def initialize_test_data_sources(data_path):
             "link": data_path + "datasets/rearrange_pick/replica_cad/v0",
             "version": "1.0",
         },
-        "rearrange_dataset_v1": {
-            "source": "https://dl.fbaipublicfiles.com/habitat/data/datasets/replica_cad/v1.zip",
-            "package_name": "v1.zip",
+        "rearrange_dataset_v2": {
+            "source": "https://dl.fbaipublicfiles.com/habitat/data/datasets/replica_cad/v2.zip",
+            "package_name": "v2.zip",
             "link": data_path + "datasets/replica_cad/rearrange",
             "version": "1.0",
         },
@@ -357,7 +357,7 @@ def initialize_test_data_sources(data_path):
             "hab_fetch",
             "ycb",
             "rearrange_pick_dataset_v0",
-            "rearrange_dataset_v1",
+            "rearrange_dataset_v2",
         ],
         "hm3d_example": [
             "hm3d_example_habitat",
