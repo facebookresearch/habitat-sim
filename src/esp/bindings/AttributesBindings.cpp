@@ -391,7 +391,8 @@ void initAttributesBindings(py::module& m) {
           R"(Set the marker points for every MarkerSet of every LinkSet of every TaskSet present to the values in
           the passed dict of dicts of dicts. The format should be dictionary, keyed by TaskSet name, of dictionaries,
           keyed by link name, of dictionary, each keyed by MarkerSet name and value being a list
-          of that MarkerSet's marker points)",
+          of that MarkerSet's marker points. TaskSets, LinkSets and MarkerSet which are not referenced
+          in the passed dict will remain untouched by this setter.)",
           "task_link_markerset_dict"_a)
       .def(
           "get_taskset_points", &MarkerSets::getTaskSetPoints,
