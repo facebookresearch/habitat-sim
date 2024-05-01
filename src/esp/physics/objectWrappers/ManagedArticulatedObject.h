@@ -24,6 +24,15 @@ class ManagedArticulatedObject
       : AbstractManagedPhysicsObject<esp::physics::ArticulatedObject>(
             classKey) {}
 
+  /**
+   * @brief Get a copy of the template attributes describing the initial state
+   * of this articulated object. These attributes have the combination of date
+   * from the original articulated object attributes and specific instance
+   * attributes used to create this articulated object. Note : values will
+   * reflect both sources, and should not be saved to disk as articulated object
+   * attributes, since instance attribute modifications will still occur on
+   * subsequent loads
+   */
   std::shared_ptr<metadata::attributes::ArticulatedObjectAttributes>
   getInitializationAttributes() const {
     if (auto sp = this->getObjectReference()) {
