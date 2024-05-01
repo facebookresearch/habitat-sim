@@ -657,28 +657,23 @@ class HabitatSimInteractiveViewer(Application):
             # get a reference to the object/ao 's markerSets
             obj_marker_sets = obj.marker_sets
             obj_handle = obj.handle
-            if (
-                isinstance(obj, physics.ManagedArticulatedObject)
-                and obj.object_id != hit_info.object_id
-            ):
+            if isinstance(obj, physics.ManagedArticulatedObject):
                 obj_type = "articulated object"
                 # this is an ArticulatedLink, so we can add markers'
                 link_ix = obj.link_object_ids[hit_info.object_id]
                 link_name = obj.get_link_name(link_ix)
-                local_hit_point_list = obj.transform_world_pts_to_local(
-                    [hit_info.point], link_ix
-                )
-                local_hit_point = local_hit_point_list[0]
 
             else:
                 obj_type = "rigid object"
                 # this is an ArticulatedLink, so we can add markers'
                 link_ix = -1
                 link_name = "root"
-                local_hit_point_list = obj.transform_world_pts_to_local(
-                    [hit_info.point], 0
-                )
-                local_hit_point = local_hit_point_list[0]
+
+            local_hit_point_list = obj.transform_world_pts_to_local(
+                [hit_info.point], link_ix
+            )
+            # get location in local space
+            local_hit_point = local_hit_point_list[0]
 
             print(
                 f"Marker on this {obj_type} : {obj_handle} link Idx : {link_ix} : link name : {link_name} world point : {hit_info.point} local_hit_point : {local_hit_point}"
