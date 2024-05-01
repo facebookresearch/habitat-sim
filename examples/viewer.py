@@ -294,7 +294,7 @@ class HabitatSimInteractiveViewer(Application):
         self.reconfigure_sim(mm)
 
         # load markersets for every object and ao into a cache
-        self.marker_sets_per_obj = self.load_all_markersets(mm)
+        self.marker_sets_per_obj = self.get_all_markersets(mm)
         self.marker_sets_changed = {}
         self.marker_debug_random_colors = {}
         for key in self.marker_sets_per_obj:
@@ -609,7 +609,7 @@ class HabitatSimInteractiveViewer(Application):
                 normal=camera_position - cp.position_on_b_in_ws,
             )
 
-    def load_all_markersets(
+    def get_all_markersets(
         self, mm: Optional[habitat_sim.metadata.MetadataMediator] = None
     ):
         print("Start getting all markersets")
@@ -1419,13 +1419,17 @@ class HabitatSimInteractiveViewer(Application):
         self.rec_filter_data[filter_status].append(filtered_rec_name)
 
     def save_markerset_attributes(self, obj) -> None:
-        init_attrs = obj.creation_attributes
+        # get the name of the attrs used to initialize the object
+        obj_init_attr_handle = obj.creation_attributes.handle
         if isinstance(obj, physics.ManagedArticulatedObject):
             # save AO config
             attrMgr = self.sim.metadata_mediator.ao_template_manager
         else:
             # save obj config
             attrMgr = self.sim.metadata_mediator.object_template_manager
+        # get copy of initialization attributes as they were in manager,
+        # unmodified by scene instance values such as scale
+        init_attrs = attrMgr.get_template_by_handle(obj_init_attr_handle)
         # put edited subconfig into initial attributes
         markersets = init_attrs.get_marker_sets()
         # manually copying because the markersets type is getting lost from markersets
