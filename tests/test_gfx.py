@@ -164,3 +164,26 @@ def test_empty_scene(sensor_type):
         habitat_sim.Configuration(backend_cfg, [agent_cfg])
     ) as sim:
         _ = sim.get_sensor_observations()
+
+
+@pytest.mark.parametrize(
+    "sensor_type",
+    [
+        habitat_sim.SensorType.COLOR,
+        habitat_sim.SensorType.DEPTH,
+        habitat_sim.SensorType.SEMANTIC,
+    ],
+)
+def test_empty_scene_no_device(sensor_type):
+    backend_cfg = habitat_sim.SimulatorConfiguration()
+    backend_cfg.scene_id = "NONE"
+    backend_cfg.gpu_device_id = -1
+
+    agent_cfg = habitat_sim.AgentConfiguration()
+    agent_cfg.sensor_specifications = [habitat_sim.CameraSensorSpec()]
+    agent_cfg.sensor_specifications[-1].sensor_type = sensor_type
+
+    with habitat_sim.Simulator(
+        habitat_sim.Configuration(backend_cfg, [agent_cfg])
+    ) as sim:
+        _ = sim.get_sensor_observations()
