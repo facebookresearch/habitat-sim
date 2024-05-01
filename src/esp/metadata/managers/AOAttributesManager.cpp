@@ -48,7 +48,8 @@ void AOAttributesManager::setValsFromJSONDoc(
   if (io::readMember<std::string>(jsonConfig, "render_asset", render_asset)) {
     // If specified render_asset is not found directly, prefix it with file
     // directory where the configuration file was found.
-    if (!Corrade::Utility::Path::exists(render_asset)) {
+    if ((!Corrade::Utility::Path::exists(render_asset)) &&
+        !render_asset.empty()) {
       render_asset =
           Cr::Utility::Path::join(aoAttr->getFileDirectory(), render_asset);
     }
@@ -101,7 +102,7 @@ void AOAttributesManager::setValsFromJSONDoc(
       [aoAttr](const std::string& val) { aoAttr->setLinkOrder(val); });
 
   // check for the existing of markersets
-  this->parseSubconfigJsonVals("marker_sets", aoAttr, jsonConfig);
+  this->parseMarkerSets(aoAttr, jsonConfig);
   // check for user defined attributes
   this->parseUserDefinedJsonVals(aoAttr, jsonConfig);
 

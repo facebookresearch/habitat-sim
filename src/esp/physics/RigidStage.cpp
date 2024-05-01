@@ -20,9 +20,12 @@ bool RigidStage::initialize(
   objectMotionType_ = MotionType::STATIC;
   objectName_ = Cr::Utility::formatString(
       "Stage from {}", initAttributes->getSimplifiedHandle());
+
+  setScale(initAttributes->getScale());
   // save the copy of the template used to create the object at initialization
   // time
   setUserAttributes(initAttributes->getUserConfiguration());
+  setMarkerSets(initAttributes->getMarkerSetsConfiguration());
   initializationAttributes_ = std::move(initAttributes);
 
   return initialization_LibSpecific();

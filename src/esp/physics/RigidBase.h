@@ -361,15 +361,6 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   virtual void setRestitutionCoefficient(
       CORRADE_UNUSED const double restitutionCoefficient) {}
 
-  /** @brief Get the scale of the object set during initialization.
-   * @return The scaling for the object relative to its initially loaded meshes.
-   */
-  virtual Magnum::Vector3 getScale() const {
-    return PhysicsObjectBase::getInitializationAttributes<
-               metadata::attributes::AbstractObjectAttributes>()
-        ->getScale();
-  }
-
   /**
    * @brief Get the semantic ID for this object.
    */

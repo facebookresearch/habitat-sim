@@ -9,6 +9,7 @@
 #include <Corrade/Containers/Reference.h>
 #include "esp/core/RigidState.h"
 #include "esp/gfx/ShaderManager.h"
+#include "esp/metadata/attributes/MarkerSets.h"
 #include "esp/metadata/attributes/SceneInstanceAttributes.h"
 #include "esp/physics/CollisionGroupHelper.h"
 
@@ -217,6 +218,47 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
       node().setTranslation(vector);
       syncPose();
     }
+  }
+
+  /**
+   * @brief Given the list of passed points in this object's local space, return
+   * those points transformed to world space.
+   * @param points vector of points in object local space
+   * @param linkID Unused for rigids.
+   * @return vector of points transformed into world space
+   */
+  virtual std::vector<Mn::Vector3> transformLocalPointsToWorld(
+      const std::vector<Mn::Vector3>& points,
+      CORRADE_UNUSED int linkID) const {
+    std::vector<Mn::Vector3> wsPoints;
+    wsPoints.reserve(points.size());
+    Mn::Vector3 objScale = getScale();
+    Mn::Matrix4 worldTransform = getTransformation();
+    for (const auto& lsPoint : points) {
+      wsPoints.emplace_back(worldTransform.transformPoint(lsPoint * objScale));
+    }
+    return wsPoints;
+  }
+
+  /**
+   * @brief Given the list of passed points in world space, return
+   * those points transformed to this object's local space.
+   * @param points vector of points in world space
+   * @param linkID Unused for rigids.
+   * @return vector of points transformed to be in local space
+   */
+  virtual std::vector<Mn::Vector3> transformWorldPointsToLocal(
+      const std::vector<Mn::Vector3>& points,
+      CORRADE_UNUSED int linkID) const {
+    std::vector<Mn::Vector3> lsPoints;
+    lsPoints.reserve(points.size());
+    Mn::Vector3 objScale = getScale();
+    Mn::Matrix4 worldTransform = getTransformation();
+    for (const auto& wsPoint : points) {
+      lsPoints.emplace_back(worldTransform.inverted().transformPoint(wsPoint) /
+                            objScale);
+    }
+    return lsPoints;
   }
 
   /**
@@ -454,7 +496,6 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * @brief This function will overwrite this object's existing user-defined
    * attributes with @p attr.
    * @param attr A ptr to the user defined attributes specified for this object.
-   * merge into them.
    */
   void setUserAttributes(core::config::Configuration::ptr attr) {
     userAttributes_ = std::move(attr);
@@ -463,12 +504,43 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief This function will merge this object's existing user-defined
    * attributes with @p attr by overwriting it with @p attr.
-   * @param attr A ptr to the user defined attributes specified for this object.
-   * merge into them.
+   * @param attr A ptr to the user defined attributes that are to be merged into
+   * this object's existing user-defined attributes.
    */
   void mergeUserAttributes(const core::config::Configuration::ptr& attr) {
     userAttributes_->overwriteWithConfig(attr);
   }
+
+  /**
+   * @brief Get a reference to the existing MarkerSets for this object.
+   */
+  metadata::attributes::MarkerSets::ptr getMarkerSets() const {
+    return markerSets_;
+  }
+
+  /**
+   * @brief This function will overwrite this object's existing MarkerSets
+   * attributes with @p attr.
+   * @param attr A ptr to the MarkerSets attributes specified for this object.
+   */
+  void setMarkerSets(metadata::attributes::MarkerSets::ptr attr) {
+    markerSets_ = std::move(attr);
+  }
+
+  /**
+   * @brief This function will merge this object's existing MarkerSets
+   * attributes with @p attr by overwriting it with @p attr.
+   * @param attr A ptr to the user defined attributes specified for this object.
+   * with mergee into them.
+   */
+  void mergeMarkerSets(const metadata::attributes::MarkerSets::ptr& attr) {
+    markerSets_->overwriteWithConfig(attr);
+  }
+
+  /** @brief Get the scale of the object set during initialization.
+   * @return The scaling for the object relative to its initially loaded meshes.
+   */
+  virtual Magnum::Vector3 getScale() const { return _creationScale; }
 
  protected:
   /** @brief Accessed internally. Get an appropriately cast copy of the @ref
@@ -565,10 +637,24 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   core::config::Configuration::ptr userAttributes_ = nullptr;
 
   /**
+   * @brief Stores a reference to the markersets for this object, held as a
+   * smart pointer to a MarkerSets construct, which is an alias for
+   * a @ref esp::core::config::Configuration.
+   */
+  metadata::attributes::MarkerSets::ptr markerSets_ = nullptr;
+
+  /**
    * @brief Saved attributes when the object was initialized.
    */
   metadata::attributes::AbstractAttributes::ptr initializationAttributes_ =
       nullptr;
+
+  /**
+   * @brief Set the object's creation scale
+   */
+  void setScale(const Magnum::Vector3& creationScale) {
+    _creationScale = creationScale;
+  }
 
  private:
   /**
@@ -577,6 +663,11 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   std::shared_ptr<const metadata::attributes::SceneObjectInstanceAttributes>
       _initObjInstanceAttrs = nullptr;
+
+  /**
+   * @brief The scale applied to this object on creation
+   */
+  Mn::Vector3 _creationScale{1.0f, 1.0f, 1.0f};
 
  public:
   ESP_SMART_POINTERS(PhysicsObjectBase)

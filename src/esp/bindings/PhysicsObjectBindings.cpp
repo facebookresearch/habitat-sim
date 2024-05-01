@@ -66,6 +66,20 @@ void declareBasePhysicsObjectWrapper(py::module& m,
           ("Get or set the translation vector of this " + objType +
            "'s root SceneNode. If modified, sim state will be updated.")
               .c_str())
+      .def(
+          "transform_world_pts_to_local",
+          &PhysObjWrapper::transformWorldPointsToLocal,
+          R"(Given the list of passed points in world space, return those points
+          transformed to this object's local space. The link_id is for articulated
+          objects and is ignored for rigid objects and stages )",
+          "ws_points"_a, "link_id"_a)
+      .def(
+          "transform_local_pts_to_world",
+          &PhysObjWrapper::transformLocalPointsToWorld,
+          R"(Given the list of passed points in this object's local space, return
+          those points transformed to world space. The link_id is for articulated
+          objects and is ignored for rigid objects and stages )",
+          "ls_points"_a, "link_id"_a)
       .def_property(
           "rotation", &PhysObjWrapper::getRotation,
           &PhysObjWrapper::setRotation,
@@ -187,9 +201,14 @@ void declareBasePhysicsObjectWrapper(py::module& m,
       .def_property_readonly(
           "user_attributes", &PhysObjWrapper::getUserAttributes,
           ("User-defined " + objType +
-           " attributes.  These are not used internally by Habitat in any "
+           " attributes. These are not used internally by Habitat in any "
            "capacity, but are available for a user to consume how they wish.")
               .c_str())
+      .def_property_readonly(
+          "marker_sets", &PhysObjWrapper::getMarkerSets,
+          py::return_value_policy::reference_internal,
+          ("The MarkerSets defined for " + objType + " this object.").c_str())
+
       .def_property_readonly(
           "csv_info", &PhysObjWrapper::getObjectInfo,
           ("Comma-separated informational string describing this " + objType +
@@ -345,7 +364,20 @@ void declareRigidObjectWrapper(py::module& m,
       .def_property_readonly(
           "creation_attributes",
           &ManagedRigidObject::getInitializationAttributes,
-          ("Get a copy of the attributes used to create this " + objType + ".")
+          ("Get a copy of the template attributes describing the initial state "
+           "of this " +
+           objType +
+           ". These attributes have the combination of data from the "
+           "original " +
+           objType +
+           " attributes and specific instance attributes "
+           "used to create this " +
+           objType +
+           ". Note : values will reflect "
+           "both sources, and should not be saved to disk as " +
+           objType +
+           " attributes, since instance attribute modifications will "
+           "still occur on subsequent loads.")
               .c_str())
       .def_property_readonly(
           "velocity_control", &ManagedRigidObject::getVelocityControl,
@@ -366,7 +398,20 @@ void declareArticulatedObjectWrapper(py::module& m,
       .def_property_readonly(
           "creation_attributes",
           &ManagedArticulatedObject::getInitializationAttributes,
-          ("Get a copy of the attributes used to create this " + objType + ".")
+          ("Get a copy of the template attributes describing the initial state "
+           "of this " +
+           objType +
+           ". These attributes have the combination of data from the "
+           "original " +
+           objType +
+           " attributes and specific instance attributes "
+           "used to create this " +
+           objType +
+           ". Note : values will reflect "
+           "both sources, and should not be saved to disk as " +
+           objType +
+           " attributes, since instance attribute modifications will "
+           "still occur on subsequent loads.")
               .c_str())
       .def_property_readonly(
           "global_scale", &ManagedArticulatedObject::getGlobalScale,
@@ -398,6 +443,13 @@ void declareArticulatedObjectWrapper(py::module& m,
                              ("Get a dict mapping Habitat object ids to this " +
                               objType + "'s link ids.")
                                  .c_str())
+      .def("get_link_id_from_name",
+           &ManagedArticulatedObject::getLinkIdFromName,
+           ("Get this " + objType +
+            "'s articulated link id specified by the passed "
+            "link_name.")
+               .c_str(),
+           "link_name"_a)
       .def_property_readonly(
           "num_links", &ManagedArticulatedObject::getNumLinks,
           ("Get the number of links this " + objType + " holds.").c_str())
@@ -484,7 +536,7 @@ void declareArticulatedObjectWrapper(py::module& m,
                .c_str(),
            "link_id"_a)
       .def("get_link_name", &ManagedArticulatedObject::getLinkName,
-           ("Get the name of the this " + objType +
+           ("Get the name of this " + objType +
             "'s link specified by the given link_id.")
                .c_str(),
            "link_id"_a)

@@ -496,7 +496,7 @@ int Configuration::loadOneConfigFromJson(int numConfigSettings,
 
         for (size_t i = 0; i < jsonObj.Size(); ++i) {
           const std::string subKey =
-              Cr::Utility::formatString("{}_{:.02d}", key, i);
+              Cr::Utility::formatString("{}_{:.03d}", key, i);
           numConfigSettings += subGroupPtr->loadOneConfigFromJson(
               numConfigSettings, subKey, jsonObj[i]);
         }
@@ -511,7 +511,7 @@ int Configuration::loadOneConfigFromJson(int numConfigSettings,
 
       for (size_t i = 0; i < jsonObj.Size(); ++i) {
         const std::string subKey =
-            Cr::Utility::formatString("{}_{:.02d}", key, i);
+            Cr::Utility::formatString("{}_{:.03d}", key, i);
         numConfigSettings += subGroupPtr->loadOneConfigFromJson(
             numConfigSettings, subKey, jsonObj[i]);
       }
@@ -576,10 +576,10 @@ void Configuration::writeValuesToJson(io::JsonGenericValue& jsonObj,
       auto jsonVal = valIter->second.writeToJsonObject(allocator);
       jsonObj.AddMember(name, jsonVal, allocator);
     } else {
-      ESP_VERY_VERBOSE()
-          << "Unitialized ConfigValue in Configuration @ key ["
+      ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+          << "Unitialized ConfigValue in Configuration @ key `"
           << valIter->first
-          << "], so nothing will be written to JSON for this key.";
+          << "`, so nothing will be written to JSON for this key.";
     }
   }  // iterate through all values
 }  // Configuration::writeValuesToJson
@@ -600,10 +600,10 @@ void Configuration::writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
           cfgIter->second->writeToJsonObject(allocator);
       jsonObj.AddMember(name, subObj, allocator);
     } else {
-      ESP_VERY_VERBOSE()
-          << "Unitialized/empty Subconfig in Configuration @ key ["
+      ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+          << "Unitialized/empty Subconfig in Configuration @ key `"
           << cfgIter->first
-          << "], so nothing will be written to JSON for this key.";
+          << "`, so nothing will be written to JSON for this key.";
     }
   }  // iterate through all configurations
 
@@ -648,7 +648,7 @@ template <>
 std::shared_ptr<Configuration> Configuration::editSubconfig<Configuration>(
     const std::string& name) {
   // retrieve existing (or create new) subgroup, with passed name
-  return addSubgroup(name);
+  return addOrEditSubgroup<Configuration>(name).first->second;
 }
 
 template <>
@@ -656,7 +656,50 @@ void Configuration::setSubconfigPtr<Configuration>(
     const std::string& name,
     std::shared_ptr<Configuration>& configPtr) {
   configMap_[name] = std::move(configPtr);
-}  // setSubconfigPtr
+}
+
+int Configuration::rekeyAllValues() {
+  // Get all sorted key-value pairs of values
+  std::map<std::string, ConfigValue> sortedValMap(valueMap_.begin(),
+                                                  valueMap_.end());
+  // clear out existing value map - subconfigs are not touched.
+  valueMap_.clear();
+  // place sorted values with newly constructed keys
+  int keyIter = 0;
+  for (auto it = sortedValMap.cbegin(); it != sortedValMap.cend(); ++it) {
+    std::string newKey = Cr::Utility::formatString("{:.03d}", keyIter++);
+    valueMap_[newKey] = it->second;
+  }
+  return keyIter;
+}  // Configuration::rekeyAllValues()
+
+int Configuration::rekeySubconfigValues(const std::string& subconfigKey) {
+  std::pair<ConfigMapType::iterator, bool> rekeySubconfigEntry =
+      addOrEditSubgroup<Configuration>(subconfigKey);
+  // check if subconfig existed already - result from addOrEditSubgroup would
+  // be false if add failed.
+  if (rekeySubconfigEntry.second) {
+    // Subconfig did not exist, was created by addOrEdit, so delete and return
+    // 0.
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << "No subconfig found with key `" << subconfigKey
+        << "` so rekeying aborted.";
+    configMap_.erase(rekeySubconfigEntry.first);
+    return 0;
+  }
+  // retrieve subconfig
+  auto rekeySubconfig = rekeySubconfigEntry.first->second;
+  if (rekeySubconfig->getNumValues() == 0) {
+    // Subconfig exists but has no values defined, so no rekeying possible
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << "Subconfig with key `" << subconfigKey
+        << "` has no values, so no rekeying accomplished.";
+    return 0;
+  }
+  // rekey subconfig and return the number of values affected
+  return rekeySubconfig->rekeyAllValues();
+
+}  // Configuration::rekeySubconfig
 
 int Configuration::findValueInternal(const Configuration& config,
                                      const std::string& key,
