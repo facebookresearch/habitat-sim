@@ -638,7 +638,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /**
    * @brief Stores a reference to the markersets for this object, held as a
-   * smart pointer to a MarkerSets construct, which is an alia for
+   * smart pointer to a MarkerSets construct, which is an alias for
    * a @ref esp::core::config::Configuration.
    */
   metadata::attributes::MarkerSets::ptr markerSets_ = nullptr;

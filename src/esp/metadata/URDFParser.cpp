@@ -838,7 +838,7 @@ bool Parser::validateMeshFile(std::string& meshFilename) {
 
 bool Parser::initTreeAndRoot(const std::shared_ptr<Model>& model) const {
   // every link has children links and joints, but no parents, so we create a
-  // local convenience data structure for keeping child->parent relations
+  // convenience data structure in the model for keeping child->parent relations
   model->m_parentLinkTree.clear();
 
   // loop through all joints, for every link, assign children links and children

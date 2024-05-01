@@ -261,10 +261,11 @@ void initAttributesBindings(py::module& m) {
            "markerset_name"_a)
       .def("get_all_markerset_names", &LinkSet::getAllMarkerSetNames,
            R"(Get a list of all the MarkerSet names within this LinkSet)")
-      .def("get_markerset", &LinkSet::editMarkerSet,
-           R"(Get an editable reference to the specified MarkerSet, possibly
+      .def(
+          "get_markerset", &LinkSet::editMarkerSet,
+          R"(Get an editable reference to the specified MarkerSet, possibly new and
             empty if it does not exist)",
-           "markerset_name"_a)
+          "markerset_name"_a)
       .def("set_markerset_points", &LinkSet::setMarkerSetPoints,
            R"(Sets the marker points for the specified MarkerSet)",
            "markerset_name"_a, "marker_list"_a)
@@ -294,16 +295,18 @@ void initAttributesBindings(py::module& m) {
           "has_link_markerset", &TaskSet::hasLinkMarkerSet,
           R"(Whether or not this TaskSet has a MarkerSet within a LinkSet with the given names)",
           "linkset_name"_a, "markerset_dict"_a)
-      .def("init_link_markerset", &TaskSet::initLinkMarkerSet,
-           R"(Initialize a MarkerSet within a LinkSet with the given names in
-          this TaskSet)",
-           "linkset_name"_a, "markerset_dict"_a)
+      .def(
+          "init_link_markerset", &TaskSet::initLinkMarkerSet,
+          R"(Initialize a MarkerSet within a LinkSet within this TaskSet from a dict
+           mapping markerset names to lists of points.)",
+          "linkset_name"_a, "markerset_dict"_a)
       .def("get_all_linkset_names", &TaskSet::getAllLinkSetNames,
            R"(Get a list of all the LinkSet names within this TaskSet)")
-      .def("get_linkset", &TaskSet::editLinkSet,
-           R"(Get an editable reference to the specified LinkSet, possibly
+      .def(
+          "get_linkset", &TaskSet::editLinkSet,
+          R"(Get an editable reference to the specified LinkSet, possibly new and
             empty if it does not exist)",
-           "linkset_name"_a)
+          "linkset_name"_a)
       .def(
           "set_linkset_points", &TaskSet::setLinkSetPoints,
           R"(Set the marker points in each of the MarkerSets for the specified LinkSet
@@ -359,10 +362,11 @@ void initAttributesBindings(py::module& m) {
           "taskset_name"_a, "linkset_name"_a, "markerset_name"_a)
       .def("get_all_taskset_names", &MarkerSets::getAllTaskSetNames,
            R"(Get a list of all the existing TaskSet names)")
-      .def("get_taskset", &MarkerSets::editTaskSet,
-           R"(Get an editable reference to the specified TaskSet, possibly
+      .def(
+          "get_taskset", &MarkerSets::editTaskSet,
+          R"(Get an editable reference to the specified TaskSet, possibly new and
             empty if it does not exist)",
-           "taskset_name"_a)
+          "taskset_name"_a)
       .def(
           "set_taskset_points", &MarkerSets::setTaskSetPoints,
           R"(Set all the marker points in the specified TaskSet to the 3d point values in the
