@@ -71,7 +71,7 @@ class MarkerSet : public esp::core::config::Configuration {
 
 /**
  * @brief This class provides an alias for the nested Configuration tree used
- * for a single link's 1 or more NarkerSets that should be attached to the
+ * for a single link's 1 or more MarkerSets that should be attached to the
  * named link.
  */
 class LinkSet : public esp::core::config::Configuration {
@@ -111,7 +111,7 @@ class LinkSet : public esp::core::config::Configuration {
   }
 
   /**
-   * @brief Retrieve a view of the naamed MarkerSet, if it exists, and
+   * @brief Retrieve a view of the named MarkerSet, if it exists, and
    * nullptr if it does not.
    */
   MarkerSet::cptr getMarkerSetView(const std::string& markerSetName) const {
@@ -276,7 +276,7 @@ class TaskSet : public esp::core::config::Configuration {
   }
 
   /**
-   * @brief Retrieve a view of the naamed LinkSet, if it exists, and
+   * @brief Retrieve a view of the named LinkSet, if it exists, and
    * nullptr if it does not.
    */
   LinkSet::cptr getLinkSetView(const std::string& linkSetName) const {
@@ -523,7 +523,7 @@ class MarkerSets : public esp::core::config::Configuration {
   }
 
   /**
-   * @brief Retrieve a view of the naamed TaskSet, if it exists, and
+   * @brief Retrieve a view of the named TaskSet, if it exists, and
    * nullptr if it does not.
    */
   TaskSet::cptr getTaskSetView(const std::string& taskSetName) const {
