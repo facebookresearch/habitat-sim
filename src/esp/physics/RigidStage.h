@@ -40,7 +40,12 @@ class RigidStage : public RigidBase {
                       initAttributes) override;
 
   /**
-   * @brief Get a copy of the template used to initialize this stage object.
+   * @brief Get a copy of the template attributes describing the initial state
+   * of this stage object. These attributes have the combination of date from
+   * the original object attributes and specific instance attributes used to
+   * create this stage object. Note : values will reflect both sources, and
+   * should not be saved to disk as object attributes, since instance attribute
+   * modifications will still occur on subsequent loads
    *
    * @return A copy of the @ref esp::metadata::attributes::StageAttributes
    * template used to create this stage object.

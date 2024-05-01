@@ -903,7 +903,13 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   }
 
   /**
-   * @brief Get a copy of the template used to initialize this object.
+   * @brief Get a copy of the template attributes describing the initial state
+   * of this articulated object. These attributes have the combination of date
+   * from the original articulated object attributes and specific instance
+   * attributes used to create this articulated object. Note : values will
+   * reflect both sources, and should not be saved to disk as articulated object
+   * attributes, since instance attribute modifications will still occur on
+   * subsequent loads
    *
    * @return A copy of the @ref esp::metadata::attributes::ArticulatedObjectAttributes
    * template used to create this object.

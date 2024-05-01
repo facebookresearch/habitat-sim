@@ -364,7 +364,20 @@ void declareRigidObjectWrapper(py::module& m,
       .def_property_readonly(
           "creation_attributes",
           &ManagedRigidObject::getInitializationAttributes,
-          ("Get a copy of the attributes used to create this " + objType + ".")
+          ("Get a copy of the template attributes describing the initial state "
+           "of this " +
+           objType +
+           ". These attributes have the combination of date from the "
+           "original " +
+           objType +
+           " attributes and specific instance attributes "
+           "used to create this " +
+           objType +
+           ". Note : values will reflect "
+           "both sources, and should not be saved to disk as " +
+           objType +
+           " attributes, since instance attribute modifications will "
+           "still occur on subsequent loads.")
               .c_str())
       .def_property_readonly(
           "velocity_control", &ManagedRigidObject::getVelocityControl,
@@ -385,7 +398,20 @@ void declareArticulatedObjectWrapper(py::module& m,
       .def_property_readonly(
           "creation_attributes",
           &ManagedArticulatedObject::getInitializationAttributes,
-          ("Get a copy of the attributes used to create this " + objType + ".")
+          ("Get a copy of the template attributes describing the initial state "
+           "of this " +
+           objType +
+           ". These attributes have the combination of date from the "
+           "original " +
+           objType +
+           " attributes and specific instance attributes "
+           "used to create this " +
+           objType +
+           ". Note : values will reflect "
+           "both sources, and should not be saved to disk as " +
+           objType +
+           " attributes, since instance attribute modifications will "
+           "still occur on subsequent loads.")
               .c_str())
       .def_property_readonly(
           "global_scale", &ManagedArticulatedObject::getGlobalScale,
