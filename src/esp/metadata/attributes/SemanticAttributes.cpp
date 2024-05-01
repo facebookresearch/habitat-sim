@@ -13,8 +13,8 @@ namespace attributes {
 SemanticVolumeAttributes::SemanticVolumeAttributes(const std::string& handle)
     : AbstractAttributes("SemanticVolumeAttributes", handle) {
   // Initialize values
-  set("floor_height", 0.0);
-  set("extrusion_height", 2.5);
+  init("floor_height", 0.0);
+  init("extrusion_height", 2.5);
 
 }  // SemanticVolumeAttributes ctor
 
@@ -63,16 +63,16 @@ void SemanticVolumeAttributes::writeValuesToJson(
 // SemanticAttributes
 SemanticAttributes::SemanticAttributes(const std::string& handle)
     : AbstractAttributes("SemanticAttributes", handle) {
-  set("semantic_descriptor_filename", "");
-  set("semantic_asset", "");
-  setSemanticOrientUp({0, 1, 0});
-  setSemanticOrientFront({0, 0, -1});
-  setUseSpecifiedSemanticFrame(false);
+  init("semantic_descriptor_filename", "");
+  init("semantic_asset", "");
+  init("semantic_orient_up", Mn::Vector3{0, 1, 0});
+  init("semantic_orient_front", Mn::Vector3{0, 0, -1});
+  init("use_semantic_frame", false);
   // setting default for semantic assets having semantically painted textures to
   // false
-  setHasSemanticTextures(false);
+  init("has_semantic_textures", false);
   // 4 corresponds to AssetType::InstanceMesh
-  setSemanticAssetType(static_cast<int>(AssetType::InstanceMesh));
+  init("semantic_asset_type", static_cast<int>(AssetType::InstanceMesh));
   // get refs to internal subconfigs for semantic region attributes
   regionAnnotationConfig_ = editSubconfig<Configuration>("region_annotations");
 }  // SemanticAttributes ctor

@@ -9,30 +9,26 @@ namespace attributes {
 
 StageAttributes::StageAttributes(const std::string& handle)
     : AbstractObjectAttributes("StageAttributes", handle) {
-  setGravity({0, -9.8, 0});
-  setOrigin({0, 0, 0});
-  setSemanticOrientUp({0, 1, 0});
-  setSemanticOrientFront({0, 0, -1});
-  // setting defaults for semantic frame will have changed this to false. change
-  // to true so that only used if actually changed.
-  setUseFrameForAllOrientation(true);
+  init("gravity", Mn::Vector3{0, -9.8, 0});
+  init("origin", Mn::Vector3{0, 0, 0});
+  init("semantic_orient_up", Mn::Vector3{0, 1, 0});
+  init("semantic_orient_front", Mn::Vector3{0, 0, -1});
+  // Set this to true so that only used if actually changed.
+  init("use_frame_for_all_orientation", true);
 
   // setting default for semantic assets having semantically painted textures to
   // false
-  setHasSemanticTextures(false);
-  // default to use material-derived shader unless otherwise specified in config
-  // or instance config
-  setShaderType(getShaderTypeName(ObjectInstanceShaderType::Material));
+  init("has_semantic_textures", false);
   // TODO remove this once ShaderType support is complete
-  setForceFlatShading(true);
+  init("force_flat_shading", true);
   // 0 corresponds to AssetType::Unknown->treated as general mesh
-  setCollisionAssetType(static_cast<int>(AssetType::Unknown));
+  init("collision_asset_type", static_cast<int>(AssetType::Unknown));
   // 4 corresponds to AssetType::InstanceMesh
-  setSemanticAssetType(static_cast<int>(AssetType::InstanceMesh));
+  init("semantic_asset_type", static_cast<int>(AssetType::InstanceMesh));
   // set empty defaults for handles
-  set("nav_asset", "");
-  set("semantic_asset", "");
-  set("semantic_descriptor_filename", "");
+  init("nav_asset", "");
+  init("semantic_asset", "");
+  init("semantic_descriptor_filename", "");
 }  // StageAttributes ctor
 
 void StageAttributes::writeValuesToJsonInternal(

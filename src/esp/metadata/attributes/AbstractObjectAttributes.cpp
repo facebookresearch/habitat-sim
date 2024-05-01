@@ -11,28 +11,38 @@ AbstractObjectAttributes::AbstractObjectAttributes(
     const std::string& attributesClassKey,
     const std::string& handle)
     : AbstractAttributes(attributesClassKey, handle) {
-  setFrictionCoefficient(0.5);
-  setRollingFrictionCoefficient(0.0);
-  setSpinningFrictionCoefficient(0.0);
-  setRestitutionCoefficient(0.1);
-  setScale({1.0, 1.0, 1.0});
-  setCollisionAssetSize({1.0, 1.0, 1.0});
-  setMargin(0.04);
-  setOrientUp({0, 1, 0});
-  setOrientFront({0, 0, -1});
-  setUseFrameForAllOrientation(true);
+  init("friction_coefficient", 0.5);
+  init("rolling_friction_coefficient", 0.0);
+  init("spinning_friction_coefficient", 0.0);
+  init("restitution_coefficient", 0.1);
+  init("scale", Mn::Vector3{1.0, 1.0, 1.0});
+  init("collision_asset_size", Mn::Vector3{1.0, 1.0, 1.0});
+  init("margin", 0.04);
+  init("orient_up", Mn::Vector3{0, 1, 0});
+  init("orient_front", Mn::Vector3{0, 0, -1});
+  init("use_frame_for_all_orientation", true);
+  // default to use material-derived shader unless otherwise specified in config
+  // or instance config
+  init("shader_type", getShaderTypeName(ObjectInstanceShaderType::Material));
+  // This specifies that we want to investigate the state of the render and
+  // collision handles before we allow this attributes to be registered.
+
+  // TODO remove this once ShaderType support is complete
+  init("force_flat_shading", false);
   // default rendering and collisions will be mesh for physics objects and
   // scenes. Primitive-based objects do not currently support mesh collisions,
   // however, due to issues with how non-triangle meshes (i.e. wireframes) are
   // handled in @ref GenericMeshData::setMeshData
-  setRenderAssetIsPrimitive(false);
-  setCollisionAssetIsPrimitive(false);
-  setUseMeshCollision(true);
-  setIsCollidable(true);
-  setIsVisible(true);
-  setUnitsToMeters(1.0);
-  setRenderAssetHandle("");
-  setCollisionAssetHandle("");
+  init("renderAssetIsPrimitive", false);
+  init("collisionAssetIsPrimitive", false);
+  init("use_mesh_collision", true);
+  init("is_collidable", true);
+  init("is_visible", true);
+  init("units_to_meters", 1.0);
+  init("render_asset", "");
+  init("collision_asset", "");
+
+  setIsDirty();
   // set up an existing subgroup for marker_sets attributes
   addOrEditSubgroup<MarkerSets>("marker_sets");
 }  // AbstractObjectAttributes ctor
