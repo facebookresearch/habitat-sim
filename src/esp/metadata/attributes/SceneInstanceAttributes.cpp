@@ -49,7 +49,7 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
   // Not initialize, since these are not default values
   set("shader_type", getShaderTypeName(baseObjAttribs->getShaderType()));
   // set to match attributes setting
-  set("is_instance_visible", baseObjAttribs->getIsVisible());
+  set("is_instance_visible", (baseObjAttribs->getIsVisible() ? 1 : 0));
   // set nonuniform scale to match attributes scale
   setNonUniformScale(baseObjAttribs->getScale());
   // Prepopulate user config to match baseObjAttribs' user config.
