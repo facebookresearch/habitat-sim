@@ -79,7 +79,7 @@ void declareBasePhysicsObjectWrapper(py::module& m,
           R"(Given the list of passed points in this object's local space, return
           those points transformed to world space. The link_id is for articulated
           objects and is ignored for rigid objects and stages )",
-          "ws_points"_a, "link_id"_a)
+          "ls_points"_a, "link_id"_a)
       .def_property(
           "rotation", &PhysObjWrapper::getRotation,
           &PhysObjWrapper::setRotation,
@@ -367,7 +367,7 @@ void declareRigidObjectWrapper(py::module& m,
           ("Get a copy of the template attributes describing the initial state "
            "of this " +
            objType +
-           ". These attributes have the combination of date from the "
+           ". These attributes have the combination of data from the "
            "original " +
            objType +
            " attributes and specific instance attributes "
@@ -401,7 +401,7 @@ void declareArticulatedObjectWrapper(py::module& m,
           ("Get a copy of the template attributes describing the initial state "
            "of this " +
            objType +
-           ". These attributes have the combination of date from the "
+           ". These attributes have the combination of data from the "
            "original " +
            objType +
            " attributes and specific instance attributes "

@@ -331,7 +331,10 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
       return baseLink_->node();
     }
     auto linkIter = links_.find(linkId);
-    CORRADE_INTERNAL_ASSERT(linkIter != links_.end());
+    ESP_CHECK(
+        linkIter != links_.end(),
+        "ArticulatedObject::getLinkSceneNode - no link found with linkId ="
+            << linkId);
     return linkIter->second->node();
   }
 
@@ -347,7 +350,10 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
       return baseLink_->visualNodes_;
     }
     auto linkIter = links_.find(linkId);
-    CORRADE_INTERNAL_ASSERT(linkIter != links_.end());
+    ESP_CHECK(linkIter != links_.end(),
+              "ArticulatedObject::getLinkVisualSceneNodes - no link found with "
+              "linkId ="
+                  << linkId);
     return linkIter->second->visualNodes_;
   }
 
@@ -403,7 +409,8 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     }
 
     auto linkIter = links_.find(id);
-    CORRADE_INTERNAL_ASSERT(linkIter != links_.end());
+    ESP_CHECK(linkIter != links_.end(),
+              "ArticulatedObject::getLink - no link found with linkId =" << id);
     return *linkIter->second;
   }
 
@@ -448,7 +455,9 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    */
   int getLinkIdFromName(const std::string& _name) const {
     auto linkIdIter = linkNamesToIDs_.find(_name);
-    CORRADE_INTERNAL_ASSERT(linkIdIter != linkNamesToIDs_.end());
+    ESP_CHECK(linkIdIter != linkNamesToIDs_.end(),
+              "ArticulatedObject::getLinkIdFromName - no link found with name ="
+                  << _name);
     return linkIdIter->second;
   }
 
@@ -465,34 +474,36 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @brief Given the list of passed points in this object's local space, return
    * those points transformed to world space.
    * @param points vector of points in object local space
-   * @param linkID Unused for rigids.
+   * @param linkId Internal link index.
    * @return vector of points transformed into world space
    */
   std::vector<Mn::Vector3> transformLocalPointsToWorld(
       const std::vector<Mn::Vector3>& points,
-      int linkID) const override {
-    auto linkIter = links_.find(linkID);
-    if (linkIter != links_.end()) {
-      return linkIter->second->transformLocalPointsToWorld(points, linkID);
-    }
-    return points;
+      int linkId) const override {
+    auto linkIter = links_.find(linkId);
+    ESP_CHECK(linkIter != links_.end(),
+              "ArticulatedObject::getLinkVisualSceneNodes - no link found with "
+              "linkId ="
+                  << linkId);
+    return linkIter->second->transformLocalPointsToWorld(points, linkId);
   }
 
   /**
    * @brief Given the list of passed points in world space, return
    * those points transformed to this object's local space.
    * @param points vector of points in world space
-   * @param linkID Unused for rigids.
+   * @param linkId Internal link index.
    * @return vector of points transformed to be in local space
    */
   std::vector<Mn::Vector3> transformWorldPointsToLocal(
       const std::vector<Mn::Vector3>& points,
-      int linkID) const override {
-    auto linkIter = links_.find(linkID);
-    if (linkIter != links_.end()) {
-      return linkIter->second->transformWorldPointsToLocal(points, linkID);
-    }
-    return points;
+      int linkId) const override {
+    auto linkIter = links_.find(linkId);
+    ESP_CHECK(linkIter != links_.end(),
+              "ArticulatedObject::getLinkVisualSceneNodes - no link found with "
+              "linkId ="
+                  << linkId);
+    return linkIter->second->transformWorldPointsToLocal(points, linkId);
   }
 
   /**
@@ -661,11 +672,12 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @param linkId The link's index.
    * @return The link's parent joint's name.
    */
-  virtual std::string getLinkJointName(CORRADE_UNUSED int linkId) const {
+  virtual std::string getLinkJointName(int linkId) const {
     auto linkIter = links_.find(linkId);
-    ESP_CHECK(linkIter != links_.end(),
-              "ArticulatedObject::getLinkJointName - no link with linkId ="
-                  << linkId);
+    ESP_CHECK(
+        linkIter != links_.end(),
+        "ArticulatedObject::getLinkJointName - no link found with linkId ="
+            << linkId);
     return linkIter->second->linkJointName;
   }
 
@@ -675,15 +687,15 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @param linkId The link's index. -1 for base link.
    * @return The link's name.
    */
-  virtual std::string getLinkName(CORRADE_UNUSED int linkId) const {
+  virtual std::string getLinkName(int linkId) const {
     if (linkId == -1) {
       return baseLink_->linkName;
     }
 
     auto linkIter = links_.find(linkId);
-    ESP_CHECK(
-        linkIter != links_.end(),
-        "ArticulatedObject::getLinkName - no link with linkId =" << linkId);
+    ESP_CHECK(linkIter != links_.end(),
+              "ArticulatedObject::getLinkName - no link found with linkId ="
+                  << linkId);
     return linkIter->second->linkName;
   }
 
