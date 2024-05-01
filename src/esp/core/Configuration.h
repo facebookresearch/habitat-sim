@@ -263,7 +263,7 @@ class ConfigValue {
    * @brief This field holds various state flags in the higher 8 bytes and the
    * type of the data represented in this ConfigValue in the lower 8 bytes.
    */
-  u_int64_t _typeAndFlags{0x00000000FFFFFFFF};
+  uint64_t _typeAndFlags{0x00000000FFFFFFFF};
 
   /**
    * @brief The data this ConfigValue holds.

@@ -10,23 +10,18 @@ namespace attributes {
 ObjectAttributes::ObjectAttributes(const std::string& handle)
     : AbstractObjectAttributes("ObjectAttributes", handle) {
   // fill necessary attribute defaults
-  setMass(1.0);
-  setCOM({0, 0, 0});
-  setInertia({0, 0, 0});
-  setLinearDamping(0.2);
-  setAngularDamping(0.2);
+  init("mass", 1.0);
+  init("COM", Mn::Vector3{0, 0, 0});
+  init("inertia", Mn::Vector3{0, 0, 0});
+  init("linear_damping", 0.2);
+  init("angular_damping", 0.2);
 
-  setComputeCOMFromShape(true);
+  init("compute_COM_from_shape", true);
 
-  setBoundingBoxCollisions(false);
-  setJoinCollisionMeshes(false);
-  // default to use material-derived shader unless otherwise specified in config
-  // or instance config
-  setShaderType(getShaderTypeName(ObjectInstanceShaderType::Material));
-  // TODO remove this once ShaderType support is complete
-  setForceFlatShading(false);
-  setIsVisible(true);
-  setSemanticId(0);
+  init("use_bounding_box_for_collision", false);
+  init("join_collision_meshes", false);
+
+  init("semantic_id", 0);
 }  // ObjectAttributes ctor
 
 std::string ObjectAttributes::getAbstractObjectInfoInternal() const {

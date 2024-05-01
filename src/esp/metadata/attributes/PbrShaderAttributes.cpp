@@ -10,18 +10,17 @@ namespace attributes {
 
 PbrShaderAttributes::PbrShaderAttributes(const std::string& handle)
     : AbstractAttributes("PbrShaderAttributes", handle) {
-  setEnableDirectLighting(true);
-  setEnableIBL(true);
-
-  setDirectLightIntensity(3.14f);
-  setSkipCalcMissingTBN(false);
-  setUseMikkelsenTBN(false);
-  setUseDirectLightTonemap(false);
-  setUseBurleyDiffuse(true);
+  init("enable_direct_lights", true);
+  init("enable_ibl", true);
+  init("direct_light_intensity", 3.14f);
+  init("skip_missing_tbn_calc", false);
+  init("use_mikkelsen_tbn", false);
+  init("use_direct_tonemap", false);
+  init("use_burley_diffuse", true);
   // Layer calcs
-  setSkipCalcClearcoatLayer(false);
-  setSkipCalcSpecularLayer(false);
-  setSkipCalcAnisotropyLayer(false);
+  init("skip_clearcoat_calc", false);
+  init("skip_specular_layer_calc", false);
+  init("skip_anisotropy_layer_calc", false);
 
   // These asset files are fallbacks/defaults incase such files are not included
   // in a dataset, and must be found in /data/pbr and specified in
@@ -31,23 +30,30 @@ PbrShaderAttributes::PbrShaderAttributes(const std::string& handle)
   // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/screenshots/tex_brdflut.png
   // Setting the value directly so that it won't trigger the PbrIBLHelper handle
   // creation.
-  set("ibl_blut_filename", "brdflut_ldr_512x512.png");
+  init("ibl_blut_filename", "brdflut_ldr_512x512.png");
 
   // Default equirectangular environment cube map
-  setIBLEnvMapAssetHandle("lythwood_room_1k.hdr");
 
-  setTonemapExposure(4.5f);
-  setUseIBLTonemap(true);
+  init("ibl_envmap_filename", "lythwood_room_1k.hdr");
+  init("pbr_ibl_helper_key",
+       Cr::Utility::formatString("{}_{}", "brdflut_ldr_512x512",
+                                 "lythwood_room_1k.hdr"));
+
+  init("tonemap_exposure", 4.5f);
+  init("use_ibl_tonemap", true);
   // Direct and IBL output scaling
   // Set balance between direct and IBL to be equal for diffuse and specular
-  setIBLToDirectDiffuseBalance(.5);
-  setIBLToDirectSpecularBalance(.5);
+  init("direct_diffuse_scale", 0.5);
+  init("ibl_diffuse_scale", 0.5);
+
+  init("direct_specular_scale", 0.5);
+  init("ibl_specular_scale", 0.5);
 
   // For remapping
-  setMapMatTxtrToLinear(false);
-  setMapIBLTxtrToLinear(false);
-  setMapOutputToSRGB(false);
-  setGamma(2.2f);
+  init("map_mat_txtr_to_linear", false);
+  init("map_ibl_txtr_to_linear", false);
+  init("map_output_to_srgb", false);
+  init("gamma", 2.2f);
 }  // PbrShaderAttributes ctor
 
 void PbrShaderAttributes::writeValuesToJson(
