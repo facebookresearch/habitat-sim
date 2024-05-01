@@ -75,6 +75,28 @@ class AOAttributesManager
 
  protected:
   /**
+   * @brief Parse Marker_sets object in json, if present.
+   * @param attribs (out) an existing attributes to be modified.
+   * @param jsonConfig json document to parse
+   * @return true if tag is found, of appropriate configuration, and holds
+   * actual values.
+   */
+  bool parseMarkerSets(
+      const attributes::ArticulatedObjectAttributes::ptr& attribs,
+      const io::JsonGenericValue& jsonConfig) const {
+    // check for the existing of markersets
+    bool hasMarkersets =
+        this->parseSubconfigJsonVals("marker_sets", attribs, jsonConfig);
+    if (hasMarkersets) {
+      // Cast "marker_sets" Configuration to MarkerSets object and rekey all
+      // markers to make keys consistent while preserving the natural order of
+      // their original keys.
+      attribs->rekeyAllMarkerSets();
+    }
+    return hasMarkersets;
+  }
+
+  /**
    * @brief Used Internally.  Create and configure newly-created attributes with
    * any default values, before any specific values are set.
    *

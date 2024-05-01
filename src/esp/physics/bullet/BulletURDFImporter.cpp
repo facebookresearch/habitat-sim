@@ -493,8 +493,6 @@ Mn::Matrix4 BulletURDFImporter::convertURDFToBulletInternal(
 
       switch (jointType) {
         case metadata::URDF::SphericalJoint: {
-          // TODO: link mapping?
-          // creation.addLinkMapping(urdfLinkIndex, mbLinkIndex);
           cache->m_bulletMultiBody->setupSpherical(
               mbLinkIndex, mass, btVector3(localInertiaDiagonal), mbParentIndex,
               btQuaternion(parentRotToThis), btVector3(offsetInA.translation()),
@@ -503,8 +501,6 @@ Mn::Matrix4 BulletURDFImporter::convertURDFToBulletInternal(
           break;
         }
         case metadata::URDF::PlanarJoint: {
-          // TODO: link mapping?
-          // creation.addLinkMapping(urdfLinkIndex, mbLinkIndex);
           cache->m_bulletMultiBody->setupPlanar(
               mbLinkIndex, mass, btVector3(localInertiaDiagonal), mbParentIndex,
               btQuaternion(parentRotToThis),
@@ -515,17 +511,14 @@ Mn::Matrix4 BulletURDFImporter::convertURDFToBulletInternal(
           break;
         }
         case metadata::URDF::FloatingJoint:
-
         case metadata::URDF::FixedJoint: {
-          if ((jointType == metadata::URDF::FloatingJoint) ||
-              (jointType == metadata::URDF::PlanarJoint)) {
-            printf(
-                "Warning: joint unsupported, creating a fixed joint instead.");
+          if (jointType == metadata::URDF::FloatingJoint)
+          //|| (jointType == metadata::URDF::PlanarJoint))
+          {
+            ESP_WARNING() << "Warning: Floating joint unsupported, creating a "
+                             "fixed joint instead.";
           }
-          // TODO: link mapping?
-          // creation.addLinkMapping(urdfLinkIndex, mbLinkIndex);
-
-          // todo: adjust the center of mass transform and pivot axis properly
+          // TODO: adjust the center of mass transform and pivot axis properly
           cache->m_bulletMultiBody->setupFixed(
               mbLinkIndex, mass, btVector3(localInertiaDiagonal), mbParentIndex,
               btQuaternion(parentRotToThis), btVector3(offsetInA.translation()),
@@ -534,9 +527,6 @@ Mn::Matrix4 BulletURDFImporter::convertURDFToBulletInternal(
         }
         case metadata::URDF::ContinuousJoint:
         case metadata::URDF::RevoluteJoint: {
-          // TODO: link mapping?
-          // creation.addLinkMapping(urdfLinkIndex, mbLinkIndex);
-
           cache->m_bulletMultiBody->setupRevolute(
               mbLinkIndex, mass, btVector3(localInertiaDiagonal), mbParentIndex,
               btQuaternion(parentRotToThis),
@@ -561,9 +551,6 @@ Mn::Matrix4 BulletURDFImporter::convertURDFToBulletInternal(
           break;
         }
         case metadata::URDF::PrismaticJoint: {
-          // TODO: link mapping?
-          // creation.addLinkMapping(urdfLinkIndex, mbLinkIndex);
-
           cache->m_bulletMultiBody->setupPrismatic(
               mbLinkIndex, mass, btVector3(localInertiaDiagonal), mbParentIndex,
               btQuaternion(parentRotToThis),
@@ -590,6 +577,8 @@ Mn::Matrix4 BulletURDFImporter::convertURDFToBulletInternal(
           ESP_VERY_VERBOSE() << "Invalid joint type." btAssert(0);
         }
       }
+      // TODO: link mapping?
+      // creation.addLinkMapping(urdfLinkIndex, mbLinkIndex);
     }
 
     {

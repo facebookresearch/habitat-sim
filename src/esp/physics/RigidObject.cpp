@@ -20,6 +20,8 @@ bool RigidObject::initialize(
     return false;
   }
 
+  setScale(initAttributes->getScale());
+
   // save the copy of the template used to create the object at initialization
   // time
   setUserAttributes(initAttributes->getUserConfiguration());

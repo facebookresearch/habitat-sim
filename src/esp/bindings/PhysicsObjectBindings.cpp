@@ -66,6 +66,20 @@ void declareBasePhysicsObjectWrapper(py::module& m,
           ("Get or set the translation vector of this " + objType +
            "'s root SceneNode. If modified, sim state will be updated.")
               .c_str())
+      .def(
+          "transform_world_pts_to_local",
+          &PhysObjWrapper::transformWorldPointsToLocal,
+          R"(Given the list of passed points in world space, return those points
+          transformed to this object's local space. The link_id is for articulated
+          objects and is ignored for rigid objects and stages )",
+          "ws_points"_a, "link_id"_a)
+      .def(
+          "transform_local_pts_to_world",
+          &PhysObjWrapper::transformLocalPointsToWorld,
+          R"(Given the list of passed points in this object's local space, return
+          those points transformed to world space. The link_id is for articulated
+          objects and is ignored for rigid objects and stages )",
+          "ws_points"_a, "link_id"_a)
       .def_property(
           "rotation", &PhysObjWrapper::getRotation,
           &PhysObjWrapper::setRotation,
@@ -484,7 +498,7 @@ void declareArticulatedObjectWrapper(py::module& m,
                .c_str(),
            "link_id"_a)
       .def("get_link_name", &ManagedArticulatedObject::getLinkName,
-           ("Get the name of the this " + objType +
+           ("Get the name of this " + objType +
             "'s link specified by the given link_id.")
                .c_str(),
            "link_id"_a)

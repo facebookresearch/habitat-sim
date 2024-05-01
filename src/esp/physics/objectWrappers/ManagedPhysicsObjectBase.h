@@ -163,6 +163,40 @@ class AbstractManagedPhysicsObject
     }
   }  // setTranslation
 
+  /**
+   * @brief Given the list of passed points in this object's local space, return
+   * those points transformed to world space.
+   * @param points vector of points in object local space
+   * @param linkID The link ID for the object (only pertinent for articulated
+   * objects). Ignored for rigid objects and stages.
+   * @return vector of points transformed into world space
+   */
+  std::vector<Mn::Vector3> transformLocalPointsToWorld(
+      const std::vector<Mn::Vector3>& points,
+      int linkID) const {
+    if (auto sp = this->getObjectReference()) {
+      sp->transformLocalPointsToWorld(points, linkID);
+    }
+    return {};
+  }
+
+  /**
+   * @brief Given the list of passed points in world space, return
+   * those points transformed to this object's local space.
+   * @param points vector of points in world space
+   * @param linkID The link ID for the object (only pertinent for articulated
+   * objects). Ignored for rigid objects and stages.
+   * @return vector of points transformed to be in local space
+   */
+  std::vector<Mn::Vector3> transformWorldPointsToLocal(
+      const std::vector<Mn::Vector3>& points,
+      int linkID) const {
+    if (auto sp = this->getObjectReference()) {
+      sp->transformWorldPointsToLocal(points, linkID);
+    }
+    return {};
+  }
+
   Magnum::Quaternion getRotation() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getRotation();
