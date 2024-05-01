@@ -98,6 +98,23 @@ enum class ConfigValType {
 };  // enum class ConfigValType
 
 /**
+ * @brief This enum lists the bit flags describing the various status ConfigVals
+ * can be in.  These mask the higher order DWORD of _typeAndFlags, and so begin
+ * on bit 32 of 0-63.
+ */
+enum ConfigValStatus : uint64_t {
+
+  /**
+   * @brief Whether or not the config value was set with a default/initializing
+   * value. This flag is used, for example, to govern whether a value should be
+   * written to file or not - if the value was set only with a program-governed
+   * default value, it should not be written to file.
+   */
+  isDefault = 1ULL << 32
+
+};  // enum class ConfigValStatus
+
+/**
  * @brief Retrieve a string description of the passed @ref ConfigValType enum
  * value.
  */
@@ -257,26 +274,124 @@ class ConfigValue {
 
   /**
    * @brief Copy the passed @p val into this ConfigValue.  If this @ref
-   * ConfigValue's type is not trivial, this will call the appropriate copy
-   * handler for the type.
+   * ConfigValue's type is not pointer-based, this will call the appropriate
+   * copy handler for the type.
    * @param val source val to copy into this config
    */
   void copyValueFrom(const ConfigValue& val);
 
   /**
    * @brief Move the passed @p val into this ConfigVal. If this @ref
-   * ConfigValue's type is not trivial, this will call the appropriate move
-   * handler for the type.
+   * ConfigValue's type is not pointer-based, this will call the appropriate
+   * move handler for the type.
    * @param val source val to copy into this config
    */
   void moveValueFrom(ConfigValue&& val);
 
   /**
    * @brief Delete the current value. If this @ref
-   * ConfigValue's type is not trivial, this will call the appropriate
+   * ConfigValue's type is not pointer-based, this will call the appropriate
    * destructor handler for the type.
    */
   void deleteCurrentValue();
+
+  /**
+   * @brief These functions specify how the set and get functions should perform
+   * depending on whether or not the value is pointer-pased.
+   */
+
+  /**
+   * @brief Set the type component of @p _typeAndFlags to the passed @p type
+   * value, preserving the existing state of the flags component of
+   * @p _typeAndFlags .
+   */
+  inline void setType(const ConfigValType& type) {
+    // Clear out type component, retaining flags
+    _typeAndFlags &= 0xFFFFFFFF00000000;
+    // set new type component, preserving flags state
+    _typeAndFlags |= static_cast<uint64_t>(type) & 0x00000000FFFFFFFF;
+  }
+
+  /**
+   * @brief Set this ConfigVal to a new value. Type is stored as a Pointer.
+   */
+  template <typename T>
+  EnableIf<isConfigValTypePointerBased(configValTypeFor<T>()), void>
+  setInternalTyped(const T& value) {
+    T** tmpDst = reinterpret_cast<T**>(_data);
+    *tmpDst = new T(value);
+  }
+  /**
+   * @brief Set this ConfigVal to a new value. Type is stored directly in
+   * buffer.
+   */
+  template <typename T>
+  EnableIf<!isConfigValTypePointerBased(configValTypeFor<T>()), void>
+  setInternalTyped(const T& value) {
+    new (_data) T(value);
+  }
+
+  /**
+   * @brief Get this ConfigVal's value. Type is stored as a Pointer.
+   */
+  template <typename T>
+  EnableIf<isConfigValTypePointerBased(configValTypeFor<T>()), const T&>
+  getInternalTyped() const {
+    auto val = [&]() {
+      return *reinterpret_cast<const T* const*>(this->_data);
+    };
+    return *val();
+  }
+
+  /**
+   * @brief Get this ConfigVal's value. Type is stored directly in buffer.
+   */
+  template <typename T>
+  EnableIf<!isConfigValTypePointerBased(configValTypeFor<T>()), const T&>
+  getInternalTyped() const {
+    auto val = [&]() { return reinterpret_cast<const T*>(this->_data); };
+    return *val();
+  }
+
+  /**
+   * @brief Set the passed @p value as the data for this @ref ConfigValue, while also setting the appropriate type.
+   * @tparam The type of the @p value being set. Must be a handled type as specified by @ref ConfigValType.
+   * @param value The value to store in this @ref ConfigValue
+   */
+  template <typename T>
+  void setInternal(const T& value) {
+    deleteCurrentValue();
+    // This will blow up at compile time if given type is not supported
+    setType(configValTypeFor<T>());
+    // These asserts are checking the integrity of the support for T's type, and
+    // will fire if conditions are not met.
+
+    // This fails if we added a new type into @ref ConfigValType enum improperly
+    // (trivial type added after entry ConfigValType::_nonTrivialTypes, or
+    // vice-versa)
+    static_assert(isConfigValTypeNonTrivial(configValTypeFor<T>()) !=
+                      std::is_trivially_copyable<T>::value,
+                  "Something's incorrect about enum placement for added type "
+                  "(type is not trivially copyable, or vice-versa)");
+
+    // This verifies that any values that are too large to be stored directly
+    // (or are already specified as non-trivial) are pointer based, while those
+    // that are trivial and small are stored directly,
+    //
+    static_assert(
+        ((sizeof(T) >= sizeof(_data)) ||
+         isConfigValTypeNonTrivial(configValTypeFor<T>()) ==
+             (isConfigValTypePointerBased(configValTypeFor<T>()))),
+        "ConfigValue's internal storage is too small for added type!");
+    // This fails if a new type was added whose alignment does not match
+    // internal storage alignment
+    static_assert(
+        alignof(T) <= alignof(ConfigValue),
+        "ConfigValue's internal storage improperly aligned for added type!");
+
+    //_data should be destructed at this point, construct a new value
+    setInternalTyped(value);
+  }
 
  public:
   /**
@@ -321,37 +436,15 @@ class ConfigValue {
    */
   template <typename T>
   void set(const T& value) {
-    deleteCurrentValue();
-    // This will blow up at compile time if given type is not supported
-    setType(configValTypeFor<T>());
-    // These asserts are checking the integrity of the support for T's type, and
-    // will fire if conditions are not met.
-
-    // This fails if we added a new type into @ref ConfigValType enum improperly
-    // (trivial type added after entry ConfigValType::_nonTrivialTypes, or
-    // vice-versa)
-    static_assert(isConfigValTypeNonTrivial(configValTypeFor<T>()) !=
-                      std::is_trivially_copyable<T>::value,
-                  "Something's incorrect about enum placement for added type "
-                  "(type is not trivially copyable, or vice-versa)");
-
-    // This verifies that any values that are too large to be stored directly
-    // (or are already specified as non-trivial) are pointer based, while those
-    // that are trivial and small are stored directly,
-    //
-    static_assert(
-        ((sizeof(T) >= sizeof(_data)) ||
-         isConfigValTypeNonTrivial(configValTypeFor<T>()) ==
-             (isConfigValTypePointerBased(configValTypeFor<T>()))),
-        "ConfigValue's internal storage is too small for added type!");
-    // This fails if a new type was added whose alignment does not match
-    // internal storage alignment
-    static_assert(
-        alignof(T) <= alignof(ConfigValue),
-        "ConfigValue's internal storage improperly aligned for added type!");
-
-    //_data should be destructed at this point, construct a new value
     setInternal(value);
+    // set default value state to false
+    setDefaultVal(false);
+  }
+  template <typename T>
+  void init(const T& value) {
+    setInternal(value);
+    // set default value state to true
+    setDefaultVal(true);
   }
 
   /**
@@ -363,7 +456,7 @@ class ConfigValue {
     ESP_CHECK(getType() == configValTypeFor<T>(),
               "Attempting to access ConfigValue of" << getType() << "with type"
                                                     << configValTypeFor<T>());
-    return getInternal<T>();
+    return getInternalTyped<T>();
   }
 
   /**
@@ -373,10 +466,33 @@ class ConfigValue {
     return static_cast<ConfigValType>(_typeAndFlags & 0xFFFFFFFF);
   }
 
-  inline void setType(const ConfigValType& type) {
-    // Clear out type component
-    _typeAndFlags &= 0xFFFFFFFF00000000;
-    _typeAndFlags |= static_cast<uint64_t>(type) & 0x00000000FFFFFFFF;
+  inline bool getState(const ConfigValStatus flag) const {
+    return (_typeAndFlags & flag) == flag;
+  }
+
+  inline void setState(const ConfigValStatus flag, bool val) {
+    if (val) {
+      _typeAndFlags |= flag;
+    } else {
+      _typeAndFlags &= ~flag;
+    }
+  }
+
+  /**
+   * @brief Check whether this ConfigVal should be written to file on next
+   * write. We may not wish to perform this write if the config was populated
+   * with a default value programmatically.
+   */
+  inline bool isDefaultVal() const {
+    return getState(ConfigValStatus::isDefault);
+  }
+  /**
+   * @brief Set whether this ConfigVal should be written to file on next
+   * write. We may not wish to perform this write if the config was populated
+   * with a default value programmatically.
+   */
+  inline void setDefaultVal(bool isDefault) {
+    setState(ConfigValStatus::isDefault, isDefault);
   }
 
   /**
@@ -391,37 +507,6 @@ class ConfigValue {
   bool putValueInConfigGroup(const std::string& key,
                              Cr::Utility::ConfigurationGroup& cfg) const;
 
- private:
-  template <typename T>
-  EnableIf<isConfigValTypePointerBased(configValTypeFor<T>()), void>
-  setInternal(const T& value) {
-    T** tmpDst = reinterpret_cast<T**>(_data);
-    *tmpDst = new T(value);
-  }
-
-  template <typename T>
-  EnableIf<!isConfigValTypePointerBased(configValTypeFor<T>()), void>
-  setInternal(const T& value) {
-    new (_data) T(value);
-  }
-
-  template <typename T>
-  EnableIf<isConfigValTypePointerBased(configValTypeFor<T>()), const T&>
-  getInternal() const {
-    auto val = [&]() {
-      return *reinterpret_cast<const T* const*>(this->_data);
-    };
-    return *val();
-  }
-
-  template <typename T>
-  EnableIf<!isConfigValTypePointerBased(configValTypeFor<T>()), const T&>
-  getInternal() const {
-    auto val = [&]() { return reinterpret_cast<const T*>(this->_data); };
-    return *val();
-  }
-
- public:
   /**
    * @brief Comparison
    */
@@ -658,6 +743,39 @@ class Configuration {
    */
   void set(const std::string& key, float value) {
     valueMap_[key].set<double>(static_cast<double>(value));
+  }
+
+  /**
+   * @brief Save the passed @p value using specified @p key as an initial value
+   * (will not be written to file if this Configuration is saved)
+   * @tparam The type of the value to be saved.
+   * @param key The key to assign to the passed value.
+   * @param value The value to save at given @p key
+   */
+  template <typename T>
+  void init(const std::string& key, const T& value) {
+    valueMap_[key].init<T>(value);
+  }
+  /**
+   * @brief Save the passed @p value char* as a string to the configuration at
+   * the passed @p key as an initial value (will not be written to file if this
+   * Configuration is saved)
+   * @param key The key to assign to the passed value.
+   * @param value The char* to save at given @p key as a string.
+   */
+  void init(const std::string& key, const char* value) {
+    valueMap_[key].init<std::string>(std::string(value));
+  }
+
+  /**
+   * @brief Save the passed float @p value as a double using the specified
+   * @p key as an initial value (will not be written to file if this
+   * Configuration is saved).
+   * @param key The key to assign to the passed value.
+   * @param value The float value to save at given @p key as a double.
+   */
+  void init(const std::string& key, float value) {
+    valueMap_[key].init<double>(static_cast<double>(value));
   }
 
   // ****************** Value removal ******************
