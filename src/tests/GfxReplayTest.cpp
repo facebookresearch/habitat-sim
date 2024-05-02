@@ -125,13 +125,16 @@ void GfxReplayTest::testRecorder() {
   info2.overridePhongMaterial->ambientColor = Mn::Color4(0.1, 0.2, 0.3, 0.4);
   info2.overridePhongMaterial->diffuseColor = Mn::Color4(0.2, 0.3, 0.4, 0.5);
   info2.overridePhongMaterial->specularColor = Mn::Color4(0.3, 0.4, 0.5, 0.6);
+  node->setSemanticId(7);
+  node->setBaseObjectId(9);
 
   esp::gfx::replay::Recorder recorder;
   recorder.onLoadRenderAsset(info);
   recorder.onCreateRenderAssetInstance(node, creation);
   recorder.saveKeyframe();
+
+  node->setSemanticId(5);
   node->setTranslation(Mn::Vector3(1.f, 2.f, 3.f));
-  node->setSemanticId(7);
 
   // add the new override AssetInfo after 1st keyframe
   auto* node2 = resourceManager.loadAndCreateRenderAssetInstance(
@@ -162,13 +165,17 @@ void GfxReplayTest::testRecorder() {
   esp::gfx::replay::RenderAssetInstanceKey instanceKey =
       keyframes[0].creations[0].first;
   CORRADE_COMPARE(keyframes[0].stateUpdates[0].first, instanceKey);
+  CORRADE_COMPARE(keyframes[0].metadata.size(), 1);
+  CORRADE_COMPARE(keyframes[0].metadata[0].second.semanticId, 7);
+  CORRADE_COMPARE(keyframes[0].metadata[0].second.objectId, 9);
 
   // verify frame #1 has an updated state for node and state for new node2
   CORRADE_COMPARE(keyframes[1].stateUpdates.size(), 2);
+  CORRADE_COMPARE(keyframes[1].metadata.size(), 2);
   // verify frame #1 has our translation and semantic Id
   CORRADE_COMPARE(keyframes[1].stateUpdates[0].second.absTransform.translation,
                   Mn::Vector3(1.f, 2.f, 3.f));
-  CORRADE_COMPARE(keyframes[1].stateUpdates[0].second.semanticId, 7);
+  CORRADE_COMPARE(keyframes[1].metadata[0].second.semanticId, 5);
 
   // verify override material AssetInfo is loaded correctly
   CORRADE_COMPARE(keyframes[1].loads.size(), 1);
@@ -256,6 +263,8 @@ void GfxReplayTest::testPlayer() {
   flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
   esp::assets::RenderAssetInstanceCreationInfo creation(
       boxFile, Corrade::Containers::NullOpt, flags, lightSetupKey);
+  constexpr int semanticId = 11;
+  constexpr int objectId = 22;
 
   /*
   // Keyframe struct shown here for reference
@@ -276,14 +285,23 @@ void GfxReplayTest::testPlayer() {
   keyframes.emplace_back(esp::gfx::replay::Keyframe{
       {info}, {}, {{instanceKey, creation}}, {}, {}, {}, {}});
 
-  constexpr int semanticId = 4;
+  esp::gfx::replay::InstanceMetadata instanceMetadata{};
+  instanceMetadata.objectId = objectId;
+  instanceMetadata.semanticId = semanticId;
+
   esp::gfx::replay::RenderAssetInstanceState stateUpdate{
-      {Mn::Vector3(1.f, 2.f, 3.f), Mn::Quaternion(Mn::Math::IdentityInit)},
-      semanticId};
+      {Mn::Vector3(1.f, 2.f, 3.f), Mn::Quaternion(Mn::Math::IdentityInit)}};
 
   // keyframe #1: a state update
-  keyframes.emplace_back(esp::gfx::replay::Keyframe{
-      {}, {}, {}, {}, {{instanceKey, stateUpdate}}, {}, {}});
+  keyframes.emplace_back(
+      esp::gfx::replay::Keyframe{{},
+                                 {},
+                                 {},
+                                 {},
+                                 {{instanceKey, instanceMetadata}},
+                                 {{instanceKey, stateUpdate}},
+                                 {},
+                                 {}});
 
   // keyframe #2: delete instance
   keyframes.emplace_back(
@@ -292,6 +310,7 @@ void GfxReplayTest::testPlayer() {
   // keyframe #3: include a user transform
   keyframes.emplace_back(
       esp::gfx::replay::Keyframe{{},
+                                 {},
                                  {},
                                  {},
                                  {},
@@ -336,6 +355,7 @@ void GfxReplayTest::testPlayer() {
         CORRADE_COMPARE(instanceNode->translation(),
                         Mn::Vector3(1.f, 2.f, 3.f));
         CORRADE_COMPARE(instanceNode->getSemanticId(), semanticId);
+        CORRADE_COMPARE(instanceNode->getBaseObjectId(), objectId);
       } else {  // if rootNode had children originally, then stateUpdate was
                 // applied to a sibling of the lastRootChild
         // get the lastRootChild before the stateUpdate
@@ -351,6 +371,7 @@ void GfxReplayTest::testPlayer() {
         CORRADE_COMPARE(instanceNode->translation(),
                         Mn::Vector3(1.f, 2.f, 3.f));
         CORRADE_COMPARE(instanceNode->getSemanticId(), semanticId);
+        CORRADE_COMPARE(instanceNode->getBaseObjectId(), objectId);
       }
     } else if (keyframeIndex == 2) {
       // assert that no new nodes were created

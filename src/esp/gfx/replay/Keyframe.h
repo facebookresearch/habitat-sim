@@ -31,11 +31,21 @@ struct Transform {
  */
 struct RenderAssetInstanceState {
   Transform absTransform;  // localToWorld
-  // note we currently only support semanticId per instance, not per drawable
-  int semanticId = ID_UNDEFINED;
   // note we don't currently support runtime changes to lightSetupKey
   bool operator==(const RenderAssetInstanceState& rhs) const {
-    return absTransform == rhs.absTransform && semanticId == rhs.semanticId;
+    return absTransform == rhs.absTransform;
+  }
+};
+
+/**
+ * @brief Metadata associated with an instance.
+ */
+struct InstanceMetadata {
+  int objectId = ID_UNDEFINED;
+  int semanticId = ID_UNDEFINED;
+
+  bool operator==(const InstanceMetadata& rhs) const {
+    return objectId == rhs.objectId && semanticId == rhs.semanticId;
   }
 };
 
@@ -67,6 +77,7 @@ struct Keyframe {
                         esp::assets::RenderAssetInstanceCreationInfo>>
       creations;
   std::vector<RenderAssetInstanceKey> deletions;
+  std::vector<std::pair<RenderAssetInstanceKey, InstanceMetadata>> metadata;
   std::vector<std::pair<RenderAssetInstanceKey, RenderAssetInstanceState>>
       stateUpdates;
   std::vector<RigUpdate> rigUpdates;
