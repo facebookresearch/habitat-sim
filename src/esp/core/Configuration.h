@@ -110,7 +110,15 @@ enum ConfigValStatus : uint64_t {
    * written to file or not - if the value was set only with a program-governed
    * default value, it should not be written to file.
    */
-  isDefault = 1ULL << 32
+  isDefault = 1ULL << 32,
+
+  /**
+   * @brief Whether or not the config value is hidden and used as an internally
+   * tracked/managed variable, not part of the metadata itself. These
+   * variables should never be written to file or displayed except for debugging
+   * purposes.
+   */
+  isHidden = 1ULL << 33
 
 };  // enum class ConfigValStatus
 
@@ -308,7 +316,8 @@ class ConfigValue {
   inline void setType(const ConfigValType& type) {
     // Clear out type component, retaining flags
     _typeAndFlags &= 0xFFFFFFFF00000000;
-    // set new type component, preserving flags state
+    // set new type component, preserving flags state via the mask
+    // (ConfigValType::for Unknown)
     _typeAndFlags |= static_cast<uint64_t>(type) & 0x00000000FFFFFFFF;
   }
 
@@ -465,33 +474,59 @@ class ConfigValue {
     return static_cast<ConfigValType>(_typeAndFlags & 0xFFFFFFFF);
   }
 
-  inline bool getState(const ConfigValStatus flag) const {
-    return (_typeAndFlags & flag) == flag;
+  /**
+   * @brief Get whether the flags specified by @p mask are true or not
+   */
+  inline bool getState(const uint64_t mask) const {
+    return (_typeAndFlags & mask) == mask;
   }
-
-  inline void setState(const ConfigValStatus flag, bool val) {
+  /**
+   * @brief Set the flags specified by @p mask to be @p val
+   */
+  inline void setState(const uint64_t mask, bool val) {
     if (val) {
-      _typeAndFlags |= flag;
+      _typeAndFlags |= mask;
     } else {
-      _typeAndFlags &= ~flag;
+      _typeAndFlags &= ~mask;
     }
   }
 
   /**
-   * @brief Check whether this ConfigVal should be written to file on next
-   * write. We may not wish to perform this write if the config was populated
-   * with a default value programmatically.
+   * @brief Check whether this ConfigVal was set as a programmatic default value
+   * or was set from metadata or other intentional sources. We may not wish to
+   * write this value to file if it was only populated with a default value
+   * programmatically.
    */
   inline bool isDefaultVal() const {
     return getState(ConfigValStatus::isDefault);
   }
   /**
-   * @brief Set whether this ConfigVal should be written to file on next
-   * write. We may not wish to perform this write if the config was populated
-   * with a default value programmatically.
+   * @brief Set whether this ConfigVal was set as a programmatic default value
+   * or was set from metadata or other intentional sources. We may not wish to
+   * write this value to file if it was only populated with a default value
+   * programmatically.
    */
   inline void setDefaultVal(bool isDefault) {
     setState(ConfigValStatus::isDefault, isDefault);
+  }
+
+  /**
+   * @brief Check whether this ConfigVal is an internal value used
+   * programmatically in conjunction with other data in the owning
+   * Configuration. These values probably should never be written to file or
+   * shared with the user except for debugging purposes.
+   */
+  inline bool isHiddenVal() const {
+    return getState(ConfigValStatus::isHidden);
+  }
+  /**
+   * @brief Set whether this ConfigVal is an internal value used
+   * programmatically in conjunction with other data in the owning
+   * Configuration. These values probably should never be written to file or
+   * shared with the user except for debugging purposes.
+   */
+  inline void setHiddenVal(bool isDefault) {
+    setState(ConfigValStatus::isHidden, isDefault);
   }
 
   /**
