@@ -118,7 +118,7 @@ enum ConfigValStatus : uint64_t {
    * variables should never be written to file or displayed except for debugging
    * purposes.
    */
-  isHidden = 1ULL << 33
+  isHidden = 1ULL << 33,
 
 };  // enum class ConfigValStatus
 
@@ -143,6 +143,7 @@ constexpr bool isConfigValTypeNonTrivial(ConfigValType type) {
   return static_cast<int>(type) >=
          static_cast<int>(ConfigValType::_nonTrivialTypes);
 }
+
 /**
  * @brief Function template to return type enum for specified type. All
  * supported types should have a specialization of this function handling their
@@ -399,6 +400,19 @@ class ConfigValue {
 
     //_data should be destructed at this point, construct a new value
     setInternalTyped(value);
+  }  // ConfigValue::setInternal
+
+  /**
+   * @brief Returns true if this and otr's _data arrays are not pointers to the
+   * same data, or are not pointerbased types.
+   */
+  inline bool isSafeToDeconstruct(const ConfigValue& otr) const {
+    // Don't want to clobber otr's data when we decon this if pointer backed
+    // type and each ConfigValue's _data arrays are equal (when cast to
+    // pointers)
+    return !isConfigValTypePointerBased(getType()) ||
+           !(reinterpret_cast<const void*>(_data) ==
+             reinterpret_cast<const void*>(otr._data));
   }
 
  public:

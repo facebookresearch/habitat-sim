@@ -186,7 +186,7 @@ void ConfigValue::deleteCurrentValue() {
 }
 
 ConfigValue& ConfigValue::operator=(const ConfigValue& otr) {
-  if (this != &otr) {
+  if ((this != &otr) && isSafeToDeconstruct(otr)) {
     deleteCurrentValue();
     copyValueFrom(otr);
   }
@@ -194,8 +194,11 @@ ConfigValue& ConfigValue::operator=(const ConfigValue& otr) {
 }  // ConfigValue::operator=
 
 ConfigValue& ConfigValue::operator=(ConfigValue&& otr) noexcept {
-  deleteCurrentValue();
+  if (isSafeToDeconstruct(otr)) {
+    deleteCurrentValue();
+  }
   moveValueFrom(std::move(otr));
+
   return *this;
 }  // ConfigValue::operator=
 
