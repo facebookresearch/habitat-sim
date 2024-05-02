@@ -379,9 +379,8 @@ class ConfigValue {
     // that are trivial and small are stored directly,
     //
     static_assert(
-        ((sizeof(T) >= sizeof(_data)) ||
-         isConfigValTypeNonTrivial(configValTypeFor<T>()) ==
-             (isConfigValTypePointerBased(configValTypeFor<T>()))),
+        ((sizeof(T) <= sizeof(_data)) ||
+         isConfigValTypePointerBased(configValTypeFor<T>())),
         "ConfigValue's internal storage is too small for added type!");
     // This fails if a new type was added whose alignment does not match
     // internal storage alignment
