@@ -566,14 +566,13 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
   return numConfigSettings;
 }  // Configuration::loadFromJson
 
-void Configuration::writeValueToJson(const char* key,
-                                     const char* jsonName,
-                                     io::JsonGenericValue& jsonObj,
-                                     io::JsonAllocator& allocator) const {
-  // Create Generic value for key, using allocator, to make sure its a copy
-  // and lives long enough
+void Configuration::writeValueToJsonInternal(
+    const ConfigValue& configValue,
+    const char* jsonName,
+    io::JsonGenericValue& jsonObj,
+    io::JsonAllocator& allocator) const {
   io::JsonGenericValue name{jsonName, allocator};
-  auto jsonVal = get(key).writeToJsonObject(allocator);
+  auto jsonVal = configValue.writeToJsonObject(allocator);
   jsonObj.AddMember(name, jsonVal, allocator);
 }
 
@@ -584,17 +583,18 @@ void Configuration::writeValuesToJson(io::JsonGenericValue& jsonObj,
   auto valIterPair = getValuesIterator();
   for (auto& valIter = valIterPair.first; valIter != valIterPair.second;
        ++valIter) {
-    if (valIter->second.isValid()) {
-      // Create Generic value for key, using allocator, to make sure its a copy
-      // and lives long enough
-      io::JsonGenericValue name{valIter->first.c_str(), allocator};
-      auto jsonVal = valIter->second.writeToJsonObject(allocator);
-      jsonObj.AddMember(name, jsonVal, allocator);
-    } else {
+    if (!valIter->second.isValid()) {
       ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
           << "Unitialized ConfigValue in Configuration @ key `"
           << valIter->first
           << "`, so nothing will be written to JSON for this key.";
+
+    } else if (valIter->second.shouldWriteToFile()) {
+      // Create Generic value for key, using allocator, to make sure its a copy
+      // and lives long enough
+      writeValueToJsonInternal(valIter->second, valIter->first.c_str(), jsonObj,
+                               allocator);
+    } else {
     }
   }  // iterate through all values
 }  // Configuration::writeValuesToJson

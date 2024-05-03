@@ -270,19 +270,19 @@ class ConfigValue {
  private:
   /**
    * @brief This field holds various state flags in the higher 8 bytes and the
-   * type of the data represented in this ConfigValue in the lower 8 bytes.
+   * type of the data represented in this @ref ConfigValue in the lower 8 bytes.
    */
   uint64_t _typeAndFlags{0x00000000FFFFFFFF};
 
   /**
-   * @brief The data this ConfigValue holds.
+   * @brief The data this @ref ConfigValue holds.
    * Aligns to individual 8-byte bounds. The _typeAndFlags is 8 bytes, and 8
    * bytes for data.
    */
   alignas(8) char _data[CONFIG_VAL_SIZE] = {0};
 
   /**
-   * @brief Copy the passed @p val into this ConfigValue.  If this @ref
+   * @brief Copy the passed @p val into this @ref ConfigValue.  If this @ref
    * ConfigValue's type is not pointer-based, this will call the appropriate
    * copy handler for the type.
    * @param val source val to copy into this config
@@ -447,12 +447,13 @@ class ConfigValue {
   bool isValid() const { return getType() != ConfigValType::Unknown; }
 
   /**
-   * @brief Write this ConfigValue to an appropriately configured json object.
+   * @brief Write this @ref ConfigValue to an appropriately configured json object.
    */
   io::JsonGenericValue writeToJsonObject(io::JsonAllocator& allocator) const;
 
   /**
-   * @brief Set the passed @p value as the data for this @ref ConfigValue, while also setting the appropriate type.
+   * @brief Set the passed @p value as the data for this @ref ConfigValue, while
+   * also setting the appropriate type.
    * @tparam The type of the @p value being set. Must be a handled type as specified by @ref ConfigValType.
    * @param value The value to store in this @ref ConfigValue
    */
@@ -461,12 +462,22 @@ class ConfigValue {
     setInternal(value);
     // set default value state to false
     setDefaultVal(false);
+    setHiddenVal(false);
   }
+
+  /**
+   * @brief Set the passed @p value as the programmatic default/initialization
+   * data for this @ref ConfigValue, while also setting the appropriate type. This value
+   * will not be saved to file unless it is changed by file read or user input.
+   * @tparam The type of the @p value being set. Must be a handled type as specified by @ref ConfigValType.
+   * @param value The value to store in this @ref ConfigValue
+   */
   template <typename T>
   void init(const T& value) {
     setInternal(value);
     // set default value state to true
     setDefaultVal(true);
+    setHiddenVal(false);
   }
 
   /**
@@ -542,6 +553,15 @@ class ConfigValue {
   inline void setHiddenVal(bool isDefault) {
     setState(ConfigValStatus::isHidden, isDefault);
   }
+
+  /**
+   * @brief Whether or not this @ref ConfigValue should be written to file during
+   * common execution. The reason we may not want to do this might be that the
+   * value was only set to a programmatic default value, and not set
+   * intentionally from the source file or user input; we also do not want to
+   * write any internal/hidden values to files.
+   */
+  bool shouldWriteToFile() const { return !isDefaultVal() || !isHiddenVal(); }
 
   /**
    * @brief Retrieve a string representation of the data held in this @ref
@@ -1277,7 +1297,12 @@ class Configuration {
   void writeValueToJson(const char* key,
                         const char* jsonName,
                         io::JsonGenericValue& jsonObj,
-                        io::JsonAllocator& allocator) const;
+                        io::JsonAllocator& allocator) const {
+    auto cfgVal = get(key);
+    if (cfgVal.shouldWriteToFile()) {
+      writeValueToJsonInternal(cfgVal, jsonName, jsonObj, allocator);
+    }
+  }
 
   /**
    * @brief Take the passed @p key and query the config value for that key,
@@ -1289,7 +1314,10 @@ class Configuration {
   void writeValueToJson(const char* key,
                         io::JsonGenericValue& jsonObj,
                         io::JsonAllocator& allocator) const {
-    writeValueToJson(key, key, jsonObj, allocator);
+    auto cfgVal = get(key);
+    if (cfgVal.shouldWriteToFile()) {
+      writeValueToJsonInternal(cfgVal, key, jsonObj, allocator);
+    }
   }
 
   /**
@@ -1389,6 +1417,21 @@ class Configuration {
   }
 
  private:
+  /**
+   * @brief Write the passed @p configValue to a json objbect tagged with
+   * @p jsonName within the passed @p jsonObj . By here we have already verified
+   * that this object should be written to Json (i.e. checks for being hidden or
+   * only programmatically initialized have occurred already).
+   * @param configValue The @ref ConfigValue we want to write to the json file.
+   * @param jsonName The tag to use in the json file
+   * @param jsonObj The json object to write to
+   * @param allocator The json allocator to use to build the json object
+   */
+  void writeValueToJsonInternal(const ConfigValue& configValue,
+                                const char* jsonName,
+                                io::JsonGenericValue& jsonObj,
+                                io::JsonAllocator& allocator) const;
+
   /**
    * @brief Process passed json object into this Configuration, using passed
    * key.
