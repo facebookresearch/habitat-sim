@@ -18,8 +18,8 @@ AbstractObjectAttributes::AbstractObjectAttributes(
   init("scale", Mn::Vector3{1.0, 1.0, 1.0});
   init("collision_asset_size", Mn::Vector3{1.0, 1.0, 1.0});
   init("margin", 0.04);
-  init("orient_up", Mn::Vector3{0, 1, 0});
-  init("orient_front", Mn::Vector3{0, 0, -1});
+  init("up", Mn::Vector3{0, 1, 0});
+  init("front", Mn::Vector3{0, 0, -1});
   init("use_frame_for_all_orientation", true);
   // default to use material-derived shader unless otherwise specified in config
   // or instance config
@@ -42,6 +42,9 @@ AbstractObjectAttributes::AbstractObjectAttributes(
   init("render_asset", "");
   init("collision_asset", "");
 
+  // This specifies that we want to investigate the state of the render and
+  // collision handles before we allow this attributes to be registered.
+  // Hidden field
   setIsDirty();
   // set up an existing subgroup for marker_sets attributes
   addOrEditSubgroup<MarkerSets>("marker_sets");
@@ -58,8 +61,8 @@ std::string AbstractObjectAttributes::getObjectInfoInternal() const {
   return Cr::Utility::formatString(
       "{},{},{},{},{},{},{},{},{},{},{}", getRenderAssetHandle(),
       getCollisionAssetHandle(), getAsString("scale"), getAsString("margin"),
-      getAsString("orient_up"), getAsString("orient_front"),
-      getAsString("units_to_meters"), getAsString("friction_coefficient"),
+      getAsString("up"), getAsString("front"), getAsString("units_to_meters"),
+      getAsString("friction_coefficient"),
       getAsString("rolling_friction_coefficient"),
       getAsString("spinning_friction_coefficient"),
       getAsString("restitution_coefficient"),
@@ -73,8 +76,8 @@ void AbstractObjectAttributes::writeValuesToJson(
   writeValueToJson("scale", jsonObj, allocator);
   writeValueToJson("margin", jsonObj, allocator);
   writeValueToJson("is_collidable", jsonObj, allocator);
-  writeValueToJson("orient_up", "up", jsonObj, allocator);
-  writeValueToJson("orient_front", "front", jsonObj, allocator);
+  writeValueToJson("up", jsonObj, allocator);
+  writeValueToJson("front", jsonObj, allocator);
   writeValueToJson("units_to_meters", jsonObj, allocator);
   writeValueToJson("is_visible", jsonObj, allocator);
   writeValueToJson("friction_coefficient", jsonObj, allocator);
@@ -87,7 +90,7 @@ void AbstractObjectAttributes::writeValuesToJson(
   writeValueToJson("shader_type", jsonObj, allocator);
   writeValueToJson("force_flat_shading", jsonObj, allocator);
 
-  // call instance-specific
+  // call child-class-specific
   writeValuesToJsonInternal(jsonObj, allocator);
 }  // AbstractObjectAttributes::writeValuesToJson
 

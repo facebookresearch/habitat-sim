@@ -305,8 +305,8 @@ def build_dict_of_PhyObj_attrs(phys_obj_template):
         "boolean",
     )
     res_dict["shader_type"] = (phys_obj_template.shader_type, True, "int")
-    res_dict["orient_up"] = (phys_obj_template.orient_up, True, "vector")
-    res_dict["orient_front"] = (phys_obj_template.orient_front, True, "vector")
+    res_dict["up"] = (phys_obj_template.orient_up, True, "vector")
+    res_dict["front"] = (phys_obj_template.orient_front, True, "vector")
     res_dict["units_to_meters"] = (phys_obj_template.units_to_meters, True, "double")
     res_dict["render_asset_type"] = (phys_obj_template.render_asset_type, True, "int")
     res_dict["collision_asset_type"] = (

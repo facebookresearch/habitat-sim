@@ -47,26 +47,22 @@ class AbstractObjectAttributes : public AbstractAttributes {
   /**
    * @brief Set default up orientation for object/stage mesh
    */
-  void setOrientUp(const Magnum::Vector3& orientUp) {
-    set("orient_up", orientUp);
-  }
+  void setOrientUp(const Magnum::Vector3& orientUp) { set("up", orientUp); }
   /**
    * @brief get default up orientation for object/stage mesh
    */
-  Magnum::Vector3 getOrientUp() const {
-    return get<Magnum::Vector3>("orient_up");
-  }
+  Magnum::Vector3 getOrientUp() const { return get<Magnum::Vector3>("up"); }
   /**
    * @brief Set default forward orientation for object/stage mesh
    */
   void setOrientFront(const Magnum::Vector3& orientFront) {
-    set("orient_front", orientFront);
+    set("front", orientFront);
   }
   /**
    * @brief get default forward orientation for object/stage mesh
    */
   Magnum::Vector3 getOrientFront() const {
-    return get<Magnum::Vector3>("orient_front");
+    return get<Magnum::Vector3>("front");
   }
 
   /**
