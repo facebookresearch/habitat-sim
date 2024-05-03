@@ -146,7 +146,7 @@ class SemanticAttributes : public AbstractAttributes {
    * stage's render mesh.
    */
   void setSemanticOrientUp(const Magnum::Vector3& semanticOrientUp) {
-    set("semantic_orient_up", semanticOrientUp);
+    set("semantic_up", semanticOrientUp);
     setUseSpecifiedSemanticFrame(true);
   }
 
@@ -156,7 +156,7 @@ class SemanticAttributes : public AbstractAttributes {
    * stage render mesh.
    */
   Magnum::Vector3 getSemanticOrientUp() const {
-    return get<Magnum::Vector3>("semantic_orient_up");
+    return get<Magnum::Vector3>("semantic_up");
   }
 
   /**
@@ -165,7 +165,7 @@ class SemanticAttributes : public AbstractAttributes {
    * than the stage render mesh.
    */
   void setSemanticOrientFront(const Magnum::Vector3& semanticOrientFront) {
-    set("semantic_orient_front", semanticOrientFront);
+    set("semantic_front", semanticOrientFront);
     setUseSpecifiedSemanticFrame(true);
   }
 
@@ -175,7 +175,7 @@ class SemanticAttributes : public AbstractAttributes {
    * than the stage render mesh.
    */
   Magnum::Vector3 getSemanticOrientFront() const {
-    return get<Magnum::Vector3>("semantic_orient_front");
+    return get<Magnum::Vector3>("semantic_front");
   }
 
   /**

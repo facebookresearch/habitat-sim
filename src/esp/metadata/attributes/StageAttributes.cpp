@@ -11,8 +11,8 @@ StageAttributes::StageAttributes(const std::string& handle)
     : AbstractObjectAttributes("StageAttributes", handle) {
   init("gravity", Mn::Vector3{0, -9.8, 0});
   init("origin", Mn::Vector3{0, 0, 0});
-  init("semantic_orient_up", Mn::Vector3{0, 1, 0});
-  init("semantic_orient_front", Mn::Vector3{0, 0, -1});
+  init("semantic_up", Mn::Vector3{0, 1, 0});
+  init("semantic_front", Mn::Vector3{0, 0, -1});
   // Set this to true so that only used if actually changed.
   init("use_frame_for_all_orientation", true);
 
@@ -38,13 +38,12 @@ void StageAttributes::writeValuesToJsonInternal(
   writeValueToJson("gravity", jsonObj, allocator);
   // only save values if they were actually set specifically
   if (!getUseFrameForAllOrientation()) {
-    writeValueToJson("semantic_orient_up", "semantic_up", jsonObj, allocator);
-    writeValueToJson("semantic_orient_front", "semantic_front", jsonObj,
-                     allocator);
+    writeValueToJson("semantic_up", jsonObj, allocator);
+    writeValueToJson("semantic_front", jsonObj, allocator);
   }
   writeValueToJson("has_semantic_textures", jsonObj, allocator);
-  writeValueToJson("semantic_asset", jsonObj, allocator);
   writeValueToJson("nav_asset", jsonObj, allocator);
+  writeValueToJson("semantic_asset", jsonObj, allocator);
   writeValueToJson("semantic_descriptor_filename", jsonObj, allocator);
 
 }  // StageAttributes::writeValuesToJsonInternal
@@ -69,8 +68,8 @@ std::string StageAttributes::getAbstractObjectInfoInternal() const {
 
   if (!getUseFrameForAllOrientation()) {
     Cr::Utility::formatInto(res, res.length(), "{},{},",
-                            getAsString("semantic_orient_up"),
-                            getAsString("semantic_orient_front"));
+                            getAsString("semantic_up"),
+                            getAsString("semantic_front"));
   }
   Cr::Utility::formatInto(res, res.length(), "{},{},{},{},{}",
                           getAsString("has_semantic_textures"),
