@@ -65,8 +65,8 @@ SemanticAttributes::SemanticAttributes(const std::string& handle)
     : AbstractAttributes("SemanticAttributes", handle) {
   init("semantic_descriptor_filename", "");
   init("semantic_asset", "");
-  init("semantic_orient_up", Mn::Vector3{0, 1, 0});
-  init("semantic_orient_front", Mn::Vector3{0, 0, -1});
+  init("semantic_up", Mn::Vector3{0, 1, 0});
+  init("semantic_front", Mn::Vector3{0, 0, -1});
   init("use_semantic_frame", false);
   // setting default for semantic assets having semantically painted textures to
   // false
@@ -105,9 +105,8 @@ void SemanticAttributes::writeValuesToJson(io::JsonGenericValue& jsonObj,
       writeValueToJson("has_semantic_textures", jsonObj, allocator);
     }
     if (getUseSpecifiedSemanticFrame()) {
-      writeValueToJson("semantic_orient_up", "semantic_up", jsonObj, allocator);
-      writeValueToJson("semantic_orient_front", "semantic_front", jsonObj,
-                       allocator);
+      writeValueToJson("semantic_up", jsonObj, allocator);
+      writeValueToJson("semantic_front", jsonObj, allocator);
     }
   }
 }  // SemanticAttributes::writeValuesToJson
