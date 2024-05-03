@@ -466,6 +466,22 @@ class ConfigValue {
   }
 
   /**
+   * @brief Set the passed @p value as the data for this @ref ConfigValue, while
+   * also setting the appropriate type. This ConfigValue is hidden, to be used
+   * internally and not expected to be exposed to user interaction except for
+   * potentially debugging.
+   * @tparam The type of the @p value being set. Must be a handled type as specified by @ref ConfigValType.
+   * @param value The value to store in this @ref ConfigValue
+   */
+  template <typename T>
+  void setHidden(const T& value) {
+    setInternal(value);
+    // set default value state to false
+    setDefaultVal(false);
+    setHiddenVal(true);
+  }
+
+  /**
    * @brief Set the passed @p value as the programmatic default/initialization
    * data for this @ref ConfigValue, while also setting the appropriate type. This value
    * will not be saved to file unless it is changed by file read or user input.
@@ -811,6 +827,39 @@ class Configuration {
    */
   void set(const std::string& key, float value) {
     valueMap_[key].set<double>(static_cast<double>(value));
+  }
+
+  /**
+   * @brief Save the passed @p value using specified @p key as a hidden value,
+   * to be used internally but not saved or exposed to the user.
+   * @tparam The type of the value to be saved.
+   * @param key The key to assign to the passed value.
+   * @param value The value to save at given @p key
+   */
+  template <typename T>
+  void setHidden(const std::string& key, const T& value) {
+    valueMap_[key].setHidden<T>(value);
+  }
+  /**
+   * @brief Save the passed @p value char* as a string to the configuration at
+   * the passed @p key as a hidden value, to be used internally but not saved or
+   * exposed to the user.
+   * @param key The key to assign to the passed value.
+   * @param value The char* to save at given @p key as a string.
+   */
+  void setHidden(const std::string& key, const char* value) {
+    valueMap_[key].setHidden<std::string>(std::string(value));
+  }
+
+  /**
+   * @brief Save the passed float @p value as a double using the specified
+   * @p key  as a hidden value, to be used internally but not saved or exposed
+   * to the user.
+   * @param key The key to assign to the passed value.
+   * @param value The float value to save at given @p key as a double.
+   */
+  void setHidden(const std::string& key, float value) {
+    valueMap_[key].setHidden<double>(static_cast<double>(value));
   }
 
   /**
