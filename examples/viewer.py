@@ -244,8 +244,6 @@ class HabitatSimInteractiveViewer(Application):
         # cache most recently loaded URDF file for quick-reload
         self.cached_urdf = ""
 
-        self.selected_marker_set_index = 0
-
         # Cycle mouse utilities
         self.mouse_interaction = MouseMode.LOOK
         self.mouse_grabber: Optional[MouseGrabber] = None
@@ -294,12 +292,7 @@ class HabitatSimInteractiveViewer(Application):
         self.reconfigure_sim(mm)
 
         # load markersets for every object and ao into a cache
-        self.marker_sets_per_obj = self.get_all_markersets(mm)
-        self.marker_sets_changed = {}
-        self.marker_debug_random_colors = {}
-        for key in self.marker_sets_per_obj:
-            self.marker_sets_changed[key] = False
-            self.marker_debug_random_colors[key] = {}
+        self.marker_sets_per_obj = self.get_all_markersets(mm, self)
 
         # load appropriate filter file for scene
         self.load_scene_filter_file()
@@ -609,9 +602,20 @@ class HabitatSimInteractiveViewer(Application):
                 normal=camera_position - cp.position_on_b_in_ws,
             )
 
+    ##########################
+    # Markerset Handling
+
+    def get_current_markerset_taskname(self):
+        return self.markerset_taskset_names[self.current_markerset_taskset_idx]
+
     def get_all_markersets(
-        self, mm: Optional[habitat_sim.metadata.MetadataMediator] = None
+        self, mm: habitat_sim.metadata.MetadataMediator, viewer: Application
     ):
+        """
+        Get all the markersets defined in the currently loaded objects and articulated objects.
+        Note : any modified/saved markersets may require their owning Configurations
+        to be reloaded before this function would expose them.
+        """
         print("Start getting all markersets")
         # marker set cache of existing markersets for all objs in scene, keyed by object name
         marker_sets_per_obj = {}
@@ -627,19 +631,34 @@ class HabitatSimInteractiveViewer(Application):
             marker_sets_per_obj[handle] = obj.marker_sets
         print("Done getting all markersets")
 
+        task_names_set = set()
+        task_names_set.add("faucets")
+        # initialize list of possible taskSet names
+        for _obj_handle, MarkerSet in marker_sets_per_obj.items():
+            task_names_set.update(MarkerSet.get_all_taskset_names())
+
+        # Necessary class-level variables.
+        viewer.markerset_taskset_names = list(task_names_set)
+        viewer.current_markerset_taskset_idx = 0
+
+        viewer.marker_sets_changed = {}
+        viewer.marker_debug_random_colors = {}
+        for key in marker_sets_per_obj:
+            viewer.marker_sets_changed[key] = False
+            viewer.marker_debug_random_colors[key] = {}
+
         return marker_sets_per_obj
 
-    def place_marker_at_hit_location(self, is_left_btn):
-        hit_info = self.mouse_cast_results.hits[0]
-        self.selected_object = None
+    def place_marker_at_hit_location(self, viewer: Application, hit_info, add_marker):
+        viewer.selected_object = None
 
         # object or ao at hit location. If none, hit stage
-        obj = sutils.get_obj_from_id(self.sim, hit_info.object_id, self.ao_link_map)
+        obj = sutils.get_obj_from_id(viewer.sim, hit_info.object_id, viewer.ao_link_map)
         print(
             f"Marker : Mouse click object : {hit_info.object_id} : Point : {hit_info.point} "
         )
         # TODO these values need to be modifiable
-        task_set_name = "faucets"
+        task_set_name = self.get_current_markerset_taskname()
         marker_set_name = "faucet_000"
         if obj is None:
             print(
@@ -653,7 +672,7 @@ class HabitatSimInteractiveViewer(Application):
             # TODO need to support stage properly including root transformation
             local_hit_point = hit_info.point
         else:
-            self.selected_object = obj
+            viewer.selected_object = obj
             # get a reference to the object/ao 's markerSets
             obj_marker_sets = obj.marker_sets
             obj_handle = obj.handle
@@ -681,7 +700,7 @@ class HabitatSimInteractiveViewer(Application):
 
             if obj_marker_sets is not None:
                 # add marker if left button clicked
-                if is_left_btn:
+                if add_marker:
                     # if the desired hierarchy does not exist, create it
                     if not obj_marker_sets.has_task_link_markerset(
                         task_set_name, link_name, marker_set_name
@@ -727,9 +746,9 @@ class HabitatSimInteractiveViewer(Application):
                         print(
                             f"There are no points in MarkerSet : {marker_set_name}, LinkSet :{link_name}, TaskSet :{task_set_name} so removal aborted."
                         )
-            self.marker_sets_per_obj[obj_handle] = obj_marker_sets
-            self.marker_sets_changed[obj_handle] = True
-            self.save_markerset_attributes(obj)
+            viewer.marker_sets_per_obj[obj_handle] = obj_marker_sets
+            viewer.marker_sets_changed[obj_handle] = True
+            viewer.save_markerset_attributes(obj)
 
     def draw_marker_sets_debug(self, debug_line_render: Any) -> None:
         """
@@ -784,6 +803,37 @@ class HabitatSimInteractiveViewer(Application):
                                     color=marker_set_color,
                                     normal=camera_position - global_marker_pos,
                                 )
+
+    def save_markerset_attributes(self, obj) -> None:
+        # get the name of the attrs used to initialize the object
+        obj_init_attr_handle = obj.creation_attributes.handle
+        if isinstance(obj, physics.ManagedArticulatedObject):
+            # save AO config
+            attrMgr = self.sim.metadata_mediator.ao_template_manager
+        else:
+            # save obj config
+            attrMgr = self.sim.metadata_mediator.object_template_manager
+        # get copy of initialization attributes as they were in manager,
+        # unmodified by scene instance values such as scale
+        init_attrs = attrMgr.get_template_by_handle(obj_init_attr_handle)
+        # put edited subconfig into initial attributes
+        markersets = init_attrs.get_marker_sets()
+        # manually copying because the markersets type is getting lost from markersets
+        edited_marker_sets = self.marker_sets_per_obj[obj.handle]
+        for subconfig_key in edited_marker_sets.get_subconfig_keys():
+            markersets.save_subconfig(
+                subconfig_key, edited_marker_sets.get_subconfig(subconfig_key)
+            )
+
+        # reregister template
+        attrMgr.register_template(init_attrs, init_attrs.handle, True)
+        # save to original location - uses saved location in attributes
+        attrMgr.save_template_by_handle(init_attrs.handle, True)
+        # clear out dirty flag
+        self.marker_sets_changed[obj.handle] = False
+
+    ##########################
+    # End Markerset Handling
 
     def draw_region_debug(self, debug_line_render: Any) -> None:
         """
@@ -1418,34 +1468,6 @@ class HabitatSimInteractiveViewer(Application):
                 self.rec_filter_data[filter_type].remove(filtered_rec_name)
         self.rec_filter_data[filter_status].append(filtered_rec_name)
 
-    def save_markerset_attributes(self, obj) -> None:
-        # get the name of the attrs used to initialize the object
-        obj_init_attr_handle = obj.creation_attributes.handle
-        if isinstance(obj, physics.ManagedArticulatedObject):
-            # save AO config
-            attrMgr = self.sim.metadata_mediator.ao_template_manager
-        else:
-            # save obj config
-            attrMgr = self.sim.metadata_mediator.object_template_manager
-        # get copy of initialization attributes as they were in manager,
-        # unmodified by scene instance values such as scale
-        init_attrs = attrMgr.get_template_by_handle(obj_init_attr_handle)
-        # put edited subconfig into initial attributes
-        markersets = init_attrs.get_marker_sets()
-        # manually copying because the markersets type is getting lost from markersets
-        edited_marker_sets = self.marker_sets_per_obj[obj.handle]
-        for subconfig_key in edited_marker_sets.get_subconfig_keys():
-            markersets.save_subconfig(
-                subconfig_key, edited_marker_sets.get_subconfig(subconfig_key)
-            )
-
-        # reregister template
-        attrMgr.register_template(init_attrs, init_attrs.handle, True)
-        # save to original location - uses saved location in attributes
-        attrMgr.save_template_by_handle(init_attrs.handle, True)
-        # clear out dirty flag
-        self.marker_sets_changed[obj.handle] = False
-
     def key_press_event(self, event: Application.KeyEvent) -> None:
         """
         Handles `Application.KeyEvent` on a key press by performing the corresponding functions.
@@ -2003,7 +2025,10 @@ class HabitatSimInteractiveViewer(Application):
             and physics_enabled
             and self.mouse_cast_has_hits
         ):
-            self.place_marker_at_hit_location(event.button == button.LEFT)
+            # hit_info = self.mouse_cast_results.hits[0]
+            self.place_marker_at_hit_location(
+                self, self.mouse_cast_results.hits[0], event.button == button.LEFT
+            )
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
@@ -2060,12 +2085,18 @@ class HabitatSimInteractiveViewer(Application):
                 self.mouse_grabber.grip_depth += scroll_delta
                 self.update_grab_position(self.get_mouse_position(event.position))
         elif self.mouse_interaction == MouseMode.MARKER:
-            if scroll_mod_val > 0:
-                self.selected_marker_set_index += 1
-            else:
-                self.selected_marker_set_index = max(
-                    self.selected_marker_set_index - 1, 0
-                )
+            marker_mod = 1 if scroll_mod_val > 0 else -1
+            self.current_markerset_taskset_idx = (
+                self.current_markerset_taskset_idx
+                + len(self.markerset_taskset_names)
+                + marker_mod
+            ) % len(self.markerset_taskset_names)
+            # if scroll_mod_val > 0:
+            #     self.current_markerset_taskset_idx = (self.current_markerset_taskset_idx + 1) %
+            # else:
+            #     self.selected_marker_set_index = max(
+            #         self.selected_marker_set_index - 1, 0
+            #     )
 
         self.redraw()
         event.accepted = True
@@ -2175,7 +2206,7 @@ Scene ID : {os.path.split(self.cfg.sim_cfg.scene_id)[1].split('.scene_instance')
 Sensor Type: {sensor_type_string}
 Sensor Subtype: {sensor_subtype_string}
 Mouse Interaction Mode: {mouse_mode_string}
-Selected marker_set index: {self.selected_marker_set_index}
+Selected MarkerSets TaskSet name : {self.get_current_markerset_taskname()}
 Unstable Objects: {self.num_unstable_objects} of {len(self.clutter_object_instances)}
             """
         )
