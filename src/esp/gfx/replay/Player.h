@@ -18,6 +18,11 @@ namespace replay {
 
 class Player;
 
+struct CreationRecord {
+  assets::RenderAssetInstanceCreationInfo creationInfo;
+  InstanceMetadata metadata;
+};
+
 /**
 @brief Node handle
 
@@ -112,13 +117,14 @@ class AbstractPlayerImplementation {
   virtual Mn::Matrix4 hackGetNodeTransform(NodeHandle node) const = 0;
 
   /**
-   * @brief Set node semantic ID
+   * @brief Set node metadata.
    *
    * The @p handle is expected to be returned from an earlier call to
    * @ref loadAndCreateRenderAssetInstance() on the same instance. Default
    * implementation does nothing.
    */
-  virtual void setNodeSemanticId(NodeHandle node, unsigned id);
+  virtual void setNodeMetadata(NodeHandle node,
+                               const InstanceMetadata& metadata);
 
   /**
    * @brief Change light setup
@@ -176,7 +182,8 @@ class AbstractSceneGraphPlayerImplementation
 
   Mn::Matrix4 hackGetNodeTransform(NodeHandle node) const override;
 
-  void setNodeSemanticId(NodeHandle node, unsigned id) override;
+  void setNodeMetadata(NodeHandle node,
+                       const InstanceMetadata& metadata) override;
 };
 
 /**
@@ -304,9 +311,7 @@ class Player {
   std::vector<Keyframe> keyframes_;
   std::unordered_map<std::string, esp::assets::AssetInfo> assetInfos_;
   std::unordered_map<RenderAssetInstanceKey, NodeHandle> createdInstances_;
-  std::unordered_map<RenderAssetInstanceKey,
-                     assets::RenderAssetInstanceCreationInfo>
-      creationInfos_;
+  std::unordered_map<RenderAssetInstanceKey, CreationRecord> creationRecords_;
   std::unordered_map<RenderAssetInstanceKey, Mn::Matrix4> latestTransformCache_;
   std::set<std::string> failedFilepaths_;
 

@@ -140,6 +140,22 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   return true;
 }
 
+inline JsonGenericValue toJsonValue(const esp::gfx::replay::InstanceMetadata& x,
+                                    JsonAllocator& allocator) {
+  JsonGenericValue obj(rapidjson::kObjectType);
+  addMember(obj, "objectId", x.objectId, allocator);
+  addMember(obj, "semanticId", x.semanticId, allocator);
+  return obj;
+}
+
+inline bool fromJsonValue(const JsonGenericValue& obj,
+                          esp::gfx::replay::InstanceMetadata& x) {
+  bool success = true;
+  success &= readMember(obj, "objectId", x.objectId);
+  success &= readMember(obj, "semanticId", x.semanticId);
+  return success;
+}
+
 inline JsonGenericValue toJsonValue(const esp::gfx::replay::Transform& x,
                                     JsonAllocator& allocator) {
   JsonGenericValue obj(rapidjson::kObjectType);
@@ -161,14 +177,12 @@ inline JsonGenericValue toJsonValue(
     JsonAllocator& allocator) {
   JsonGenericValue obj(rapidjson::kObjectType);
   addMember(obj, "absTransform", x.absTransform, allocator);
-  addMember(obj, "semanticId", x.semanticId, allocator);
   return obj;
 }
 
 inline bool fromJsonValue(const JsonGenericValue& obj,
                           esp::gfx::replay::RenderAssetInstanceState& x) {
   readMember(obj, "absTransform", x.absTransform);
-  readMember(obj, "semanticId", x.semanticId);
   return true;
 }
 

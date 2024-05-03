@@ -36,7 +36,8 @@ std::string removeMaterialOverrideFromFilepathAndWarn(const std::string& src) {
 
 static_assert(std::is_nothrow_move_constructible<Player>::value, "");
 
-void AbstractPlayerImplementation::setNodeSemanticId(NodeHandle, unsigned) {}
+void AbstractPlayerImplementation::setNodeMetadata(NodeHandle,
+                                                   const InstanceMetadata&) {}
 
 void AbstractPlayerImplementation::changeLightSetup(const LightSetup&) {}
 
@@ -75,10 +76,15 @@ Mn::Matrix4 AbstractSceneGraphPlayerImplementation::hackGetNodeTransform(
   return (*reinterpret_cast<scene::SceneNode*>(node)).transformation();
 }
 
-void AbstractSceneGraphPlayerImplementation::setNodeSemanticId(
+void AbstractSceneGraphPlayerImplementation::setNodeMetadata(
     const NodeHandle node,
-    const unsigned id) {
-  setSemanticIdForSubtree(reinterpret_cast<scene::SceneNode*>(node), id);
+    const InstanceMetadata& metadata) {
+  setSemanticInfoForSubtree(reinterpret_cast<scene::SceneNode*>(node),
+                            {
+                                metadata.semanticId,
+                                metadata.objectId,
+                                ID_UNDEFINED,
+                            });
 }
 
 void AbstractPlayerImplementation::createRigInstance(
@@ -186,7 +192,7 @@ void Player::clearFrame() {
     implementation_->deleteAssetInstances(createdInstances_);
   createdInstances_.clear();
   assetInfos_.clear();
-  creationInfos_.clear();
+  creationRecords_.clear();
   frameIndex_ = -1;
 }
 
@@ -235,7 +241,16 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     const auto& instanceKey = pair.first;
     CORRADE_INTERNAL_ASSERT(createdInstances_.count(instanceKey) == 0);
     createdInstances_[instanceKey] = node;
-    creationInfos_[instanceKey] = adjustedCreation;
+
+    creationRecords_[instanceKey] =
+        CreationRecord{adjustedCreation, InstanceMetadata()};
+  }
+
+  for (const auto& pair : keyframe.metadata) {
+    const auto& instanceKey = pair.first;
+    implementation_->setNodeMetadata(createdInstances_[instanceKey],
+                                     pair.second);
+    creationRecords_[instanceKey].metadata = pair.second;
   }
 
   hackProcessDeletions(keyframe);
@@ -250,7 +265,6 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     const auto& state = pair.second;
     implementation_->setNodeTransform(node, state.absTransform.translation,
                                       state.absTransform.rotation);
-    implementation_->setNodeSemanticId(node, state.semanticId);
   }
 
   for (const auto& rigUpdate : keyframe.rigUpdates) {
@@ -282,11 +296,11 @@ void Player::hackProcessDeletions(const Keyframe& keyframe) {
       implementation_->deleteAssetInstance(it->second);
       createdInstances_.erase(deletionInstanceKey);
 
-      int rigId = creationInfos_[deletionInstanceKey].rigId;
+      int rigId = creationRecords_[deletionInstanceKey].creationInfo.rigId;
       if (rigId != ID_UNDEFINED) {
         implementation_->deleteRigInstance(rigId);
       }
-      creationInfos_.erase(deletionInstanceKey);
+      creationRecords_.erase(deletionInstanceKey);
     }
   } else if (keyframe.deletions.size() > 0) {
     // Cache latest transforms
@@ -308,14 +322,17 @@ void Player::hackProcessDeletions(const Keyframe& keyframe) {
         continue;
       }
       createdInstances_.erase(createInstanceIt);
-      creationInfos_.erase(deletion);
+      creationRecords_.erase(deletion);
     }
 
     for (const auto& pair : createdInstances_) {
       const auto key = pair.first;
-      const auto& creationInfo = creationInfos_[key];
+      const auto& creationRecord = creationRecords_[key];
+      const auto& creationInfo = creationRecord.creationInfo;
       auto* instance = implementation_->loadAndCreateRenderAssetInstance(
           assetInfos_[creationInfo.filepath], creationInfo);
+      const auto& metadata = creationRecord.metadata;
+      implementation_->setNodeMetadata(instance, metadata);
 
       // Replace dangling reference
       createdInstances_[key] = instance;
