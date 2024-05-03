@@ -16,7 +16,7 @@ ObjectAttributes::ObjectAttributes(const std::string& handle)
   init("linear_damping", 0.2);
   init("angular_damping", 0.2);
 
-  init("compute_COM_from_shape", true);
+  setComputeCOMFromShape(true);
 
   init("use_bounding_box_for_collision", false);
   init("join_collision_meshes", false);
@@ -26,9 +26,11 @@ ObjectAttributes::ObjectAttributes(const std::string& handle)
 
 std::string ObjectAttributes::getAbstractObjectInfoInternal() const {
   return Cr::Utility::formatString(
-      "{},{},{},{},{},{}", getAsString("mass"), getAsString("COM"),
+      "{},{},{},{},{},{},{},{}", getAsString("mass"), getAsString("COM"),
       getAsString("inertia"), getAsString("angular_damping"),
-      getAsString("linear_damping"), getAsString("semantic_id"));
+      getAsString("linear_damping"),
+      getAsString("use_bounding_box_for_collision"),
+      getAsString("join_collision_meshes"), getAsString("semantic_id"));
 }
 
 void ObjectAttributes::writeValuesToJsonInternal(

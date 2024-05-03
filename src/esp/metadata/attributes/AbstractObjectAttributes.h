@@ -127,7 +127,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * primitive or not
    */
   void setRenderAssetIsPrimitive(bool renderAssetIsPrimitive) {
-    set("renderAssetIsPrimitive", renderAssetIsPrimitive);
+    setHidden("__renderAssetIsPrimitive", renderAssetIsPrimitive);
   }
   /**
    * @brief Get whether this object uses file-based mesh render object or
@@ -136,7 +136,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * primitive or not
    */
   bool getRenderAssetIsPrimitive() const {
-    return get<bool>("renderAssetIsPrimitive");
+    return get<bool>("__renderAssetIsPrimitive");
   }
 
   void setCollisionAssetHandle(const std::string& collisionAssetHandle) {
@@ -166,7 +166,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * primitive (implicitly calculated) or a mesh
    */
   void setCollisionAssetIsPrimitive(bool collisionAssetIsPrimitive) {
-    set("collisionAssetIsPrimitive", collisionAssetIsPrimitive);
+    setHidden("__collisionAssetIsPrimitive", collisionAssetIsPrimitive);
   }
   /**
    * @brief Gets whether this object uses file-based mesh collision object or
@@ -175,7 +175,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * primitive (implicitly calculated) or a mesh
    */
   bool getCollisionAssetIsPrimitive() const {
-    return get<bool>("collisionAssetIsPrimitive");
+    return get<bool>("__collisionAssetIsPrimitive");
   }
 
   /**
@@ -240,7 +240,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
   bool getForceFlatShading() const { return get<bool>("force_flat_shading"); }
 
   bool getIsDirty() const { return get<bool>("__isDirty"); }
-  void setIsClean() { set("__isDirty", false); }
+  void setIsClean() { setHidden("__isDirty", false); }
 
   /**
    * @brief Populate a json object with all the first-level values held in this
@@ -257,7 +257,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * semantic mesh-specific frame is specified for stages.
    */
   bool getUseFrameForAllOrientation() const {
-    return get<bool>("use_frame_for_all_orientation");
+    return get<bool>("__useFrameForAllOrientation");
   }
 
   /**
@@ -293,7 +293,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * semantic mesh-specific frame is specified for stages.
    */
   void setUseFrameForAllOrientation(bool useFrameForAllOrientation) {
-    set("use_frame_for_all_orientation", useFrameForAllOrientation);
+    setHidden("__useFrameForAllOrientation", useFrameForAllOrientation);
   }
 
   /**
@@ -325,7 +325,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * @brief get AbstractObject specific info for csv string
    */
   virtual std::string getAbstractObjectInfoInternal() const { return ""; };
-  void setIsDirty() { set("__isDirty", true); }
+  void setIsDirty() { setHidden("__isDirty", true); }
 
  public:
   ESP_SMART_POINTERS(AbstractObjectAttributes)
