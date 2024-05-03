@@ -20,21 +20,24 @@ AbstractObjectAttributes::AbstractObjectAttributes(
   init("margin", 0.04);
   init("up", Mn::Vector3{0, 1, 0});
   init("front", Mn::Vector3{0, 0, -1});
-  init("use_frame_for_all_orientation", true);
+  // Set this to true so that only used if actually changed.
+  // Hidden field
+  setUseFrameForAllOrientation(true);
   // default to use material-derived shader unless otherwise specified in config
   // or instance config
   init("shader_type", getShaderTypeName(ObjectInstanceShaderType::Material));
-  // This specifies that we want to investigate the state of the render and
-  // collision handles before we allow this attributes to be registered.
-
   // TODO remove this once ShaderType support is complete
   init("force_flat_shading", false);
-  // default rendering and collisions will be mesh for physics objects and
+
+  // Default rendering and collisions will be mesh for physics objects and
   // scenes. Primitive-based objects do not currently support mesh collisions,
   // however, due to issues with how non-triangle meshes (i.e. wireframes) are
   // handled in @ref GenericMeshData::setMeshData
-  init("renderAssetIsPrimitive", false);
-  init("collisionAssetIsPrimitive", false);
+
+  // Hidden field
+  setRenderAssetIsPrimitive(false);
+  // Hidden field
+  setCollisionAssetIsPrimitive(false);
   init("use_mesh_collision", true);
   init("is_collidable", true);
   init("is_visible", true);

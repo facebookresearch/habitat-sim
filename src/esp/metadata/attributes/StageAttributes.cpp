@@ -14,7 +14,8 @@ StageAttributes::StageAttributes(const std::string& handle)
   init("semantic_orient_up", Mn::Vector3{0, 1, 0});
   init("semantic_orient_front", Mn::Vector3{0, 0, -1});
   // Set this to true so that only used if actually changed.
-  init("use_frame_for_all_orientation", true);
+  // Hidden field
+  setUseFrameForAllOrientation(true);
 
   // setting default for semantic assets having semantically painted textures to
   // false

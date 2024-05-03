@@ -31,7 +31,7 @@ std::string SemanticVolumeAttributes::getObjectInfoHeaderInternal() const {
 
 std::string SemanticVolumeAttributes::getObjectInfoInternal() const {
   std::string res = Cr::Utility::formatString(
-      "{},{},{},{},{},{},", getAsString("handle"), getAsString("label"),
+      "{},{},{},{},{},{},", getHandle(), getAsString("label"),
       getAsString("floor_height"), getAsString("extrusion_height"),
       getAsString("min_bounds"), getAsString("max_bounds"));
   Cr::Utility::formatInto(res, res.size(), "[");
