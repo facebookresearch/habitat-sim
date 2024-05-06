@@ -232,7 +232,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * specified by materials or other configs.
    */
   void setForceFlatShading(bool force_flat_shading) {
-    set("force_flat_shading", force_flat_shading);
+    setHidden("force_flat_shading", force_flat_shading);
   }
   /**
    * @brief if true use flat shading instead of phong or pbr shader

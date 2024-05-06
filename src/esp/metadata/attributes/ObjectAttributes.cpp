@@ -38,13 +38,13 @@ void ObjectAttributes::writeValuesToJsonInternal(
     io::JsonAllocator& allocator) const {
   // write ObjectAttributes values to json
   writeValueToJson("mass", jsonObj, allocator);
+  writeValueToJson("COM", jsonObj, allocator);
+  writeValueToJson("inertia", jsonObj, allocator);
   writeValueToJson("linear_damping", jsonObj, allocator);
   writeValueToJson("angular_damping", jsonObj, allocator);
   writeValueToJson("use_bounding_box_for_collision", jsonObj, allocator);
-  writeValueToJson("COM", jsonObj, allocator);
-  writeValueToJson("inertia", jsonObj, allocator);
-  writeValueToJson("semantic_id", jsonObj, allocator);
   writeValueToJson("join_collision_meshes", jsonObj, allocator);
+  writeValueToJson("semantic_id", jsonObj, allocator);
 
 }  // ObjectAttributes::writeValuesToJsonInternal
 
