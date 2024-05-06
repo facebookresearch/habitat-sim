@@ -505,11 +505,11 @@ void initAttributesBindings(py::module& m) {
           &AbstractObjectAttributes::setMargin,
           R"(Collision margin for constructions built from this template.)")
       .def_property(
-          "up", &AbstractObjectAttributes::getOrientUp,
+          "orient_up", &AbstractObjectAttributes::getOrientUp,
           &AbstractObjectAttributes::setOrientUp,
           R"(Up direction for constructions built from this template.)")
       .def_property(
-          "front", &AbstractObjectAttributes::getOrientFront,
+          "orient_front", &AbstractObjectAttributes::getOrientFront,
           &AbstractObjectAttributes::setOrientFront,
           R"(Forward direction for constructions built from this template.)")
       .def_property("units_to_meters",
