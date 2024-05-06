@@ -27,7 +27,7 @@ AbstractObjectAttributes::AbstractObjectAttributes(
   // or instance config
   init("shader_type", getShaderTypeName(ObjectInstanceShaderType::Material));
   // TODO remove this once ShaderType support is complete
-  init("force_flat_shading", false);
+  setForceFlatShading(false);
 
   // Default rendering and collisions will be mesh for physics objects and
   // scenes. Primitive-based objects do not currently support mesh collisions,

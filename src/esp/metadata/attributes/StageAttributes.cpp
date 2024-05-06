@@ -21,7 +21,7 @@ StageAttributes::StageAttributes(const std::string& handle)
   // false
   init("has_semantic_textures", false);
   // TODO remove this once ShaderType support is complete
-  init("force_flat_shading", true);
+  setForceFlatShading(true);
   // 0 corresponds to AssetType::Unknown->treated as general mesh
   init("collision_asset_type", static_cast<int>(AssetType::Unknown));
   // 4 corresponds to AssetType::InstanceMesh
