@@ -174,6 +174,12 @@ class ArticulatedLink : public RigidBase {
     return true;
   }
 
+  void initializeArticulatedLink(const std::string& _linkName,
+                                 const Mn::Vector3& _scale) {
+    linkName = _linkName;
+    setScale(_scale);
+  }
+
   /**
    * @brief Finalize the creation of the link.
    * @return whether successful finalization.
@@ -325,7 +331,10 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
       return baseLink_->node();
     }
     auto linkIter = links_.find(linkId);
-    CORRADE_INTERNAL_ASSERT(linkIter != links_.end());
+    ESP_CHECK(
+        linkIter != links_.end(),
+        "ArticulatedObject::getLinkSceneNode - no link found with linkId ="
+            << linkId);
     return linkIter->second->node();
   }
 
@@ -341,7 +350,10 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
       return baseLink_->visualNodes_;
     }
     auto linkIter = links_.find(linkId);
-    CORRADE_INTERNAL_ASSERT(linkIter != links_.end());
+    ESP_CHECK(linkIter != links_.end(),
+              "ArticulatedObject::getLinkVisualSceneNodes - no link found with "
+              "linkId ="
+                  << linkId);
     return linkIter->second->visualNodes_;
   }
 
@@ -397,7 +409,8 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     }
 
     auto linkIter = links_.find(id);
-    CORRADE_INTERNAL_ASSERT(linkIter != links_.end());
+    ESP_CHECK(linkIter != links_.end(),
+              "ArticulatedObject::getLink - no link found with linkId =" << id);
     return *linkIter->second;
   }
 
@@ -438,12 +451,59 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   }
 
   /**
+   * @brief Find the link ID for the given link name
+   */
+  int getLinkIdFromName(const std::string& _name) const {
+    auto linkIdIter = linkNamesToIDs_.find(_name);
+    ESP_CHECK(linkIdIter != linkNamesToIDs_.end(),
+              "ArticulatedObject::getLinkIdFromName - no link found with name ="
+                  << _name);
+    return linkIdIter->second;
+  }
+
+  /**
    * @brief Get a map of object ids to link ids.
    *
    * @return A a map of Habitat object ids to link ids for this AO's links.
    */
   std::unordered_map<int, int> getLinkObjectIds() const {
     return objectIdToLinkId_;
+  }
+
+  /**
+   * @brief Given the list of passed points in this object's local space, return
+   * those points transformed to world space.
+   * @param points vector of points in object local space
+   * @param linkId Internal link index.
+   * @return vector of points transformed into world space
+   */
+  std::vector<Mn::Vector3> transformLocalPointsToWorld(
+      const std::vector<Mn::Vector3>& points,
+      int linkId) const override {
+    auto linkIter = links_.find(linkId);
+    ESP_CHECK(linkIter != links_.end(),
+              "ArticulatedObject::getLinkVisualSceneNodes - no link found with "
+              "linkId ="
+                  << linkId);
+    return linkIter->second->transformLocalPointsToWorld(points, linkId);
+  }
+
+  /**
+   * @brief Given the list of passed points in world space, return
+   * those points transformed to this object's local space.
+   * @param points vector of points in world space
+   * @param linkId Internal link index.
+   * @return vector of points transformed to be in local space
+   */
+  std::vector<Mn::Vector3> transformWorldPointsToLocal(
+      const std::vector<Mn::Vector3>& points,
+      int linkId) const override {
+    auto linkIter = links_.find(linkId);
+    ESP_CHECK(linkIter != links_.end(),
+              "ArticulatedObject::getLinkVisualSceneNodes - no link found with "
+              "linkId ="
+                  << linkId);
+    return linkIter->second->transformWorldPointsToLocal(points, linkId);
   }
 
   /**
@@ -612,11 +672,12 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @param linkId The link's index.
    * @return The link's parent joint's name.
    */
-  virtual std::string getLinkJointName(CORRADE_UNUSED int linkId) const {
+  virtual std::string getLinkJointName(int linkId) const {
     auto linkIter = links_.find(linkId);
-    ESP_CHECK(linkIter != links_.end(),
-              "ArticulatedObject::getLinkJointName - no link with linkId ="
-                  << linkId);
+    ESP_CHECK(
+        linkIter != links_.end(),
+        "ArticulatedObject::getLinkJointName - no link found with linkId ="
+            << linkId);
     return linkIter->second->linkJointName;
   }
 
@@ -626,15 +687,15 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @param linkId The link's index. -1 for base link.
    * @return The link's name.
    */
-  virtual std::string getLinkName(CORRADE_UNUSED int linkId) const {
+  virtual std::string getLinkName(int linkId) const {
     if (linkId == -1) {
       return baseLink_->linkName;
     }
 
     auto linkIter = links_.find(linkId);
-    ESP_CHECK(
-        linkIter != links_.end(),
-        "ArticulatedObject::getLinkName - no link with linkId =" << linkId);
+    ESP_CHECK(linkIter != links_.end(),
+              "ArticulatedObject::getLinkName - no link found with linkId ="
+                  << linkId);
     return linkIter->second->linkName;
   }
 
@@ -854,7 +915,13 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   }
 
   /**
-   * @brief Get a copy of the template used to initialize this object.
+   * @brief Get a copy of the template attributes describing the initial state
+   * of this articulated object. These attributes have the combination of date
+   * from the original articulated object attributes and specific instance
+   * attributes used to create this articulated object. Note : values will
+   * reflect both sources, and should not be saved to disk as articulated object
+   * attributes, since instance attribute modifications will still occur on
+   * subsequent loads
    *
    * @return A copy of the @ref esp::metadata::attributes::ArticulatedObjectAttributes
    * template used to create this object.
@@ -883,6 +950,9 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
 
   //! map linkId to ArticulatedLink
   std::map<int, ArticulatedLink::uptr> links_;
+
+  //! convenience mapping from link name to link id
+  std::map<std::string, int> linkNamesToIDs_;
 
   //! link object for the AO base
   ArticulatedLink::uptr baseLink_;

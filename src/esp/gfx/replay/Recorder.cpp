@@ -81,9 +81,9 @@ void Recorder::onCreateRenderAssetInstance(
   // manually later if necessary.
   NodeDeletionHelper* deletionHelper = new NodeDeletionHelper{*node, this};
 
-  instanceRecords_.emplace_back(InstanceRecord{node, instanceKey,
-                                               Corrade::Containers::NullOpt,
-                                               deletionHelper, creation.rigId});
+  instanceRecords_.emplace_back(InstanceRecord{
+      node, instanceKey, Corrade::Containers::NullOpt,
+      Corrade::Containers::NullOpt, deletionHelper, creation.rigId});
 }
 
 void Recorder::onCreateRigInstance(int rigId, const Rig& rig) {
@@ -214,7 +214,13 @@ RenderAssetInstanceState Recorder::getInstanceState(
     const scene::SceneNode* node) {
   const auto absTransformMat = node->absoluteTransformation();
   const auto transform = ::createReplayTransform(absTransformMat);
-  return RenderAssetInstanceState{transform, node->getSemanticId()};
+  return RenderAssetInstanceState{transform};
+}
+
+InstanceMetadata Recorder::getInstanceMetadata(const scene::SceneNode* node) {
+  const auto objectId = node->getBaseObjectId();
+  const auto semanticId = node->getSemanticId();
+  return InstanceMetadata{objectId, semanticId};
 }
 
 void Recorder::updateStates() {
@@ -229,6 +235,11 @@ void Recorder::updateInstanceStates() {
       getKeyframe().stateUpdates.emplace_back(instanceRecord.instanceKey,
                                               state);
       instanceRecord.recentState = state;
+    }
+    auto metadata = getInstanceMetadata(instanceRecord.node);
+    if (!instanceRecord.metadata || metadata != instanceRecord.metadata) {
+      getKeyframe().metadata.emplace_back(instanceRecord.instanceKey, metadata);
+      instanceRecord.metadata = metadata;
     }
   }
 }
@@ -332,10 +343,11 @@ void Recorder::consolidateSavedKeyframes() {
   // consolidate saved keyframes into current keyframe
   addLoadsCreationsDeletions(savedKeyframes_.begin(), savedKeyframes_.end(),
                              &getKeyframe());
-  // clear instanceRecord.recentState to ensure updates get included in the next
-  // saved keyframe.
+  // clear instanceRecord.recentState and metadata to ensure updates get
+  // included in the next saved keyframe.
   for (auto& instanceRecord : instanceRecords_) {
     instanceRecord.recentState = Corrade::Containers::NullOpt;
+    instanceRecord.metadata = Corrade::Containers::NullOpt;
   }
   savedKeyframes_.clear();
 }

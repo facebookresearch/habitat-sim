@@ -11,6 +11,7 @@
 #include "esp/metadata/attributes/ArticulatedObjectAttributes.h"
 #include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/metadata/attributes/LightLayoutAttributes.h"
+#include "esp/metadata/attributes/MarkerSets.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
 #include "esp/metadata/attributes/PbrShaderAttributes.h"
 #include "esp/metadata/attributes/PhysicsManagerAttributes.h"
@@ -33,10 +34,14 @@ using Attrs::CylinderPrimitiveAttributes;
 using Attrs::IcospherePrimitiveAttributes;
 using Attrs::LightInstanceAttributes;
 using Attrs::LightLayoutAttributes;
+using Attrs::LinkSet;
+using Attrs::MarkerSet;
+using Attrs::MarkerSets;
 using Attrs::ObjectAttributes;
 using Attrs::PbrShaderAttributes;
 using Attrs::PhysicsManagerAttributes;
 using Attrs::StageAttributes;
+using Attrs::TaskSet;
 using Attrs::UVSpherePrimitiveAttributes;
 using esp::core::managedContainers::AbstractFileBasedManagedObject;
 using esp::core::managedContainers::AbstractManagedObject;
@@ -80,7 +85,13 @@ void initAttributesBindings(py::module& m) {
       .def_property_readonly(
           "num_user_configs",
           &AbstractAttributes::getNumUserDefinedConfigurations,
-          R"(The number of currently specified user-defined configuration values.)")
+          R"(The number of currently specified user-defined configuration values and
+          subconfigs (does not recurse subordinate subconfigs).)")
+      .def_property_readonly(
+          "total_num_user_configs",
+          &AbstractAttributes::getTotalNumUserDefinedConfigurations,
+          R"(The total number of currently specified user-defined configuration values
+          and subconfigs found by also recursing all subordinate subconfigs.)")
       .def_property_readonly("template_class", &AbstractAttributes::getClassKey,
                              R"(Class name of Attributes template.)")
       .def_property_readonly(
@@ -223,14 +234,207 @@ void initAttributesBindings(py::module& m) {
       .value("TREE_TRAVERSAL",
              metadata::attributes::ArticulatedObjectLinkOrder::TreeTraversal);
 
+  // ==== Markersets and subordinate classes ===
+
+  py::class_<MarkerSet, esp::core::config::Configuration, MarkerSet::ptr>(
+      m, "MarkerSet")
+      .def(py::init(&MarkerSet::create<>))
+      .def_property_readonly(
+          "num_points", &MarkerSet::getNumPoints,
+          R"(The current number of marker points present in this MarkerSet.)")
+      .def(
+          "get_points", &MarkerSet::getAllPoints,
+          R"(Get an ordered list of all the 3D marker points in this MarkerSet)")
+      .def(
+          "set_points", &MarkerSet::setAllPoints,
+          R"(Set the marker points for this MarkerSet to be the passed list of 3D points)",
+          "markers"_a);
+
+  py::class_<LinkSet, esp::core::config::Configuration, LinkSet::ptr>(m,
+                                                                      "LinkSet")
+      .def(py::init(&LinkSet::create<>))
+      .def_property_readonly(
+          "num_markersets", &LinkSet::getNumMarkerSets,
+          R"(The current number of MarkerSets present in this LinkSet.)")
+      .def("has_markerset", &LinkSet::hasMarkerSet,
+           R"(Whether or not this LinkSet has a MarkerSet with the given name)",
+           "markerset_name"_a)
+      .def("get_all_markerset_names", &LinkSet::getAllMarkerSetNames,
+           R"(Get a list of all the MarkerSet names within this LinkSet)")
+      .def(
+          "get_markerset", &LinkSet::editMarkerSet,
+          R"(Get an editable reference to the specified MarkerSet, possibly new and
+            empty if it does not exist)",
+          "markerset_name"_a)
+      .def("set_markerset_points", &LinkSet::setMarkerSetPoints,
+           R"(Sets the marker points for the specified MarkerSet)",
+           "markerset_name"_a, "marker_list"_a)
+      .def("get_markerset_points", &LinkSet::getMarkerSetPoints,
+           R"(Gets the marker points for the named MarkerSet of this LinkSet)",
+           "markerset_name"_a)
+      .def(
+          "set_all_points", &LinkSet::setAllMarkerPoints,
+          R"(Sets the marker points for all the MarkerSets of this LinkSet to the
+          passed dictionary of values, keyed by MarkerSet name, referencing a list
+          of 3d points)",
+          "markerset_dict"_a)
+      .def("get_all_points", &LinkSet::getAllMarkerPoints,
+           R"(Get a dictionary holding all the points in this LinkSet, keyed by
+           MarkerSet name, referencing lists of the MarkerSet's 3d points)");
+
+  py::class_<TaskSet, esp::core::config::Configuration, TaskSet::ptr>(m,
+                                                                      "TaskSet")
+      .def(py::init(&TaskSet::create<>))
+      .def_property_readonly(
+          "num_linksets", &TaskSet::getNumLinkSets,
+          R"(The current number of LinkSets present in this TaskSet.)")
+      .def("has_linkset", &TaskSet::hasLinkSet,
+           R"(Whether or not this TaskSet has a LinkSet with the given name)",
+           "linkset_name"_a)
+      .def(
+          "has_link_markerset", &TaskSet::hasLinkMarkerSet,
+          R"(Whether or not this TaskSet has a MarkerSet within a LinkSet with the given names)",
+          "linkset_name"_a, "markerset_dict"_a)
+      .def(
+          "init_link_markerset", &TaskSet::initLinkMarkerSet,
+          R"(Initialize a MarkerSet within a LinkSet within this TaskSet from a dict
+           mapping markerset names to lists of points.)",
+          "linkset_name"_a, "markerset_dict"_a)
+      .def("get_all_linkset_names", &TaskSet::getAllLinkSetNames,
+           R"(Get a list of all the LinkSet names within this TaskSet)")
+      .def(
+          "get_linkset", &TaskSet::editLinkSet,
+          R"(Get an editable reference to the specified LinkSet, possibly new and
+            empty if it does not exist)",
+          "linkset_name"_a)
+      .def(
+          "set_linkset_points", &TaskSet::setLinkSetPoints,
+          R"(Set the marker points in each of the MarkerSets for the specified LinkSet
+          to the given dictionary of 3d points, keyed by the MarkerSet name)",
+          "linkset_name"_a, "markerset_dict"_a)
+      .def(
+          "set_link_markerset_points", &TaskSet::setLinkMarkerSetPoints,
+          R"(Set the marker points for the specified LinkSet's specified MarkerSet
+          to the given list of 3d points)",
+          "linkset_name"_a, "markerset_name"_a, "marker_list"_a)
+      .def(
+          "set_all_points", &TaskSet::setAllMarkerPoints,
+          R"(Set the marker points for every MarkerSet of every link in this TaskSet to the values in
+          the passed dict of dicts. The format should be dictionary keyed by link name of dictionaries,
+          each keyed by MarkerSet name for the particular link with the value being a list of 3d points)",
+          "link_markerset_dict"_a)
+      .def(
+          "get_linkset_points", &TaskSet::getLinkSetPoints,
+          R"(Get the marker points in each of the MarkerSets for the specified LinkSet
+          as a dictionary of lists of 3d points, keyed by the LinkSet's MarkerSet name)",
+          "linkset_name"_a)
+      .def(
+          "get_link_markerset_points", &TaskSet::getLinkMarkerSetPoints,
+          R"(Get the marker points for the specified LinkSet's specified MarkerSet as a list of 3d points)",
+          "linkset_name"_a, "markerset_name"_a)
+      .def(
+          "get_all_points", &TaskSet::getAllMarkerPoints,
+          R"(Get the marker points for every MarkerSet of every link in this TaskSet as a dict
+          of dicts. The format is a dictionary keyed by link name of dictionaries,
+          each keyed by MarkerSet name for the particular link with the value being a list
+          of the marker points)");
+  py::class_<MarkerSets, esp::core::config::Configuration, MarkerSets::ptr>(
+      m, "MarkerSets")
+      .def(py::init(&MarkerSets::create<>))
+      .def_property_readonly(
+          "num_tasksets", &MarkerSets::getNumTaskSets,
+          R"(The current number of TaskSets present in the MarkerSets collection.)")
+      .def("has_taskset", &MarkerSets::hasTaskSet,
+           R"(Whether or not a TaskSet with the given name exists)",
+           "taskset_name"_a)
+      .def("has_task_linkset", &MarkerSets::hasTaskLinkSet,
+           R"(Whether or not a LinkSet with the given name within the TaskSet
+          with the given name exists)",
+           "taskset_name"_a, "linkset_name"_a)
+      .def("has_task_link_markerset", &MarkerSets::hasTaskLinkMarkerSet,
+           R"(Whether or not a MarkerSet exists within an existing Linkset in
+          an existing TaskSet with the given names)",
+           "taskset_name"_a, "linkset_name"_a, "markerset_name"_a)
+      .def(
+          "init_task_link_markerset", &MarkerSets::initTaskLinkMarkerSet,
+          R"(Initialize a MarkerSet within a LinkSet within a new TaskSet with the given
+           names in this collection)",
+          "taskset_name"_a, "linkset_name"_a, "markerset_name"_a)
+      .def("get_all_taskset_names", &MarkerSets::getAllTaskSetNames,
+           R"(Get a list of all the existing TaskSet names)")
+      .def(
+          "get_taskset", &MarkerSets::editTaskSet,
+          R"(Get an editable reference to the specified TaskSet, possibly new and
+            empty if it does not exist)",
+          "taskset_name"_a)
+      .def(
+          "set_taskset_points", &MarkerSets::setTaskSetPoints,
+          R"(Set all the marker points in the specified TaskSet to the 3d point values in the
+          passed dict of dicts. The format should be a dictionary keyed by LinkSet name, of
+          dictionaries, each keyed by MarkerSet name and referencing a list of 3d points)",
+          "taskset_name"_a, "link_markerset_dict"_a)
+      .def(
+          "set_task_linkset_points", &MarkerSets::setTaskLinkSetPoints,
+          R"(Set the points in all the MarkerSets of the specified LinkSet, in the
+          specified TaskSet, to the given dictionary, keyed by each MarkerSet's name
+          and referencing a list of 3d points.)",
+          "taskset_name"_a, "linkset_name"_a, "markerset_dict"_a)
+      .def(
+          "set_task_link_markerset_points",
+          &MarkerSets::setTaskLinkMarkerSetPoints,
+          R"(Set the marker points for the specified TaskSet's specified LinkSet's
+          specified MarkerSet to the given list of 3d points)",
+          "taskset_name"_a, "linkset_name"_a, "markerset_name"_a,
+          "marker_list"_a)
+      .def(
+          "set_all_points", &MarkerSets::setAllMarkerPoints,
+          R"(Set the marker points for every MarkerSet of every LinkSet of every TaskSet present to the values in
+          the passed dict of dicts of dicts. The format should be dictionary, keyed by TaskSet name, of dictionaries,
+          keyed by link name, of dictionary, each keyed by MarkerSet name and value being a list
+          of that MarkerSet's marker points. TaskSets, LinkSets and MarkerSet which are not referenced
+          in the passed dict will remain untouched by this setter.)",
+          "task_link_markerset_dict"_a)
+      .def(
+          "get_taskset_points", &MarkerSets::getTaskSetPoints,
+          R"(Get all the marker points in the specified TaskSet as a dict of dicts.
+          The format is a dictionary keyed by LinkSet name, of dictionaries,
+          each keyed by MarkerSet name and referencing a list of 3d points)",
+          "taskset_name"_a)
+      .def(
+          "get_task_linkset_points", &MarkerSets::getTaskLinkSetPoints,
+          R"(Get the points in all the MarkerSets of the specified LinkSet, in the
+          specified TaskSet, as a dictionary, keyed by each MarkerSet's name
+          and referencing a list of 3d points.)",
+          "taskset_name"_a, "linkset_name"_a)
+      .def(
+          "get_task_link_markerset_points",
+          &MarkerSets::getTaskLinkMarkerSetPoints,
+          R"(Get the marker points for the specified TaskSet's specified LinkSet's specified MarkerSet
+           as a list of 3d points)",
+          "taskset_name"_a, "linkset_name"_a, "markerset_name"_a)
+      .def(
+          "get_all_marker_points", &MarkerSets::getAllMarkerPoints,
+          R"(Get the marker points for every MarkerSet of every link of every TaskSet present as a dict
+          of dicts of dicts. The format is a dictionary keyed by TaskSet name, of dictionaries,
+          keyed by LinkSet name, of dictionaries, each keyed by MarkerSet name referencing a list
+          of that MarkerSet's marker points)");
+
   // ==== ArticulatedObjectAttributes ====
   py::class_<ArticulatedObjectAttributes, AbstractAttributes,
              ArticulatedObjectAttributes::ptr>(
       m, "ArticulatedObjectAttributes",
-      R"(A metadata template for articulated object configurations. Can be imported from
+      R"(A metadata template for articulated object configurations. Is imported from
       .ao_config.json files.)")
       .def(py::init(&ArticulatedObjectAttributes::create<>))
       .def(py::init(&ArticulatedObjectAttributes::create<const std::string&>))
+      .def("get_marker_sets",
+           static_cast<MarkerSets::ptr (ArticulatedObjectAttributes::*)(void)>(
+               &ArticulatedObjectAttributes::editMarkerSetsConfiguration),
+           py::return_value_policy::reference_internal,
+           R"(Returns a reference to the marker-sets configuration object for
+          this Articulated Object attributes, so that it can be viewed or modified.
+          Any changes to this configuration will require the owning attributes to
+          be re-registered.)")
       .def_property(
           "urdf_filepath", &ArticulatedObjectAttributes::getURDFPath,
           &ArticulatedObjectAttributes::setURDFPath,
@@ -277,6 +481,14 @@ void initAttributesBindings(py::module& m) {
              AbstractObjectAttributes::ptr>(m, "AbstractObjectAttributes")
       .def(py::init(&AbstractObjectAttributes::create<const std::string&,
                                                       const std::string&>))
+      .def("get_marker_sets",
+           static_cast<MarkerSets::ptr (AbstractObjectAttributes::*)(void)>(
+               &AbstractObjectAttributes::editMarkerSetsConfiguration),
+           py::return_value_policy::reference_internal,
+           R"(Returns a reference to the marker-sets configuration object for
+          constructs built using this template, so that it can be viewed or modified.
+          Any changes to this configuration will require the owning attributes to
+          be re-registered.)")
       .def_property(
           "scale", &AbstractObjectAttributes::getScale,
           &AbstractObjectAttributes::setScale,
@@ -313,12 +525,15 @@ void initAttributesBindings(py::module& m) {
           "rolling_friction_coefficient",
           &AbstractObjectAttributes::getRollingFrictionCoefficient,
           &AbstractObjectAttributes::setRollingFrictionCoefficient,
-          R"(Rolling friction coefficient for constructions built from this template. Damps angular velocity about axis orthogonal to the contact normal to prevent rounded shapes from rolling forever.)")
+          R"(Rolling friction coefficient for constructions built from this template.
+          Damps angular velocity about axis orthogonal to the contact normal to
+          prevent rounded shapes from rolling forever.)")
       .def_property(
           "spinning_friction_coefficient",
           &AbstractObjectAttributes::getSpinningFrictionCoefficient,
           &AbstractObjectAttributes::setSpinningFrictionCoefficient,
-          R"(Spinning friction coefficient for constructions built from this template. Damps angular velocity about the contact normal.)")
+          R"(Spinning friction coefficient for constructions built from this template.
+          Damps angular velocity about the contact normal.)")
       .def_property(
           "restitution_coefficient",
           &AbstractObjectAttributes::getRestitutionCoefficient,
@@ -386,7 +601,7 @@ void initAttributesBindings(py::module& m) {
       m, "ObjectAttributes",
       R"(A metadata template for rigid objects pre-instantiation. Defines asset paths, physical
       properties, scale, semantic ids, shader type overrides, and user defined metadata.
-      ManagedRigidObjects are instantiated from these blueprints. Can be imported from
+      ManagedRigidObjects are instantiated from these blueprints. Is imported from
       .object_config.json files.)")
       .def(py::init(&ObjectAttributes::create<>))
       .def(py::init(&ObjectAttributes::create<const std::string&>))
@@ -438,7 +653,11 @@ void initAttributesBindings(py::module& m) {
   // ==== StageAttributes ====
   py::class_<StageAttributes, AbstractObjectAttributes, StageAttributes::ptr>(
       m, "StageAttributes",
-      R"(A metadata template for stages pre-instantiation. Defines asset paths, collision properties, gravity direction, shader type overrides, semantic asset information, and user defined metadata. Consumed to instantiate the static background of a scene (e.g. the building architecture). Can be imported from .stage_config.json files.)")
+      R"(A metadata template for stages pre-instantiation. Defines asset paths,
+      collision properties, gravity direction, shader type overrides, semantic
+      asset information, and user defined metadata. Consumed to instantiate the
+      static background of a scene (e.g. the building architecture).
+      Is imported from .stage_config.json files.)")
       .def(py::init(&StageAttributes::create<>))
       .def(py::init(&StageAttributes::create<const std::string&>))
       .def_property(
@@ -486,7 +705,8 @@ void initAttributesBindings(py::module& m) {
   py::class_<LightInstanceAttributes, AbstractAttributes,
              LightInstanceAttributes::ptr>(
       m, "LightInstanceAttributes",
-      R"(A metadata template for light configurations. Supports point and directional lights. Can be imported from .lighting_config.json files.)")
+      R"(A metadata template for light configurations. Supports point and directional lights.
+      Is imported from .lighting_config.json files.)")
       .def(py::init(&LightInstanceAttributes::create<>))
       .def(py::init(&LightInstanceAttributes::create<const std::string&>))
       .def_property(
@@ -525,7 +745,7 @@ void initAttributesBindings(py::module& m) {
       m, "PbrShaderAttributes",
       R"(A metadata template for PBR shader creation and control values and multipliers,
       such as enabling Image Based Lighting and controlling the mix of direct and indirect
-      lighting contributions. Can be imported from .pbr_config.json files.)")
+      lighting contributions. Is imported from .pbr_config.json files.)")
       .def(py::init(&PbrShaderAttributes::create<>))
       .def(py::init(&PbrShaderAttributes::create<const std::string&>))
       .def_property(
@@ -681,7 +901,7 @@ void initAttributesBindings(py::module& m) {
       m, "PhysicsManagerAttributes",
       R"(A metadata template for Simulation parameters (e.g. timestep, simulation backend,
       default gravity direction) and defaults. Consumed to instace a Simulator object.
-      Can be imported from .physics_config.json files.)")
+      Is imported from .physics_config.json files.)")
       .def(py::init(&PhysicsManagerAttributes::create<>))
       .def(py::init(&PhysicsManagerAttributes::create<const std::string&>))
       .def_property_readonly(

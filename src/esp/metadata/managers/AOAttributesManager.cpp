@@ -48,7 +48,8 @@ void AOAttributesManager::setValsFromJSONDoc(
   if (io::readMember<std::string>(jsonConfig, "render_asset", render_asset)) {
     // If specified render_asset is not found directly, prefix it with file
     // directory where the configuration file was found.
-    if (!Corrade::Utility::Path::exists(render_asset)) {
+    if ((!Corrade::Utility::Path::exists(render_asset)) &&
+        !render_asset.empty()) {
       render_asset =
           Cr::Utility::Path::join(aoAttr->getFileDirectory(), render_asset);
     }
@@ -100,6 +101,8 @@ void AOAttributesManager::setValsFromJSONDoc(
       attributes::AOLinkOrderMap,
       [aoAttr](const std::string& val) { aoAttr->setLinkOrder(val); });
 
+  // check for the existing of markersets
+  this->parseMarkerSets(aoAttr, jsonConfig);
   // check for user defined attributes
   this->parseUserDefinedJsonVals(aoAttr, jsonConfig);
 
@@ -171,7 +174,8 @@ AOAttributesManager::initNewObjectInternal(const std::string& attributesHandle,
   return newAttributes;
 }  // AOAttributesManager::initNewObjectInternal
 
-int AOAttributesManager::registerObjectFinalize(
+core::managedContainers::ManagedObjectPreregistration
+AOAttributesManager::preRegisterObjectFinalize(
     attributes::ArticulatedObjectAttributes::ptr AOAttributesTemplate,
     const std::string& AOAttributesHandle,
     bool) {
@@ -184,14 +188,14 @@ int AOAttributesManager::registerObjectFinalize(
         << "ArticulatedObjectAttributes template named `" << AOAttributesHandle
         << "` does not specify a valid URDF Filepath, so registration is "
            "aborted.";
-    return ID_UNDEFINED;
+    return core::managedContainers::ManagedObjectPreregistration::Failed;
   } else if (!Cr::Utility::Path::exists(urdfFilePath)) {
     // URDF File not found is bad
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
         << "ArticulatedObjectAttributes template named `" << AOAttributesHandle
         << "` specifies the URDF Filepath `" << urdfFilePath
         << "`, but this file cannot be found, so registration is aborted.";
-    return ID_UNDEFINED;
+    return core::managedContainers::ManagedObjectPreregistration::Failed;
   }
 
   // Furthermore, if 'skin' is specified as render_mode and no skin is
@@ -217,7 +221,7 @@ int AOAttributesManager::registerObjectFinalize(
           << urdfSimpleName
           << "`, but no render asset was specifed in the configuration, so "
              "registration is aborted.";
-      return ID_UNDEFINED;
+      return core::managedContainers::ManagedObjectPreregistration::Failed;
     } else if (!Cr::Utility::Path::exists(renderAssetHandle)) {
       // Skin render asset specified not found is bad when 'skin' render mode
       // is specified
@@ -228,16 +232,10 @@ int AOAttributesManager::registerObjectFinalize(
           << urdfSimpleName << "`, but the render asset specified, `"
           << renderAssetHandle
           << "` cannot be found, so registration is aborted.";
-      return ID_UNDEFINED;
+      return core::managedContainers::ManagedObjectPreregistration::Failed;
     }
   }  // if 'skin' render mode is specified as render mode
-
-  // adds template to library, and returns either the ID of the existing
-  // template referenced by AOAttributesHandle, or the next available ID
-  // if not found.
-  int AOTemplateID = this->addObjectToLibrary(std::move(AOAttributesTemplate),
-                                              AOAttributesHandle);
-  return AOTemplateID;
+  return core::managedContainers::ManagedObjectPreregistration::Success;
 }  // AOAttributesManager::registerObjectFinalize
 
 std::map<std::string, std::string>

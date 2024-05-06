@@ -19,7 +19,7 @@ namespace config {
 namespace {
 
 // enum class hash function - uses enum value as hash
-struct ConfigStoredTypeHash {
+struct ConfigValTypeHash {
   template <typename T>
   std::size_t operator()(T t) const {
     return static_cast<std::size_t>(t);
@@ -27,78 +27,112 @@ struct ConfigStoredTypeHash {
 };
 
 /**
- * @brief Constant map to provide mappings from @ref ConfigStoredType enum tags
+ * @brief Constant map to provide mappings from @ref ConfigValType enum tags
  * to string.  All supported types should have mappings in this map
  */
-const std::unordered_map<ConfigStoredType, std::string, ConfigStoredTypeHash>
-    ConfigTypeNamesMap = {{ConfigStoredType::Unknown, "Unknown"},
-                          {ConfigStoredType::Boolean, "bool"},
-                          {ConfigStoredType::Integer, "int"},
-                          {ConfigStoredType::Double, "double"},
-                          {ConfigStoredType::MagnumVec2, "Mn::Vector2"},
-                          {ConfigStoredType::MagnumVec3, "Mn::Vector3"},
-                          {ConfigStoredType::MagnumVec4, "Mn::Vector4"},
-                          {ConfigStoredType::MagnumMat3, "Mn::Matrix3"},
-                          {ConfigStoredType::MagnumQuat, "Mn::Quaternion"},
-                          {ConfigStoredType::MagnumRad, "Mn::Rad"},
-                          {ConfigStoredType::String, "std::string"}};
+const std::unordered_map<ConfigValType, std::string, ConfigValTypeHash>
+    ConfigTypeNamesMap = {{ConfigValType::Unknown, "Unknown"},
+                          {ConfigValType::Boolean, "bool"},
+                          {ConfigValType::Integer, "int"},
+                          {ConfigValType::MagnumRad, "Mn::Rad"},
+                          {ConfigValType::Double, "double"},
+                          {ConfigValType::MagnumVec2, "Mn::Vector2"},
+                          {ConfigValType::MagnumVec3, "Mn::Vector3"},
+                          {ConfigValType::MagnumVec4, "Mn::Vector4"},
+                          {ConfigValType::MagnumQuat, "Mn::Quaternion"},
+                          {ConfigValType::MagnumMat3, "Mn::Matrix3"},
+                          {ConfigValType::MagnumMat4, "Mn::Matrix4"},
+                          {ConfigValType::String, "std::string"}};
 
 // force this functionality to remain local to this file.
 
 // free functions for non-trivial types control.
+// ConfigValue._data is a T* for these types.
 template <class T>
 void copyConstructorFunc(
     const char* const src,
     char* const dst) {  // NOLINT(readability-non-const-parameter)
-  new (dst) T{*reinterpret_cast<const T*>(src)};
+  const T* const* tmpSrc = reinterpret_cast<const T* const*>(src);
+  T** tmpDst = reinterpret_cast<T**>(dst);
+  if (*tmpSrc != nullptr) {
+    *tmpDst = new T(**tmpSrc);
+  }
 }
 template <class T>
 void moveConstructorFunc(
     char* const src,    // NOLINT(readability-non-const-parameter)
     char* const dst) {  // NOLINT(readability-non-const-parameter)
-  new (dst) T{std::move(*reinterpret_cast<T*>(src))};
+  T** tmpSrc = reinterpret_cast<T**>(src);
+  new (dst) T* {std::move(*tmpSrc)};
 }
 template <class T>
 void destructorFunc(
     char* const src) {  // NOLINT(readability-non-const-parameter)
-  reinterpret_cast<T*>(src)->~T();
+  T** tmpSrc = reinterpret_cast<T**>(src);
+  if (*tmpSrc != nullptr) {
+    delete *tmpSrc;
+    *tmpSrc = nullptr;
+  }
+}
+template <class T>
+bool comparisonFunc(const char* const a, const char* const b) {
+  return **reinterpret_cast<const T* const*>(a) ==
+         **reinterpret_cast<const T* const*>(b);
 }
 
 /**
- * @brief This struct handles non-trivial types by providing a copy constructor,
- * a move constructor and a destructor as function pointers.
+ * @brief This struct handles pointer-to-data typed (i.e.non-trivial types)
+ * ConfigValues by providing a copy constructor, a move constructor and a
+ * destructor as function pointers that populate the _data array with the
+ * pointer to the instantiated object.
  */
-struct NonTrivialTypeHandler {
+struct PointerBasedTypeHandler {
   void (*copier)(const char* const, char* const);
   void (*mover)(char* const, char* const);
   void (*destructor)(char* const);
+  bool (*comparator)(const char* const, const char* const);
 
   template <class T>
-  static constexpr NonTrivialTypeHandler make() {
-    return {copyConstructorFunc<T>, moveConstructorFunc<T>, destructorFunc<T>};
+  static constexpr PointerBasedTypeHandler make() {
+    return {copyConstructorFunc<T>, moveConstructorFunc<T>, destructorFunc<T>,
+            comparisonFunc<T>};
   }
 };
 
 /**
- * @brief Table of @ref NonTrivialTypeHandler s for the types this @ref
- * ConfigValue support. There needs to be an entry in this table for each
- * non-trivial type specified in @ref ConfigStoredType enum, following the
- * pattern for strings.
+ * @brief Table of @ref PointerBasedTypeHandler s for the types the @ref
+ * ConfigValue supports.
+ *
+ * This array will be indexed by consuming ConfigValType -
+ * int(ConfigValType::_storedAsAPointer).
+ *
+ * There needs to be an entry in this table for each pointer-based data
+ * type, in sequence as specified in @ref ConfigValType enum following
+ * _storedAsAPointer, and each non-trivial type specified in @ref ConfigValType
+ * enum, following the pattern for strings (all non-trivial types are by default
+ * pointer-based)
  */
-constexpr NonTrivialTypeHandler nonTrivialTypeHandlers[]{
-    NonTrivialTypeHandler::make<std::string>()};
+constexpr PointerBasedTypeHandler pointerBasedTypeHandlers[]{
+    //_storedAsAPointer start
+    PointerBasedTypeHandler::make<Mn::Vector3>(),
+    PointerBasedTypeHandler::make<Mn::Vector4>(),
+    PointerBasedTypeHandler::make<Mn::Quaternion>(),
+    PointerBasedTypeHandler::make<Mn::Matrix3>(),
+    PointerBasedTypeHandler::make<Mn::Matrix4>(),
+    //_nonTrivialTypes start
+    PointerBasedTypeHandler::make<std::string>(),
+};
 
-NonTrivialTypeHandler nonTrivialConfigStoredTypeHandlerFor(
-    ConfigStoredType type) {
-  const std::size_t i = int(type) - int(ConfigStoredType::_nonTrivialTypes);
+PointerBasedTypeHandler pointerBasedConfigTypeHandlerFor(ConfigValType type) {
+  const std::size_t i = int(type) - int(ConfigValType::_storedAsAPointer);
   CORRADE_INTERNAL_ASSERT(i <
-                          Cr::Containers::arraySize(nonTrivialTypeHandlers));
-  return nonTrivialTypeHandlers[i];
+                          Cr::Containers::arraySize(pointerBasedTypeHandlers));
+  return pointerBasedTypeHandlers[i];
 }
 
 }  // namespace
 
-std::string getNameForStoredType(const ConfigStoredType& value) {
+std::string getNameForStoredType(const ConfigValType& value) {
   auto valName = ConfigTypeNamesMap.find(value);
   if (valName != ConfigTypeNamesMap.end()) {
     return valName->second;
@@ -106,7 +140,7 @@ std::string getNameForStoredType(const ConfigStoredType& value) {
   // this should happen only if newly supported type has not been added to
   // ConfigTypeNamesMap
   return Cr::Utility::formatString(
-      "ConfigStoredType with value {} not currently supported fully as a type "
+      "ConfigValType with value {} not currently supported fully as a type "
       "for a ConfigValue",
       static_cast<int>(value));
 }
@@ -126,8 +160,8 @@ ConfigValue::~ConfigValue() {
 void ConfigValue::copyValueFrom(const ConfigValue& otr) {
   // set new type
   _type = otr._type;
-  if (isConfigStoredTypeNonTrivial(otr._type)) {
-    nonTrivialConfigStoredTypeHandlerFor(_type).copier(otr._data, _data);
+  if (isConfigValTypePointerBased(otr._type)) {
+    pointerBasedConfigTypeHandlerFor(_type).copier(otr._data, _data);
   } else {
     std::memcpy(_data, otr._data, sizeof(_data));
   }
@@ -136,8 +170,8 @@ void ConfigValue::copyValueFrom(const ConfigValue& otr) {
 void ConfigValue::moveValueFrom(ConfigValue&& otr) {
   // set new type
   _type = otr._type;
-  if (isConfigStoredTypeNonTrivial(otr._type)) {
-    nonTrivialConfigStoredTypeHandlerFor(_type).mover(otr._data, _data);
+  if (isConfigValTypePointerBased(otr._type)) {
+    pointerBasedConfigTypeHandlerFor(_type).mover(otr._data, _data);
   } else {
     // moving character buffer ends up not being much better than copy
     std::memcpy(_data, otr._data, sizeof(_data));
@@ -145,10 +179,10 @@ void ConfigValue::moveValueFrom(ConfigValue&& otr) {
 }
 
 void ConfigValue::deleteCurrentValue() {
-  if (isConfigStoredTypeNonTrivial(_type)) {
-    nonTrivialConfigStoredTypeHandlerFor(_type).destructor(_data);
+  if (isConfigValTypePointerBased(_type)) {
+    pointerBasedConfigTypeHandlerFor(_type).destructor(_data);
   }
-  _type = ConfigStoredType::Unknown;
+  _type = ConfigValType::Unknown;
 }
 
 ConfigValue& ConfigValue::operator=(const ConfigValue& otr) {
@@ -165,38 +199,66 @@ ConfigValue& ConfigValue::operator=(ConfigValue&& otr) noexcept {
   return *this;
 }  // ConfigValue::operator=
 
+bool operator==(const ConfigValue& a, const ConfigValue& b) {
+  // Verify types are equal
+  if (a._type != b._type) {
+    return false;
+  }
+  // Pointer-backed data types need to have _data dereffed
+  if (isConfigValTypePointerBased(a._type)) {
+    // Pointer-backed data (i.e. nontrival types)
+    if (a._type == ConfigValType::String) {
+      return a.get<std::string>() == b.get<std::string>();
+    } else {
+      // Shouldn't get here
+      CORRADE_ASSERT_UNREACHABLE(
+          "Unknown/unsupported Type in ConfigValue equality check", false);
+    }
+  }
+
+  // Trivial type : a._data holds the actual value
+  // _data array will always hold only legal data, since a ConfigValue should
+  // never change type.
+  return std::equal(std::begin(a._data), std::end(a._data),
+                    std::begin(b._data));
+}
+
+bool operator!=(const ConfigValue& a, const ConfigValue& b) {
+  return !(a == b);
+}
+
 std::string ConfigValue::getAsString() const {
   switch (_type) {
-    case ConfigStoredType::Unknown: {
+    case ConfigValType::Unknown: {
       return "Undefined value/Unknown type";
     }
-    case ConfigStoredType::Boolean: {
+    case ConfigValType::Boolean: {
       return (get<bool>() ? "True" : "False");
     }
-    case ConfigStoredType::Integer: {
+    case ConfigValType::Integer: {
       return std::to_string(get<int>());
     }
-    case ConfigStoredType::Double: {
+    case ConfigValType::Double: {
       return std::to_string(get<double>());
     }
-    case ConfigStoredType::String: {
+    case ConfigValType::String: {
       return get<std::string>();
     }
 
-    case ConfigStoredType::MagnumVec2: {
+    case ConfigValType::MagnumVec2: {
       auto v = get<Mn::Vector2>();
       return Cr::Utility::formatString("[{} {}]", v.x(), v.y());
     }
-    case ConfigStoredType::MagnumVec3: {
+    case ConfigValType::MagnumVec3: {
       auto v = get<Mn::Vector3>();
       return Cr::Utility::formatString("[{} {} {}]", v.x(), v.y(), v.z());
     }
-    case ConfigStoredType::MagnumVec4: {
+    case ConfigValType::MagnumVec4: {
       auto v = get<Mn::Vector4>();
       return Cr::Utility::formatString("[{} {} {} {}]", v.x(), v.y(), v.z(),
                                        v.w());
     }
-    case ConfigStoredType::MagnumMat3: {
+    case ConfigValType::MagnumMat3: {
       auto m = get<Mn::Matrix3>();
       std::string res = "[";
       for (int i = 0; i < m.Size; ++i) {
@@ -207,13 +269,24 @@ std::string ConfigValue::getAsString() const {
       Cr::Utility::formatInto(res, res.length(), "]");
       return res;
     }
-    case ConfigStoredType::MagnumQuat: {
+    case ConfigValType::MagnumMat4: {
+      auto m = get<Mn::Matrix4>();
+      std::string res = "[";
+      for (int i = 0; i < m.Size; ++i) {
+        auto v = m.row(i);
+        Cr::Utility::formatInto(res, res.length(), "[{} {} {} {}]", v.x(),
+                                v.y(), v.z(), v.w());
+      }
+      Cr::Utility::formatInto(res, res.length(), "]");
+      return res;
+    }
+    case ConfigValType::MagnumQuat: {
       auto q = get<Mn::Quaternion>();
       auto qv = q.vector();
       return Cr::Utility::formatString("{} [{} {} {}]", q.scalar(), qv.x(),
                                        qv.y(), qv.z());
     }
-    case ConfigStoredType::MagnumRad: {
+    case ConfigValType::MagnumRad: {
       auto r = get<Mn::Rad>();
       return std::to_string(r.operator float());
     }
@@ -223,64 +296,42 @@ std::string ConfigValue::getAsString() const {
   }  // switch
 }  // ConfigValue::getAsString
 
-bool operator==(const ConfigValue& a, const ConfigValue& b) {
-  if (a._type != b._type) {
-    return false;
-  }
-  // Types are equal, check values
-  // if trivial type, compare data arrays
-  if (a._type < ConfigStoredType::_nonTrivialTypes) {
-    return std::equal(std::begin(a._data), std::end(a._data),
-                      std::begin(b._data));
-  } else {
-    // Nontrivial, get values as appropriate
-    if (a._type == ConfigStoredType::String) {
-      return a.get<std::string>() == b.get<std::string>();
-    } else {
-      // Shouldn't get here
-      CORRADE_ASSERT_UNREACHABLE(
-          "Unknown/unsupported Type in ConfigValue equality check", false);
-    }
-  }
-}
-
-bool operator!=(const ConfigValue& a, const ConfigValue& b) {
-  return !(a == b);
-}
-
 io::JsonGenericValue ConfigValue::writeToJsonObject(
     io::JsonAllocator& allocator) const {
   // unknown is checked before this function is called, so does not need support
   switch (getType()) {
-    case ConfigStoredType::Boolean: {
+    case ConfigValType::Boolean: {
       return io::toJsonValue(get<bool>(), allocator);
     }
-    case ConfigStoredType::Integer: {
+    case ConfigValType::Integer: {
       return io::toJsonValue(get<int>(), allocator);
     }
-    case ConfigStoredType::Double: {
+    case ConfigValType::Double: {
       return io::toJsonValue(get<double>(), allocator);
     }
-    case ConfigStoredType::MagnumVec2: {
+    case ConfigValType::MagnumVec2: {
       return io::toJsonValue(get<Mn::Vector2>(), allocator);
     }
-    case ConfigStoredType::MagnumVec3: {
+    case ConfigValType::MagnumVec3: {
       return io::toJsonValue(get<Mn::Vector3>(), allocator);
     }
-    case ConfigStoredType::MagnumVec4: {
+    case ConfigValType::MagnumVec4: {
       return io::toJsonValue(get<Mn::Vector4>(), allocator);
     }
-    case ConfigStoredType::MagnumMat3: {
+    case ConfigValType::MagnumMat3: {
       return io::toJsonValue(get<Mn::Matrix3>(), allocator);
     }
-    case ConfigStoredType::MagnumQuat: {
+    case ConfigValType::MagnumMat4: {
+      return io::toJsonValue(get<Mn::Matrix4>(), allocator);
+    }
+    case ConfigValType::MagnumQuat: {
       return io::toJsonValue(get<Mn::Quaternion>(), allocator);
     }
-    case ConfigStoredType::MagnumRad: {
+    case ConfigValType::MagnumRad: {
       auto r = get<Mn::Rad>();
       return io::toJsonValue((r.operator float()), allocator);
     }
-    case ConfigStoredType::String: {
+    case ConfigValType::String: {
       return io::toJsonValue(get<std::string>(), allocator);
     }
     default:
@@ -293,27 +344,29 @@ bool ConfigValue::putValueInConfigGroup(
     const std::string& key,
     Cr::Utility::ConfigurationGroup& cfg) const {
   switch (_type) {
-    case ConfigStoredType::Unknown:
+    case ConfigValType::Unknown:
       return false;
-    case ConfigStoredType::Boolean:
+    case ConfigValType::Boolean:
       return cfg.setValue(key, get<bool>());
-    case ConfigStoredType::Integer:
+    case ConfigValType::Integer:
       return cfg.setValue(key, get<int>());
-    case ConfigStoredType::Double:
+    case ConfigValType::Double:
       return cfg.setValue(key, get<double>());
-    case ConfigStoredType::String:
+    case ConfigValType::String:
       return cfg.setValue(key, get<std::string>());
-    case ConfigStoredType::MagnumVec2:
+    case ConfigValType::MagnumVec2:
       return cfg.setValue(key, get<Mn::Vector2>());
-    case ConfigStoredType::MagnumVec3:
+    case ConfigValType::MagnumVec3:
       return cfg.setValue(key, get<Mn::Vector3>());
-    case ConfigStoredType::MagnumVec4:
+    case ConfigValType::MagnumVec4:
       return cfg.setValue(key, get<Mn::Vector4>());
-    case ConfigStoredType::MagnumMat3:
+    case ConfigValType::MagnumMat3:
       return cfg.setValue(key, get<Mn::Matrix3>());
-    case ConfigStoredType::MagnumQuat:
+    case ConfigValType::MagnumMat4:
+      return cfg.setValue(key, get<Mn::Matrix4>());
+    case ConfigValType::MagnumQuat:
       return cfg.setValue(key, get<Mn::Quaternion>());
-    case ConfigStoredType::MagnumRad:
+    case ConfigValType::MagnumRad:
       return cfg.setValue(key, get<Mn::Rad>());
     default:
       CORRADE_ASSERT_UNREACHABLE(
@@ -322,7 +375,7 @@ bool ConfigValue::putValueInConfigGroup(
   }  // switch
 }  // ConfigValue::putValueInConfigGroup
 
-Mn::Debug& operator<<(Mn::Debug& debug, const ConfigStoredType& value) {
+Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValType& value) {
   return debug << "Type:" << getNameForStoredType(value);
 }
 
@@ -331,6 +384,159 @@ Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value) {
                << "|" << value.getType() << Mn::Debug::nospace << ")";
 }
 
+int Configuration::loadOneConfigFromJson(int numConfigSettings,
+                                         const std::string& key,
+                                         const io::JsonGenericValue& jsonObj) {
+  // increment, assuming is valid object
+  ++numConfigSettings;
+  if (jsonObj.IsDouble()) {
+    set(key, jsonObj.GetDouble());
+  } else if (jsonObj.IsNumber()) {
+    set(key, jsonObj.GetInt());
+  } else if (jsonObj.IsString()) {
+    set(key, jsonObj.GetString());
+  } else if (jsonObj.IsBool()) {
+    set(key, jsonObj.GetBool());
+  } else if (jsonObj.IsArray() && jsonObj.Size() > 0) {
+    // non-empty array of numeric values - first attempt to put them into a
+    // magnum vector or matrix
+    if (jsonObj[0].IsNumber()) {
+      // numeric vector, quaternion or matrix
+      if (jsonObj.Size() == 2) {
+        // All size 2 numeric arrays are mapped to Mn::Vector2
+        Mn::Vector2 val{};
+        if (io::fromJsonValue(jsonObj, val)) {
+          set(key, val);
+        }
+      } else if (jsonObj.Size() == 3) {
+        // All size 3 numeric arrays are mapped to Mn::Vector3
+        Mn::Vector3 val{};
+        if (io::fromJsonValue(jsonObj, val)) {
+          set(key, val);
+        }
+      } else if (jsonObj.Size() == 4) {
+        // JSON numeric array of size 4 can be either vector4, quaternion or
+        // color4, so must get type of object that exists with key
+        // NOTE : to properly make use of vector4 and color4 configValues
+        // loaded from JSON, the owning Configuration must be
+        // pre-initialized in its constructor with a default value at the
+        // target key.
+
+        // Check if this configuration has pre-defined field with given key
+        if (hasValue(key)) {
+          ConfigValType valType = get(key).getType();
+          if (valType == ConfigValType::MagnumQuat) {
+            // if predefined object is neither
+            Mn::Quaternion val{};
+            if (io::fromJsonValue(jsonObj, val)) {
+              set(key, val);
+            }
+          } else if (valType == ConfigValType::MagnumVec4) {
+            // if object exists already @ key and its type is Vector4
+            Mn::Vector4 val{};
+            if (io::fromJsonValue(jsonObj, val)) {
+              set(key, val);
+            }
+          } else {
+            // unknown predefined type of config of size 4
+            // this indicates incomplete implementation of size 4
+            // configuration type.
+            // decrement count for key:obj due to not being handled vector
+            --numConfigSettings;
+
+            ESP_WARNING()
+                << "Config cell in JSON document contains key" << key
+                << "referencing an existing configuration element of size "
+                   "4 of unknown type:"
+                << getNameForStoredType(valType) << "so skipping.";
+          }
+        } else {
+          // This supports fields that do not yet exist.
+          // Check if label contains substrings inferring expected type,
+          // otherwise assume this field is a mn::Vector4
+
+          auto lcaseKey = Cr::Utility::String::lowercase(key);
+          // labels denoting quaternions
+          if ((lcaseKey.find("quat") != std::string::npos) ||
+              (lcaseKey.find("rotat") != std::string::npos) ||
+              (lcaseKey.find("orient") != std::string::npos)) {
+            // object label contains quaternion tag, treat as a
+            // Mn::Quaternion
+            Mn::Quaternion val{};
+            if (io::fromJsonValue(jsonObj, val)) {
+              set(key, val);
+            }
+          } else {
+            // if unrecognized label for user-defined field, default the
+            // value to be treated as a Mn::Vector4
+            Mn::Vector4 val{};
+            if (io::fromJsonValue(jsonObj, val)) {
+              set(key, val);
+            }
+          }
+        }
+      } else if (jsonObj.Size() == 9) {
+        // assume is 3x3 matrix
+        Mn::Matrix3 mat{};
+        if (io::fromJsonValue(jsonObj, mat)) {
+          set(key, mat);
+        }
+      } else if (jsonObj.Size() == 16) {
+        // assume is 4x4 matrix
+        Mn::Matrix4 mat{};
+        if (io::fromJsonValue(jsonObj, mat)) {
+          set(key, mat);
+        }
+      } else {
+        // The array does not match any currently supported magnum
+        // objects, so place in indexed subconfig of values.
+        // create a new subgroup
+        std::shared_ptr<core::config::Configuration> subGroupPtr =
+            getSubconfigCopy<core::config::Configuration>(key);
+
+        for (size_t i = 0; i < jsonObj.Size(); ++i) {
+          const std::string subKey =
+              Cr::Utility::formatString("{}_{:.03d}", key, i);
+          numConfigSettings += subGroupPtr->loadOneConfigFromJson(
+              numConfigSettings, subKey, jsonObj[i]);
+        }
+        setSubconfigPtr<core::config::Configuration>(key, subGroupPtr);
+      }
+      // value in array is a number of specified length, else it is a string, an
+      // object or a nested array
+    } else {
+      // create a new subgroup
+      std::shared_ptr<core::config::Configuration> subGroupPtr =
+          getSubconfigCopy<core::config::Configuration>(key);
+
+      for (size_t i = 0; i < jsonObj.Size(); ++i) {
+        const std::string subKey =
+            Cr::Utility::formatString("{}_{:.03d}", key, i);
+        numConfigSettings += subGroupPtr->loadOneConfigFromJson(
+            numConfigSettings, subKey, jsonObj[i]);
+      }
+      setSubconfigPtr<core::config::Configuration>(key, subGroupPtr);
+    }
+  } else if (jsonObj.IsObject()) {
+    // support nested objects
+    // create a new subgroup
+    std::shared_ptr<core::config::Configuration> subGroupPtr =
+        getSubconfigCopy<core::config::Configuration>(key);
+    numConfigSettings += subGroupPtr->loadFromJson(jsonObj);
+    // save subgroup's subgroup configuration in original config
+    setSubconfigPtr<core::config::Configuration>(key, subGroupPtr);
+    //
+  } else {
+    // TODO support other types?
+    // decrement count for key:obj due to not being handled type
+    --numConfigSettings;
+    ESP_WARNING() << "Config cell in JSON document contains key" << key
+                  << "referencing an unknown/unparsable value type, so "
+                     "skipping this key.";
+  }
+  return numConfigSettings;
+}  // namespace config
+
 int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
   // count number of valid user config settings found
   int numConfigSettings = 0;
@@ -338,154 +544,9 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
        it != jsonObj.MemberEnd(); ++it) {
     // for each key, attempt to parse
     const std::string key{it->name.GetString()};
-    const auto& obj = it->value;
-    // increment, assuming is valid object
-    ++numConfigSettings;
 
-    if (obj.IsDouble()) {
-      set(key, obj.GetDouble());
-    } else if (obj.IsNumber()) {
-      set(key, obj.GetInt());
-    } else if (obj.IsString()) {
-      set(key, obj.GetString());
-    } else if (obj.IsBool()) {
-      set(key, obj.GetBool());
-    } else if (obj.IsArray() && obj.Size() > 0) {
-      // non-empty array of numeric values
-      if (obj[0].IsNumber()) {
-        // numeric vector, quaternion or matrix
-        if (obj.Size() == 2) {
-          // All size 2 numeric arrays are mapped to Mn::Vector2
-          Mn::Vector2 val{};
-          if (io::fromJsonValue(obj, val)) {
-            set(key, val);
-          }
-        } else if (obj.Size() == 3) {
-          // All size 3 numeric arrays are mapped to Mn::Vector3
-          Mn::Vector3 val{};
-          if (io::fromJsonValue(obj, val)) {
-            set(key, val);
-          }
-        } else if (obj.Size() == 4) {
-          // JSON numeric array of size 4 can be either vector4, quaternion or
-          // color4, so must get type of object that exists with key
-          // NOTE : to properly make use of vector4 and color4 configValues
-          // loaded from JSON, the owning Configuration must be
-          // pre-initialized in its constructor with a default value at the
-          // target key. Otherwise for backwards compatibility, we default to
-          // reading a quaternion
-
-          // Check if this configuration has pre-defined field with given key
-          if (hasValue(key)) {
-            ConfigStoredType valType = get(key).getType();
-            if (valType == ConfigStoredType::MagnumQuat) {
-              // if predefined object is neither
-              Mn::Quaternion val{};
-              if (io::fromJsonValue(obj, val)) {
-                set(key, val);
-              }
-            } else if (valType == ConfigStoredType::MagnumVec4) {
-              // if object exists already @ key and its type is Vector4
-              Mn::Vector4 val{};
-              if (io::fromJsonValue(obj, val)) {
-                set(key, val);
-              }
-            } else {
-              // unknown predefined type of config of size 4
-              // this indicates incomplete implementation of size 4
-              // configuration type.
-              // decrement count for key:obj due to not being handled vector
-              --numConfigSettings;
-
-              ESP_WARNING()
-                  << "Config cell in JSON document contains key" << key
-                  << "referencing an existing configuration element of size "
-                     "4 of unknown type:"
-                  << getNameForStoredType(valType) << "so skipping.";
-            }
-          } else {
-            // This supports fields that do not yet exist.
-            // Check if label contains substrings inferring expected type,
-            // otherwise assume this field is a mn::Vector4
-
-            auto lcaseKey = Cr::Utility::String::lowercase(key);
-            // labels denoting quaternions
-            if ((lcaseKey.find("quat") != std::string::npos) ||
-                (lcaseKey.find("rotat") != std::string::npos) ||
-                (lcaseKey.find("orient") != std::string::npos)) {
-              // object label contains quaternion tag, treat as a
-              // Mn::Quaternion
-              Mn::Quaternion val{};
-              if (io::fromJsonValue(obj, val)) {
-                set(key, val);
-              }
-            } else {
-              // if unrecognized label for user-defined field, default the
-              // value to be treated as a Mn::Vector4
-              Mn::Vector4 val{};
-              if (io::fromJsonValue(obj, val)) {
-                set(key, val);
-              }
-            }
-          }
-        } else if (obj.Size() == 9) {
-          // assume is 3x3 matrix
-          Mn::Matrix3 mat{};
-          if (io::fromJsonValue(obj, mat)) {
-            set(key, mat);
-          }
-        } else {
-          // decrement count for key:obj due to not being handled vector
-          --numConfigSettings;
-          // TODO support numeric array in JSON
-          ESP_WARNING()
-              << "Config cell in JSON document contains key" << key
-              << "referencing an unsupported numeric array of length :"
-              << obj.Size() << "so skipping.";
-        }
-      } else if (obj[0].IsString()) {
-        // Array of strings
-
-        // create a new subgroup
-        std::shared_ptr<core::config::Configuration> subGroupPtr =
-            getSubconfigCopy<core::config::Configuration>(key);
-
-        for (size_t i = 0; i < obj.Size(); ++i) {
-          std::string dest;
-          if (!io::fromJsonValue(obj[i], dest)) {
-            ESP_ERROR() << "Failed to parse array element" << i
-                        << "in non-numeric list of values keyed by" << key
-                        << "so skipping this value.";
-          } else {
-            const std::string subKey =
-                Cr::Utility::formatString("{}_{:.02d}", key, i);
-            subGroupPtr->set(subKey, dest);
-            // Increment for each sub-config object
-            ++numConfigSettings;
-          }
-        }
-
-        // Incremented numConfigSettings for this config already.
-        // save subgroup's subgroup configuration in original config
-        setSubconfigPtr<core::config::Configuration>(key, subGroupPtr);
-      }
-    } else if (obj.IsObject()) {
-      // support nested objects
-      // create a new subgroup
-      std::shared_ptr<core::config::Configuration> subGroupPtr =
-          getSubconfigCopy<core::config::Configuration>(key);
-      numConfigSettings += subGroupPtr->loadFromJson(obj);
-      // save subgroup's subgroup configuration in original config
-      setSubconfigPtr<core::config::Configuration>(key, subGroupPtr);
-      //
-    } else {
-      // TODO support other types?
-      // decrement count for key:obj due to not being handled type
-      --numConfigSettings;
-      ESP_WARNING() << "Config cell in JSON document contains key" << key
-                    << "referencing an unknown/unparsable value type, so "
-                       "skipping this key.";
-    }
+    numConfigSettings +=
+        loadOneConfigFromJson(numConfigSettings, key, it->value);
   }
   return numConfigSettings;
 }  // Configuration::loadFromJson
@@ -515,10 +576,10 @@ void Configuration::writeValuesToJson(io::JsonGenericValue& jsonObj,
       auto jsonVal = valIter->second.writeToJsonObject(allocator);
       jsonObj.AddMember(name, jsonVal, allocator);
     } else {
-      ESP_VERY_VERBOSE()
-          << "Unitialized ConfigValue in Configuration @ key ["
+      ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+          << "Unitialized ConfigValue in Configuration @ key `"
           << valIter->first
-          << "], so nothing will be written to JSON for this key.";
+          << "`, so nothing will be written to JSON for this key.";
     }
   }  // iterate through all values
 }  // Configuration::writeValuesToJson
@@ -539,10 +600,10 @@ void Configuration::writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
           cfgIter->second->writeToJsonObject(allocator);
       jsonObj.AddMember(name, subObj, allocator);
     } else {
-      ESP_VERY_VERBOSE()
-          << "Unitialized/empty Subconfig in Configuration @ key ["
+      ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+          << "Unitialized/empty Subconfig in Configuration @ key `"
           << cfgIter->first
-          << "], so nothing will be written to JSON for this key.";
+          << "`, so nothing will be written to JSON for this key.";
     }
   }  // iterate through all configurations
 
@@ -587,7 +648,7 @@ template <>
 std::shared_ptr<Configuration> Configuration::editSubconfig<Configuration>(
     const std::string& name) {
   // retrieve existing (or create new) subgroup, with passed name
-  return addSubgroup(name);
+  return addOrEditSubgroup<Configuration>(name).first->second;
 }
 
 template <>
@@ -595,7 +656,50 @@ void Configuration::setSubconfigPtr<Configuration>(
     const std::string& name,
     std::shared_ptr<Configuration>& configPtr) {
   configMap_[name] = std::move(configPtr);
-}  // setSubconfigPtr
+}
+
+int Configuration::rekeyAllValues() {
+  // Get all sorted key-value pairs of values
+  std::map<std::string, ConfigValue> sortedValMap(valueMap_.begin(),
+                                                  valueMap_.end());
+  // clear out existing value map - subconfigs are not touched.
+  valueMap_.clear();
+  // place sorted values with newly constructed keys
+  int keyIter = 0;
+  for (auto it = sortedValMap.cbegin(); it != sortedValMap.cend(); ++it) {
+    std::string newKey = Cr::Utility::formatString("{:.03d}", keyIter++);
+    valueMap_[newKey] = it->second;
+  }
+  return keyIter;
+}  // Configuration::rekeyAllValues()
+
+int Configuration::rekeySubconfigValues(const std::string& subconfigKey) {
+  std::pair<ConfigMapType::iterator, bool> rekeySubconfigEntry =
+      addOrEditSubgroup<Configuration>(subconfigKey);
+  // check if subconfig existed already - result from addOrEditSubgroup would
+  // be false if add failed.
+  if (rekeySubconfigEntry.second) {
+    // Subconfig did not exist, was created by addOrEdit, so delete and return
+    // 0.
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << "No subconfig found with key `" << subconfigKey
+        << "` so rekeying aborted.";
+    configMap_.erase(rekeySubconfigEntry.first);
+    return 0;
+  }
+  // retrieve subconfig
+  auto rekeySubconfig = rekeySubconfigEntry.first->second;
+  if (rekeySubconfig->getNumValues() == 0) {
+    // Subconfig exists but has no values defined, so no rekeying possible
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << "Subconfig with key `" << subconfigKey
+        << "` has no values, so no rekeying accomplished.";
+    return 0;
+  }
+  // rekey subconfig and return the number of values affected
+  return rekeySubconfig->rekeyAllValues();
+
+}  // Configuration::rekeySubconfig
 
 int Configuration::findValueInternal(const Configuration& config,
                                      const std::string& key,

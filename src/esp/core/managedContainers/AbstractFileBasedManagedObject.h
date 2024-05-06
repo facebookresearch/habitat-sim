@@ -19,10 +19,28 @@ namespace managedContainers {
 class AbstractFileBasedManagedObject : public AbstractManagedObject {
  public:
   /**
-   * @brief directory where files used to construct ManagedObject can be found.
+   * @brief Set the directory where files used to construct ManagedObject can be
+   * found.
    */
   virtual void setFileDirectory(const std::string& fileDirectory) = 0;
+
+  /**
+   * @brief Get directory where files used to construct ManagedObject can be
+   * found.
+   */
   virtual std::string getFileDirectory() const = 0;
+
+  /**
+   * @brief Set the fully qualified filename of the file used to create or most
+   * recently save this ManagedObject.
+   */
+  virtual void setActualFilename(const std::string& fullFileName) = 0;
+
+  /**
+   * @brief Get the fully qualified filename of the file used to create or most
+   * recently save this ManagedObject.
+   */
+  virtual std::string getActualFilename() const = 0;
 
   /**
    * @brief This will return a simplified version of the

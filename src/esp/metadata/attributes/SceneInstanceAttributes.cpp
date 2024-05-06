@@ -331,7 +331,7 @@ SceneInstanceAttributes::getRegionPbrShaderAttributesHandles() const {
   for (auto objIter = pbrShdrRegionIter.first;
        objIter != pbrShdrRegionIter.second; ++objIter) {
     // verify only string values
-    if (objIter->second.getType() == core::config::ConfigStoredType::String) {
+    if (objIter->second.getType() == core::config::ConfigValType::String) {
       res.emplace(
           std::make_pair(objIter->first, objIter->second.getAsString()));
     }

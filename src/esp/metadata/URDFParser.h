@@ -285,6 +285,9 @@ class Model {
   //! list of root links (usually 1)
   std::vector<std::shared_ptr<Link>> m_rootLinks;
 
+  //! Keyed by child link name, provides reference to parent link
+  std::map<std::string, std::string> m_parentLinkTree{};
+
   //! if true, force this model to produce a fixed base instance (e.g. the root
   //! is not dynamic)
   bool m_overrideFixedBase{false};

@@ -18,6 +18,33 @@ namespace core {
 namespace managedContainers {
 
 /**
+ * @brief This enum describes the return status from preregistration
+ * conditioning of attributes. Preregistration is performed by
+ * @ref preRegisterObjectFinalize , which will conduct any type-specific
+ * initialization and/or validation that might be required before an object
+ * is registered (i.e. saved in the @ref ManagedContainer). The return status
+ * of this preregistration specifies how the registration proceess should
+ * proceed.
+ */
+enum class ManagedObjectPreregistration {
+  /**
+   * The preregistration processing failed for some reason, and the managed
+   * object will not be registered.
+   */
+  Failed,
+  /**
+   * The preregistration succeeded, the object can be registered with the given
+   * handle.
+   */
+  Success,
+  /**
+   * The preregistration succeeded, but the object has a self-derived
+   * registration handle that must be used. (i.e. PrimitiveAttributes)
+   */
+  Success_Use_Object_Handle
+};
+
+/**
  * @brief This enum describes how objects held in the @ref ManagedConatainer are
  * accessed.
  */
@@ -121,7 +148,7 @@ class ManagedContainer : public ManagedContainerBase {
    * the @ref ManagedContainerBase::objectLibrary_. Will be set as origin handle
    * for managed object. If empty string, use existing origin handle.
    * @param forceRegistration Will register object even if conditional
-   * registration checks fail in registerObjectFinalize.
+   * registration checks fail in registerObjectInternal.
    *
    * @return The unique ID of the managed object being registered, or
    * ID_UNDEFINED if failed
@@ -137,8 +164,8 @@ class ManagedContainer : public ManagedContainerBase {
       return ID_UNDEFINED;
     }
     if ("" != objectHandle) {
-      return registerObjectFinalize(std::move(managedObject), objectHandle,
-                                    forceRegistration);
+      return this->registerObjectInternal(std::move(managedObject),
+                                          objectHandle, forceRegistration);
     }
     std::string handleToSet = managedObject->getHandle();
     if ("" == handleToSet) {
@@ -148,8 +175,8 @@ class ManagedContainer : public ManagedContainerBase {
              "so registration aborted.";
       return ID_UNDEFINED;
     }
-    return registerObjectFinalize(std::move(managedObject), handleToSet,
-                                  forceRegistration);
+    return this->registerObjectInternal(std::move(managedObject), handleToSet,
+                                        forceRegistration);
   }  // ManagedContainer::registerObject
 
   /**
@@ -608,20 +635,6 @@ class ManagedContainer : public ManagedContainerBase {
                                   const std::string& src);
 
   /**
-   * @brief implementation of managed object type-specific registration
-   * @param object the managed object to be registered
-   * @param objectHandle the name to register the managed object with.
-   * Expected to be valid.
-   * @param forceRegistration Will register object even if conditional
-   * registration checks fail.
-   * @return The unique ID of the managed object being registered, or
-   * ID_UNDEFINED if failed
-   */
-  virtual int registerObjectFinalize(ManagedPtr object,
-                                     const std::string& objectHandle,
-                                     bool forceRegistration) = 0;
-
-  /**
    * @brief Build a shared pointer to a copy of a the passed managed object,
    * of appropriate managed object type for passed object type.  This is the
    * function called by the copy constructor map.
@@ -664,6 +677,78 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::constructFromDefault
 
   /**
+   * @brief This method will perform any final conditioning or updated required
+   * by the @ref ManagedPtr object before it is registered.
+   *
+   * @param object the managed object to be registered
+   * @param objectHandle the name to register the managed object with.
+   * Expected to be valid.
+   * @param forceRegistration Will register object even if conditional
+   * registration checks fail.
+   * @return Whether there was an error in preconditioning the object that
+   * prevents successful registration.
+   */
+  virtual ManagedObjectPreregistration preRegisterObjectFinalize(
+      ManagedPtr object,
+      const std::string& objectHandle,
+      bool forceRegistration) = 0;
+
+  /**
+   * @brief This method will perform any final manager-related handling after
+   * successfully registering an object.
+   *
+   * See @ref esp::attributes::managers::ObjectAttributesManager foran example.
+   *
+   * @param objectID the ID of the successfully registered managed object
+   * @param objectHandle The name of the managed objbect
+   */
+  virtual void postRegisterObjectHandling(int objectID,
+                                          const std::string& objectHandle) = 0;
+
+ private:
+  /**
+   * @brief implementation of managed object registration. Will call the
+   * appropriate type-specific preregistration conditioning before registering
+   * the object and post-registration handling after successful registration.
+   * @ref ManagedPtr object.
+   *
+   * @param object the managed object to be registered
+   * @param objectHandle the name to register the managed object with.
+   * Expected to be valid.
+   * @param forceRegistration Will register object even if conditional
+   * registration checks fail.
+   * @return The unique ID of the managed object being registered, or
+   * ID_UNDEFINED if failed
+   */
+  int registerObjectInternal(ManagedPtr object,
+                             const std::string& objectHandle,
+                             bool forceRegistration) {
+    // Handle preregistration type-specific processing of managed object
+    ManagedObjectPreregistration status =
+        preRegisterObjectFinalize(object, objectHandle, forceRegistration);
+    // Don't register if failed.
+    if (status == ManagedObjectPreregistration::Failed) {
+      return ID_UNDEFINED;
+    }
+    const std::string& handleToUse =
+        (status == ManagedObjectPreregistration::Success_Use_Object_Handle
+             ? object->getHandle()
+             : objectHandle);
+    // adds template to library, and returns either the ID of the existing
+    // template referenced by stageAttributesHandle, or the next available
+    // ID if not found.
+    int objectID = this->addObjectToLibrary(std::move(object), handleToUse);
+    // If registration succeeded then perform post-registration handling
+    if (objectID != ID_UNDEFINED) {
+      // post registration manager-specific processing.
+      postRegisterObjectHandling(objectID, objectHandle);
+    }
+
+    return objectID;
+
+  }  // registerObjectInternal
+
+  /**
    * @brief add passed managed object to library, setting managedObjectID
    * appropriately. Called internally by registerObject.
    *
@@ -694,7 +779,7 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::addObjectToLibrary
 
   // ======== Typedefs and Instance Variables ========
-
+ protected:
   /**
    * @brief Define a map type referencing function pointers to @ref
    * createObjectCopy keyed by string names of classes being instanced,

@@ -480,21 +480,39 @@ class AssetAttributesManager
   }  // AttributesManager::verifyTemplateHandle
 
   /**
-   * @brief Add an @ref esp::metadata::attributes::AbstractPrimitiveAttributes
-   * object to the @ref objectLibrary_.
+   * @brief This method will perform any essential updating to the managed
+   * object before registration is performed. If this updating fails,
+   * registration will also fail. Specifically, it will set the primitive
+   * attributes template's registration handle.
    *
    * @param attributesTemplate The attributes template.
    * @param objectHandle Not used for asset attributes templates - handle is
    * derived by configuration.
    * @param forceRegistration Will register object even if conditional
    * registration checks fail.
-   * @return The index in the @ref objectLibrary_ of object
-   * template.
+   * @return Whether the preregistration has succeeded and what handle to use to
+   * register the object if it has.
    */
-  int registerObjectFinalize(
+  core::managedContainers::ManagedObjectPreregistration
+  preRegisterObjectFinalize(
       attributes::AbstractPrimitiveAttributes::ptr attributesTemplate,
       CORRADE_UNUSED const std::string& objectHandle,
       CORRADE_UNUSED bool forceRegistration) override;
+
+  /**
+   * @brief Not required for this manager.
+   *
+   * This method will perform any final manager-related handling after
+   * successfully registering an object.
+   *
+   * See @ref esp::attributes::managers::ObjectAttributesManager for an example.
+   *
+   * @param objectID the ID of the successfully registered managed object
+   * @param objectHandle The name of the managed objbect
+   */
+  void postRegisterObjectHandling(
+      CORRADE_UNUSED int objectID,
+      CORRADE_UNUSED const std::string& objectHandle) override {}
 
   /**
    * @brief Used Internally.  Create and configure newly-created attributes with

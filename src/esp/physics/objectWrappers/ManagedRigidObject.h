@@ -24,6 +24,14 @@ class ManagedRigidObject
       : AbstractManagedRigidBase<
             esp::physics::RigidObject>::AbstractManagedRigidBase(classKey) {}
 
+  /**
+   * @brief Get a copy of the template attributes describing the initial state
+   * of this object. These attributes have the combination of date from the
+   * original object attributes and specific instance attributes used to create
+   * this object. Note : values will reflect both sources, and should not
+   * be saved to disk as object attributes, since instance attribute
+   * modifications will still occur on subsequent loads
+   */
   std::shared_ptr<metadata::attributes::ObjectAttributes>
   getInitializationAttributes() const {
     if (auto sp = this->getObjectReference()) {
@@ -32,6 +40,16 @@ class ManagedRigidObject
     return nullptr;
   }  // getInitializationAttributes()
 
+  /**
+   * @brief Return the uncorrected translation (only different if COM correction
+   * has occurred)
+   */
+  Magnum::Vector3 getUncorrectedTranslation() const {
+    if (auto sp = this->getObjectReference()) {
+      return sp->getUncorrectedTranslation();
+    }
+    return Magnum::Vector3{};
+  }  // getTranslation
   VelocityControl::ptr getVelocityControl() {
     if (auto sp = this->getObjectReference()) {
       return sp->getVelocityControl();

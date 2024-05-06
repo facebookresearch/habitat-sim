@@ -257,7 +257,52 @@ void declareBaseAttributesManager(py::module& m,
             "contain or explicitly do not contain the passed search_str, based "
             "on the value of boolean contains.")
                .c_str(),
-           "search_str"_a = "", "contains"_a = true);
+           "search_str"_a = "", "contains"_a = true)
+      .def("save_template_by_handle",
+           static_cast<bool (MgrClass::*)(const std::string&, bool) const>(
+               &MgrClass::saveManagedObjectToFile),
+           ("Saves the " + attrType +
+            " template referenced by the passed handle to its source location "
+            "if overwrite is true, will create a new incremented filename if  "
+            "overwrite is false. Returns whether was successful or not.")
+               .c_str(),
+           "handle"_a, "overwrite"_a)
+      .def(
+          "save_template_by_handle_to_filepath",
+          static_cast<bool (MgrClass::*)(const std::string&, const std::string&)
+                          const>(&MgrClass::saveManagedObjectToFile),
+          ("Saves the " + attrType +
+           " template referenced by the passed handle to the passed path, "
+           "creating subdirectories if they do not exist. Returns whether was "
+           "successful or not.")
+              .c_str(),
+          "handle"_a, "filepath"_a)
+      .def("save_template_to_filepath",
+           static_cast<bool (MgrClass::*)(const AttribsPtr&, const std::string&,
+                                          bool) const>(
+               &MgrClass::saveManagedObjectToFile),
+           ("Saves the passed " + attrType +
+            " template to the passed filepath. If only a filename is passed, "
+            "it will save this template in its original source directory, "
+            "otherwise if path + filename is passed it will save the template "
+            "to the specified filepath, creating any necessary subdirectories "
+            "only if create_subdir is true. If create_subdir is false, it will "
+            "fail with a message if any subdirectories in the requested "
+            "filepath do not exist.")
+               .c_str(),
+           "handle"_a, "filepath"_a, "create_subdir"_a)
+      .def("save_template_to_filepath",
+           static_cast<bool (MgrClass::*)(const AttribsPtr&, const std::string&,
+                                          const std::string&, bool) const>(
+               &MgrClass::saveManagedObjectToFile),
+           ("Saves the passed " + attrType +
+            " template to the passed filepath + filename, creating any "
+            "necessary subdirectories only if create_subdir is true. If "
+            "create_subdir is false, it will fail with a message if any "
+            "subdirectories in the requested filepath "
+            "subdirectories do not exist.")
+               .c_str(),
+           "handle"_a, "filepath"_a, "filename"_a, "create_subdir"_a);
 }  // declareBaseAttributesManager
 
 void initAttributesManagersBindings(py::module& m) {

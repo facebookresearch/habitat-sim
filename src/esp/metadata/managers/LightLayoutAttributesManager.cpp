@@ -262,19 +262,6 @@ LightLayoutAttributes::ptr LightLayoutAttributesManager::initNewObjectInternal(
   return newAttributes;
 }  // LightLayoutAttributesManager::initNewObjectInternal
 
-int LightLayoutAttributesManager::registerObjectFinalize(
-    LightLayoutAttributes::ptr lightAttribs,
-    const std::string& lightAttribsHandle,
-    bool) {
-  // adds template to library, and returns either the ID of the existing
-  // template referenced by LightLayoutAttributesHandle, or the next available
-  // ID if not found.
-  int LightLayoutAttributesID =
-      this->addObjectToLibrary(std::move(lightAttribs), lightAttribsHandle);
-
-  return LightLayoutAttributesID;
-}  // LightLayoutAttributesManager::registerObjectFinalize
-
 gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
     const std::string& lightConfigName) {
   // if passing no-lighting key, return empty light setup
