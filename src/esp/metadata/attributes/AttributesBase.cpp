@@ -18,10 +18,10 @@ AbstractAttributes::AbstractAttributes(const std::string& attributesClassKey,
   init("handle", handle);
   // These fields are all hidden/internally used fields, so do not set them as
   // initialized/default values
-  setClassKey(attributesClassKey);
-  setID(0);
-  setFileDirectory("");
-  setActualFilename("");
+  setHidden("__attributesClassKey", attributesClassKey);
+  setHidden("__ID", 0);
+  setHidden("__fileDirectory", "");
+  setHidden("__actualFilename", "");
 }
 
 }  // namespace attributes
