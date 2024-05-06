@@ -383,6 +383,12 @@ void declareRigidObjectWrapper(py::module& m,
           "velocity_control", &ManagedRigidObject::getVelocityControl,
           ("Retrieves a reference to the VelocityControl struct for this " +
            objType + ".")
+              .c_str())
+      .def_property_readonly(
+          "uncorrected_translation",
+          &ManagedRigidObject::getUncorrectedTranslation,
+          ("Retrieves the value of the current translation for this " +
+           objType + " object, uncorrected for any possible COM correction.")
               .c_str());
 
 }  // declareRigidObjectTemplateWrapper

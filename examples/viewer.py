@@ -294,6 +294,13 @@ class HabitatSimInteractiveViewer(Application):
         # load markersets for every object and ao into a cache
         self.marker_sets_per_obj = self.get_all_markersets(mm, self)
 
+        # REMOVE WHEN FINISHED
+        # Use this to correct Marker placements and resave.
+        # This process requires access to uncorrected COM location.
+        # self.correct_and_save_markersets()
+
+        sys.exit(0)
+
         # load appropriate filter file for scene
         self.load_scene_filter_file()
 
@@ -334,6 +341,75 @@ class HabitatSimInteractiveViewer(Application):
         LoggingContext.reinitialize_from_env()
         logger.setLevel("INFO")
         self.print_help_text()
+
+    def correct_and_save_markersets(self):
+        def save_markerset_as_json(obj_handle, markers_dict, attrMgr):
+            # get the name of the attrs used to initialize the object
+            obj_init_attr_handle = obj.creation_attributes.handle
+
+            # get copy of initialization attributes as they were in manager,
+            # unmodified by scene instance values such as scale
+            init_attrs = attrMgr.get_template_by_handle(obj_init_attr_handle)
+            filename = init_attrs.handle.replace(
+                ".object_config.json", ".markersets.json"
+            )
+
+            marker_sets = {}
+            new_markerset_dict = {}
+            for task, task_dict in markers_dict.items():
+                new_task_dict = {}
+                for link, link_dict in task_dict.items():
+                    new_link_dict = {}
+                    tmp_dict = {}
+                    for subset, markers_list in link_dict.items():
+                        new_markers_dict = {}
+                        key = 0
+                        for pt in markers_list:
+                            key_str = f"{key:03}"
+                            new_markers_dict[key_str] = list(pt)
+                            key += 1
+                        tmp_dict["markers"] = new_markers_dict
+                        new_link_dict[subset] = tmp_dict
+                    new_task_dict[link] = new_link_dict
+                new_markerset_dict[task] = new_task_dict
+
+            marker_sets["marker_sets"] = new_markerset_dict
+
+            with open(filename, "w") as f:
+                f.write(json.dumps(marker_sets, indent=2))
+
+        rom = self.sim.get_rigid_object_manager()
+        obj_dict = rom.get_objects_by_handle_substring("")
+        for handle, obj in obj_dict.items():
+            if ":0000" not in handle:
+                continue
+            obj_com = obj.transform_world_pts_to_local(
+                [obj.uncorrected_translation], -1
+            )[0]
+            markers_dict = obj.marker_sets.get_all_marker_points()
+            changed = False
+            for _task, task_dict in markers_dict.items():
+                for _link, link_dict in task_dict.items():
+                    for _subset, markers_list in link_dict.items():
+                        for pt in markers_list:
+                            pt += obj_com
+                            print(f"new point location {pt}")
+                            changed = True
+
+                            # -0.3935766,
+                            # 0.8378356,
+                            # -0.2302689
+
+            if changed:
+                print(
+                    f"Obj: {handle} | Location: {obj.translation} | uncorrected COM : {obj.uncorrected_translation} | Correction to be added to point : {obj_com} "
+                )
+                self.marker_sets_per_obj[handle].set_all_points(markers_dict)
+
+                # save obj config
+                attrMgr = self.sim.metadata_mediator.object_template_manager
+
+                save_markerset_as_json(handle, markers_dict, attrMgr)
 
     def modify_param_from_term(self):
         """
@@ -625,8 +701,8 @@ class HabitatSimInteractiveViewer(Application):
             print(f"setting rigid markersets for {handle}")
             marker_sets_per_obj[handle] = obj.marker_sets
         aom = self.sim.get_articulated_object_manager()
-        obj_dict = aom.get_objects_by_handle_substring("")
-        for handle, obj in obj_dict.items():
+        ao_obj_dict = aom.get_objects_by_handle_substring("")
+        for handle, obj in ao_obj_dict.items():
             print(f"setting ao markersets for {handle}")
             marker_sets_per_obj[handle] = obj.marker_sets
         print("Done getting all markersets")

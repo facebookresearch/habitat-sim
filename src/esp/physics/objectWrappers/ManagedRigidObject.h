@@ -40,6 +40,16 @@ class ManagedRigidObject
     return nullptr;
   }  // getInitializationAttributes()
 
+  /**
+   * @brief Return the uncorrected translation (only different if COM correction
+   * has occurred)
+   */
+  Magnum::Vector3 getUncorrectedTranslation() const {
+    if (auto sp = this->getObjectReference()) {
+      return sp->getUncorrectedTranslation();
+    }
+    return Magnum::Vector3{};
+  }  // getTranslation
   VelocityControl::ptr getVelocityControl() {
     if (auto sp = this->getObjectReference()) {
       return sp->getVelocityControl();
