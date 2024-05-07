@@ -4,8 +4,6 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 
 import habitat.datasets.rearrange.samplers.receptacle as hab_receptacle
-
-# NOTE: (requires habitat-lab) get metadata for semantics
 import habitat.sims.habitat_simulator.sim_utilities as sutils
 import magnum as mn
 import numpy as np
@@ -22,6 +20,8 @@ from habitat.datasets.rearrange.navmesh_utils import (
 from habitat.datasets.rearrange.samplers.object_sampler import ObjectSampler
 from habitat.sims.habitat_simulator.debug_visualizer import DebugVisualizer
 
+# NOTE: (requires habitat-lab) get metadata for semantics
+import habitat_sim
 from habitat_sim import NavMeshSettings, Simulator
 from habitat_sim.metadata import MetadataMediator
 from habitat_sim.physics import ManagedArticulatedObject
@@ -527,6 +527,40 @@ def run_rec_filter_analysis(
     write_rec_filter_json(filter_filepath, rec_filter_dict)
 
 
+def get_global_faucet_points(sim: habitat_sim.Simulator) -> Dict[str, List[mn.Vector3]]:
+    """
+    Gets a global set of points identifying faucets for each object in the scene.
+    Returns a dict mapping object handles to global points.
+    """
+    objs = sutils.get_all_objects(sim)
+    obj_markersets = {}
+    for obj in objs:
+        all_obj_marker_sets = obj.marker_sets
+        if all_obj_marker_sets.has_taskset("faucets"):
+            # this object has faucet annotations
+            obj_markersets[obj.handle] = []
+            faucet_marker_sets = all_obj_marker_sets.get_taskset_points("faucets")
+            for link_name, link_faucet_markers in faucet_marker_sets.items():
+                link_id = -1
+                if link_name != "root":
+                    link_id = obj.get_link_id_from_name(link_name)
+                for _marker_subset_name, points in link_faucet_markers.items():
+                    global_points = obj.transform_local_pts_to_world(points, link_id)
+                    obj_markersets[obj.handle].extend(global_points)
+    return obj_markersets
+
+
+def draw_global_point_set(global_points: List[mn.Vector3], debug_line_render):
+    for point in global_points:
+        debug_line_render.draw_circle(
+            translation=point,
+            radius=0.02,
+            normal=mn.Vector3(0, 1, 0),
+            color=mn.Color4.red(),
+            num_segments=12,
+        )
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -561,6 +595,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     available_check_actions = [
+        "faucet_points",
         "rec_unique_names",
         "rec_filters",
         "region_counts",
@@ -624,6 +659,19 @@ if __name__ == "__main__":
             ] = sim.get_articulated_object_manager().get_num_objects()
 
             scene_out_dir = os.path.join(args.out_dir, f"{sim.curr_scene_name}/")
+
+            ##########################################
+            # get images of all the global faucet points in the scene
+            if "faucet_points" in target_check_actions:
+                scene_obj_global_faucet_points = get_global_faucet_points(sim)
+                for obj_handle, global_points in scene_obj_global_faucet_points.items():
+                    circles = [
+                        (point, 0.1, mn.Vector3(0, 1, 0), mn.Color4.red())
+                        for point in global_points
+                    ]
+                    dbv.peek(
+                        obj_handle, peek_all_axis=True, debug_circles=circles
+                    ).save(scene_out_dir, f"faucets_{obj_handle}_")
 
             ##########################################
             # gather all Receptacle.unique_name in the scene
