@@ -299,8 +299,6 @@ class HabitatSimInteractiveViewer(Application):
         # This process requires access to uncorrected COM location.
         # self.correct_and_save_markersets()
 
-        sys.exit(0)
-
         # load appropriate filter file for scene
         self.load_scene_filter_file()
 
