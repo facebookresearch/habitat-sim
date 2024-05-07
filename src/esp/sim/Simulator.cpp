@@ -39,7 +39,7 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace sim {
-
+using metadata::attributes::AssetType;
 using metadata::attributes::PhysicsManagerAttributes;
 using metadata::attributes::SceneAOInstanceAttributes;
 using metadata::attributes::SceneObjectInstanceAttributes;
@@ -582,12 +582,12 @@ bool Simulator::instanceStageForSceneAttributes(
         (activeSemanticSceneID_ != activeSceneID_)) {
       sceneID_.push_back(activeSemanticSceneID_);
     } else {  // activeSemanticSceneID_ == activeSceneID_;
-      assets::AssetType stageType =
-          static_cast<assets::AssetType>(stageAttributes->getRenderAssetType());
+      AssetType stageType =
+          static_cast<AssetType>(stageAttributes->getRenderAssetType());
       // instance meshes contain their semantic annotations
       // empty scene has none to worry about
-      if (!(stageType == assets::AssetType::INSTANCE_MESH ||
-            stageAttributesHandle == assets::EMPTY_SCENE)) {
+      if (!(stageType == AssetType::INSTANCE_MESH ||
+            stageAttributesHandle == esp::EMPTY_SCENE)) {
         semanticSceneMeshLoaded_ = false;
         // TODO: programmatic generation of semantic meshes when no
         // annotations are provided.

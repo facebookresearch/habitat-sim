@@ -74,8 +74,8 @@ SemanticAttributes::SemanticAttributes(const std::string& handle)
   // setting default for semantic assets having semantically painted textures to
   // false
   setHasSemanticTextures(false);
-  // 4 corresponds to esp::assets::AssetType::INSTANCE_MESH
-  setSemanticAssetType(static_cast<int>(esp::assets::AssetType::INSTANCE_MESH));
+  // 4 corresponds to AssetType::INSTANCE_MESH
+  setSemanticAssetType(static_cast<int>(AssetType::INSTANCE_MESH));
   // get refs to internal subconfigs for semantic region attributes
   regionAnnotationConfig_ = editSubconfig<Configuration>("region_annotations");
 }  // SemanticAttributes ctor

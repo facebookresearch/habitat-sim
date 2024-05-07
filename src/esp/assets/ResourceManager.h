@@ -86,6 +86,10 @@ struct CollisionMeshData;
 class GenericSemanticMeshData;
 struct MeshData;
 struct RenderAssetInstanceCreationInfo;
+
+// used to continue outdated support of "file extension as object type"
+using metadata::attributes::AssetType;
+
 // used for shadertype specification
 using metadata::attributes::ObjectInstanceShaderType;
 

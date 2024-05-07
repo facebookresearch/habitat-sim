@@ -10,6 +10,23 @@ namespace metadata {
 namespace attributes {
 
 // All keys must be lowercase
+const std::map<std::string, AssetType> AssetTypeNamesMap = {
+    {"unknown", AssetType::UNKNOWN},
+    {"mp3d", AssetType::MP3D_MESH},
+    {"semantic", AssetType::INSTANCE_MESH},
+    {"navmesh", AssetType::NAVMESH},
+};
+
+std::string getMeshTypeName(AssetType meshTypeEnum) {
+  // Must always be valid value
+  for (const auto& it : AssetTypeNamesMap) {
+    if (it.second == meshTypeEnum) {
+      return it.first;
+    }
+  }
+  return "unknown";
+}
+
 const std::map<std::string, esp::gfx::LightType> LightTypeNamesMap = {
     {"point", esp::gfx::LightType::Point},
     {"directional", esp::gfx::LightType::Directional},

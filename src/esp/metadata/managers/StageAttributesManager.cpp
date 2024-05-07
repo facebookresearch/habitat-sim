@@ -15,7 +15,6 @@
 #include "esp/io/Json.h"
 
 namespace esp {
-using assets::AssetType;
 using core::managedContainers::ManagedObjectAccess;
 
 namespace metadata {

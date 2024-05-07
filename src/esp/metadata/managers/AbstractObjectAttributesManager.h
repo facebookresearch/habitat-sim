@@ -18,6 +18,7 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace metadata {
+using attributes::AssetType;
 namespace managers {
 
 /**
@@ -350,14 +351,12 @@ auto AbstractObjectAttributesManager<T, Access>::
   auto colAssetHandle = attributes->getCollisionAssetHandle();
   if (this->isValidPrimitiveAttributes(colAssetHandle)) {
     // value is valid primitive, and value is different than existing value
-    attributes->setCollisionAssetType(
-        static_cast<int>(esp::assets::AssetType::PRIMITIVE));
+    attributes->setCollisionAssetType(static_cast<int>(AssetType::PRIMITIVE));
     attributes->setUseMeshCollision(false);
   } else {
     // TODO eventually remove this, but currently non-prim collision mesh must
     // be UNKNOWN
-    attributes->setCollisionAssetType(
-        static_cast<int>(esp::assets::AssetType::UNKNOWN));
+    attributes->setCollisionAssetType(static_cast<int>(AssetType::UNKNOWN));
     attributes->setUseMeshCollision(true);
   }
 
@@ -389,7 +388,7 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
   // Map a json string value to its corresponding AssetType if found and cast to
   // int, based on AbstractObjectAttributes::AssetTypeNamesMap mappings.
   // Casts an int of the esp::AssetType enum value if found and understood,
-  // 0 (esp::assets::AssetType::UNKNOWN) if found but not understood, and
+  // 0 (AssetType::UNKNOWN) if found but not understood, and
   //-1 if tag is not found in json.
   int typeVal = -1;
   std::string tmpVal = "";
@@ -408,7 +407,7 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
           << "` does not map to a valid "
              "AbstractObjectAttributes::AssetTypeNamesMap value, so "
              "defaulting mesh type to AssetType::UNKNOWN.";
-      typeVal = static_cast<int>(esp::assets::AssetType::UNKNOWN);
+      typeVal = static_cast<int>(AssetType::UNKNOWN);
     }
     // value found so override current value, otherwise do not.
     meshTypeSetter(typeVal);

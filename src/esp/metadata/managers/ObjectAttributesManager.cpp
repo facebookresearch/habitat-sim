@@ -16,11 +16,10 @@ namespace Cr = Corrade;
 
 namespace esp {
 
-using assets::AssetType;
-
 namespace metadata {
 
 using attributes::AbstractObjectAttributes;
+using attributes::AssetType;
 using attributes::ObjectAttributes;
 namespace managers {
 

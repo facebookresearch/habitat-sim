@@ -97,6 +97,7 @@ namespace esp {
 
 using metadata::attributes::AbstractObjectAttributes;
 using metadata::attributes::ArticulatedObjectAttributes;
+using metadata::attributes::AssetType;
 using metadata::attributes::CubePrimitiveAttributes;
 using metadata::attributes::ObjectAttributes;
 using metadata::attributes::ObjectInstanceShaderType;

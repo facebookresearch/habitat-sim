@@ -969,7 +969,7 @@ void SimTest::getRuntimePerfStats() {
 
   SimulatorConfiguration simConfig =
       simulator->getMetadataMediator()->getSimulatorConfiguration();
-  simConfig.activeSceneName = esp::assets::EMPTY_SCENE;
+  simConfig.activeSceneName = esp::EMPTY_SCENE;
   simulator->reconfigure(simConfig);
 
   statValues = simulator->getRuntimePerfStatValues();
