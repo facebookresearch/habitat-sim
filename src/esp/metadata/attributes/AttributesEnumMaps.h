@@ -18,12 +18,12 @@ namespace attributes {
  * @brief Supported Asset types
  */
 enum class AssetType {
-  UNKNOWN,
-  MP3D_MESH,
-  INSTANCE_MESH,
-  UNKNOWN2,
-  NAVMESH,
-  PRIMITIVE,
+  Unknown,
+  Mp3dMesh,
+  InstanceMesh,
+  Navmesh,
+  Primitive,
+  EndAssetType,
 };
 
 /**

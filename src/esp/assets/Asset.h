@@ -50,7 +50,7 @@ struct AssetInfo {
    * @brief The type of the asset
    */
   metadata::attributes::AssetType type =
-      metadata::attributes::AssetType::UNKNOWN;
+      metadata::attributes::AssetType::Unknown;
   /**
    * @brief The path to the asset's source on disk
    */
@@ -71,7 +71,7 @@ struct AssetInfo {
   /**
    * @brief Whether supported semantic meshes should be split
    */
-  bool splitInstanceMesh = true;  // only applies to AssetType::INSTANCE_MESH
+  bool splitInstanceMesh = true;  // only applies to AssetType::InstanceMesh
 
   /**
    * @brief if set, override the asset material with a procedural Phong material

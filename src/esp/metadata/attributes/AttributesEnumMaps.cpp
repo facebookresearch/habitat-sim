@@ -11,13 +11,20 @@ namespace attributes {
 
 // All keys must be lowercase
 const std::map<std::string, AssetType> AssetTypeNamesMap = {
-    {"unknown", AssetType::UNKNOWN},
-    {"mp3d", AssetType::MP3D_MESH},
-    {"semantic", AssetType::INSTANCE_MESH},
-    {"navmesh", AssetType::NAVMESH},
-};
+    {"unknown", AssetType::Unknown},
+    {"mp3d", AssetType::Mp3dMesh},
+    {"semantic", AssetType::InstanceMesh},
+    {"navmesh", AssetType::Navmesh},
+    {"primitive", AssetType::Primitive}};
 
 std::string getMeshTypeName(AssetType meshTypeEnum) {
+  // this verifies that enum value being checked is supported by string-keyed
+  // map. The values below should be the minimum and maximum enums supported by
+  // AssetTypeNamesMap
+  if (meshTypeEnum <= AssetType::Unknown ||
+      meshTypeEnum >= AssetType::EndAssetType) {
+    return "unknown";
+  }
   // Must always be valid value
   for (const auto& it : AssetTypeNamesMap) {
     if (it.second == meshTypeEnum) {

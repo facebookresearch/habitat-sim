@@ -586,7 +586,7 @@ bool Simulator::instanceStageForSceneAttributes(
           static_cast<AssetType>(stageAttributes->getRenderAssetType());
       // instance meshes contain their semantic annotations
       // empty scene has none to worry about
-      if (!(stageType == AssetType::INSTANCE_MESH ||
+      if (!(stageType == AssetType::InstanceMesh ||
             stageAttributesHandle == esp::EMPTY_SCENE)) {
         semanticSceneMeshLoaded_ = false;
         // TODO: programmatic generation of semantic meshes when no

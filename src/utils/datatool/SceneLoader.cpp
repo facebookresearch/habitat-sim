@@ -45,7 +45,7 @@ MeshData SceneLoader::load(const AssetInfo& info) {
     return mesh;
   }
 
-  if (info.type == metadata::attributes::AssetType::INSTANCE_MESH) {
+  if (info.type == metadata::attributes::AssetType::InstanceMesh) {
     Cr::Containers::Pointer<Importer> importer;
     CORRADE_INTERNAL_ASSERT_OUTPUT(
         importer = importerManager_.loadAndInstantiate("StanfordImporter"));

@@ -798,7 +798,7 @@ class ResourceManager {
    * @return Whether it is a General
    */
   inline bool isRenderAssetGeneral(AssetType type) {
-    return type == AssetType::MP3D_MESH || type == AssetType::UNKNOWN;
+    return type == AssetType::Mp3dMesh || type == AssetType::Unknown;
   }
 
   /**

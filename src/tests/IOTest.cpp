@@ -388,7 +388,7 @@ void IOTest::testJsonEspTypes() {
   {
     // AssetInfo
     esp::assets::AssetInfo assetInfo{
-        AssetType::MP3D_MESH,
+        AssetType::Mp3dMesh,
         "test_filepath2",
         esp::geo::CoordinateFrame(esp::vec3f(1.f, 0.f, 0.f),
                                   esp::vec3f(0.f, 0.f, 1.f),
