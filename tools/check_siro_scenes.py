@@ -42,7 +42,7 @@ def to_str_csv(data: Any) -> str:
     if isinstance(data, list):
         list_str = ""
         for elem in data:
-            list_str += f"{elem} |"
+            list_str += f"{elem};"
         return list_str
 
     raise NotImplementedError(f"Data type {type(data)} is not supported in csv string.")
@@ -552,12 +552,33 @@ if __name__ == "__main__":
         help="save images during tests into the output directory.",
     )
     parser.add_argument(
-        "--recompute-filter-files",
-        default=False,
-        action="store_true",
-        help="Run a full accessibility check on all receptacles in the scene and save a set of filter files.",
+        "--actions",
+        nargs="+",
+        type=str,
+        help="A set of strings indicating check actions to be performed on the dataset.",
+        default=None,
     )
     args = parser.parse_args()
+
+    available_check_actions = [
+        "rec_unique_names",
+        "rec_filters",
+        "region_counts",
+        "joint_popping",
+        "visualize_regions",
+        "analyze_semantics",
+    ]
+
+    target_check_actions = []
+
+    assert args.actions is not None, "Must select and action."
+
+    for target_action in args.actions:
+        assert (
+            target_action in available_check_actions
+        ), f"provided action {target_action} is not in the valid set: {available_check_actions}"
+
+    target_check_actions = args.actions
 
     os.makedirs(args.out_dir, exist_ok=True)
 
@@ -605,78 +626,92 @@ if __name__ == "__main__":
             scene_out_dir = os.path.join(args.out_dir, f"{sim.curr_scene_name}/")
 
             ##########################################
+            # gather all Receptacle.unique_name in the scene
+            if "rec_unique_names" in target_check_actions:
+                all_recs = hab_receptacle.find_receptacles(sim)
+                unique_names = [rec.unique_name for rec in all_recs]
+                scene_test_results[sim.curr_scene_name][
+                    "rec_unique_names"
+                ] = unique_names
+
+            ##########################################
             # receptacle filter computation
-            if args.recompute_filter_files:
+            if "rec_filters" in target_check_actions:
                 run_rec_filter_analysis(
                     sim, args.out_dir, open_default_links=True, keep_manual_filters=True
                 )
-                continue
 
             ##########################################
             # Check region counts
-            print(" - region counts")
-            scene_region_counts = get_region_counts(sim)
-            for region_name, count in scene_region_counts.items():
-                region_counts[region_name] += count
+            if "region_counts" in target_check_actions:
+                print(" - region counts")
+                scene_region_counts = get_region_counts(sim)
+                for region_name, count in scene_region_counts.items():
+                    region_counts[region_name] += count
 
             ##########################################
             # Check for joint popping
-            print(" - check joint popping")
-            unstable_aos, joint_errors = check_joint_popping(
-                sim, out_dir=scene_out_dir if args.save_images else None, dbv=dbv
-            )
-            if len(unstable_aos) > 0:
-                scene_test_results[sim.curr_scene_name]["unstable_aos"] = ""
-                for ix, ao_handle in enumerate(unstable_aos):
-                    scene_test_results[sim.curr_scene_name][
-                        "unstable_aos"
-                    ] += f"{ao_handle}({joint_errors[ix]}) | "
+            if "joint_popping" in target_check_actions:
+                print(" - check joint popping")
+                unstable_aos, joint_errors = check_joint_popping(
+                    sim, out_dir=scene_out_dir if args.save_images else None, dbv=dbv
+                )
+                if len(unstable_aos) > 0:
+                    scene_test_results[sim.curr_scene_name]["unstable_aos"] = ""
+                    for ix, ao_handle in enumerate(unstable_aos):
+                        scene_test_results[sim.curr_scene_name][
+                            "unstable_aos"
+                        ] += f"{ao_handle}({joint_errors[ix]}) | "
 
             ############################################
             # analyze and visualize regions
-            print(" - check and visualize regions")
-            if args.save_images:
-                save_region_visualizations(
-                    sim, os.path.join(scene_out_dir, "regions/"), dbv
-                )
-            expected_regions = ["kitchen", "living room", "bedroom"]
-            all_region_cats = [
-                region.category.name() for region in sim.semantic_scene.regions
-            ]
-            missing_expected_regions = [
-                expected_region
-                for expected_region in expected_regions
-                if expected_region not in all_region_cats
-            ]
-            if len(missing_expected_regions) > 0:
-                scene_test_results[sim.curr_scene_name]["missing_expected_regions"] = ""
-                for expected_region in missing_expected_regions:
+            if "visualize_regions" in target_check_actions:
+                print(" - check and visualize regions")
+                if args.save_images:
+                    save_region_visualizations(
+                        sim, os.path.join(scene_out_dir, "regions/"), dbv
+                    )
+                expected_regions = ["kitchen", "living room", "bedroom"]
+                all_region_cats = [
+                    region.category.name() for region in sim.semantic_scene.regions
+                ]
+                missing_expected_regions = [
+                    expected_region
+                    for expected_region in expected_regions
+                    if expected_region not in all_region_cats
+                ]
+                if len(missing_expected_regions) > 0:
                     scene_test_results[sim.curr_scene_name][
                         "missing_expected_regions"
-                    ] += f"{expected_region} | "
+                    ] = ""
+                    for expected_region in missing_expected_regions:
+                        scene_test_results[sim.curr_scene_name][
+                            "missing_expected_regions"
+                        ] += f"{expected_region} | "
 
             ##############################################
             # analyze semantics
-            print(" - check and visualize semantics")
-            scene_test_results[sim.curr_scene_name][
-                "objects_missing_semantic_class"
-            ] = []
-            missing_semantics_output = os.path.join(scene_out_dir, "missing_semantics/")
-            for obj in sutils.get_all_objects(sim):
-                if mi.get_object_instance_category(obj) is None:
-                    scene_test_results[sim.curr_scene_name][
-                        "objects_missing_semantic_class"
-                    ].append(obj.handle)
-                    if args.save_images:
-                        os.makedirs(missing_semantics_output, exist_ok=True)
-                        dbv.peek(obj, peek_all_axis=True).save(
-                            missing_semantics_output, f"{obj.handle}__"
-                        )
+            if "analyze_semantics" in target_check_actions:
+                print(" - check and visualize semantics")
+                scene_test_results[sim.curr_scene_name][
+                    "objects_missing_semantic_class"
+                ] = []
+                missing_semantics_output = os.path.join(
+                    scene_out_dir, "missing_semantics/"
+                )
+                for obj in sutils.get_all_objects(sim):
+                    if mi.get_object_instance_category(obj) is None:
+                        scene_test_results[sim.curr_scene_name][
+                            "objects_missing_semantic_class"
+                        ].append(obj.handle)
+                        if args.save_images:
+                            os.makedirs(missing_semantics_output, exist_ok=True)
+                            dbv.peek(obj, peek_all_axis=True).save(
+                                missing_semantics_output, f"{obj.handle}__"
+                            )
 
-    # short circuit other functionality for now
-    if args.recompute_filter_files:
-        exit()
     csv_filepath = os.path.join(args.out_dir, "siro_scene_test_results.csv")
     export_results_csv(csv_filepath, scene_test_results)
-    region_count_csv_filepath = os.path.join(args.out_dir, "region_counts.csv")
-    save_region_counts_csv(region_counts, region_count_csv_filepath)
+    if "region_counts" in target_check_actions:
+        region_count_csv_filepath = os.path.join(args.out_dir, "region_counts.csv")
+        save_region_counts_csv(region_counts, region_count_csv_filepath)
