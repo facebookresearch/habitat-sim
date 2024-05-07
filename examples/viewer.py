@@ -294,11 +294,14 @@ class HabitatSimInteractiveViewer(Application):
         # load markersets for every object and ao into a cache
         self.marker_sets_per_obj = self.get_all_markersets(mm, self)
 
+        # self.glbl_marker_point_dicts_per_obj = self.get_all_global_markers()
+
         # REMOVE WHEN FINISHED
         # Use this to correct Marker placements and resave.
         # This process requires access to uncorrected COM location.
         # self.correct_and_save_markersets()
 
+        # sys.exit(0)
         # load appropriate filter file for scene
         self.load_scene_filter_file()
 
@@ -682,6 +685,47 @@ class HabitatSimInteractiveViewer(Application):
     def get_current_markerset_taskname(self):
         return self.markerset_taskset_names[self.current_markerset_taskset_idx]
 
+    def get_all_global_markers(self):
+        def get_points_as_global(obj, marker_points_dict):
+            new_markerset_dict = {}
+            # for every task
+            for task_name, task_dict in marker_points_dict.items():
+                new_task_dict = {}
+                # for every link
+                for link_name, link_dict in task_dict.items():
+                    if link_name == "root":
+                        link_id = -1
+                    else:
+                        # articulated object
+                        link_id = obj.get_link_id_from_name(link_name)
+                    new_link_dict = {}
+                    # for every markerset
+                    for subset, markers_list in link_dict.items():
+                        new_markers_list = obj.transform_local_pts_to_world(
+                            markers_list, link_id
+                        )
+                        new_link_dict[subset] = new_markers_list
+                    new_task_dict[link_name] = new_link_dict
+                new_markerset_dict[task_name] = new_task_dict
+            return new_markerset_dict
+
+        # marker set cache of existing markersets for all objs in scene, keyed by object name
+        marker_set_global_dicts_per_obj = {}
+        rom = self.sim.get_rigid_object_manager()
+        obj_dict = rom.get_objects_by_handle_substring("")
+        for handle, obj in obj_dict.items():
+            marker_set_global_dicts_per_obj[handle] = get_points_as_global(
+                obj, obj.marker_sets.get_all_marker_points()
+            )
+        aom = self.sim.get_articulated_object_manager()
+        ao_obj_dict = aom.get_objects_by_handle_substring("")
+        for handle, obj in ao_obj_dict.items():
+            marker_set_global_dicts_per_obj[handle] = get_points_as_global(
+                obj, obj.marker_sets.get_all_marker_points()
+            )
+
+        return marker_set_global_dicts_per_obj
+
     def get_all_markersets(
         self, mm: habitat_sim.metadata.MetadataMediator, viewer: Application
     ):
@@ -877,6 +921,48 @@ class HabitatSimInteractiveViewer(Application):
                                     color=marker_set_color,
                                     normal=camera_position - global_marker_pos,
                                 )
+
+    def draw_markersets_glbl_debug(self, debug_line_render: Any) -> None:
+        camera_position = self.render_camera.render_camera.node.absolute_translation
+        for (
+            obj_handle,
+            marker_points_dict,
+        ) in self.glbl_marker_point_dicts_per_obj.items():
+            for task_name, task_set_dict in marker_points_dict.items():
+                if task_name not in self.marker_debug_random_colors[obj_handle]:
+                    self.marker_debug_random_colors[obj_handle][task_name] = {}
+                for link_name, link_set_dict in task_set_dict.items():
+                    if (
+                        link_name
+                        not in self.marker_debug_random_colors[obj_handle][task_name]
+                    ):
+                        self.marker_debug_random_colors[obj_handle][task_name][
+                            link_name
+                        ] = {}
+
+                    for markerset_name, global_points in link_set_dict.items():
+                        # print(f"markerset_name : {markerset_name} : marker_pts_list : {marker_pts_list} type : {type(marker_pts_list)} : len : {len(marker_pts_list)}")
+                        if (
+                            markerset_name
+                            not in self.marker_debug_random_colors[obj_handle][
+                                task_name
+                            ][link_name]
+                        ):
+                            self.marker_debug_random_colors[obj_handle][task_name][
+                                link_name
+                            ][markerset_name] = mn.Color4(
+                                mn.Vector3(np.random.random(3))
+                            )
+                        marker_set_color = self.marker_debug_random_colors[obj_handle][
+                            task_name
+                        ][link_name][markerset_name]
+                        for global_marker_pos in global_points:
+                            debug_line_render.draw_circle(
+                                translation=global_marker_pos,
+                                radius=0.005,
+                                color=marker_set_color,
+                                normal=camera_position - global_marker_pos,
+                            )
 
     def save_markerset_attributes(self, obj) -> None:
         # get the name of the attrs used to initialize the object
