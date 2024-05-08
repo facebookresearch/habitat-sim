@@ -207,8 +207,19 @@ void declareBasePhysicsObjectWrapper(py::module& m,
       .def_property_readonly(
           "marker_sets", &PhysObjWrapper::getMarkerSets,
           py::return_value_policy::reference_internal,
-          ("The MarkerSets defined for " + objType + " this object.").c_str())
-
+          ("The MarkerSets defined for this " + objType + ".").c_str())
+      .def("marker_points_local", &PhysObjWrapper::getMarkerPointsLocal,
+           ("A nested dict structure holding all the marker"
+            "points defined for this this " +
+            objType +
+            " in object-local space. Same result as "
+            "<obj>.marker_sets.get_all_marker_points.")
+               .c_str())
+      .def("marker_points_global", &PhysObjWrapper::getMarkerPointsGlobal,
+           ("A nested dict structure holding all the marker"
+            "points defined for this this " +
+            objType + " transformed to world space.")
+               .c_str())
       .def_property_readonly(
           "csv_info", &PhysObjWrapper::getObjectInfo,
           ("Comma-separated informational string describing this " + objType +
@@ -663,8 +674,8 @@ void initPhysicsObjectBindings(py::module& m) {
 
   // create bindings for ArticulatedObjects
   // physics object base instance for articulated object
-  declareBasePhysicsObjectWrapper<ArticulatedObject>(m, "Articulated Object",
-                                                     "ArticulatedObject");
+  declareBasePhysicsObjectWrapper<ArticulatedObject>(
+      m, "Articulated Object", "ManagedArticulatedObject");
 
   // ==== ManagedArticulatedObject ====
   declareArticulatedObjectWrapper(m, "Articulated Object",

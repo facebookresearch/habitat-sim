@@ -537,6 +537,62 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     markerSets_->overwriteWithConfig(attr);
   }
 
+  /**
+   * @brief Retrieves the hierarchical map-of-map-of-maps containing
+   * the @ref MarkerSets constituent marker points, in local space
+   * (which is the space they are given in).
+   */
+  std::unordered_map<
+      std::string,
+      std::unordered_map<
+          std::string,
+          std::unordered_map<std::string, std::vector<Mn::Vector3>>>>
+  getMarkerPointsLocal() const {
+    return markerSets_->getAllMarkerPoints();
+  }
+
+  /**
+   * @brief Retrieves the hierarchical map-of-map-of-maps containing
+   * the @ref MarkerSets constituent marker points, in local space
+   * (which is the space they are given in).
+   */
+  virtual std::unordered_map<
+      std::string,
+      std::unordered_map<
+          std::string,
+          std::unordered_map<std::string, std::vector<Mn::Vector3>>>>
+  getMarkerPointsGlobal() const {
+    const auto lclPoints = markerSets_->getAllMarkerPoints();
+    std::unordered_map<
+        std::string,
+        std::unordered_map<
+            std::string,
+            std::unordered_map<std::string, std::vector<Mn::Vector3>>>>
+        res{};
+    // for each task
+    for (const auto& taskEntry : lclPoints) {
+      const std::string taskName = taskEntry.first;
+      std::unordered_map<
+          std::string,
+          std::unordered_map<std::string, std::vector<Mn::Vector3>>>
+          perTaskMap;
+      // for each link - should only have 1 link in rigids
+      for (const auto& linkEntry : taskEntry.second) {
+        const std::string linkName = linkEntry.first;
+        std::unordered_map<std::string, std::vector<Mn::Vector3>> perLinkMap;
+        // for each set in link
+        for (const auto& markersEntry : linkEntry.second) {
+          const std::string markersName = markersEntry.first;
+          perLinkMap[markersName] =
+              transformLocalPointsToWorld(markersEntry.second, -1);
+        }
+        perTaskMap[linkName] = perLinkMap;
+      }
+      res[taskName] = perTaskMap;
+    }
+    return res;
+  }  // getMarkerPointsGlobal
+
   /** @brief Get the scale of the object set during initialization.
    * @return The scaling for the object relative to its initially loaded meshes.
    */
