@@ -381,6 +381,7 @@ jobs:
           command: |
             cd /opt/circleci/.pyenv/plugins/python-build/../..
             git config --global --add safe.directory '*'
+            ls -la
             git fetch --tags
             git checkout v2.3.15
             cd -
