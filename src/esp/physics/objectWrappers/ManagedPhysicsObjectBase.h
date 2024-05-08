@@ -203,6 +203,40 @@ class AbstractManagedPhysicsObject
     return {};
   }
 
+  /**
+   * @brief Retrieves the hierarchical map-of-map-of-maps containing
+   * the @ref MarkerSets constituent marker points, in local space
+   * (which is the space they are given in).
+   */
+  std::unordered_map<
+      std::string,
+      std::unordered_map<
+          std::string,
+          std::unordered_map<std::string, std::vector<Mn::Vector3>>>>
+  getMarkerPointsLocal() const {
+    if (auto sp = this->getObjectReference()) {
+      return sp->getMarkerPointsLocal();
+    }
+    return {};
+  }
+
+  /**
+   * @brief Retrieves the hierarchical map-of-map-of-maps containing
+   * the @ref MarkerSets constituent marker points, in local space
+   * (which is the space they are given in).
+   */
+  std::unordered_map<
+      std::string,
+      std::unordered_map<
+          std::string,
+          std::unordered_map<std::string, std::vector<Mn::Vector3>>>>
+  getMarkerPointsGlobal() const {
+    if (auto sp = this->getObjectReference()) {
+      return sp->getMarkerPointsGlobal();
+    }
+    return {};
+  }
+
   Magnum::Quaternion getRotation() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getRotation();
