@@ -101,6 +101,12 @@ constexpr int RIGID_STAGE_ID = 0;
 static const double NO_TIME = 0.0;
 
 /**
+ * @brief loading an asset info with filepath == EMPTY_SCENE creates a scene
+ * graph with no scene mesh (ie. an empty scene)
+ */
+constexpr char EMPTY_SCENE[] = "NONE";
+
+/**
  * @brief The @ref esp::gfx::ShaderManager key for @ref esp::gfx::LightInfo
  * which has no lights
  */

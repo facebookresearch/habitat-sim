@@ -12,9 +12,6 @@
 #include "esp/core/managedContainers/AbstractFileBasedManagedObject.h"
 
 namespace esp {
-namespace asset {
-enum class AssetType;
-}
 namespace metadata {
 /**
  * @brief A tag to search for in the default_attributes section of the Scene
@@ -26,20 +23,6 @@ constexpr char CONFIG_NAME_AS_ASSET_FILENAME[] =
     "%%CONFIG_NAME_AS_ASSET_FILENAME%%";
 
 namespace attributes {
-
-/**
- * @brief Constant static map to provide mappings from string tags to
- * @ref esp::assets::AssetType values.  This will be used to map values
- * set in json for mesh type to @ref esp::assets::AssetType.  Keys must
- * be lowercase.
- */
-const extern std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap;
-
-/**
- * @brief Get a string name representing the specified @ref
- * esp::assets::AssetType enum value.
- */
-std::string getMeshTypeName(esp::assets::AssetType meshTypeEnum);
 
 /**
  * @brief Base class for all implemented attributes.  Inherits from @ref

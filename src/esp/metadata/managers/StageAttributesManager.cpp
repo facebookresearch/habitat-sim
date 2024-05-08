@@ -15,7 +15,6 @@
 #include "esp/io/Json.h"
 
 namespace esp {
-using assets::AssetType;
 using core::managedContainers::ManagedObjectAccess;
 
 namespace metadata {
@@ -77,7 +76,7 @@ StageAttributesManager::preRegisterObjectFinalize(
     stageAttributes->setRenderAssetIsPrimitive(false);
   } else if (std::string::npos != stageAttributesHandle.find("NONE")) {
     // Render asset handle will be NONE as well - force type to be unknown
-    stageAttributes->setRenderAssetType(static_cast<int>(AssetType::UNKNOWN));
+    stageAttributes->setRenderAssetType(static_cast<int>(AssetType::Unknown));
     stageAttributes->setRenderAssetIsPrimitive(false);
   } else if (forceRegistration) {
     ESP_WARNING()
@@ -108,7 +107,7 @@ StageAttributesManager::preRegisterObjectFinalize(
   } else if (std::string::npos != stageAttributesHandle.find("NONE")) {
     // Collision asset handle will be NONE as well - force type to be unknown
     stageAttributes->setCollisionAssetType(
-        static_cast<int>(AssetType::UNKNOWN));
+        static_cast<int>(AssetType::Unknown));
     stageAttributes->setCollisionAssetIsPrimitive(false);
   } else {
     // Else, means no collision data specified, use specified render data
@@ -148,7 +147,7 @@ StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
   stageAttributes->setMargin(0.0);
 
   // set render mesh handle
-  int primType = static_cast<int>(AssetType::PRIMITIVE);
+  int primType = static_cast<int>(AssetType::Primitive);
   stageAttributes->setRenderAssetType(primType);
   // set collision mesh/primitive handle and default for primitives to not use
   // mesh collisions
@@ -308,7 +307,7 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
     // TODO : get rid of this once the hardcoded mesh-type handling is removed,
     // but for now force all semantic assets to be instance_mesh
     newAttributes->setSemanticAssetType(
-        static_cast<int>(AssetType::INSTANCE_MESH));
+        static_cast<int>(AssetType::InstanceMesh));
   }
   // set default physical quantities specified in physics manager attributes
   if (physicsAttributesManager_->getObjectLibHasHandle(
@@ -340,18 +339,18 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
   up = up1;
   fwd = fwd1;
   if (endsWith(fileName, "_semantic.ply")) {
-    assetTypeSetter(static_cast<int>(AssetType::INSTANCE_MESH));
+    assetTypeSetter(static_cast<int>(AssetType::InstanceMesh));
   } else if (endsWith(fileName, ".glb")) {
     // assumes MP3D glb with gravity = -Z
-    assetTypeSetter(static_cast<int>(AssetType::MP3D_MESH));
+    assetTypeSetter(static_cast<int>(AssetType::Mp3dMesh));
     // Create a coordinate for the mesh by rotating the default ESP
     // coordinate frame to -Z gravity
     up = up2;
     fwd = fwd2;
   } else if (StageAttributesManager::isValidPrimitiveAttributes(fileName)) {
-    assetTypeSetter(static_cast<int>(AssetType::PRIMITIVE));
+    assetTypeSetter(static_cast<int>(AssetType::Primitive));
   } else {
-    assetTypeSetter(static_cast<int>(AssetType::UNKNOWN));
+    assetTypeSetter(static_cast<int>(AssetType::Unknown));
   }
   if (setFrame) {
     attributes->setOrientUp(up);
@@ -420,7 +419,7 @@ void StageAttributesManager::setValsFromJSONDoc(
   // TODO eventually remove this, but currently semantic mesh must be
   // instance
   stageAttributes->setSemanticAssetType(
-      static_cast<int>(AssetType::INSTANCE_MESH));
+      static_cast<int>(AssetType::InstanceMesh));
 
   if (io::readMember<std::string>(jsonConfig, "nav_asset", navmeshFName)) {
     // if "nav mesh" is specified in stage json set value (override default).

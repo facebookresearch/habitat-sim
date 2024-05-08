@@ -16,11 +16,10 @@ namespace Cr = Corrade;
 
 namespace esp {
 
-using assets::AssetType;
-
 namespace metadata {
 
 using attributes::AbstractObjectAttributes;
+using attributes::AssetType;
 using attributes::ObjectAttributes;
 namespace managers {
 
@@ -46,7 +45,7 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
   primObjectAttributes->setScale({0.1, 0.1, 0.1});
 
   // set render mesh handle
-  int primType = static_cast<int>(AssetType::PRIMITIVE);
+  int primType = static_cast<int>(AssetType::Primitive);
   primObjectAttributes->setRenderAssetType(primType);
   // set collision mesh/primitive handle and default for primitives to not use
   // mesh collisions
@@ -199,10 +198,10 @@ void ObjectAttributesManager::setDefaultAssetNameBasedAttributes(
     const std::function<void(int)>& assetTypeSetter) {
   if (this->isValidPrimitiveAttributes(meshHandle)) {
     // value is valid primitive, and value is different than existing value
-    assetTypeSetter(static_cast<int>(AssetType::PRIMITIVE));
+    assetTypeSetter(static_cast<int>(AssetType::Primitive));
   } else {
     // use unknown for object mesh types of non-primitives
-    assetTypeSetter(static_cast<int>(AssetType::UNKNOWN));
+    assetTypeSetter(static_cast<int>(AssetType::Unknown));
   }
   if (setFrame) {
     attributes->setOrientUp({0, 1, 0});

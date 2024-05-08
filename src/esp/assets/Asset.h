@@ -16,24 +16,6 @@ namespace esp {
 namespace assets {
 
 /**
- * @brief Supported Asset types
- */
-enum class AssetType {
-  UNKNOWN,
-  MP3D_MESH,
-  INSTANCE_MESH,
-  UNKNOWN2,
-  NAVMESH,
-  PRIMITIVE,
-};
-
-/**
- * @brief loading an asset info with filepath == EMPTY_SCENE creates a scene
- * graph with no scene mesh (ie. an empty scene)
- */
-constexpr char EMPTY_SCENE[] = "NONE";
-
-/**
  * @brief stores basic Phong compatible color properties for procedural override
  * material construction
  */
@@ -67,11 +49,12 @@ struct AssetInfo {
   /**
    * @brief The type of the asset
    */
-  AssetType type = AssetType::UNKNOWN;
+  metadata::attributes::AssetType type =
+      metadata::attributes::AssetType::Unknown;
   /**
    * @brief The path to the asset's source on disk
    */
-  std::string filepath = EMPTY_SCENE;  // empty scene
+  std::string filepath = esp::EMPTY_SCENE;  // empty scene
   /**
    * The @ref esp::geo::CoordinateFrame describing the default orientation of the asset
    */
@@ -88,7 +71,7 @@ struct AssetInfo {
   /**
    * @brief Whether supported semantic meshes should be split
    */
-  bool splitInstanceMesh = true;  // only applies to AssetType::INSTANCE_MESH
+  bool splitInstanceMesh = true;  // only applies to AssetType::InstanceMesh
 
   /**
    * @brief if set, override the asset material with a procedural Phong material

@@ -22,6 +22,7 @@
 #include "esp/sim/Simulator.h"
 
 namespace esp {
+using metadata::attributes::AssetType;
 namespace physics {
 
 BulletPhysicsManager::BulletPhysicsManager(
@@ -273,7 +274,7 @@ bool BulletPhysicsManager::attachLinkGeometry(
         visual.m_linkLocalFrame);
 
     // prep the AssetInfo, overwrite the filepath later
-    assets::AssetInfo visualMeshInfo{assets::AssetType::UNKNOWN};
+    assets::AssetInfo visualMeshInfo{AssetType::Unknown};
     visualMeshInfo.forceFlatShading = forceFlatShading;
 
     // create a modified asset if necessary for material override
@@ -292,7 +293,7 @@ bool BulletPhysicsManager::attachLinkGeometry(
     auto scale = Mn::Vector3{1.0f, 1.0f, 1.0f};
     switch (visual.m_geometry.m_type) {
       case metadata::URDF::GEOM_CAPSULE:
-        visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+        visualMeshInfo.type = AssetType::Primitive;
         // should be registered and cached already
         visualMeshInfo.filepath = visual.m_geometry.m_meshFileName;
         // scale by radius as suggested by magnum docs
@@ -303,7 +304,7 @@ bool BulletPhysicsManager::attachLinkGeometry(
             Mn::Matrix4::rotationX(Mn::Rad(M_PI_2)));
         break;
       case metadata::URDF::GEOM_CYLINDER:
-        visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+        visualMeshInfo.type = AssetType::Primitive;
         // the default created primitive handle for the cylinder with radius 1
         // and length 2
         visualMeshInfo.filepath =
@@ -318,12 +319,12 @@ bool BulletPhysicsManager::attachLinkGeometry(
             Mn::Matrix4::rotationX(Mn::Rad(M_PI_2)));
         break;
       case metadata::URDF::GEOM_BOX:
-        visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+        visualMeshInfo.type = AssetType::Primitive;
         visualMeshInfo.filepath = "cubeSolid";
         scale = visual.m_geometry.m_boxSize * 0.5;
         break;
       case metadata::URDF::GEOM_SPHERE: {
-        visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+        visualMeshInfo.type = AssetType::Primitive;
         // default sphere prim is already constructed w/ radius 1
         visualMeshInfo.filepath = "icosphereSolid_subdivs_1";
         scale = Mn::Vector3(visual.m_geometry.m_sphereRadius);

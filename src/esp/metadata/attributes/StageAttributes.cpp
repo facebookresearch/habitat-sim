@@ -25,10 +25,10 @@ StageAttributes::StageAttributes(const std::string& handle)
   setShaderType(getShaderTypeName(ObjectInstanceShaderType::Material));
   // TODO remove this once ShaderType support is complete
   setForceFlatShading(true);
-  // 0 corresponds to esp::assets::AssetType::UNKNOWN->treated as general mesh
-  setCollisionAssetType(static_cast<int>(esp::assets::AssetType::UNKNOWN));
-  // 4 corresponds to esp::assets::AssetType::INSTANCE_MESH
-  setSemanticAssetType(static_cast<int>(esp::assets::AssetType::INSTANCE_MESH));
+  // 0 corresponds to AssetType::Unknown->treated as general mesh
+  setCollisionAssetType(static_cast<int>(AssetType::Unknown));
+  // 4 corresponds to AssetType::InstanceMesh
+  setSemanticAssetType(static_cast<int>(AssetType::InstanceMesh));
   // set empty defaults for handles
   set("nav_asset", "");
   set("semantic_asset", "");

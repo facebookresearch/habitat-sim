@@ -86,6 +86,10 @@ struct CollisionMeshData;
 class GenericSemanticMeshData;
 struct MeshData;
 struct RenderAssetInstanceCreationInfo;
+
+// used to continue outdated support of "file extension as object type"
+using metadata::attributes::AssetType;
+
 // used for shadertype specification
 using metadata::attributes::ObjectInstanceShaderType;
 
@@ -794,7 +798,7 @@ class ResourceManager {
    * @return Whether it is a General
    */
   inline bool isRenderAssetGeneral(AssetType type) {
-    return type == AssetType::MP3D_MESH || type == AssetType::UNKNOWN;
+    return type == AssetType::Mp3dMesh || type == AssetType::Unknown;
   }
 
   /**

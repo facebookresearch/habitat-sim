@@ -11,9 +11,6 @@
 #include "PhysicsAttributesManager.h"
 
 namespace esp {
-namespace assets {
-enum class AssetType;
-}  // namespace assets
 namespace metadata {
 namespace managers {
 
