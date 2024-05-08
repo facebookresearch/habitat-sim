@@ -98,14 +98,14 @@ enum class ConfigValType {
 };  // enum class ConfigValType
 
 /**
- * @brief This enum lists the bit flags describing the various status ConfigVals
- * can be in.  These mask the higher order DWORD of _typeAndFlags, and so begin
- * on bit 32 of 0-63.
+ * @brief This enum lists the bit flags describing the various states @ref ConfigValue
+ * can be in or characteristics they may have. These mask the higher order DWORD
+ * of _typeAndFlags, and so begin on bit 32 of 0-63.
  */
 enum ConfigValStatus : uint64_t {
 
   /**
-   * @brief Whether or not the config value was set with a default/initializing
+   * @brief Whether or not the @ref ConfigValue was set with a default/initializing
    * value. This flag is used, for example, to govern whether a value should be
    * written to file or not - if the value was set only with a program-governed
    * default value, it should not be written to file.
@@ -113,10 +113,10 @@ enum ConfigValStatus : uint64_t {
   isDefault = 1ULL << 32,
 
   /**
-   * @brief Whether or not the config value is hidden and used as an internally
-   * tracked/managed variable, not part of the metadata itself. These
-   * variables should never be written to file or displayed except for debugging
-   * purposes.
+   * @brief Specifies that this @ref ConfigValue is hidden and used as an internally
+   * tracked/managed variable, not part of the user-accessible metadata itself.
+   * These variables should never be written to file or displayed except for
+   * debugging purposes.
    */
   isHidden = 1ULL << 33,
 
@@ -577,7 +577,7 @@ class ConfigValue {
    * intentionally from the source file or user input; we also do not want to
    * write any internal/hidden values to files.
    */
-  bool shouldWriteToFile() const { return !isDefaultVal() || !isHiddenVal(); }
+  bool shouldWriteToFile() const { return !(isDefaultVal() || isHiddenVal()); }
 
   /**
    * @brief Retrieve a string representation of the data held in this @ref
@@ -831,7 +831,8 @@ class Configuration {
 
   /**
    * @brief Save the passed @p value using specified @p key as a hidden value,
-   * to be used internally but not saved or exposed to the user.
+   * to be used internally but not saved or exposed to the user except for debug
+   * purposes.
    * @tparam The type of the value to be saved.
    * @param key The key to assign to the passed value.
    * @param value The value to save at given @p key
@@ -842,8 +843,8 @@ class Configuration {
   }
   /**
    * @brief Save the passed @p value char* as a string to the configuration at
-   * the passed @p key as a hidden value, to be used internally but not saved or
-   * exposed to the user.
+   * the passed @p key as a hidden value,  to be used internally but not saved
+   * or exposed to the user except for debug purposes.
    * @param key The key to assign to the passed value.
    * @param value The char* to save at given @p key as a string.
    */
@@ -853,8 +854,8 @@ class Configuration {
 
   /**
    * @brief Save the passed float @p value as a double using the specified
-   * @p key  as a hidden value, to be used internally but not saved or exposed
-   * to the user.
+   * @p key as a hidden value, to be used internally but not saved or exposed to
+   * the user except for debug purposes.
    * @param key The key to assign to the passed value.
    * @param value The float value to save at given @p key as a double.
    */
@@ -875,8 +876,9 @@ class Configuration {
   }
   /**
    * @brief Save the passed @p value char* as a string to the configuration at
-   * the passed @p key as an initial value (will not be written to file if this
-   * Configuration is saved)
+   * the passed @p key as a programmatically set initial value (will not be
+   * written to file if this Configuration is saved unless it is changed via a
+   * file read or user input).
    * @param key The key to assign to the passed value.
    * @param value The char* to save at given @p key as a string.
    */
@@ -886,8 +888,9 @@ class Configuration {
 
   /**
    * @brief Save the passed float @p value as a double using the specified
-   * @p key as an initial value (will not be written to file if this
-   * Configuration is saved).
+   * @p key as a programmatically set initial value (will not be written to file
+   * if this Configuration is saved unless it is changed via a file read or user
+   * input).
    * @param key The key to assign to the passed value.
    * @param value The float value to save at given @p key as a double.
    */

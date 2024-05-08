@@ -353,8 +353,8 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
     assetTypeSetter(static_cast<int>(AssetType::Unknown));
   }
   if (setFrame) {
-    attributes->setOrientUp(up);
-    attributes->setOrientFront(fwd);
+    attributes->init("up", up);
+    attributes->init("front", fwd);
   }
 }  // StageAttributesManager::setDefaultAssetNameBasedAttributes
 

@@ -594,7 +594,7 @@ void initAttributesBindings(py::module& m) {
       .def_property_readonly(
           "is_dirty", &AbstractObjectAttributes::getIsDirty,
           R"(Whether values in this attributes have been changed requiring
-          re-registration before they can be used an object can be created. )");
+          re-registration before they can be used to create an object. )");
 
   // ==== ObjectAttributes ====
   py::class_<ObjectAttributes, AbstractObjectAttributes, ObjectAttributes::ptr>(
