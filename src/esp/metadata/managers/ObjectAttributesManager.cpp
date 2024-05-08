@@ -204,8 +204,8 @@ void ObjectAttributesManager::setDefaultAssetNameBasedAttributes(
     assetTypeSetter(static_cast<int>(AssetType::Unknown));
   }
   if (setFrame) {
-    attributes->setOrientUp({0, 1, 0});
-    attributes->setOrientFront({0, 0, -1});
+    attributes->init("up", Mn::Vector3{0, 1, 0});
+    attributes->init("front", Mn::Vector3{0, 0, -1});
   }
 }  // ObjectAttributesManager::setDefaultAssetNameBasedAttributes
 

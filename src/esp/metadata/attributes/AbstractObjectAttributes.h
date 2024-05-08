@@ -77,8 +77,8 @@ class AbstractObjectAttributes : public AbstractAttributes {
   double getUnitsToMeters() const { return get<double>("units_to_meters"); }
 
   /**
-   * @brief If not visible can add dynamic non-rendered object into a scene
-   * object.  If is not visible then should not add object to drawables.
+   * @brief If not visible can add dynamic non-rendered object into a scene. If
+   * is not visible then should not add object to drawables.
    */
   void setIsVisible(bool isVisible) { set("is_visible", isVisible); }
   bool getIsVisible() const { return get<bool>("is_visible"); }
@@ -107,18 +107,46 @@ class AbstractObjectAttributes : public AbstractAttributes {
   double getRestitutionCoefficient() const {
     return get<double>("restitution_coefficient");
   }
-  void setRenderAssetType(int renderAssetType) {
-    set("render_asset_type", renderAssetType);
-  }
-  int getRenderAssetType() { return get<int>("render_asset_type"); }
-
+  /**
+   * @brief Sets the relative path/filename for the render asset to be used to
+   * render the construct this attributes describes. This is relative to the
+   * on-disk location of the file responsible for this configuration.
+   */
   void setRenderAssetHandle(const std::string& renderAssetHandle) {
     set("render_asset", renderAssetHandle);
     setIsDirty();
   }
+
+  /**
+   * @brief Gets the relative path/filename for the render asset to be used to
+   * render the construct this attributes describes. This is relative to the
+   * on-disk location of the file responsible for this configuration.
+   */
   std::string getRenderAssetHandle() const {
     return get<std::string>("render_asset");
   }
+
+  /**
+   * @brief Sets the render asset type, as specified by @ref AssetType.
+   * This specification was generally intended for specifying certain criteria
+   * such as orientation for the loaded asset based on file name, which was in
+   * turn queried for type. This is an artifact of a very early version of
+   * Habitat-Sim and effort should be spent to remove this entirely, as more
+   * accurate and thorough mechanisms have been implemented in its place.
+   */
+  void setRenderAssetType(int renderAssetType) {
+    set("render_asset_type", renderAssetType);
+  }
+
+  /**
+   * @brief Gets the render asset type, as specified by @ref AssetType.
+   * This specification was generally intended for specifying certain criteria
+   * such as orientation for the loaded asset based on file name, which was in
+   * turn queried for type. This is an artifact of a very early version of
+   * Habitat-Sim and effort should be spent to remove this entirely, as more
+   * accurate and thorough mechanisms have been implemented in its place.
+   */
+  int getRenderAssetType() { return get<int>("render_asset_type"); }
 
   /**
    * @brief Sets whether this object uses file-based mesh render object or
@@ -139,22 +167,61 @@ class AbstractObjectAttributes : public AbstractAttributes {
     return get<bool>("__renderAssetIsPrimitive");
   }
 
+  /**
+   * @brief Sets the relative path/filename for the collision asset to be used
+   * for mesh collision detection for the construct this attributes describes.
+   * This is relative to the on-disk location of the file responsible for this
+   * configuration.
+   */
   void setCollisionAssetHandle(const std::string& collisionAssetHandle) {
     set("collision_asset", collisionAssetHandle);
     setIsDirty();
   }
+
+  /**
+   * @brief Gets the relative path/filename for the collision asset to be used
+   * for mesh collision detection for the construct this attributes describes.
+   * This is relative to the on-disk location of the file responsible for this
+   * configuration.
+   */
   std::string getCollisionAssetHandle() const {
     return get<std::string>("collision_asset");
   }
 
+  /**
+   * @brief Sets the collision asset type, as specified by @ref AssetType.
+   * This specification was generally intended for specifying certain criteria
+   * such as orientation for the loaded asset based on file name, which was in
+   * turn queried for type. This is an artifact of a very early version of
+   * Habitat-Sim and effort should be spent to remove this entirely, as more
+   * accurate and thorough mechanisms have been implemented in its place.
+   */
   void setCollisionAssetType(int collisionAssetType) {
     set("collision_asset_type", collisionAssetType);
   }
+
+  /**
+   * @brief Gets the collision asset type, as specified by @ref AssetType.
+   * This specification was generally intended for specifying certain criteria
+   * such as orientation for the loaded asset based on file name, which was in
+   * turn queried for type. This is an artifact of a very early version of
+   * Habitat-Sim and effort should be spent to remove this entirely, as more
+   * accurate and thorough mechanisms have been implemented in its place.
+   */
   int getCollisionAssetType() { return get<int>("collision_asset_type"); }
 
+  /**
+   * @brief Sets the size/scale of the collision asset compared to the render
+   * asset so that the final constructs align.
+   */
   void setCollisionAssetSize(const Magnum::Vector3& collisionAssetSize) {
     set("collision_asset_size", collisionAssetSize);
   }
+
+  /**
+   * @brief Gets the size/scale of the collision asset compared to the render
+   * asset so that the final constructs align.
+   */
   Magnum::Vector3 getCollisionAssetSize() const {
     return get<Magnum::Vector3>("collision_asset_size");
   }
@@ -232,7 +299,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * specified by materials or other configs.
    */
   void setForceFlatShading(bool force_flat_shading) {
-    setHidden("force_flat_shading", force_flat_shading);
+    set("force_flat_shading", force_flat_shading);
   }
   /**
    * @brief if true use flat shading instead of phong or pbr shader

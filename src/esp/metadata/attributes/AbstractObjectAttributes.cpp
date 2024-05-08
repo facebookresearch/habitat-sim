@@ -55,7 +55,8 @@ AbstractObjectAttributes::AbstractObjectAttributes(
 
 std::string AbstractObjectAttributes::getObjectInfoHeaderInternal() const {
   return "Render Asset Handle,Collision Asset Handle,Scale,Margin,Up XYZ,"
-         "Front XYZ,Units to M,Friction Coefficient,Restitution "
+         "Front XYZ,Units to M,Friction Coefficient,Rolling "
+         "Coefficient,Spinning Coefficient,Restitution "
          "Coefficient,Current Shader Type," +
          getAbstractObjectInfoHeaderInternal();
 }
