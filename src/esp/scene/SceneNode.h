@@ -353,8 +353,7 @@ class SceneNode : public MagnumObject,
 
   //! The semantic category of this node. Used to render attached Drawables with
   //! Semantic sensor when no perVertexObjectIds are present.
-  std::vector<int> semanticIDs_{
-      static_cast<int>(SceneNodeSemanticDataIDX::NUM_SEMANTIC_IDS), 0};
+  std::vector<int> semanticIDs_;
 };  // namespace scene
 
 // Traversal Helpers
