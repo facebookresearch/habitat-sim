@@ -210,14 +210,14 @@ void declareBasePhysicsObjectWrapper(py::module& m,
           ("The MarkerSets defined for this " + objType + ".").c_str())
       .def("marker_points_local", &PhysObjWrapper::getMarkerPointsLocal,
            ("A nested dict structure holding all the marker"
-            "points defined for this this " +
+            "points defined for this " +
             objType +
             " in object-local space. Same result as "
             "<obj>.marker_sets.get_all_marker_points.")
                .c_str())
       .def("marker_points_global", &PhysObjWrapper::getMarkerPointsGlobal,
            ("A nested dict structure holding all the marker"
-            "points defined for this this " +
+            "points defined for this " +
             objType + " transformed to world space.")
                .c_str())
       .def_property_readonly(
