@@ -16,6 +16,7 @@
 namespace Mn = Magnum;
 
 namespace esp {
+using metadata::attributes::AssetType;
 namespace physics {
 
 bool URDFImporter::loadURDF(const std::string& urdfFilepath, bool forceReload) {
@@ -257,7 +258,7 @@ void URDFImporter::importURDFAssets(
     for (auto& collision : link->m_collisionArray) {
       if (collision.m_geometry.m_type == metadata::URDF::GEOM_MESH) {
         // pre-load the mesh asset for its collision shape
-        assets::AssetInfo meshAsset{assets::AssetType::UNKNOWN,
+        assets::AssetInfo meshAsset{AssetType::Unknown,
                                     collision.m_geometry.m_meshFileName};
         CORRADE_ASSERT(resourceManager_.loadRenderAsset(meshAsset),
                        "Failed to load URDF ("
@@ -268,7 +269,7 @@ void URDFImporter::importURDFAssets(
     // pre-load visual meshes and primitive asset variations and cache the
     // handle
     for (auto& visual : link->m_visualArray) {
-      assets::AssetInfo visualMeshInfo{assets::AssetType::UNKNOWN};
+      assets::AssetInfo visualMeshInfo{AssetType::Unknown};
       visualMeshInfo.forceFlatShading = false;
 
       std::shared_ptr<metadata::URDF::Material> material =
@@ -284,7 +285,7 @@ void URDFImporter::importURDFAssets(
       }
       switch (visual.m_geometry.m_type) {
         case metadata::URDF::GEOM_CAPSULE: {
-          visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+          visualMeshInfo.type = AssetType::Primitive;
           auto assetMgr = resourceManager_.getAssetAttributesManager();
           auto capTemplate = assetMgr->getDefaultCapsuleTemplate(false);
           // proportions as suggested on magnum docs
@@ -295,17 +296,17 @@ void URDFImporter::importURDFAssets(
           visual.m_geometry.m_meshFileName = capTemplate->getHandle();
         } break;
         case metadata::URDF::GEOM_CYLINDER:
-          visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+          visualMeshInfo.type = AssetType::Primitive;
           visualMeshInfo.filepath =
               "cylinderSolid_rings_1_segments_12_halfLen_1_useTexCoords_false_"
               "useTangents_false_capEnds_true";
           break;
         case metadata::URDF::GEOM_BOX:
-          visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+          visualMeshInfo.type = AssetType::Primitive;
           visualMeshInfo.filepath = "cubeSolid";
           break;
         case metadata::URDF::GEOM_SPHERE:
-          visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+          visualMeshInfo.type = AssetType::Primitive;
           visualMeshInfo.filepath = "icosphereSolid_subdivs_1";
           break;
         case metadata::URDF::GEOM_MESH:

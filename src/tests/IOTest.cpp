@@ -20,6 +20,7 @@
 namespace Cr = Corrade;
 
 using esp::metadata::attributes::ArticulatedObjectAttributes;
+using esp::metadata::attributes::AssetType;
 using esp::metadata::attributes::ObjectAttributes;
 namespace {
 const std::string dataDir = Corrade::Utility::Path::join(SCENE_DATASETS, "../");
@@ -387,7 +388,7 @@ void IOTest::testJsonEspTypes() {
   {
     // AssetInfo
     esp::assets::AssetInfo assetInfo{
-        esp::assets::AssetType::MP3D_MESH,
+        AssetType::Mp3dMesh,
         "test_filepath2",
         esp::geo::CoordinateFrame(esp::vec3f(1.f, 0.f, 0.f),
                                   esp::vec3f(0.f, 0.f, 1.f),

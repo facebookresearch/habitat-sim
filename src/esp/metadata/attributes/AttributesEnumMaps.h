@@ -8,14 +8,23 @@
 #include "esp/core/Esp.h"
 #include "esp/gfx/LightSetup.h"
 namespace esp {
-namespace asset {
-enum class AssetType;
-}
 namespace physics {
 enum class MotionType;
 }
 namespace metadata {
 namespace attributes {
+
+/**
+ * @brief Supported Asset types
+ */
+enum class AssetType {
+  Unknown,
+  Mp3dMesh,
+  InstanceMesh,
+  Navmesh,
+  Primitive,
+  EndAssetType,
+};
 
 /**
  * @brief This enum class defines possible options for the type of joint that
@@ -207,6 +216,20 @@ enum class SceneInstanceTranslationOrigin {
    */
   EndTransOrigin,
 };
+
+/**
+ * @brief Constant static map to provide mappings from string tags to
+ * @ref AssetType values.  This will be used to map values
+ * set in json for mesh type to @ref AssetType.  Keys must
+ * be lowercase.
+ */
+const extern std::map<std::string, AssetType> AssetTypeNamesMap;
+
+/**
+ * @brief Get a string name representing the specified @ref
+ * AssetType enum value.
+ */
+std::string getMeshTypeName(AssetType meshTypeEnum);
 
 /**
  * @brief Constant map to provide mappings from string tags to @ref

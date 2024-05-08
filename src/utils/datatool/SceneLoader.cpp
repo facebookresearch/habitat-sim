@@ -15,6 +15,7 @@
 #include "esp/assets/GenericSemanticMeshData.h"
 #include "esp/core/Esp.h"
 #include "esp/geo/Geo.h"
+#include "esp/metadata/attributes/AttributesEnumMaps.h"
 
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -44,7 +45,7 @@ MeshData SceneLoader::load(const AssetInfo& info) {
     return mesh;
   }
 
-  if (info.type == AssetType::INSTANCE_MESH) {
+  if (info.type == metadata::attributes::AssetType::InstanceMesh) {
     Cr::Containers::Pointer<Importer> importer;
     CORRADE_INTERNAL_ASSERT_OUTPUT(
         importer = importerManager_.loadAndInstantiate("StanfordImporter"));

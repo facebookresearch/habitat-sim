@@ -18,7 +18,9 @@ namespace scene {
 SceneNode::SceneNode()
     : Mn::SceneGraph::AbstractFeature3D{*this},
       nodeSensorSuite_(new esp::sensor::SensorSuite(*this)),
-      subtreeSensorSuite_(new esp::sensor::SensorSuite(*this)) {
+      subtreeSensorSuite_(new esp::sensor::SensorSuite(*this)),
+      semanticIDs_(static_cast<int>(SceneNodeSemanticDataIDX::NUM_SEMANTIC_IDS),
+                   0) {
   setCachedTransformations(Mn::SceneGraph::CachedTransformation::Absolute);
   absoluteTransformation_ = absoluteTransformation();
   // Once created, nodeSensorSuite_ and subtreeSensorSuite_ are features owned

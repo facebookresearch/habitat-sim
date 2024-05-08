@@ -97,6 +97,7 @@ namespace esp {
 
 using metadata::attributes::AbstractObjectAttributes;
 using metadata::attributes::ArticulatedObjectAttributes;
+using metadata::attributes::AssetType;
 using metadata::attributes::CubePrimitiveAttributes;
 using metadata::attributes::ObjectAttributes;
 using metadata::attributes::ObjectInstanceShaderType;
@@ -556,14 +557,14 @@ bool ResourceManager::buildMeshGroups(
   if (colMeshGroupIter == collisionMeshGroups_.end()) {
     //! Collect collision mesh group
     bool colMeshGroupSuccess = false;
-    if ((info.type == AssetType::INSTANCE_MESH) && !info.hasSemanticTextures) {
+    if ((info.type == AssetType::InstanceMesh) && !info.hasSemanticTextures) {
       // PLY Semantic mesh
       colMeshGroupSuccess =
           buildStageCollisionMeshGroup<GenericSemanticMeshData>(info.filepath,
                                                                 meshGroup);
-    } else if ((info.type == AssetType::MP3D_MESH ||
-                info.type == AssetType::UNKNOWN) ||
-               ((info.type == AssetType::INSTANCE_MESH) &&
+    } else if ((info.type == AssetType::Mp3dMesh ||
+                info.type == AssetType::Unknown) ||
+               ((info.type == AssetType::InstanceMesh) &&
                 info.hasSemanticTextures)) {
       // GLB Mesh
       colMeshGroupSuccess = buildStageCollisionMeshGroup<GenericMeshData>(
@@ -809,12 +810,12 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
     AssetInfo defaultInfo(info);
     defaultInfo.overridePhongMaterial = Cr::Containers::NullOpt;
 
-    if (info.type == AssetType::PRIMITIVE) {
+    if (info.type == AssetType::Primitive) {
       ESP_DEBUG(Mn::Debug::Flag::NoSpace)
           << "Building Prim named `" << info.filepath << "`.";
       buildPrimitiveAssetData(info.filepath);
       meshSuccess = true;
-    } else if (info.type == AssetType::INSTANCE_MESH) {
+    } else if (info.type == AssetType::InstanceMesh) {
       ESP_DEBUG(Mn::Debug::Flag::NoSpace)
           << "Loading Semantic Mesh asset named `" << info.filepath << "`.";
       meshSuccess = loadSemanticRenderAsset(defaultInfo);
@@ -829,7 +830,7 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
 
     if (meshSuccess) {
       // create and register the collisionMeshGroups
-      if (info.type != AssetType::PRIMITIVE) {
+      if (info.type != AssetType::Primitive) {
         std::vector<CollisionMeshData> meshGroup;
         CORRADE_ASSERT(buildMeshGroups(defaultInfo, meshGroup),
                        "Failed to construct collisionMeshGroups for asset"
@@ -871,7 +872,7 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
           node->materialID = materialId;
         }
       }
-      if (info.type != AssetType::PRIMITIVE) {
+      if (info.type != AssetType::Primitive) {
         // clone the collision data
         collisionMeshGroups_.emplace(modifiedAssetName,
                                      collisionMeshGroups_.at(info.filepath));
@@ -905,13 +906,13 @@ scene::SceneNode* ResourceManager::createRenderAssetInstance(
 
   const auto& info = loadedAssetData.assetInfo;
   scene::SceneNode* newNode = nullptr;
-  if (info.type == AssetType::INSTANCE_MESH) {
+  if (info.type == AssetType::InstanceMesh) {
     CORRADE_ASSERT(!visNodeCache,
                    "createRenderAssetInstanceVertSemantic doesn't support this",
                    nullptr);
     newNode = createSemanticRenderAssetInstance(creation, parent, drawables);
   } else if (isRenderAssetGeneral(info.type) ||
-             info.type == AssetType::PRIMITIVE) {
+             info.type == AssetType::Primitive) {
     newNode = createRenderAssetInstanceGeneralPrimitive(
         creation, parent, drawables, visNodeCache);
   } else {
@@ -1014,7 +1015,7 @@ bool ResourceManager::loadObjectMeshDataFromFile(
     const bool forceFlatShading) {
   bool success = false;
   if (!filename.empty()) {
-    AssetInfo meshInfo{AssetType::UNKNOWN, filename};
+    AssetInfo meshInfo{AssetType::Unknown, filename};
     meshInfo.forceFlatShading = forceFlatShading;
     meshInfo.shaderTypeToUse = objectAttributes->getShaderType();
     meshInfo.frame = buildFrameFromAttributes(
@@ -1207,7 +1208,7 @@ void ResourceManager::buildPrimitiveAssetData(
   }
 
   // make assetInfo
-  AssetInfo info{AssetType::PRIMITIVE};
+  AssetInfo info{AssetType::Primitive};
   info.forceFlatShading = false;
 
   // make MeshMetaData
@@ -1350,7 +1351,7 @@ ResourceManager::flattenImportedMeshAndBuildSemantic(Importer& fileImporter,
 }  // ResourceManager::loadAndFlattenImportedMeshData
 
 bool ResourceManager::loadRenderAssetSemantic(const AssetInfo& info) {
-  CORRADE_INTERNAL_ASSERT(info.type == AssetType::INSTANCE_MESH);
+  CORRADE_INTERNAL_ASSERT(info.type == AssetType::InstanceMesh);
 
   const std::string& filename = info.filepath;
 
@@ -1530,7 +1531,7 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
   // w/texture annotations
   CORRADE_INTERNAL_ASSERT(
       isRenderAssetGeneral(info.type) ||
-      ((info.type == AssetType::INSTANCE_MESH) && info.hasSemanticTextures));
+      ((info.type == AssetType::InstanceMesh) && info.hasSemanticTextures));
 
   const std::string& filename = info.filepath;
   CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
@@ -1764,7 +1765,7 @@ bool ResourceManager::buildTrajectoryVisualization(
   ESP_VERY_VERBOSE() << "Successfully returned from trajectoryTubeSolid";
 
   // make assetInfo
-  AssetInfo info{AssetType::PRIMITIVE};
+  AssetInfo info{AssetType::Primitive};
   info.forceFlatShading = false;
   // set up primitive mesh
   // make  primitive mesh structure

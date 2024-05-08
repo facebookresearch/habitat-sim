@@ -9,24 +9,6 @@ namespace esp {
 namespace metadata {
 namespace attributes {
 
-// All keys must be lowercase
-const std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap = {
-    {"unknown", esp::assets::AssetType::UNKNOWN},
-    {"mp3d", esp::assets::AssetType::MP3D_MESH},
-    {"semantic", esp::assets::AssetType::INSTANCE_MESH},
-    {"navmesh", esp::assets::AssetType::NAVMESH},
-};
-
-std::string getMeshTypeName(esp::assets::AssetType meshTypeEnum) {
-  // Must always be valid value
-  for (const auto& it : AssetTypeNamesMap) {
-    if (it.second == meshTypeEnum) {
-      return it.first;
-    }
-  }
-  return "unknown";
-}
-
 AbstractAttributes::AbstractAttributes(const std::string& attributesClassKey,
                                        const std::string& handle)
     : Configuration() {
