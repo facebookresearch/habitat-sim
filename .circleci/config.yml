@@ -382,6 +382,7 @@ jobs:
             cd /opt/circleci/.pyenv/plugins/python-build/../.. && git fetch --tags && git checkout v2.3.15 && cd -
             pyenv install 3.9.16
             pyenv global 3.9.16
+            ls -la
             python3 -m pip install -U pip
             python3 -m pip install . -v
             cd ../ && python3 -c "import habitat_sim"
