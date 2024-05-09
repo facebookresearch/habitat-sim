@@ -172,7 +172,7 @@ class ObjectAttributesManager
       attributes::ObjectAttributes::ptr attributes,
       bool setFrame,
       const std::string& meshHandle,
-      const std::function<void(const std::string&)>& assetTypeSetter) override;
+      const std::function<void(AssetType)>& assetTypeSetter) override;
 
   /**
    * @brief Used Internally.  Create and configure newly-created attributes

@@ -76,7 +76,7 @@ StageAttributesManager::preRegisterObjectFinalize(
     stageAttributes->setRenderAssetIsPrimitive(false);
   } else if (std::string::npos != stageAttributesHandle.find("NONE")) {
     // Render asset handle will be NONE as well - force type to be unknown
-    stageAttributes->setRenderAssetType(getAssetTypeName(AssetType::Unknown));
+    stageAttributes->setRenderAssetTypeEnum(AssetType::Unknown);
     stageAttributes->setRenderAssetIsPrimitive(false);
   } else if (forceRegistration) {
     ESP_WARNING()
@@ -288,13 +288,14 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
     StageAttributesManager::setDefaultAssetNameBasedAttributes(
         newAttributes, createNewAttributes,
         newAttributes->getRenderAssetHandle(), [newAttributes](auto&& PH1) {
-          newAttributes->initRenderAssetType(std::forward<decltype(PH1)>(PH1));
+          newAttributes->initRenderAssetTypeEnum(
+              std::forward<decltype(PH1)>(PH1));
         });
     // set defaults for passed collision asset handles
     StageAttributesManager::setDefaultAssetNameBasedAttributes(
         newAttributes, false, newAttributes->getCollisionAssetHandle(),
         [newAttributes](auto&& PH1) {
-          newAttributes->initCollisionAssetType(
+          newAttributes->initCollisionAssetTypeEnum(
               std::forward<decltype(PH1)>(PH1));
         });
 
@@ -302,7 +303,7 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
     StageAttributesManager::setDefaultAssetNameBasedAttributes(
         newAttributes, false, newAttributes->getSemanticAssetHandle(),
         [newAttributes](auto&& PH1) {
-          newAttributes->initSemanticAssetType(
+          newAttributes->initSemanticAssetTypeEnum(
               std::forward<decltype(PH1)>(PH1));
         });
     // TODO : get rid of this once the hardcoded mesh-type handling is removed,
@@ -327,7 +328,7 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
     StageAttributes::ptr attributes,
     bool setFrame,
     const std::string& fileName,
-    const std::function<void(const std::string&)>& assetTypeSetter) {
+    const std::function<void(AssetType)>& assetTypeSetter) {
   // TODO : support future mesh-name specific type setting?
   using Corrade::Utility::String::endsWith;
 
@@ -339,18 +340,18 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
   up = up1;
   fwd = fwd1;
   if (endsWith(fileName, "_semantic.ply")) {
-    assetTypeSetter(getAssetTypeName(AssetType::InstanceMesh));
+    assetTypeSetter(AssetType::InstanceMesh);
   } else if (endsWith(fileName, ".glb")) {
     // assumes MP3D glb with gravity = -Z
-    assetTypeSetter(getAssetTypeName(AssetType::Mp3dMesh));
+    assetTypeSetter(AssetType::Mp3dMesh);
     // Create a coordinate for the mesh by rotating the default ESP
     // coordinate frame to -Z gravity
     up = up2;
     fwd = fwd2;
   } else if (StageAttributesManager::isValidPrimitiveAttributes(fileName)) {
-    assetTypeSetter(getAssetTypeName(AssetType::Primitive));
+    assetTypeSetter(AssetType::Primitive);
   } else {
-    assetTypeSetter(getAssetTypeName(AssetType::Unknown));
+    assetTypeSetter(AssetType::Unknown);
   }
   if (setFrame) {
     attributes->init("up", up);
@@ -411,7 +412,8 @@ void StageAttributesManager::setValsFromJSONDoc(
   semanticFName = this->setJSONAssetHandleAndType(
       stageAttributes, jsonConfig, "semantic_asset_type", "semantic_asset",
       semanticFName, [stageAttributes](auto&& PH1) {
-        stageAttributes->setSemanticAssetType(std::forward<decltype(PH1)>(PH1));
+        stageAttributes->setSemanticAssetTypeEnum(
+            std::forward<decltype(PH1)>(PH1));
       });
   // if "semantic mesh" is specified in stage json to non-empty value, set
   // value (override default).

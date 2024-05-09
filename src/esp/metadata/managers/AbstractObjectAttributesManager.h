@@ -180,7 +180,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
       const char* jsonMeshTypeTag,
       const char* jsonMeshHandleTag,
       std::string& assetName,
-      const std::function<void(const std::string&)>& meshTypeSetter);
+      const std::function<void(AssetType)>& meshTypeSetter);
 
   /**
    * @brief Perform asset-name-based attributes initialization. This is to
@@ -200,7 +200,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
       AbsObjAttrPtr attributes,
       bool setFrame,
       const std::string& assetName,
-      const std::function<void(const std::string&)>& assetTypeSetter) = 0;
+      const std::function<void(AssetType)>& assetTypeSetter) = 0;
 
   // ======== Typedefs and Instance Variables ========
 
@@ -331,8 +331,8 @@ auto AbstractObjectAttributesManager<T, Access>::
   // is true if mesh name is found in JSON and different than current value
   std::string rndrFName = setJSONAssetHandleAndType(
       attributes, jsonDoc, "render_asset_type", "render_asset", rTmpFName,
-      [attributes](const std::string& render_asset_type) {
-        attributes->setRenderAssetType(render_asset_type);
+      [attributes](AssetType render_asset_type) {
+        attributes->setRenderAssetTypeEnum(render_asset_type);
       });
 
   // current value - also place holder for json read result
@@ -340,8 +340,8 @@ auto AbstractObjectAttributesManager<T, Access>::
   // is true if mesh name is found in JSON and different than current value
   std::string colFName = setJSONAssetHandleAndType(
       attributes, jsonDoc, "collision_asset_type", "collision_asset", cTmpFName,
-      [attributes](const std::string& collision_asset_type) {
-        attributes->setCollisionAssetType(collision_asset_type);
+      [attributes](AssetType collision_asset_type) {
+        attributes->setCollisionAssetTypeEnum(collision_asset_type);
       });
   // use non-empty result if either result is empty
   attributes->setRenderAssetHandle(rndrFName.empty() ? colFName : rndrFName);
@@ -380,7 +380,7 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
     const char* jsonMeshTypeTag,
     const char* jsonMeshHandleTag,
     std::string& assetName,
-    const std::function<void(const std::string&)>& meshTypeSetter) {
+    const std::function<void(AssetType)>& meshTypeSetter) {
   // save current file name
   std::string oldFName(assetName);
   // clear var to get new value - if returns true use this as new value
@@ -390,13 +390,13 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
   std::string tmpVal = "";
   bool typeFound = false;
   if (io::readMember<std::string>(jsonDoc, jsonMeshTypeTag, tmpVal)) {
-    std::string typeVal = attributes::getAssetTypeName(AssetType::Unknown);
+    AssetType typeVal = AssetType::Unknown;
     // tag was found, perform check
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
 
     auto found = attributes::AssetTypeNamesMap.find(strToLookFor);
     if (found != attributes::AssetTypeNamesMap.end()) {
-      typeVal = strToLookFor;
+      typeVal = found->second;
       typeFound = true;
     } else {
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
