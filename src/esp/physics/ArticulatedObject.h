@@ -507,6 +507,56 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   }
 
   /**
+   * @brief Retrieves the hierarchical map-of-map-of-maps containing
+   * the @ref MarkerSets constituent marker points, in local space
+   * (which is the space they are given in).
+   */
+  std::unordered_map<
+      std::string,
+      std::unordered_map<
+          std::string,
+          std::unordered_map<std::string, std::vector<Mn::Vector3>>>>
+  getMarkerPointsGlobal() const override {
+    const auto lclPoints = markerSets_->getAllMarkerPoints();
+    std::unordered_map<
+        std::string,
+        std::unordered_map<
+            std::string,
+            std::unordered_map<std::string, std::vector<Mn::Vector3>>>>
+        res{};
+    // for each task
+    for (const auto& taskEntry : lclPoints) {
+      const std::string taskName = taskEntry.first;
+      std::unordered_map<
+          std::string,
+          std::unordered_map<std::string, std::vector<Mn::Vector3>>>
+          perTaskMap;
+      // for each link
+      for (const auto& linkEntry : taskEntry.second) {
+        const std::string linkName = linkEntry.first;
+        int linkId = getLinkIdFromName(linkName);
+        auto linkIter = links_.find(linkId);
+        ESP_CHECK(
+            linkIter != links_.end(),
+            "ArticulatedObject::getMarkerPointsGlobal - no link found with "
+            "linkId ="
+                << linkId);
+        std::unordered_map<std::string, std::vector<Mn::Vector3>> perLinkMap;
+        // for each set in link
+        for (const auto& markersEntry : linkEntry.second) {
+          const std::string markersName = markersEntry.first;
+          perLinkMap[markersName] =
+              linkIter->second->transformLocalPointsToWorld(markersEntry.second,
+                                                            linkId);
+        }
+        perTaskMap[linkName] = perLinkMap;
+      }
+      res[taskName] = perTaskMap;
+    }
+    return res;
+  }  // getMarkerPointsGlobal
+
+  /**
    * @brief Set forces/torques for all joints indexed by degrees of freedom.
    *
    * @param forces The desired joint forces/torques.
