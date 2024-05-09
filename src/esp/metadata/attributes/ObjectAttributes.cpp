@@ -11,8 +11,8 @@ ObjectAttributes::ObjectAttributes(const std::string& handle)
     : AbstractObjectAttributes("ObjectAttributes", handle) {
   // fill necessary attribute defaults
   init("mass", 1.0);
-  init("COM", Mn::Vector3{0, 0, 0});
-  init("inertia", Mn::Vector3{0, 0, 0});
+  init("COM", Mn::Vector3{0.0, 0.0, 0.0});
+  init("inertia", Mn::Vector3{0.0, 0.0, 0.0});
   init("linear_damping", 0.2);
   init("angular_damping", 0.2);
 

@@ -18,8 +18,8 @@ AbstractObjectAttributes::AbstractObjectAttributes(
   init("scale", Mn::Vector3{1.0, 1.0, 1.0});
   init("collision_asset_size", Mn::Vector3{1.0, 1.0, 1.0});
   init("margin", 0.04);
-  init("up", Mn::Vector3{0, 1, 0});
-  init("front", Mn::Vector3{0, 0, -1});
+  init("up", Mn::Vector3{0.0, 1.0, 0.0});
+  init("front", Mn::Vector3{0.0, 0.0, -1.0});
   // Set this to true so that only used if actually changed.
   // Hidden field
   setUseFrameForAllOrientation(true);

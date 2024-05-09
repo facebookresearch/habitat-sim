@@ -331,8 +331,8 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
   // TODO : support future mesh-name specific type setting?
   using Corrade::Utility::String::endsWith;
 
-  Magnum::Vector3 up, up1{0, 1, 0}, up2{0, 0, 1};
-  Magnum::Vector3 fwd, fwd1{0, 0, -1}, fwd2{0, 1, 0};
+  Magnum::Vector3 up, up1{0.0, 1.0, 0.0}, up2{0.0, 0.0, 1.0};
+  Magnum::Vector3 fwd, fwd1{0.0, 0.0, -1.0}, fwd2{0.0, 1.0, 0.0};
 
   // set default origin and orientation values based on file name
   // from AssetInfo::fromPath
