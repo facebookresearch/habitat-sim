@@ -229,7 +229,7 @@ const extern std::map<std::string, AssetType> AssetTypeNamesMap;
  * @brief Get a string name representing the specified @ref
  * AssetType enum value.
  */
-std::string getMeshTypeName(AssetType meshTypeEnum);
+std::string getAssetTypeName(AssetType meshTypeEnum);
 
 /**
  * @brief Constant map to provide mappings from string tags to @ref

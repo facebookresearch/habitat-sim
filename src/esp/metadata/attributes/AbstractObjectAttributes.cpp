@@ -25,7 +25,8 @@ AbstractObjectAttributes::AbstractObjectAttributes(
   setUseFrameForAllOrientation(true);
   // default to use material-derived shader unless otherwise specified in config
   // or instance config
-  init("shader_type", getShaderTypeName(ObjectInstanceShaderType::Material));
+  initTranslated("shader_type",
+                 getShaderTypeName(ObjectInstanceShaderType::Material));
   // TODO remove this once ShaderType support is complete
   setForceFlatShading(false);
 
@@ -93,6 +94,8 @@ void AbstractObjectAttributes::writeValuesToJson(
   writeValueToJson("collision_asset_size", jsonObj, allocator);
   writeValueToJson("shader_type", jsonObj, allocator);
   writeValueToJson("force_flat_shading", jsonObj, allocator);
+
+  // Configuration::writeValuesToJson(jsonObj, allocator);
 
   // call child-class-specific
   writeValuesToJsonInternal(jsonObj, allocator);

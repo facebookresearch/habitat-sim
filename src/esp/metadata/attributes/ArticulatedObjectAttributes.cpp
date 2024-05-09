@@ -17,20 +17,23 @@ ArticulatedObjectAttributes::ArticulatedObjectAttributes(
   init("render_asset", "");
   init("semantic_id", 0);
   // Initialize the default base type to be free joint
-  init("base_type", getAOBaseTypeName(ArticulatedObjectBaseType::Free));
+  initTranslated("base_type",
+                 getAOBaseTypeName(ArticulatedObjectBaseType::Free));
   // Initialize the default source for the interia calculation to be computed
-  init("inertia_source",
-       getAOInertiaSourceName(ArticulatedObjectInertiaSource::Computed));
+  initTranslated(
+      "inertia_source",
+      getAOInertiaSourceName(ArticulatedObjectInertiaSource::Computed));
   // Initialize the default link order to use as the tree traversal order
-  init("link_order",
-       getAOLinkOrderName(ArticulatedObjectLinkOrder::TreeTraversal));
+  initTranslated("link_order",
+                 getAOLinkOrderName(ArticulatedObjectLinkOrder::TreeTraversal));
 
   // Initialize render mode to be default - skin if present, otherwise link
   // meshes/primitives
-  init("render_mode",
-       getAORenderModeName(ArticulatedObjectRenderMode::Default));
+  initTranslated("render_mode",
+                 getAORenderModeName(ArticulatedObjectRenderMode::Default));
   // Initialize the default behavior to "use the best shader for the material"
-  init("shader_type", getShaderTypeName(ObjectInstanceShaderType::Material));
+  initTranslated("shader_type",
+                 getShaderTypeName(ObjectInstanceShaderType::Material));
 
   init("uniform_scale", 1.0f);
   init("mass_scale", 1.0);
