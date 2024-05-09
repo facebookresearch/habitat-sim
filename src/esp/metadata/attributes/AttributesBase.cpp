@@ -17,7 +17,7 @@ AbstractAttributes::AbstractAttributes(const std::string& attributesClassKey,
 
   init("handle", handle);
   // These fields are all hidden/internally used fields, so do not set them as
-  // initialized/default values
+  // initialized/default values. They still should never be written to file.
   setHidden("__attributesClassKey", attributesClassKey);
   setHidden("__ID", 0);
   setHidden("__fileDirectory", "");

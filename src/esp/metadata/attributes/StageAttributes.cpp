@@ -10,9 +10,9 @@ namespace attributes {
 StageAttributes::StageAttributes(const std::string& handle)
     : AbstractObjectAttributes("StageAttributes", handle) {
   init("gravity", Mn::Vector3{0, -9.8, 0});
-  init("origin", Mn::Vector3{0, 0, 0});
-  init("semantic_up", Mn::Vector3{0, 1, 0});
-  init("semantic_front", Mn::Vector3{0, 0, -1});
+  init("origin", Mn::Vector3{0.0, 0.0, 0.0});
+  init("semantic_up", Mn::Vector3{0.0, 1.0, 0.0});
+  init("semantic_front", Mn::Vector3{0.0, 0.0, -1.0});
   // Set this to true so that only used if actually changed.
   // Hidden field
   setUseFrameForAllOrientation(true);
