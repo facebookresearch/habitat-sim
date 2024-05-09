@@ -120,6 +120,19 @@ enum ConfigValStatus : uint64_t {
    */
   isHidden = 1ULL << 33,
 
+  /**
+   * @brief Specifies that this @ref ConfigValue is translated from a string value
+   * to some other value/representation, such as an enum, intended to provide
+   * constrained values and string representations. These types of values are
+   * stored as strings and translated (i.e. cast) to the appropriate Enums on
+   * access by the extending class for the @ref Configuration. They are saved
+   * to file as a string that is mapped from the enum value.
+   *
+   * NOTE : Any ConfigValues specified as @p isTranslated need
+   * to have their Json read handled by the consuming class, as they may not be
+   * properly read from or written to file otherwise.
+   */
+  isTranslated = 1ULL << 34,
 };  // enum class ConfigValStatus
 
 /**
@@ -454,15 +467,18 @@ class ConfigValue {
   /**
    * @brief Set the passed @p value as the data for this @ref ConfigValue, while
    * also setting the appropriate type.
-   * @tparam The type of the @p value being set. Must be a handled type as specified by @ref ConfigValType.
+   * @tparam The type of the @p value being set. Must be a handled type as
+   * specified by @ref ConfigValType.
    * @param value The value to store in this @ref ConfigValue
+   * @param isTranslated Whether this value is translated before use or not.
    */
   template <typename T>
-  void set(const T& value) {
+  void set(const T& value, bool isTranslated = false) {
     setInternal(value);
     // set default value state to false
     setDefaultVal(false);
     setHiddenVal(false);
+    setTranslatedVal(isTranslated);
   }
 
   /**
@@ -470,30 +486,36 @@ class ConfigValue {
    * also setting the appropriate type. This ConfigValue is hidden, to be used
    * internally and not expected to be exposed to user interaction except for
    * potentially debugging.
-   * @tparam The type of the @p value being set. Must be a handled type as specified by @ref ConfigValType.
+   * @tparam The type of the @p value being set. Must be a handled type as
+   * specified by @ref ConfigValType.
    * @param value The value to store in this @ref ConfigValue
+   * @param isTranslated Whether this value is translated before use or not.
    */
   template <typename T>
-  void setHidden(const T& value) {
+  void setHidden(const T& value, bool isTranslated = false) {
     setInternal(value);
     // set default value state to false
     setDefaultVal(false);
     setHiddenVal(true);
+    setTranslatedVal(isTranslated);
   }
 
   /**
    * @brief Set the passed @p value as the programmatic default/initialization
    * data for this @ref ConfigValue, while also setting the appropriate type. This value
    * will not be saved to file unless it is changed by file read or user input.
-   * @tparam The type of the @p value being set. Must be a handled type as specified by @ref ConfigValType.
+   * @tparam The type of the @p value being set. Must be a handled type as
+   * specified by @ref ConfigValType.
    * @param value The value to store in this @ref ConfigValue
+   * @param isTranslated Whether this value is translated before use or not.
    */
   template <typename T>
-  void init(const T& value) {
+  void init(const T& value, bool isTranslated = false) {
     setInternal(value);
     // set default value state to true
     setDefaultVal(true);
     setHiddenVal(false);
+    setTranslatedVal(isTranslated);
   }
 
   /**
@@ -566,8 +588,37 @@ class ConfigValue {
    * Configuration. These values probably should never be written to file or
    * shared with the user except for debugging purposes.
    */
-  inline void setHiddenVal(bool isDefault) {
-    setState(ConfigValStatus::isHidden, isDefault);
+  inline void setHiddenVal(bool isHidden) {
+    setState(ConfigValStatus::isHidden, isHidden);
+  }
+
+  /**
+   * @brief Check whether this ConfigVal is translated before use, for example
+   * to an enum. This is generally to limit values and provide context and
+   * meaning to the values it holds. These ConfigVals are stored intnerally in a
+   * Configuration as strings but are consumed as their translated value (i.e
+   * enums). Because of this, they need custom handling to be read from file.
+   *
+   *  NOTE : Any ConfigValues specified as @p isTranslated need to have their
+   * Json read handled by the consuming class, as they will not be necessarily
+   * properly read from file otherwise.
+   */
+  inline bool isTranslated() const {
+    return getState(ConfigValStatus::isTranslated);
+  }
+  /**
+   * @brief Set whether this ConfigVal is translated before use, for example
+   * to an enum. This is generally to limit values and provide context and
+   * meaning to the values it holds. These ConfigVals are stored intnerally in a
+   * Configuration as strings but are consumed as their translated value (i.e
+   * enums). Because of this, they need custom handling to be read from file.
+   *
+   *  NOTE : Any ConfigValues specified as @p isTranslated need to have their
+   * Json read handled by the consuming class, as they will not be necessarily
+   * properly read from file otherwise.
+   */
+  inline void setTranslatedVal(bool isTranslated) {
+    setState(ConfigValStatus::isTranslated, isTranslated);
   }
 
   /**
@@ -609,8 +660,8 @@ class ConfigValue {
 MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value);
 
 /**
- * @brief This class holds configuration data in a map of ConfigValues, and
- * also supports nested configurations via a map of smart pointers to this
+ * @brief This class holds Configuration data in a map of ConfigValues, and
+ * also supports nested Configurations via a map of smart pointers to this
  * type.
  */
 class Configuration {
@@ -620,7 +671,7 @@ class Configuration {
    */
   typedef std::unordered_map<std::string, ConfigValue> ValueMapType;
   /**
-   * @brief Convenience typedef for the subconfiguration map
+   * @brief Convenience typedef for the subConfiguration map
    */
   typedef std::map<std::string, std::shared_ptr<Configuration>> ConfigMapType;
 
@@ -647,7 +698,7 @@ class Configuration {
         valueMap_(std::move(otr.valueMap_)) {}  // move ctor
 
   // virtual destructor set to that pybind11 recognizes attributes inheritance
-  // from configuration to be polymorphic
+  // from Configuration to be polymorphic
   virtual ~Configuration() = default;
 
   /**
@@ -673,7 +724,7 @@ class Configuration {
     if (mapIter != valueMap_.end()) {
       return mapIter->second;
     }
-    ESP_WARNING() << "Key :" << key << "not present in configuration";
+    ESP_WARNING() << "Key :" << key << "not present in Configuration";
     return {};
   }
 
@@ -695,7 +746,7 @@ class Configuration {
         (mapIter->second.getType() == desiredType)) {
       return mapIter->second.get<T>();
     }
-    ESP_ERROR() << "Key :" << key << "not present in configuration as"
+    ESP_ERROR() << "Key :" << key << "not present in Configuration as"
                 << getNameForStoredType(desiredType);
     return {};
   }
@@ -710,7 +761,7 @@ class Configuration {
     if (mapIter != valueMap_.end()) {
       return mapIter->second.getType();
     }
-    ESP_ERROR() << "Key :" << key << "not present in configuration.";
+    ESP_ERROR() << "Key :" << key << "not present in Configuration.";
     return ConfigValType::Unknown;
   }
 
@@ -737,7 +788,7 @@ class Configuration {
    * @brief Retrieve list of keys present in this @ref Configuration's
    * valueMap_. Subconfigs are not included.
    * @return a vector of strings representing the subconfig keys for this
-   * configuration.
+   * Configuration.
    */
   std::vector<std::string> getKeys(bool sorted = false) const {
     std::vector<std::string> keys;
@@ -755,7 +806,7 @@ class Configuration {
    * @brief This function returns this @ref Configuration's subconfig keys.
    * @param sorted whether the keys should be sorted or not.
    * @return a vector of strings representing the subconfig keys for this
-   * configuration.
+   * Configuration.
    */
   std::vector<std::string> getSubconfigKeys(bool sorted = false) const {
     std::vector<std::string> keys;
@@ -810,7 +861,7 @@ class Configuration {
     valueMap_[key].set<T>(value);
   }
   /**
-   * @brief Save the passed @p value char* as a string to the configuration at
+   * @brief Save the passed @p value char* as a string to the Configuration at
    * the passed @p key.
    * @param key The key to assign to the passed value.
    * @param value The char* to save at given @p key as a string.
@@ -830,6 +881,31 @@ class Configuration {
   }
 
   /**
+   * @brief Save the passed string @p value using specified @p key as an
+   * translated/enum-backed value. This value will be translated by the consumer
+   * of this Configuration to be an enum constant and so should not use
+   * the generic Configuration file read functionality but rather an
+   * implementation that will verify the validity of the input.
+   * @param key The key to assign to the passed value.
+   * @param value The string value to save at given @p key
+   */
+  void setTranslated(const std::string& key, const char* value) {
+    valueMap_[key].set<std::string>(std::string(value), true);
+  }
+  /**
+   * @brief Save the passed string @p value using specified @p key as an
+   * translated/enum-backed value. This value will be translated by the consumer
+   * of this Configuration to be an enum constant and so should not use
+   * the generic Configuration file read functionality but rather an
+   * implementation that will verify the validity of the input.
+   * @param key The key to assign to the passed value.
+   * @param value The string value to save at given @p key
+   */
+  void setTranslated(const std::string& key, const std::string& value) {
+    valueMap_[key].set<std::string>(value, true);
+  }
+
+  /**
    * @brief Save the passed @p value using specified @p key as a hidden value,
    * to be used internally but not saved or exposed to the user except for debug
    * purposes.
@@ -842,7 +918,7 @@ class Configuration {
     valueMap_[key].setHidden<T>(value);
   }
   /**
-   * @brief Save the passed @p value char* as a string to the configuration at
+   * @brief Save the passed @p value char* as a string to the Configuration at
    * the passed @p key as a hidden value,  to be used internally but not saved
    * or exposed to the user except for debug purposes.
    * @param key The key to assign to the passed value.
@@ -864,8 +940,39 @@ class Configuration {
   }
 
   /**
-   * @brief Save the passed @p value using specified @p key as an initial value
-   * (will not be written to file if this Configuration is saved)
+   * @brief Save the passed string @p value using specified @p key as an
+   * translated/enum-backed valuethat is also a hidden value, to be used
+   * internally but not saved or exposed to the user except for debug
+   * purposes.This value will be translated by the consumer of this
+   * Configuration to be an enum constant and so should not use the generic
+   * Configuration file read functionality but rather an implementation that
+   * will verify the validity of the input.
+   * @param key The key to assign to the passed value.
+   * @param value The string value to save at given @p key
+   */
+  void setHiddenTranslated(const std::string& key, const char* value) {
+    valueMap_[key].setHidden<std::string>(std::string(value), true);
+  }
+
+  /**
+   * @brief Save the passed string @p value using specified @p key as an
+   * translated/enum-backed valuethat is also a hidden value, to be used
+   * internally but not saved or exposed to the user except for debug
+   * purposes.This value will be translated by the consumer of this
+   * Configuration to be an enum constant and so should not use the generic
+   * Configuration file read functionality but rather an implementation that
+   * will verify the validity of the input.
+   * @param key The key to assign to the passed value.
+   * @param value The string value to save at given @p key
+   */
+  void setHiddenTranslated(const std::string& key, const std::string& value) {
+    valueMap_[key].setHidden<std::string>(value, true);
+  }
+
+  /**
+   * @brief Save the passed @p value using specified @p key as a
+   * programmatically set initial value (will not be written to file if this
+   * Configuration is saved unless it is changed via a file read or user input).
    * @tparam The type of the value to be saved.
    * @param key The key to assign to the passed value.
    * @param value The value to save at given @p key
@@ -875,7 +982,7 @@ class Configuration {
     valueMap_[key].init<T>(value);
   }
   /**
-   * @brief Save the passed @p value char* as a string to the configuration at
+   * @brief Save the passed @p value char* as a string to the Configuration at
    * the passed @p key as a programmatically set initial value (will not be
    * written to file if this Configuration is saved unless it is changed via a
    * file read or user input).
@@ -898,6 +1005,36 @@ class Configuration {
     valueMap_[key].init<double>(static_cast<double>(value));
   }
 
+  /**
+   * @brief Save the passed string @p value using specified @p key as a
+   * programmatically set initial value (will not be written to file if this
+   * Configuration is saved unless it is changed via a file read or user input)
+   * of the translated/enum-backed value. This value will be translated by the
+   * consumer of this Configuration to be an enum constant and so should not use
+   * the generic Configuration file read functionality but rather an
+   * implementation that will verify the validity of the input.
+   * @param key The key to assign to the passed value.
+   * @param value The string value to save at given @p key
+   */
+  void initTranslated(const std::string& key, const char* value) {
+    valueMap_[key].init<std::string>(std::string(value), true);
+  }
+
+  /**
+   * @brief Save the passed string @p value using specified @p key as a
+   * programmatically set initial value (will not be written to file if this
+   * Configuration is saved unless it is changed via a file read or user input)
+   * of the translated/enum-backed value. This value will be translated by the
+   * consumer of this Configuration to be an enum constant and so should not use
+   * the generic Configuration file read functionality but rather an
+   * implementation that will verify the validity of the input.
+   * @param key The key to assign to the passed value.
+   * @param value The string value to save at given @p key
+   */
+  void initTranslated(const std::string& key, const std::string& value) {
+    valueMap_[key].init<std::string>(value, true);
+  }
+
   // ****************** Value removal ******************
 
   /**
@@ -914,7 +1051,7 @@ class Configuration {
       valueMap_.erase(mapIter);
       return mapIter->second;
     }
-    ESP_WARNING() << "Key :" << key << "not present in configuration";
+    ESP_WARNING() << "Key :" << key << "not present in Configuration";
     return {};
   }
 
@@ -937,7 +1074,7 @@ class Configuration {
       valueMap_.erase(mapIter);
       return mapIter->second.get<T>();
     }
-    ESP_WARNING() << "Key :" << key << "not present in configuration as"
+    ESP_WARNING() << "Key :" << key << "not present in Configuration as"
                   << getNameForStoredType(desiredType);
     return {};
   }
@@ -961,7 +1098,7 @@ class Configuration {
 
   /**
    * @brief Return number of value and subconfig entries in this
-   * Configuration. This only counts each subconfiguration entry as a single
+   * Configuration. This only counts each subConfiguration entry as a single
    * entry.
    */
   int getNumEntries() const { return configMap_.size() + valueMap_.size(); }
@@ -979,7 +1116,7 @@ class Configuration {
   }
   /**
    * @brief Return number of subconfig entries in this Configuration. This
-   * only counts each subconfiguration entry as a single entry.
+   * only counts each subConfiguration entry as a single entry.
    */
   int getNumSubconfigs() const { return configMap_.size(); }
 
@@ -1014,7 +1151,7 @@ class Configuration {
 
   /**
    * @brief Returns whether this @ref Configuration has the passed @p key as a
-   * non-configuration value. Does not check subconfigurations.
+   * non-Configuration value. Does not check subConfigurations.
    */
   bool hasValue(const std::string& key) const {
     return valueMap_.count(key) > 0;
@@ -1034,8 +1171,8 @@ class Configuration {
 
   /**
    * @brief Checks if passed @p key is contained in this Configuration.
-   * Returns a list of nested subconfiguration keys, in order, to the
-   * configuration where the key was found, ending in the requested @p key.
+   * Returns a list of nested subConfiguration keys, in order, to the
+   * Configuration where the key was found, ending in the requested @p key.
    * If list is empty, @p key was not found.
    * @param key The key to look for
    * @return A breadcrumb list to where the value referenced by @p key
@@ -1047,7 +1184,7 @@ class Configuration {
    * @brief Builds and returns @ref Corrade::Utility::ConfigurationGroup
    * holding the values in this esp::core::config::Configuration.
    *
-   * @return a reference to a configuration group for this Configuration
+   * @return a reference to a Configuration group for this Configuration
    * object.
    */
   Cr::Utility::ConfigurationGroup getConfigGroup() const {
@@ -1069,11 +1206,11 @@ class Configuration {
     return res;
   }
 
-  // ****************** Subconfiguration accessors ******************
+  // ****************** SubConfiguration accessors ******************
 
   /**
    * @brief return if passed key corresponds to a subconfig in this
-   * configuration
+   * Configuration
    */
   bool hasSubconfig(const std::string& key) const {
     ConfigMapType::const_iterator mapIter = configMap_.find(key);
@@ -1087,8 +1224,8 @@ class Configuration {
    *
    * @tparam Type to return. Must inherit from @ref
    * esp::core::config::Configuration
-   * @param name The name of the configuration to retrieve.
-   * @return A pointer to a copy of the configuration having the requested
+   * @param name The name of the Configuration to retrieve.
+   * @return A pointer to a copy of the Configuration having the requested
    * name, cast to the appropriate type, or nullptr if not found.
    */
 
@@ -1107,16 +1244,16 @@ class Configuration {
   }
 
   /**
-   * @brief return pointer to read-only sub-configuration of given @p name.
-   * Will fail if configuration with given name dne.
-   * @param name The name of the desired configuration.
+   * @brief return pointer to read-only sub-Configuration of given @p name.
+   * Will fail if Configuration with given name dne.
+   * @param name The name of the desired Configuration.
    */
   std::shared_ptr<const Configuration> getSubconfigView(
       const std::string& name) const {
     auto configIter = configMap_.find(name);
     CORRADE_ASSERT(
         configIter != configMap_.end(),
-        "Subconfiguration with name " << name << " not found in Configuration.",
+        "SubConfiguration with name " << name << " not found in Configuration.",
         nullptr);
     // if exists return actual object
     return configIter->second;
@@ -1126,14 +1263,14 @@ class Configuration {
    * @brief Templated Version. Retrieves the stored shared pointer to the
    * subConfig @ref esp::core::config::Configuration that has the passed @p name
    * , cast to the specified type. This will create a shared pointer to a new
-   * sub-configuration if none exists and return it, cast to specified type.
+   * sub-Configuration if none exists and return it, cast to specified type.
    *
    * Use this function when you wish to modify this Configuration's
    * subgroup, possibly creating it in the process.
    * @tparam The type to cast the @ref esp::core::config::Configuration to. Type
    * is checked to verify that it inherits from Configuration.
-   * @param name The name of the configuration to edit.
-   * @return The actual pointer to the configuration having the requested
+   * @param name The name of the Configuration to edit.
+   * @return The actual pointer to the Configuration having the requested
    * name, cast to the specified type.
    */
   template <typename T>
@@ -1148,10 +1285,10 @@ class Configuration {
 
   /**
    * @brief move specified subgroup config into configMap at desired name.
-   * Will replace any subconfiguration at given name without warning if
+   * Will replace any subConfiguration at given name without warning if
    * present.
-   * @param name The name of the subconfiguration to add
-   * @param configPtr A pointer to a subconfiguration to add.
+   * @param name The name of the subConfiguration to add
+   * @param configPtr A pointer to a subConfiguration to add.
    */
   template <typename T>
   void setSubconfigPtr(const std::string& name, std::shared_ptr<T>& configPtr) {
@@ -1165,8 +1302,8 @@ class Configuration {
   /**
    * @brief Removes and returns the named subconfig. If not found, returns an
    * empty subconfig with a warning.
-   * @param name The name of the subconfiguration to delete
-   * @return a shared pointer to the removed subconfiguration.
+   * @param name The name of the subConfiguration to delete
+   * @return a shared pointer to the removed subConfiguration.
    */
   std::shared_ptr<Configuration> removeSubconfig(const std::string& name) {
     ConfigMapType::const_iterator mapIter = configMap_.find(name);
@@ -1175,7 +1312,7 @@ class Configuration {
       return mapIter->second;
     }
     ESP_WARNING() << "Name :" << name
-                  << "not present in map of subconfigurations.";
+                  << "not present in map of subConfigurations.";
     return {};
   }
 
@@ -1213,11 +1350,11 @@ class Configuration {
   }
 
   /**
-   * @brief Merges configuration pointed to by @p config into this
-   * configuration, including all subconfigs.  Passed config overwrites
+   * @brief Merges Configuration pointed to by @p config into this
+   * Configuration, including all subconfigs.  Passed config overwrites
    * existing data in this config.
-   * @param src The source of configuration data we wish to merge into this
-   * configuration.
+   * @param src The source of Configuration data we wish to merge into this
+   * Configuration.
    */
   void overwriteWithConfig(const std::shared_ptr<const Configuration>& src) {
     if (src->getNumEntries() == 0) {
@@ -1245,7 +1382,7 @@ class Configuration {
   }
 
   /**
-   * @brief Returns a const iterator across the map of subconfigurations.
+   * @brief Returns a const iterator across the map of subConfigurations.
    */
   std::pair<ConfigMapType::const_iterator, ConfigMapType::const_iterator>
   getSubconfigIterator() const {
@@ -1309,9 +1446,9 @@ class Configuration {
 
   /**
    * @brief Load values into this Configuration from the passed @p jsonObj.
-   * Will recurse for subconfigurations.
+   * Will recurse for subConfigurations.
    * @param jsonObj The JSON object to read from for the data for this
-   * configuration.
+   * Configuration.
    * @return The number of fields successfully read and populated.
    */
   int loadFromJson(const io::JsonGenericValue& jsonObj);
@@ -1324,8 +1461,8 @@ class Configuration {
 
   /**
    * @brief Populate a json object with all the first-level values held in
-   * this configuration.  May be overridden to handle special cases for
-   * root-level configuration of Attributes classes derived from
+   * this Configuration.  May be overridden to handle special cases for
+   * root-level Configuration of Attributes classes derived from
    * Configuration.
    */
   virtual void writeValuesToJson(io::JsonGenericValue& jsonObj,
@@ -1333,7 +1470,7 @@ class Configuration {
 
   /**
    * @brief Populate a json object with all the data from the
-   * subconfigurations, held in json sub-objects, for this Configuration.
+   * subConfigurations, held in json sub-objects, for this Configuration.
    */
   virtual void writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
                                      io::JsonAllocator& allocator) const;
@@ -1341,7 +1478,7 @@ class Configuration {
   /**
    * @brief Take the passed @p key and query the config value for that key,
    * writing it to @p jsonName within the passed @p jsonObj.
-   * @param key The key of the data in the configuration
+   * @param key The key of the data in the Configuration
    * @param jsonName The tag to use in the json file
    * @param jsonObj The json object to write to
    * @param allocator The json allocator to use to build the json object
@@ -1359,7 +1496,7 @@ class Configuration {
   /**
    * @brief Take the passed @p key and query the config value for that key,
    * writing it to tag with @p key as name within the passed @p jsonObj.
-   * @param key The key of the data in the configuration
+   * @param key The key of the data in the Configuration
    * @param jsonObj The json object to write to
    * @param allocator The json allocator to use to build the json object
    */
@@ -1381,7 +1518,7 @@ class Configuration {
   std::string getAllValsAsString(const std::string& newLineStr = "\n") const;
 
   /**
-   * @brief Find the subconfiguration with the given handle and rekey it such
+   * @brief Find the subConfiguration with the given handle and rekey it such
    * that all the value entries it contains are keyed by sequential numeric
    * strings. These keys will preserve the order of the original keys.
    *
@@ -1412,7 +1549,7 @@ class Configuration {
   /**
    * @brief Friend function.  Checks if passed @p key is contained in @p
    * config. Returns the highest level where @p key was found
-   * @param config The configuration to search for passed key
+   * @param config The Configuration to search for passed key
    * @param key The key to look for
    * @param parentLevel The parent level to the current iteration.  If
    * iteration finds @p key, it will return parentLevel+1
@@ -1461,7 +1598,7 @@ class Configuration {
     // Attempt to insert an empty pointer
     auto result = configMap_.emplace(name, std::shared_ptr<T>{});
     // If name not already present (insert succeeded) then add new
-    // configuration
+    // Configuration
     if (result.second) {
       result.first->second = std::make_shared<T>();
     }
@@ -1539,25 +1676,25 @@ void Configuration::setSubconfigValsOfTypeInVector(
 /**
  * @brief Retrieves a shared pointer to a copy of the subConfig @ref
  * esp::core::config::Configuration that has the passed @p name . This will
- * create a pointer to a new sub-configuration if none exists already with
+ * create a pointer to a new sub-Configuration if none exists already with
  * that name, but will not add this Configuration to this Configuration's
  * internal storage.
  *
- * @param name The name of the configuration to retrieve.
- * @return A pointer to a copy of the configuration having the requested
- * name, or a pointer to an empty configuration.
+ * @param name The name of the Configuration to retrieve.
+ * @return A pointer to a copy of the Configuration having the requested
+ * name, or a pointer to an empty Configuration.
  */
 
 template <>
 std::shared_ptr<Configuration> Configuration::getSubconfigCopy<Configuration>(
     const std::string& name) const;
 /**
- * @brief Retrieve a shared pointer to the actual subconfiguration given by @p
- * name, or a new subconfiguration with that name, if none exists.
+ * @brief Retrieve a shared pointer to the actual subConfiguration given by @p
+ * name, or a new subConfiguration with that name, if none exists.
  *
- * @param name The name of the desired subconfiguration
- * @return A pointer to the configuration having the requested
- * name, or a pointer to an empty configuration.
+ * @param name The name of the desired subConfiguration
+ * @return A pointer to the Configuration having the requested
+ * name, or a pointer to an empty Configuration.
  */
 template <>
 std::shared_ptr<Configuration> Configuration::editSubconfig<Configuration>(
@@ -1565,7 +1702,7 @@ std::shared_ptr<Configuration> Configuration::editSubconfig<Configuration>(
 
 /**
  * @brief Save the passed @ref Configuration pointed to by @p configPtr at location specified by @p name
- * @param name The name to save the subconfiguration by
+ * @param name The name to save the subConfiguration by
  * @param configPtr A pointer to the @ref Configuration to save with the given @p name .
  */
 template <>
