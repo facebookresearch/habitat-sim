@@ -76,7 +76,7 @@ StageAttributesManager::preRegisterObjectFinalize(
     stageAttributes->setRenderAssetIsPrimitive(false);
   } else if (std::string::npos != stageAttributesHandle.find("NONE")) {
     // Render asset handle will be NONE as well - force type to be unknown
-    stageAttributes->setRenderAssetType(static_cast<int>(AssetType::Unknown));
+    stageAttributes->setRenderAssetType(getAssetTypeName(AssetType::Unknown));
     stageAttributes->setRenderAssetIsPrimitive(false);
   } else if (forceRegistration) {
     ESP_WARNING()
@@ -107,7 +107,7 @@ StageAttributesManager::preRegisterObjectFinalize(
   } else if (std::string::npos != stageAttributesHandle.find("NONE")) {
     // Collision asset handle will be NONE as well - force type to be unknown
     stageAttributes->setCollisionAssetType(
-        static_cast<int>(AssetType::Unknown));
+        getAssetTypeName(AssetType::Unknown));
     stageAttributes->setCollisionAssetIsPrimitive(false);
   } else {
     // Else, means no collision data specified, use specified render data
@@ -147,7 +147,7 @@ StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
   stageAttributes->setMargin(0.0);
 
   // set render mesh handle
-  int primType = static_cast<int>(AssetType::Primitive);
+  const std::string primType = getAssetTypeName(AssetType::Primitive);
   stageAttributes->setRenderAssetType(primType);
   // set collision mesh/primitive handle and default for primitives to not use
   // mesh collisions
@@ -288,13 +288,13 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
     StageAttributesManager::setDefaultAssetNameBasedAttributes(
         newAttributes, createNewAttributes,
         newAttributes->getRenderAssetHandle(), [newAttributes](auto&& PH1) {
-          newAttributes->setRenderAssetType(std::forward<decltype(PH1)>(PH1));
+          newAttributes->initRenderAssetType(std::forward<decltype(PH1)>(PH1));
         });
     // set defaults for passed collision asset handles
     StageAttributesManager::setDefaultAssetNameBasedAttributes(
         newAttributes, false, newAttributes->getCollisionAssetHandle(),
         [newAttributes](auto&& PH1) {
-          newAttributes->setCollisionAssetType(
+          newAttributes->initCollisionAssetType(
               std::forward<decltype(PH1)>(PH1));
         });
 
@@ -302,12 +302,12 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
     StageAttributesManager::setDefaultAssetNameBasedAttributes(
         newAttributes, false, newAttributes->getSemanticAssetHandle(),
         [newAttributes](auto&& PH1) {
-          newAttributes->setSemanticAssetType(std::forward<decltype(PH1)>(PH1));
+          newAttributes->initSemanticAssetType(
+              std::forward<decltype(PH1)>(PH1));
         });
     // TODO : get rid of this once the hardcoded mesh-type handling is removed,
     // but for now force all semantic assets to be instance_mesh
-    newAttributes->setSemanticAssetType(
-        static_cast<int>(AssetType::InstanceMesh));
+    newAttributes->initSemanticAssetTypeEnum(AssetType::InstanceMesh);
   }
   // set default physical quantities specified in physics manager attributes
   if (physicsAttributesManager_->getObjectLibHasHandle(
@@ -327,7 +327,7 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
     StageAttributes::ptr attributes,
     bool setFrame,
     const std::string& fileName,
-    const std::function<void(int)>& assetTypeSetter) {
+    const std::function<void(const std::string&)>& assetTypeSetter) {
   // TODO : support future mesh-name specific type setting?
   using Corrade::Utility::String::endsWith;
 
@@ -339,18 +339,18 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
   up = up1;
   fwd = fwd1;
   if (endsWith(fileName, "_semantic.ply")) {
-    assetTypeSetter(static_cast<int>(AssetType::InstanceMesh));
+    assetTypeSetter(getAssetTypeName(AssetType::InstanceMesh));
   } else if (endsWith(fileName, ".glb")) {
     // assumes MP3D glb with gravity = -Z
-    assetTypeSetter(static_cast<int>(AssetType::Mp3dMesh));
+    assetTypeSetter(getAssetTypeName(AssetType::Mp3dMesh));
     // Create a coordinate for the mesh by rotating the default ESP
     // coordinate frame to -Z gravity
     up = up2;
     fwd = fwd2;
   } else if (StageAttributesManager::isValidPrimitiveAttributes(fileName)) {
-    assetTypeSetter(static_cast<int>(AssetType::Primitive));
+    assetTypeSetter(getAssetTypeName(AssetType::Primitive));
   } else {
-    assetTypeSetter(static_cast<int>(AssetType::Unknown));
+    assetTypeSetter(getAssetTypeName(AssetType::Unknown));
   }
   if (setFrame) {
     attributes->init("up", up);
@@ -418,8 +418,7 @@ void StageAttributesManager::setValsFromJSONDoc(
   stageAttributes->setSemanticAssetHandle(semanticFName);
   // TODO eventually remove this, but currently semantic mesh must be
   // instance
-  stageAttributes->setSemanticAssetType(
-      static_cast<int>(AssetType::InstanceMesh));
+  stageAttributes->initSemanticAssetTypeEnum(AssetType::InstanceMesh);
 
   if (io::readMember<std::string>(jsonConfig, "nav_asset", navmeshFName)) {
     // if "nav mesh" is specified in stage json set value (override default).

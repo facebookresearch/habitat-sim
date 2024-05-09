@@ -234,6 +234,18 @@ void initAttributesBindings(py::module& m) {
       .value("TREE_TRAVERSAL",
              metadata::attributes::ArticulatedObjectLinkOrder::TreeTraversal);
 
+  //
+  // ==== AssetType ====
+  // Describes the type of asset used for rendering, collsions, or semantics
+  py::enum_<metadata::attributes::AssetType>(m, "AssetType")
+      .value("UNKNOWN", metadata::attributes::AssetType::Unknown)
+      .value("MP3D", metadata::attributes::AssetType::Mp3dMesh)
+      .value("SEMANTIC", metadata::attributes::AssetType::InstanceMesh)
+      .value("NAVMESH", metadata::attributes::AssetType::Navmesh)
+      .value("PRIMITIVE", metadata::attributes::AssetType::Primitive);
+
+  // ======== Enums end ================
+
   // ==== Markersets and subordinate classes ===
 
   py::class_<MarkerSet, esp::core::config::Configuration, MarkerSet::ptr>(
@@ -1067,6 +1079,5 @@ void initAttributesBindings(py::module& m) {
           &UVSpherePrimitiveAttributes::create<bool, int, const std::string&>));
 
 }  // initAttributesBindings
-
 }  // namespace metadata
 }  // namespace esp

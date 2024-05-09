@@ -180,7 +180,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
       const char* jsonMeshTypeTag,
       const char* jsonMeshHandleTag,
       std::string& assetName,
-      const std::function<void(int)>& meshTypeSetter);
+      const std::function<void(const std::string&)>& meshTypeSetter);
 
   /**
    * @brief Perform asset-name-based attributes initialization. This is to
@@ -200,7 +200,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
       AbsObjAttrPtr attributes,
       bool setFrame,
       const std::string& assetName,
-      const std::function<void(int)>& meshTypeSetter) = 0;
+      const std::function<void(const std::string&)>& assetTypeSetter) = 0;
 
   // ======== Typedefs and Instance Variables ========
 
@@ -331,7 +331,7 @@ auto AbstractObjectAttributesManager<T, Access>::
   // is true if mesh name is found in JSON and different than current value
   std::string rndrFName = setJSONAssetHandleAndType(
       attributes, jsonDoc, "render_asset_type", "render_asset", rTmpFName,
-      [attributes](int render_asset_type) {
+      [attributes](const std::string& render_asset_type) {
         attributes->setRenderAssetType(render_asset_type);
       });
 
@@ -340,7 +340,7 @@ auto AbstractObjectAttributesManager<T, Access>::
   // is true if mesh name is found in JSON and different than current value
   std::string colFName = setJSONAssetHandleAndType(
       attributes, jsonDoc, "collision_asset_type", "collision_asset", cTmpFName,
-      [attributes](int collision_asset_type) {
+      [attributes](const std::string& collision_asset_type) {
         attributes->setCollisionAssetType(collision_asset_type);
       });
   // use non-empty result if either result is empty
@@ -351,12 +351,12 @@ auto AbstractObjectAttributesManager<T, Access>::
   auto colAssetHandle = attributes->getCollisionAssetHandle();
   if (this->isValidPrimitiveAttributes(colAssetHandle)) {
     // value is valid primitive, and value is different than existing value
-    attributes->setCollisionAssetType(static_cast<int>(AssetType::Primitive));
+    attributes->initCollisionAssetTypeEnum(AssetType::Primitive);
     attributes->setUseMeshCollision(false);
   } else {
     // TODO eventually remove this, but currently non-prim collision mesh must
     // be UNKNOWN
-    attributes->setCollisionAssetType(static_cast<int>(AssetType::Unknown));
+    attributes->initCollisionAssetTypeEnum(AssetType::Unknown);
     attributes->setUseMeshCollision(true);
   }
 
@@ -380,26 +380,24 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
     const char* jsonMeshTypeTag,
     const char* jsonMeshHandleTag,
     std::string& assetName,
-    const std::function<void(int)>& meshTypeSetter) {
+    const std::function<void(const std::string&)>& meshTypeSetter) {
   // save current file name
   std::string oldFName(assetName);
   // clear var to get new value - if returns true use this as new value
   assetName = "";
-  // Map a json string value to its corresponding AssetType if found and cast to
-  // int, based on AbstractObjectAttributes::AssetTypeNamesMap mappings.
-  // Casts an int of the esp::AssetType enum value if found and understood,
-  // 0 (AssetType::Unknown) if found but not understood, and
-  //-1 if tag is not found in json.
-  int typeVal = -1;
+  // Map a json string value to its corresponding AssetType if found based on
+  // attributes::AssetTypeNamesMap mappings.
   std::string tmpVal = "";
+  bool typeFound = false;
   if (io::readMember<std::string>(jsonDoc, jsonMeshTypeTag, tmpVal)) {
+    std::string typeVal = attributes::getAssetTypeName(AssetType::Unknown);
     // tag was found, perform check
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
 
     auto found = attributes::AssetTypeNamesMap.find(strToLookFor);
     if (found != attributes::AssetTypeNamesMap.end()) {
-      typeVal =
-          static_cast<int>(attributes::AssetTypeNamesMap.at(strToLookFor));
+      typeVal = strToLookFor;
+      typeFound = true;
     } else {
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
           << "<" << this->objectType_
@@ -407,7 +405,6 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
           << "` does not map to a valid "
              "AbstractObjectAttributes::AssetTypeNamesMap value, so "
              "defaulting mesh type to AssetType::Unknown.";
-      typeVal = static_cast<int>(AssetType::Unknown);
     }
     // value found so override current value, otherwise do not.
     meshTypeSetter(typeVal);
@@ -418,15 +415,15 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
     // value is specified in json doc
     if ((this->isValidPrimitiveAttributes(assetName)) &&
         (oldFName != assetName)) {
-      // if mesh name is specified and different than old value,
-      // perform name-specific mesh-type config.
+      // if mesh name is specified, found to be a primitive attributes handle,
+      // and different than old value, perform name-specific mesh-type config.
       setDefaultAssetNameBasedAttributes(std::move(attributes), false,
                                          assetName, meshTypeSetter);
     } else {
-      // is not valid primitive, assume valid file name
+      // type is not found and is not valid primitive, assume valid file name
       assetName =
           Cr::Utility::Path::join(attributes->getFileDirectory(), assetName);
-      if ((typeVal == -1) && (oldFName != assetName)) {
+      if (!typeFound && (oldFName != assetName)) {
         // if file name is different, and type val has not been specified,
         // perform name-specific mesh type config do not override orientation
         // - should be specified in json.

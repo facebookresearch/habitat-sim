@@ -45,7 +45,7 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
   primObjectAttributes->setScale({0.1, 0.1, 0.1});
 
   // set render mesh handle
-  int primType = static_cast<int>(AssetType::Primitive);
+  const std::string primType = getAssetTypeName(AssetType::Primitive);
   primObjectAttributes->setRenderAssetType(primType);
   // set collision mesh/primitive handle and default for primitives to not use
   // mesh collisions
@@ -176,14 +176,14 @@ ObjectAttributes::ptr ObjectAttributesManager::initNewObjectInternal(
     // set defaults for passed render asset handles
     this->setDefaultAssetNameBasedAttributes(
         newAttributes, true, newAttributes->getRenderAssetHandle(),
-        [newAttributes](int render_asset_type) {
-          newAttributes->setRenderAssetType(render_asset_type);
+        [newAttributes](const std::string& render_asset_type) {
+          newAttributes->initRenderAssetType(render_asset_type);
         });
     // set defaults for passed collision asset handles
     this->setDefaultAssetNameBasedAttributes(
         newAttributes, false, newAttributes->getCollisionAssetHandle(),
-        [newAttributes](int collision_asset_type) {
-          newAttributes->setCollisionAssetType(collision_asset_type);
+        [newAttributes](const std::string& collision_asset_type) {
+          newAttributes->initCollisionAssetType(collision_asset_type);
         });
   }
   return newAttributes;
@@ -195,13 +195,13 @@ void ObjectAttributesManager::setDefaultAssetNameBasedAttributes(
     ObjectAttributes::ptr attributes,
     bool setFrame,
     const std::string& meshHandle,
-    const std::function<void(int)>& assetTypeSetter) {
+    const std::function<void(const std::string&)>& assetTypeSetter) {
   if (this->isValidPrimitiveAttributes(meshHandle)) {
     // value is valid primitive, and value is different than existing value
-    assetTypeSetter(static_cast<int>(AssetType::Primitive));
+    assetTypeSetter(getAssetTypeName(AssetType::Primitive));
   } else {
     // use unknown for object mesh types of non-primitives
-    assetTypeSetter(static_cast<int>(AssetType::Unknown));
+    assetTypeSetter(getAssetTypeName(AssetType::Unknown));
   }
   if (setFrame) {
     attributes->init("up", Mn::Vector3{0.0, 1.0, 0.0});

@@ -167,7 +167,8 @@ std::string SceneDatasetAttributes::addSemanticSceneDescrPathEntry(
   if (setSemanticAssetData && semanticAttr->getSemanticAssetHandle().empty()) {
     // asset handle specified, get all stage-specified data
     semanticAttr->setSemanticAssetHandle(semanticAssetFilename);
-    semanticAttr->setSemanticAssetType(stageAttributes->getSemanticAssetType());
+    semanticAttr->setSemanticAssetTypeEnum(
+        stageAttributes->getSemanticAssetType());
     semanticAttr->setSemanticOrientUp(stageAttributes->getSemanticOrientUp());
     semanticAttr->setSemanticOrientFront(
         stageAttributes->getSemanticOrientFront());

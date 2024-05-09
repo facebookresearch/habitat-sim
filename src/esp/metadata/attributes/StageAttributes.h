@@ -99,10 +99,110 @@ class StageAttributes : public AbstractObjectAttributes {
   std::string getSemanticAssetHandle() const {
     return get<std::string>("semantic_asset");
   }
-  void setSemanticAssetType(int semanticAssetType) {
-    set("semantic_asset_type", semanticAssetType);
+
+  /**
+   * @brief Sets the semantic asset type, as specified by @ref AssetType.
+   * This specification was generally intended for specifying certain criteria
+   * such as orientation for the loaded asset based on file name, which was in
+   * turn queried for type. This is an artifact of a very early version of
+   * Habitat-Sim and effort should be spent to remove this entirely, as more
+   * accurate and thorough mechanisms have been implemented in its place.
+   */
+  void setSemanticAssetType(const std::string& semanticAssetType) {
+    const std::string sAssetTypeLC =
+        Cr::Utility::String::lowercase(semanticAssetType);
+
+    auto mapIter = AssetTypeNamesMap.find(sAssetTypeLC);
+    ESP_CHECK(mapIter != AssetTypeNamesMap.end(),
+              "Illegal semantic_asset_type value"
+                  << semanticAssetType << ":" << sAssetTypeLC
+                  << "attempted to be set in StageAttributes:" << getHandle()
+                  << ". Aborting.");
+    setTranslated("semantic_asset_type", semanticAssetType);
   }
-  int getSemanticAssetType() const { return get<int>("semantic_asset_type"); }
+
+  /**
+   * @brief Initalize the semantic asset type, as specified by @ref AssetType.
+   * This specification was generally intended for specifying certain criteria
+   * such as orientation for the loaded asset based on file name, which was in
+   * turn queried for type. This is an artifact of a very early version of
+   * Habitat-Sim and effort should be spent to remove this entirely, as more
+   * accurate and thorough mechanisms have been implemented in its place.
+   */
+  void initSemanticAssetType(const std::string& semanticAssetType) {
+    const std::string sAssetTypeLC =
+        Cr::Utility::String::lowercase(semanticAssetType);
+
+    auto mapIter = AssetTypeNamesMap.find(sAssetTypeLC);
+    ESP_CHECK(mapIter != AssetTypeNamesMap.end(),
+              "Illegal semantic_asset_type value"
+                  << semanticAssetType << ":" << sAssetTypeLC
+                  << "attempted to be set in StageAttributes:" << getHandle()
+                  << ". Aborting.");
+    initTranslated("semantic_asset_type", semanticAssetType);
+  }
+
+  /**
+   * @brief Sets the semantic asset type, as specified by @ref AssetType,
+   * by first translating from provided enum. This specification was generally
+   * intended for specifying certain criteria such as orientation for the loaded
+   * asset based on file name, which was in turn queried for type. This is an
+   * artifact of a very early version of Habitat-Sim and effort should be spent
+   * to remove this entirely, as more accurate and thorough mechanisms have been
+   * implemented in its place.
+   */
+  void setSemanticAssetTypeEnum(AssetType assetTypeEnum) {
+    const std::string semanticAssetType = getAssetTypeName(assetTypeEnum);
+
+    auto mapIter = AssetTypeNamesMap.find(semanticAssetType);
+    ESP_CHECK(mapIter != AssetTypeNamesMap.end(),
+              "Illegal semantic_asset_type enum value given"
+                  << static_cast<int>(assetTypeEnum) << ":" << semanticAssetType
+                  << "attempted to be set in StageAttributes:" << getHandle()
+                  << ". Aborting.");
+    // AssetType enum should have a mapping provided
+    setTranslated("semantic_asset_type", semanticAssetType);
+  }
+  /**
+   * @brief Initialize the semantic asset type, as specified by @ref AssetType,
+   * by first translating from provided enum. This specification was generally
+   * intended for specifying certain criteria such as orientation for the loaded
+   * asset based on file name, which was in turn queried for type. This is an
+   * artifact of a very early version of Habitat-Sim and effort should be spent
+   * to remove this entirely, as more accurate and thorough mechanisms have been
+   * implemented in its place.
+   */
+  void initSemanticAssetTypeEnum(AssetType assetTypeEnum) {
+    const std::string semanticAssetType = getAssetTypeName(assetTypeEnum);
+
+    auto mapIter = AssetTypeNamesMap.find(semanticAssetType);
+    ESP_CHECK(mapIter != AssetTypeNamesMap.end(),
+              "Illegal semantic_asset_type enum value given"
+                  << static_cast<int>(assetTypeEnum) << ":" << semanticAssetType
+                  << "attempted to be set in StageAttributes:" << getHandle()
+                  << ". Aborting.");
+    // AssetType enum should have a mapping provided
+    initTranslated("semantic_asset_type", semanticAssetType);
+  }
+
+  /**
+   * @brief Gets the semantic asset type, as specified by @ref AssetType.
+   * This specification was generally intended for specifying certain criteria
+   * such as orientation for the loaded asset based on file name, which was in
+   * turn queried for type. This is an artifact of a very early version of
+   * Habitat-Sim and effort should be spent to remove this entirely, as more
+   * accurate and thorough mechanisms have been implemented in its place.
+   */
+  AssetType getSemanticAssetType() const {
+    const std::string val =
+        Cr::Utility::String::lowercase(get<std::string>("semantic_asset_type"));
+    auto mapIter = AssetTypeNamesMap.find(val);
+    if (mapIter != AssetTypeNamesMap.end()) {
+      return mapIter->second;
+    }
+    // Asset type is unknown or unspecified.
+    return AssetType::Unknown;
+  }
 
   /**
    * @brief Set whether or not the semantic asset for this stage supports

@@ -17,9 +17,9 @@ LightInstanceAttributes::LightInstanceAttributes(const std::string& handle)
   init("direction", Mn::Vector3{0.0, -1.0, 0.0});
   init("color", Mn::Vector3{1.0, 1.0, 1.0});
   init("intensity", 1.0);
-  init("type", getLightTypeName(gfx::LightType::Point));
-  init("position_model",
-       getLightPositionModelName(gfx::LightPositionModel::Global));
+  initTranslated("type", getLightTypeName(gfx::LightType::Point));
+  initTranslated("position_model",
+                 getLightPositionModelName(gfx::LightPositionModel::Global));
   // ignored for all but spot lights
   std::shared_ptr<Configuration> spotGrp = editSubconfig<Configuration>("spot");
   spotGrp->init("innerConeAngle", 0.0_radf);
