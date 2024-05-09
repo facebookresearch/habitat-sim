@@ -23,9 +23,9 @@ StageAttributes::StageAttributes(const std::string& handle)
   // TODO remove this once ShaderType support is complete
   setForceFlatShading(true);
   // AssetType::Unknown->treated as general mesh
-  initCollisionAssetType(getAssetTypeName(AssetType::Unknown));
+  initCollisionAssetTypeEnum(AssetType::Unknown);
   // AssetType::InstanceMesh->standard semantic mesh handling
-  initSemanticAssetType(getAssetTypeName(AssetType::InstanceMesh));
+  initSemanticAssetTypeEnum(AssetType::InstanceMesh);
   // set empty defaults for handles
   init("nav_asset", "");
   init("semantic_asset", "");
