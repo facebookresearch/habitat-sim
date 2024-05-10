@@ -125,8 +125,9 @@ constexpr bool isConfigValTypeNonTrivial(ConfigValType type) {
  */
 template <typename T>
 constexpr ConfigValType configValTypeFor() {
-  static_assert(sizeof(T) == 0, "unsupported type ");
-  return {};
+  static_assert(sizeof(T) == 0,
+                "unknown/unsupported type specified for ConfigValue");
+  return ConfigValType::Unknown;
 }
 
 /**
@@ -694,6 +695,21 @@ class Configuration {
     return {};
   }
 
+  /**
+   * @brief Remove all values from this Configuration of the specified type.
+   */
+  template <typename T>
+  void removeAllOfType() {
+    const ConfigValType desiredType = configValTypeFor<T>();
+    for (auto mapIter = valueMap_.cbegin(), nextIter = mapIter;
+         mapIter != valueMap_.cend(); mapIter = nextIter) {
+      ++nextIter;
+      if (mapIter->second.getType() == desiredType) {
+        valueMap_.erase(mapIter);
+      }
+    }
+  }
+
   // ************************* Queries **************************
 
   /**
@@ -934,18 +950,18 @@ class Configuration {
 
   /**
    * @brief Retrieve the number of entries held by the subconfig with the
-   * given name, recursing subordinate subconfigs
-   * @param name The name of the subconfig to query. If not found, returns 0
+   * given @p cfgName , recursing subordinate subconfigs
+   * @param cfgName The name of the subconfig to query. If not found, returns 0
    * with a warning.
    * @return The number of entries in the named subconfig, including all
    * subconfigs
    */
-  int getSubconfigTreeNumEntries(const std::string& name) const {
-    auto configIter = configMap_.find(name);
+  int getSubconfigTreeNumEntries(const std::string& cfgName) const {
+    auto configIter = configMap_.find(cfgName);
     if (configIter != configMap_.end()) {
       return configIter->second->getConfigTreeNumEntries();
     }
-    ESP_WARNING() << "No Subconfig found named :" << name;
+    ESP_WARNING() << "No Subconfig found named :" << cfgName;
     return 0;
   }
 
@@ -989,6 +1005,57 @@ class Configuration {
     return std::make_pair(configMap_.cbegin(), configMap_.cend());
   }
 
+  /**
+   * @brief Get all values of passed type held within subconfig specified by
+   * given tag @p subCfgName and place the values into a vector.
+   *
+   * This assumes the  subconfig's values of the specified type are all intended
+   * to be considered as part of a vector of data.
+   * @tparam The type of data within the specified subconfig we wish to
+   * retrieve.
+   * @param subCfgName The handle of the
+   */
+  template <typename T>
+  std::vector<T> getSubconfigValsOfTypeInVector(
+      const std::string& subCfgName) const {
+    const ConfigValType desiredType = configValTypeFor<T>();
+    const auto subCfg = getSubconfigView(subCfgName);
+    const auto& subCfgTags = subCfg->getKeysByType(desiredType, true);
+    std::vector<T> res;
+    res.reserve(subCfgTags.size());
+    for (const auto& tag : subCfgTags) {
+      res.emplace_back(subCfg->get<T>(tag));
+    }
+    return res;
+  }  // getSubconfigValsOfTypeInVector
+  /**
+   * @brief Set all values from vector of passed type into subconfig specified
+   * by given tag @p subCfgName as key-value pairs where the key is the index in
+   * the vector as a string (to preserve vector ordering). This function will
+   * remove all existing values of specified type from the subconfig before
+   * adding the values specified in the given map.
+   *
+   * This assumes the  subconfig's values of the specified type are all intended
+   * to be considered as part of a vector of data.
+   * @tparam The type of data within the specified subConfig we wish to
+   * set from the passed vector.
+   * @param subCfgName The handle of the desired subconfig to add the values to.
+   * @param values The vector of values of type @p T to add to the specified
+   * subconfig.
+   */
+  template <typename T>
+  void setSubconfigValsOfTypeInVector(const std::string& subCfgName,
+                                      const std::vector<T>& values) {
+    auto subCfg = editSubconfig<Configuration>(subCfgName);
+    // remove existing values in subconfig of specified type
+    subCfg->removeAllOfType<T>();
+    // add new values, building string key from index in values array of each
+    // value.
+    for (std::size_t i = 0; i < values.size(); ++i) {
+      const std::string& key = Cr::Utility::formatString("{:.03d}", i);
+      subCfg->set(key, values[i]);
+    }
+  }
   // ==================== load from and save to json =========================
 
   /**
