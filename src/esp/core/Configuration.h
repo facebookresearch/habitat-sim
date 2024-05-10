@@ -1350,7 +1350,7 @@ class Configuration {
   }
 
   /**
-   * @brief Merges Configuration pointed to by @p config into this
+   * @brief Merges Configuration pointed to by @p src into this
    * Configuration, including all subconfigs.  Passed config overwrites
    * existing data in this config.
    * @param src The source of Configuration data we wish to merge into this
