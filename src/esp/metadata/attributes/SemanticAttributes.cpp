@@ -56,11 +56,6 @@ void SemanticVolumeAttributes::writeValuesToJson(
   writeValueToJson("extrusion_height", jsonObj, allocator);
   writeValueToJson("min_bounds", jsonObj, allocator);
   writeValueToJson("max_bounds", jsonObj, allocator);
-  // write out poly loop point array.
-  const auto& polyLoop = getPolyLoop();
-  if (!polyLoop.empty()) {
-    io::addMember(jsonObj, "poly_loop", polyLoop, allocator);
-  }
 
 }  // SemanticVolumeAttributes::writeValuesToJson
 

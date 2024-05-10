@@ -126,7 +126,9 @@ void SemanticAttributesManager::setSemanticVolumeAttributesFromJson(
       // read values into vector
       io::readMember<Mn::Vector3>(jCell, "poly_loop", polyLoop);
       instanceAttrs->setPolyLoop(polyLoop);
-
+    } else if (polyLoopJSONIter->value.IsObject()) {
+      auto config = instanceAttrs->editSubconfig<Configuration>("poly_loop");
+      config->loadFromJson(polyLoopJSONIter->value);
     } else {
       ESP_WARNING() << ": Unknown format for "
                        "poly_loop specified for region instance"
