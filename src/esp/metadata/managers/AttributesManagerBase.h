@@ -282,7 +282,7 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
   /**
    * @brief Set a filename attribute to hold the appropriate data if the
    * existing attribute's given path contains the sentinel tag value defined at
-   * @ref esp::metadata::CONFIG_NAME_AS_ASSET_FILENAME. This will be called from
+   * @ref esp::metadata::CONFIG_NAME_AS_ASSET_FILENAME. This will be specified in
    * the Scene Dataset configuration file in the "default_attributes" tag for
    * any attributes which consume file names to specify that the name specified
    * as the instanced attributes should also be used to build the name of the
@@ -297,7 +297,9 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
    *
    * This will only be called from the specified manager's initNewObjectInternal
    * function, where the attributes is initially built from a default attributes
-   * (if such an attributes exists).
+   * (if such an attributes exists), since it is only within the default
+   * attributes that the tag in question would be specified.
+   *
    * @param attributes The AbstractAttributes being worked with.
    * @param srcAssetFilename The given asset's stored filename to be queried for
    * the specified tag. If the tag exists, replace it with the simplified handle

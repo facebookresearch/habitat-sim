@@ -21,13 +21,13 @@ SemanticVolumeAttributes::SemanticVolumeAttributes(const std::string& handle)
 std::string SemanticVolumeAttributes::getObjectInfoHeaderInternal() const {
   std::string res =
       "Name,Label,Floor Height,Extrusion Height,Min Bounds,Max Bounds,";
-  int iter = 0;
-  for (const auto& it : polyLoop_) {
+  const auto& polyLoop = getPolyLoop();
+  for (int iter = 0; iter < polyLoop.size(); ++iter) {
     Cr::Utility::formatInto(res, res.size(), "Poly Vert {} XYZ,",
-                            std::to_string(iter++));
+                            std::to_string(iter));
   }
   return res;
-}
+}  // namespace attributes
 
 std::string SemanticVolumeAttributes::getObjectInfoInternal() const {
   std::string res = Cr::Utility::formatString(
@@ -35,7 +35,8 @@ std::string SemanticVolumeAttributes::getObjectInfoInternal() const {
       getAsString("floor_height"), getAsString("extrusion_height"),
       getAsString("min_bounds"), getAsString("max_bounds"));
   Cr::Utility::formatInto(res, res.size(), "[");
-  for (const Magnum::Vector3& pt : polyLoop_) {
+  const auto& polyLoop = getPolyLoop();
+  for (const auto& pt : polyLoop) {
     Cr::Utility::formatInto(res, res.size(), "[{} {} {}],", pt.x(), pt.y(),
                             pt.z());
   }
@@ -55,10 +56,6 @@ void SemanticVolumeAttributes::writeValuesToJson(
   writeValueToJson("extrusion_height", jsonObj, allocator);
   writeValueToJson("min_bounds", jsonObj, allocator);
   writeValueToJson("max_bounds", jsonObj, allocator);
-  // write out poly loop point array.
-  if (!polyLoop_.empty()) {
-    io::addMember(jsonObj, "poly_loop", polyLoop_, allocator);
-  }
 
 }  // SemanticVolumeAttributes::writeValuesToJson
 
