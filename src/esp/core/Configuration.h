@@ -1028,6 +1028,7 @@ class Configuration {
     }
     return res;
   }  // getSubconfigValsOfTypeInVector
+
   /**
    * @brief Set all values from vector of passed type into subconfig specified
    * by given tag @p subCfgName as key-value pairs where the key is the index in
@@ -1055,7 +1056,8 @@ class Configuration {
       const std::string& key = Cr::Utility::formatString("{:.03d}", i);
       subCfg->set(key, values[i]);
     }
-  }
+  }  // setSubconfigValsOfTypeInVector
+
   // ==================== load from and save to json =========================
 
   /**
@@ -1153,20 +1155,6 @@ class Configuration {
 
  protected:
   /**
-   * @brief Process passed json object into this Configuration, using passed
-   * key.
-   *
-   * @param numVals number of values/configs loaded so far
-   * @param key key to use to search @p jsonObj and also to set value or
-   * subconfig within this Configuration.
-   * @return the number of total fields successfully loaded after this
-   * function executes.
-   */
-  int loadOneConfigFromJson(int numVals,
-                            const std::string& key,
-                            const io::JsonGenericValue& jsonObj);
-
-  /**
    * @brief Friend function.  Checks if passed @p key is contained in @p
    * config. Returns the highest level where @p key was found
    * @param config The configuration to search for passed key
@@ -1225,8 +1213,32 @@ class Configuration {
     return result;
   }
 
+ private:
   /**
-   * @brief Map to hold configurations as subgroups
+   * @brief Process passed json object into this Configuration, using passed
+   * key.
+   *
+   * @param numVals number of values/configs loaded so far
+   * @param key key to use to search @p jsonObj and also to set value or
+   * subconfig within this Configuration.
+   * @return the number of total fields successfully loaded after this
+   * function executes.
+   */
+  int loadOneConfigFromJson(int numVals,
+                            const std::string& key,
+                            const io::JsonGenericValue& jsonObj);
+
+  /**
+   * @brief Process passed json array into this Configuration.
+   *
+   * @param jsonObj The json object being treated as an array
+   * @return the number of elements loaded into this configuration from the
+   * source json array.
+   */
+  int loadFromJsonArray(const io::JsonGenericValue& jsonObj);
+
+  /**
+   * @brief Map to hold Configurations as subgroups
    */
   ConfigMapType configMap_{};
 
@@ -1235,6 +1247,7 @@ class Configuration {
    */
   ValueMapType valueMap_{};
 
+ public:
   ESP_SMART_POINTERS(Configuration)
 };  // class Configuration
 
@@ -1243,6 +1256,15 @@ class Configuration {
  */
 MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug,
                                     const Configuration& value);
+
+template <>
+std::vector<float> Configuration::getSubconfigValsOfTypeInVector(
+    const std::string& subCfgName) const;
+
+template <>
+void Configuration::setSubconfigValsOfTypeInVector(
+    const std::string& subCfgName,
+    const std::vector<float>& values);
 
 /**
  * @brief Retrieves a shared pointer to a copy of the subConfig @ref
