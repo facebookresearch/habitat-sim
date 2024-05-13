@@ -248,19 +248,10 @@ BulletArticulatedObject::getCurrentStateInstanceAttr() {
   }
   sceneArtObjInstanceAttr->setAutoClampJointLimits(autoClampJointLimits_);
 
-  const std::vector<float> jointPos = getJointPositions();
-  int i = 0;
-  for (const float& v : jointPos) {
-    const std::string key = Cr::Utility::formatString("joint_{:.02d}", i++);
-    sceneArtObjInstanceAttr->addInitJointPoseVal(key, v);
-  }
+  sceneArtObjInstanceAttr->setInitJointPose(getJointPositions());
 
-  const std::vector<float> jointVels = getJointVelocities();
-  i = 0;
-  for (const float& v : jointVels) {
-    const std::string key = Cr::Utility::formatString("joint_{:.02d}", i++);
-    sceneArtObjInstanceAttr->addInitJointVelocityVal(key, v);
-  }
+  sceneArtObjInstanceAttr->setInitJointVelocities(getJointVelocities());
+
   return sceneArtObjInstanceAttr;
 }  // BulletArticulatedObject::getCurrentStateInstanceAttr
 
@@ -293,16 +284,14 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr() {
   std::vector<float> aoJointPose = getJointPositions();
   // get instance-specified initial joint positions
   const auto& initJointPos = sceneObjInstanceAttr->getInitJointPose();
-  // map instance vals into
-  size_t idx = 0;
-  for (const auto& elem : initJointPos) {
-    if (idx >= aoJointPose.size()) {
+  for (size_t i = 0; i < initJointPos.size(); ++i) {
+    if (i >= aoJointPose.size()) {
       ESP_WARNING() << "Attempting to specify more initial joint poses than "
                        "exist in articulated object"
                     << sceneObjInstanceAttr->getHandle() << ", so skipping";
       break;
     }
-    aoJointPose[idx++] = elem.second;
+    aoJointPose[i] = initJointPos[i];
   }
   setJointPositions(aoJointPose);
 
@@ -310,21 +299,18 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr() {
   // get array of existing joint vel dofs
   std::vector<float> aoJointVels = getJointVelocities();
   // get instance-specified initial joint velocities
-  const std::map<std::string, float>& initJointVel =
+  std::vector<float> initJointVels =
       sceneObjInstanceAttr->getInitJointVelocities();
-  idx = 0;
-  for (const auto& elem : initJointVel) {
-    if (idx >= aoJointVels.size()) {
+  for (size_t i = 0; i < initJointVels.size(); ++i) {
+    if (i >= aoJointVels.size()) {
       ESP_WARNING()
           << "Attempting to specify more initial joint velocities than "
              "exist in articulated object"
           << sceneObjInstanceAttr->getHandle() << ", so skipping";
       break;
     }
-    aoJointVels[idx++] = elem.second;
+    aoJointVels[i] = initJointVels[i];
   }
-
-  setJointVelocities(aoJointVels);
 
 }  // BulletArticulatedObject::resetStateFromSceneInstanceAttr
 

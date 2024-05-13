@@ -544,19 +544,11 @@ bool AttributesManager<T, Access>::parseSubconfigJsonVals(
   io::JsonGenericValue::ConstMemberIterator jsonIter =
       jsonConfig.FindMember(subGroupName.c_str());
   if (jsonIter != jsonConfig.MemberEnd()) {
-    if (!jsonIter->value.IsObject()) {
-      ESP_WARNING(Mn::Debug::Flag::NoSpace)
-          << "<" << this->objectType_
-          << "> : " << attribs->getSimplifiedHandle()
-          << " attributes specifies `" << subGroupName
-          << "` attributes but their format is incorrect (is not a JSON "
-             "object), so no `"
-          << subGroupName << "` configuration values will be loaded.";
-      return false;
-    } else {
-      // get pointer to subGroupName-specified subgroup configuration
+    if (jsonIter->value.IsObject() || jsonIter->value.IsArray()) {
+      // get pointer to new or existing subGroupName-specified subgroup
+      // configuration
       std::shared_ptr<Configuration> subGroupPtr =
-          attribs->getSubconfigCopy<Configuration>(subGroupName);
+          attribs->editSubconfig<Configuration>(subGroupName);
 
       // get json object referenced by tag subGroupName
       const io::JsonGenericValue& jsonObj = jsonIter->value;
@@ -564,12 +556,18 @@ bool AttributesManager<T, Access>::parseSubconfigJsonVals(
       // count number of valid sub-config settings found
       int numConfigSettings = subGroupPtr->loadFromJson(jsonObj);
 
-      // save with requested tag as subgroup configuration
-      attribs->setSubconfigPtr(subGroupName, subGroupPtr);
-
       return (numConfigSettings > 0);
+    } else {
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "<" << this->objectType_
+          << "> : " << attribs->getSimplifiedHandle()
+          << " configuration specifies `" << subGroupName
+          << "` JSON subgroup but its format is unable to be deciphered as a "
+             "subconfiguration (i.e. it is not a JSON object or array), so no `"
+          << subGroupName << "` configuration values will be loaded.";
+      return false;
     }
-  }  // if has reqyested tag
+  }  // if has requested tag
   return false;
 }  // AttributesManager<T, Access>::parseSubconfigJsonVals
 

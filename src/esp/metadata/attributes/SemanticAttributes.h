@@ -88,8 +88,7 @@ class SemanticVolumeAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief retrieve a const reference to the vector holding the poly loop
-   * points.
+   * @brief retrieve a vector holding the poly loop point values.
    */
   std::vector<Magnum::Vector3> getPolyLoop() const {
     return getSubconfigValsOfTypeInVector<Magnum::Vector3>("poly_loop");

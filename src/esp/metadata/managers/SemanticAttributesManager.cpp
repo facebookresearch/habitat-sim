@@ -116,26 +116,11 @@ void SemanticAttributesManager::setSemanticVolumeAttributesFromJson(
       });
 
   //////////////////////
-  // Polyloop points
+  // Polyloop points and user defined
 
-  io::JsonGenericValue::ConstMemberIterator polyLoopJSONIter =
-      jCell.FindMember("poly_loop");
-  if (polyLoopJSONIter != jCell.MemberEnd()) {
-    if (polyLoopJSONIter->value.IsArray()) {
-      std::vector<Mn::Vector3> polyLoop;
-      // read values into vector
-      io::readMember<Mn::Vector3>(jCell, "poly_loop", polyLoop);
-      instanceAttrs->setPolyLoop(polyLoop);
-    } else if (polyLoopJSONIter->value.IsObject()) {
-      auto config = instanceAttrs->editSubconfig<Configuration>("poly_loop");
-      config->loadFromJson(polyLoopJSONIter->value);
-    } else {
-      ESP_WARNING() << ": Unknown format for "
-                       "poly_loop specified for region instance"
-                    << instanceAttrs->getHandle()
-                    << "in Semantic Config File, so no values are set.";
-    }
-  }
+  // parse poly loop points, whether defined as an array or a key-value store in
+  // JSON
+  this->parseSubconfigJsonVals("poly_loop", instanceAttrs, jCell);
 
   // check for user defined attributes
   this->parseUserDefinedJsonVals(instanceAttrs, jCell);

@@ -490,41 +490,36 @@ int Configuration::loadOneConfigFromJson(int numConfigSettings,
       } else {
         // The array does not match any currently supported magnum
         // objects, so place in indexed subconfig of values.
+        // decrement count by 1 - the recursive subgroup load will count all the
+        // values.
+        --numConfigSettings;
         // create a new subgroup
         std::shared_ptr<core::config::Configuration> subGroupPtr =
-            getSubconfigCopy<core::config::Configuration>(key);
-
-        for (size_t i = 0; i < jsonObj.Size(); ++i) {
-          const std::string subKey =
-              Cr::Utility::formatString("{}_{:.03d}", key, i);
-          numConfigSettings += subGroupPtr->loadOneConfigFromJson(
-              numConfigSettings, subKey, jsonObj[i]);
-        }
-        setSubconfigPtr<core::config::Configuration>(key, subGroupPtr);
+            editSubconfig<core::config::Configuration>(key);
+        // load array into subconfig
+        numConfigSettings += subGroupPtr->loadFromJsonArray(jsonObj);
       }
       // value in array is a number of specified length, else it is a string, an
       // object or a nested array
     } else {
+      // decrement count by 1 - the recursive subgroup load will count all the
+      // values.
+      --numConfigSettings;
       // create a new subgroup
       std::shared_ptr<core::config::Configuration> subGroupPtr =
-          getSubconfigCopy<core::config::Configuration>(key);
-
-      for (size_t i = 0; i < jsonObj.Size(); ++i) {
-        const std::string subKey =
-            Cr::Utility::formatString("{}_{:.03d}", key, i);
-        numConfigSettings += subGroupPtr->loadOneConfigFromJson(
-            numConfigSettings, subKey, jsonObj[i]);
-      }
-      setSubconfigPtr<core::config::Configuration>(key, subGroupPtr);
+          editSubconfig<core::config::Configuration>(key);
+      // load array into subconfig
+      numConfigSettings += subGroupPtr->loadFromJsonArray(jsonObj);
     }
   } else if (jsonObj.IsObject()) {
     // support nested objects
     // create a new subgroup
+    // decrement count by 1 - the recursive subgroup load will count all the
+    // values.
+    --numConfigSettings;
     std::shared_ptr<core::config::Configuration> subGroupPtr =
-        getSubconfigCopy<core::config::Configuration>(key);
+        editSubconfig<core::config::Configuration>(key);
     numConfigSettings += subGroupPtr->loadFromJson(jsonObj);
-    // save subgroup's subgroup configuration in original config
-    setSubconfigPtr<core::config::Configuration>(key, subGroupPtr);
     //
   } else {
     // TODO support other types?
@@ -535,18 +530,35 @@ int Configuration::loadOneConfigFromJson(int numConfigSettings,
                      "skipping this key.";
   }
   return numConfigSettings;
-}  // namespace config
+}  // Configuration::loadOneConfigFromJson
+
+int Configuration::loadFromJsonArray(const io::JsonGenericValue& jsonObj) {
+  // Passed config is found to be a json array, so load every value into this
+  // configuration with key as string version of index.
+  int numConfigSettings = 0;
+  for (size_t i = 0; i < jsonObj.Size(); ++i) {
+    const std::string subKey = Cr::Utility::formatString("{:.03d}", i);
+    numConfigSettings =
+        loadOneConfigFromJson(numConfigSettings, subKey, jsonObj[i]);
+  }
+  return numConfigSettings;
+}  // Configuration::loadFromJsonArray
 
 int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
   // count number of valid user config settings found
   int numConfigSettings = 0;
-  for (rapidjson::Value::ConstMemberIterator it = jsonObj.MemberBegin();
-       it != jsonObj.MemberEnd(); ++it) {
-    // for each key, attempt to parse
-    const std::string key{it->name.GetString()};
-
-    numConfigSettings +=
-        loadOneConfigFromJson(numConfigSettings, key, it->value);
+  if (jsonObj.IsArray()) {
+    // load array into this Configuration
+    numConfigSettings = loadFromJsonArray(jsonObj);
+  } else {
+    for (rapidjson::Value::ConstMemberIterator it = jsonObj.MemberBegin();
+         it != jsonObj.MemberEnd(); ++it) {
+      // for each key, attempt to parse
+      const std::string key{it->name.GetString()};
+      // load value and attach it to given key
+      numConfigSettings =
+          loadOneConfigFromJson(numConfigSettings, key, it->value);
+    }
   }
   return numConfigSettings;
 }  // Configuration::loadFromJson
@@ -620,6 +632,36 @@ io::JsonGenericValue Configuration::writeToJsonObject(
 
   return jsonObj;
 }  // writeToJsonObject
+
+template <>
+
+std::vector<float> Configuration::getSubconfigValsOfTypeInVector(
+    const std::string& subCfgName) const {
+  const ConfigValType desiredType = configValTypeFor<double>();
+  const auto subCfg = getSubconfigView(subCfgName);
+  const auto& subCfgTags = subCfg->getKeysByType(desiredType, true);
+  std::vector<float> res;
+  res.reserve(subCfgTags.size());
+  for (const auto& tag : subCfgTags) {
+    res.emplace_back(static_cast<float>(subCfg->get<double>(tag)));
+  }
+  return res;
+}  // getSubconfigValsOfTypeInVector float specialization
+
+template <>
+void Configuration::setSubconfigValsOfTypeInVector(
+    const std::string& subCfgName,
+    const std::vector<float>& values) {
+  auto subCfg = editSubconfig<Configuration>(subCfgName);
+  // remove existing values in subconfig of specified type
+  subCfg->removeAllOfType<double>();
+  // add new values, building string key from index in values array of each
+  // value.
+  for (std::size_t i = 0; i < values.size(); ++i) {
+    const std::string& key = Cr::Utility::formatString("{:.03d}", i);
+    subCfg->set(key, values[i]);
+  }
+}  // setSubconfigValsOfTypeInVector float specialization
 
 /**
  * @brief Retrieves a shared pointer to a copy of the subConfig @ref

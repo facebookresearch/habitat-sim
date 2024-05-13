@@ -349,58 +349,17 @@ SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON(
       });
 
   // only used for articulated objects
-  // initial joint pose
-  io::JsonGenericValue::ConstMemberIterator jntPoseJSONIter =
-      jCell.FindMember("initial_joint_pose");
-  if (jntPoseJSONIter != jCell.MemberEnd()) {
-    if (jntPoseJSONIter->value.IsArray()) {
-      std::vector<float> poseRes;
-      // read values into vector
-      io::readMember<float>(jCell, "initial_joint_pose", poseRes);
-      int i = 0;
-      for (const float& v : poseRes) {
-        const std::string key = Cr::Utility::formatString("joint_{:.02d}", i++);
-        instanceAttrs->addInitJointPoseVal(key, v);
-      }
+  // parse initial joint pose values, whether defined as an array or a key-value
+  // store in JSON
+  this->parseSubconfigJsonVals("initial_joint_pose", instanceAttrs, jCell);
 
-    } else if (jntPoseJSONIter->value.IsObject()) {
-      // load values into map
-      io::readMember<std::map<std::string, float>>(
-          jCell, "initial_joint_pose", instanceAttrs->copyIntoInitJointPose());
-    } else {
-      ESP_WARNING() << ": Unknown format for "
-                       "initial_joint_pose specified for instance"
-                    << instanceAttrs->getHandle()
-                    << "in Scene Instance File, so no values are set.";
-    }
-  }
   // only used for articulated objects
-  // initial joint velocities
-  io::JsonGenericValue::ConstMemberIterator jntVelJSONIter =
-      jCell.FindMember("initial_joint_velocities");
-  if (jntVelJSONIter != jCell.MemberEnd()) {
-    if (jntVelJSONIter->value.IsArray()) {
-      std::vector<float> poseRes;
-      // read values into vector
-      io::readMember<float>(jCell, "initial_joint_velocities", poseRes);
-      int i = 0;
-      for (const float& v : poseRes) {
-        const std::string key = Cr::Utility::formatString("joint_{:.02d}", i++);
-        instanceAttrs->addInitJointVelocityVal(key, v);
-      }
+  // parse initial joint velocities values, whether defined as an array or a
+  // key-value
+  // store in JSON
+  this->parseSubconfigJsonVals("initial_joint_velocities", instanceAttrs,
+                               jCell);
 
-    } else if (jntVelJSONIter->value.IsObject()) {
-      // load values into map
-      io::readMember<std::map<std::string, float>>(
-          jCell, "initial_joint_velocities",
-          instanceAttrs->copyIntoInitJointVelocities());
-    } else {
-      ESP_WARNING() << ": Unknown format for "
-                       "initial_joint_velocities specified for instance"
-                    << instanceAttrs->getHandle()
-                    << "in Scene Instance File, so no values are set.";
-    }
-  }
   return instanceAttrs;
 
 }  // SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON
