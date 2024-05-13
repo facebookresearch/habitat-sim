@@ -633,6 +633,36 @@ io::JsonGenericValue Configuration::writeToJsonObject(
   return jsonObj;
 }  // writeToJsonObject
 
+template <>
+
+std::vector<float> Configuration::getSubconfigValsOfTypeInVector(
+    const std::string& subCfgName) const {
+  const ConfigValType desiredType = configValTypeFor<double>();
+  const auto subCfg = getSubconfigView(subCfgName);
+  const auto& subCfgTags = subCfg->getKeysByType(desiredType, true);
+  std::vector<float> res;
+  res.reserve(subCfgTags.size());
+  for (const auto& tag : subCfgTags) {
+    res.emplace_back(static_cast<float>(subCfg->get<double>(tag)));
+  }
+  return res;
+}  // getSubconfigValsOfTypeInVector float specialization
+
+template <>
+void Configuration::setSubconfigValsOfTypeInVector(
+    const std::string& subCfgName,
+    const std::vector<float>& values) {
+  auto subCfg = editSubconfig<Configuration>(subCfgName);
+  // remove existing values in subconfig of specified type
+  subCfg->removeAllOfType<double>();
+  // add new values, building string key from index in values array of each
+  // value.
+  for (std::size_t i = 0; i < values.size(); ++i) {
+    const std::string& key = Cr::Utility::formatString("{:.03d}", i);
+    subCfg->set(key, values[i]);
+  }
+}  // setSubconfigValsOfTypeInVector float specialization
+
 /**
  * @brief Retrieves a shared pointer to a copy of the subConfig @ref
  * esp::core::config::Configuration that has the passed @p name . This will

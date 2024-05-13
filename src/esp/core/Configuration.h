@@ -1028,6 +1028,7 @@ class Configuration {
     }
     return res;
   }  // getSubconfigValsOfTypeInVector
+
   /**
    * @brief Set all values from vector of passed type into subconfig specified
    * by given tag @p subCfgName as key-value pairs where the key is the index in
@@ -1055,7 +1056,8 @@ class Configuration {
       const std::string& key = Cr::Utility::formatString("{:.03d}", i);
       subCfg->set(key, values[i]);
     }
-  }
+  }  // setSubconfigValsOfTypeInVector
+
   // ==================== load from and save to json =========================
 
   /**
@@ -1254,6 +1256,15 @@ class Configuration {
  */
 MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug,
                                     const Configuration& value);
+
+template <>
+std::vector<float> Configuration::getSubconfigValsOfTypeInVector(
+    const std::string& subCfgName) const;
+
+template <>
+void Configuration::setSubconfigValsOfTypeInVector(
+    const std::string& subCfgName,
+    const std::vector<float>& values);
 
 /**
  * @brief Retrieves a shared pointer to a copy of the subConfig @ref
