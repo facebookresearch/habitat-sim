@@ -167,8 +167,7 @@ bool SemanticScene::
         const Mn::Vector3 max = regionInstance->getMaxBounds();
         regionPtr->setBBox(min, max);
         // Set polyloop points and precalc polyloop edge vectors
-        const std::vector<Mn::Vector3>& loopPoints =
-            regionInstance->getPolyLoop();
+        const auto loopPoints = regionInstance->getPolyLoop();
 
         std::size_t numPts = loopPoints.size();
         regionPtr->polyLoopPoints_ = std::vector<Mn::Vector2>(numPts);

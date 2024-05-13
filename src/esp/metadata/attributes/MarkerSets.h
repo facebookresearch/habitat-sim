@@ -34,29 +34,14 @@ class MarkerSet : public esp::core::config::Configuration {
    * @brief Returns a list of all the marker points in this MarkerSet
    */
   std::vector<Mn::Vector3> getAllPoints() const {
-    const auto markersPtr = getSubconfigView("markers");
-    // Get all vector3 keys from subconfig in sorted vector
-    std::vector<std::string> markerTags = markersPtr->getKeysByType(
-        esp::core::config::ConfigValType::MagnumVec3, true);
-    std::vector<Mn::Vector3> res;
-    res.reserve(markerTags.size());
-    for (const auto& tag : markerTags) {
-      res.emplace_back(markersPtr->get<Mn::Vector3>(tag));
-    }
-    return res;
+    return getSubconfigValsOfTypeInVector<Mn::Vector3>("markers");
   }
 
   /**
    * @brief Set the list of all the marker points for this MarkerSet
    */
   void setAllPoints(const std::vector<Mn::Vector3>& markers) {
-    auto markersPtr = editSubconfig<Configuration>("markers");
-    // Remove all existing marker points
-    markersPtr->_clearAllValues();
-    for (std::size_t i = 0; i < markers.size(); ++i) {
-      const std::string& key = Cr::Utility::formatString("{:.03d}", i);
-      markersPtr->set(key, markers[i]);
-    }
+    setSubconfigValsOfTypeInVector("markers", markers);
   }
 
   /**

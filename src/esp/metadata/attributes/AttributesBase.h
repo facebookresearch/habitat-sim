@@ -103,9 +103,12 @@ class AbstractAttributes
   }
 
   /**
-   *  @brief Unique ID referencing attributes
+   *  @brief Set the unique ID referencing attributes
    */
   void setID(int ID) override { set("ID", ID); }
+  /**
+   *  @brief Get the unique ID referencing attributes
+   */
   int getID() const override { return get<int>("ID"); }
 
   /**

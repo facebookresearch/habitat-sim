@@ -87,18 +87,18 @@ class SemanticVolumeAttributes : public AbstractAttributes {
     set("max_bounds", _max_bounds);
   }
 
-  ////  TODO : Replace vector with configuration?
-
   /**
    * @brief retrieve a const reference to the vector holding the poly loop
    * points.
    */
-  const std::vector<Magnum::Vector3>& getPolyLoop() const { return polyLoop_; }
+  std::vector<Magnum::Vector3> getPolyLoop() const {
+    return getSubconfigValsOfTypeInVector<Magnum::Vector3>("poly_loop");
+  }
   /**
    * @brief Set the vector holding the poly loop points.
    */
-  void setPolyLoop(std::vector<Magnum::Vector3> _polyLoop) {
-    polyLoop_ = std::move(_polyLoop);
+  void setPolyLoop(const std::vector<Magnum::Vector3>& _polyLoop) {
+    setSubconfigValsOfTypeInVector("poly_loop", _polyLoop);
   }
 
   /**
@@ -121,12 +121,6 @@ class SemanticVolumeAttributes : public AbstractAttributes {
    * of this managed object.
    */
   std::string getObjectInfoInternal() const override;
-
-  /**
-   * @brief Vector of points making up the poly loop that describes the
-   * extrusion base.
-   */
-  std::vector<Magnum::Vector3> polyLoop_{};
 
  public:
   ESP_SMART_POINTERS(SemanticVolumeAttributes)
