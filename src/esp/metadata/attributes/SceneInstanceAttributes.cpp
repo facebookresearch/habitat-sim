@@ -170,6 +170,8 @@ SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
   // Set render mode to be unspecified - if not set in instance json, use
   // ao_config value
   setRenderMode(getAORenderModeName(ArticulatedObjectRenderMode::Unspecified));
+  editSubconfig<Configuration>("initial_joint_pose");
+  editSubconfig<Configuration>("initial_joint_velocities");
 }
 
 SceneAOInstanceAttributes::SceneAOInstanceAttributes(
@@ -193,18 +195,22 @@ SceneAOInstanceAttributes::SceneAOInstanceAttributes(
   setMassScale(aObjAttribs->getMassScale());
   // Prepopulate user config to match attribs' user config.
   overwriteWithConfig(aObjAttribs->getUserConfiguration());
+  editSubconfig<Configuration>("initial_joint_pose");
+  editSubconfig<Configuration>("initial_joint_velocities");
 }
 
 std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoHeaderInternal()
     const {
   std::string infoHdr{"Base Type,Inertia Source,Link Order,Render Mode,"};
   int iter = 0;
-  for (const auto& it : initJointPose_) {
+  const auto initJointPose = getInitJointPose();
+  for (const auto& it : initJointPose) {
     Cr::Utility::formatInto(infoHdr, infoHdr.size(), "Init Pose {},",
                             std::to_string(iter++));
   }
   iter = 0;
-  for (const auto& it : initJointPose_) {
+  const auto initJointVel = getInitJointVelocities();
+  for (const auto& it : initJointVel) {
     Cr::Utility::formatInto(infoHdr, infoHdr.size(), "Init Vel {},",
                             std::to_string(iter++));
   }
@@ -219,14 +225,16 @@ std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal() const {
                           getAOInertiaSourceName(getInertiaSource()),
                           getAOLinkOrderName(getLinkOrder()),
                           getAORenderModeName(getRenderMode()));
-  for (const auto& it : initJointPose_) {
+  const auto initJointPose = getInitJointPose();
+  for (const auto& it : initJointPose) {
     Cr::Utility::formatInto(initPoseStr, initPoseStr.size(), "{},",
-                            std::to_string(it.second));
+                            std::to_string(it));
   }
   Cr::Utility::formatInto(initPoseStr, initPoseStr.size(), "],[");
-  for (const auto& it : initJointPose_) {
+  const auto initJointVel = getInitJointVelocities();
+  for (const auto& it : initJointVel) {
     Cr::Utility::formatInto(initPoseStr, initPoseStr.size(), "{},",
-                            std::to_string(it.second));
+                            std::to_string(it));
   }
   Cr::Utility::formatInto(initPoseStr, initPoseStr.size(), "]");
 
@@ -250,17 +258,6 @@ void SceneAOInstanceAttributes::writeValuesToJsonInternal(
   }
 
   writeValueToJson("auto_clamp_joint_limits", jsonObj, allocator);
-
-  // write out map where key is joint tag, and value is joint pose value.
-  if (!initJointPose_.empty()) {
-    io::addMember(jsonObj, "initial_joint_pose", initJointPose_, allocator);
-  }
-
-  // write out map where key is joint tag, and value is joint angular vel value.
-  if (!initJointVelocities_.empty()) {
-    io::addMember(jsonObj, "initial_joint_velocities", initJointVelocities_,
-                  allocator);
-  }
 
 }  // SceneAOInstanceAttributes::writeValuesToJsonInternal
 

@@ -431,46 +431,58 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
     set("auto_clamp_joint_limits", auto_clamp_joint_limits);
   }
 
+  void setInitJointPose(const std::vector<float>& _jointPose) {
+    setSubconfigValsOfTypeInVector("initial_joint_pose", _jointPose);
+  }
+
   /**
    * @brief retrieve a mutable reference to this scene attributes joint
    * initial pose map
    */
-  const std::map<std::string, float>& getInitJointPose() const {
-    return initJointPose_;
+  std::vector<float> getInitJointPose() const {
+    return getSubconfigValsOfTypeInVector<float>("initial_joint_pose");
   }
 
-  std::map<std::string, float>& copyIntoInitJointPose() {
-    return initJointPose_;
-  }
-
-  /**
-   * @brief Add a value to this scene attributes joint initial pose map
-   * @param key the location/joint name to place the value
-   * @param val the joint value to set
-   */
-  void addInitJointPoseVal(const std::string& key, float val) {
-    initJointPose_[key] = val;
+  void setInitJointVelocities(const std::vector<float>& _jointPose) {
+    setSubconfigValsOfTypeInVector("initial_joint_velocities", _jointPose);
   }
 
   /**
    * @brief retrieve a mutable reference to this scene attributes joint
-   * initial velocity map
+   * initial pose map
    */
-  const std::map<std::string, float>& getInitJointVelocities() const {
-    return initJointVelocities_;
-  }
-  std::map<std::string, float>& copyIntoInitJointVelocities() {
-    return initJointVelocities_;
+  std::vector<float> getInitJointVelocities() const {
+    return getSubconfigValsOfTypeInVector<float>("initial_joint_velocities");
   }
 
-  /**
-   * @brief Add a value to this scene attributes joint initial velocity map
-   * @param key the location/joint name to place the value
-   * @param val the joint angular velocity value to set
-   */
-  void addInitJointVelocityVal(const std::string& key, float val) {
-    initJointVelocities_[key] = val;
-  }
+  // /**
+  //  * @brief Add a value to this scene attributes joint initial pose map
+  //  * @param key the location/joint name to place the value
+  //  * @param val the joint value to set
+  //  */
+  // void addInitJointPoseVal(const std::string& key, float val) {
+  //   initJointPose_[key] = val;
+  // }
+
+  // /**
+  //  * @brief retrieve a mutable reference to this scene attributes joint
+  //  * initial velocity map
+  //  */
+  // const std::map<std::string, float>& getInitJointVelocities() const {
+  //   return initJointVelocities_;
+  // }
+  // std::map<std::string, float>& copyIntoInitJointVelocities() {
+  //   return initJointVelocities_;
+  // }
+
+  // /**
+  //  * @brief Add a value to this scene attributes joint initial velocity map
+  //  * @param key the location/joint name to place the value
+  //  * @param val the joint angular velocity value to set
+  //  */
+  // void addInitJointVelocityVal(const std::string& key, float val) {
+  //   initJointVelocities_[key] = val;
+  // }
 
  protected:
   friend class esp::metadata::managers::SceneInstanceAttributesManager;
@@ -507,16 +519,6 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
    */
   void writeValuesToJsonInternal(io::JsonGenericValue& jsonObj,
                                  io::JsonAllocator& allocator) const override;
-
-  /**
-   * @brief Map of joint names/idxs to values for initial pose
-   */
-  std::map<std::string, float> initJointPose_;
-
-  /**
-   * @brief Map of joint names/idxs to values for initial velocities
-   */
-  std::map<std::string, float> initJointVelocities_;
 
  public:
   ESP_SMART_POINTERS(SceneAOInstanceAttributes)

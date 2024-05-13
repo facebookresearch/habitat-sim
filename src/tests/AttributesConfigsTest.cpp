@@ -826,23 +826,14 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
     CORRADE_COMPARE(static_cast<int>(artObjInstance->getMotionType()),
                     static_cast<int>(esp::physics::MotionType::DYNAMIC));
     // verify init join pose
-    const auto& initJointPoseMap = artObjInstance->getInitJointPose();
+    const auto& initJointPoseVec = artObjInstance->getInitJointPose();
     const std::vector<float> jtPoseVals{0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6};
-    int idx = 0;
-    for (std::map<std::string, float>::const_iterator iter =
-             initJointPoseMap.begin();
-         iter != initJointPoseMap.end(); ++iter) {
-      CORRADE_COMPARE(iter->second, jtPoseVals[idx++]);
-    }
+    CORRADE_COMPARE(initJointPoseVec, jtPoseVals);
+
     // verify init joint vels
-    const auto& initJoinVelMap = artObjInstance->getInitJointVelocities();
+    const auto& initJointVelVec = artObjInstance->getInitJointVelocities();
     const std::vector<float> jtVelVals{1.0, 2.1, 3.2, 4.3, 5.4, 6.5, 7.6};
-    idx = 0;
-    for (std::map<std::string, float>::const_iterator iter =
-             initJoinVelMap.begin();
-         iter != initJoinVelMap.end(); ++iter) {
-      CORRADE_COMPARE(iter->second, jtVelVals[idx++]);
-    }
+    CORRADE_COMPARE(initJointVelVec, jtVelVals);
 
     // test test_urdf_template0 ao instance attributes-level user config vals
     testUserDefinedConfigVals(artObjInstance->getUserConfiguration(), 4,
