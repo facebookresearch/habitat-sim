@@ -1153,20 +1153,6 @@ class Configuration {
 
  protected:
   /**
-   * @brief Process passed json object into this Configuration, using passed
-   * key.
-   *
-   * @param numVals number of values/configs loaded so far
-   * @param key key to use to search @p jsonObj and also to set value or
-   * subconfig within this Configuration.
-   * @return the number of total fields successfully loaded after this
-   * function executes.
-   */
-  int loadOneConfigFromJson(int numVals,
-                            const std::string& key,
-                            const io::JsonGenericValue& jsonObj);
-
-  /**
    * @brief Friend function.  Checks if passed @p key is contained in @p
    * config. Returns the highest level where @p key was found
    * @param config The configuration to search for passed key
@@ -1225,8 +1211,32 @@ class Configuration {
     return result;
   }
 
+ private:
   /**
-   * @brief Map to hold configurations as subgroups
+   * @brief Process passed json object into this Configuration, using passed
+   * key.
+   *
+   * @param numVals number of values/configs loaded so far
+   * @param key key to use to search @p jsonObj and also to set value or
+   * subconfig within this Configuration.
+   * @return the number of total fields successfully loaded after this
+   * function executes.
+   */
+  int loadOneConfigFromJson(int numVals,
+                            const std::string& key,
+                            const io::JsonGenericValue& jsonObj);
+
+  /**
+   * @brief Process passed json array into this Configuration.
+   *
+   * @param jsonObj The json object being treated as an array
+   * @return the number of elements loaded into this configuration from the
+   * source json array.
+   */
+  int loadFromJsonArray(const io::JsonGenericValue& jsonObj);
+
+  /**
+   * @brief Map to hold Configurations as subgroups
    */
   ConfigMapType configMap_{};
 
@@ -1235,6 +1245,7 @@ class Configuration {
    */
   ValueMapType valueMap_{};
 
+ public:
   ESP_SMART_POINTERS(Configuration)
 };  // class Configuration
 
