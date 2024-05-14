@@ -29,6 +29,25 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
    * @brief Gets the string name for the Articulated Object URDF relative path
    */
   std::string getURDFPath() const { return get<std::string>("urdf_filepath"); }
+
+  /**
+   * @brief Sets the fully-qualified filepath for for the Articulated Object
+   * URDF to be used to create the articulated object this attributes describes.
+   * This is only used internally and should not be saved to disk.
+   */
+  void setURDFFullPath(const std::string& urdfFilepath) {
+    setHidden("__urdfFullPath", urdfFilepath);
+  }
+
+  /**
+   * @brief Gets the fully-qualified filepath for for the Articulated Object
+   * URDF to be used to create the articulated object this attributes describes.
+   * This is only used internally and should not be saved to disk.
+   */
+  std::string getURDFFullPath() const {
+    return get<std::string>("__urdfFullPath");
+  }
+
   /**
    * @brief Sets the string name for the render asset relative path
    */
@@ -40,6 +59,24 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
    */
   std::string getRenderAssetHandle() const {
     return get<std::string>("render_asset");
+  }
+
+  /**
+   * @brief Sets the fully-qualified filepath for the render asset to be used to
+   * render the construct this attributes describes. This is only used
+   * internally and should not be saved to disk.
+   */
+  void setRenderAssetFullPath(const std::string& renderAssetHandle) {
+    setHidden("__renderAssetFullPath", renderAssetHandle);
+  }
+
+  /**
+   * @brief Gets the fully-qualified filepath for the render asset to be used to
+   * render the construct this attributes describes. This is only used
+   * internally and should not be saved to disk.
+   */
+  std::string getRenderAssetFullPath() const {
+    return get<std::string>("__renderAssetFullPath");
   }
 
   /**

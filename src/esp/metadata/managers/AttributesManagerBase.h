@@ -266,6 +266,8 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
    * @param jsonTag The field to look for. If present expected to hold a string
    * @param mapName String map name, to be displayed if the value found in json
    * is not found in @p mapToUse
+   * @param saveUnspecified Whether to save the 'unspecified' string in value
+   * setter if no value is specified in json.
    * @param mapToUse String-keyed map of enum values supported for the field
    * that corresponds to @p jsonTag. See attributes::AttributesEnumMaps.h/cpp.
    * @param valueSetter The config function to use to set the value
