@@ -285,14 +285,14 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
     // set default origin and orientation values based on file name
     // from AssetInfo::fromPath
     // set defaults for passed render asset handles
-    StageAttributesManager::setDefaultAssetNameBasedAttributes(
+    this->setDefaultAssetNameBasedAttributes(
         newAttributes, createNewAttributes,
         newAttributes->getRenderAssetHandle(), [newAttributes](auto&& PH1) {
           newAttributes->initRenderAssetTypeEnum(
               std::forward<decltype(PH1)>(PH1));
         });
     // set defaults for passed collision asset handles
-    StageAttributesManager::setDefaultAssetNameBasedAttributes(
+    this->setDefaultAssetNameBasedAttributes(
         newAttributes, false, newAttributes->getCollisionAssetHandle(),
         [newAttributes](auto&& PH1) {
           newAttributes->initCollisionAssetTypeEnum(
@@ -300,7 +300,7 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
         });
 
     // set defaults for passed semantic asset handles
-    StageAttributesManager::setDefaultAssetNameBasedAttributes(
+    this->setDefaultAssetNameBasedAttributes(
         newAttributes, false, newAttributes->getSemanticAssetHandle(),
         [newAttributes](auto&& PH1) {
           newAttributes->initSemanticAssetTypeEnum(
@@ -404,9 +404,6 @@ void StageAttributesManager::setValsFromJSONDoc(
   // populate specified semantic file name if specified in json - defaults
   // are overridden only if specified in json.
 
-  std::string navmeshFName = "";
-  std::string semanticSceneDescriptor = "";
-
   // populate semantic mesh type if present
   std::string semanticFName = stageAttributes->getSemanticAssetHandle();
   semanticFName = this->setJSONAssetHandleAndType(
@@ -422,6 +419,7 @@ void StageAttributesManager::setValsFromJSONDoc(
   // instance
   stageAttributes->initSemanticAssetTypeEnum(AssetType::InstanceMesh);
 
+  std::string navmeshFName = "";
   if (io::readMember<std::string>(jsonConfig, "nav_asset", navmeshFName)) {
     // if "nav mesh" is specified in stage json set value (override default).
     // navmesh filename might already be fully qualified; if not, might just be
@@ -433,6 +431,7 @@ void StageAttributesManager::setValsFromJSONDoc(
     stageAttributes->setNavmeshAssetHandle(navmeshFName);
   }
 
+  std::string semanticSceneDescriptor = "";
   if (io::readMember<std::string>(jsonConfig, "semantic_descriptor_filename",
                                   semanticSceneDescriptor)) {
     // if "semantic_descriptor_filename" is specified in stage json, set value

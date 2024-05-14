@@ -179,35 +179,76 @@ class SemanticAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Set the filename to the text file that describes the hierharchy of
-   * semantic information embedded in the Semantic Asset mesh.  May be
-   * overridden by value specified in Scene Instance Attributes.
+   * @brief Set the relative filename to the text file that describes the
+   * hierharchy of semantic information embedded in the Semantic Asset mesh. May
+   * be overridden by value specified in Scene Instance Attributes.
    */
   void setSemanticDescriptorFilename(
       const std::string& semantic_descriptor_filename) {
     set("semantic_descriptor_filename", semantic_descriptor_filename);
   }
   /**
-   * @brief Get the filename to the text file that describes the hierharchy of
-   * semantic information embedded in the Semantic Asset mesh.  May be
-   * overridden by value specified in Scene Instance Attributes.
+   * @brief Get the relative filename to the text file that describes the
+   * hierharchy of semantic information embedded in the Semantic Asset mesh. May
+   * be overridden by value specified in Scene Instance Attributes.
    */
   std::string getSemanticDescriptorFilename() const {
     return get<std::string>("semantic_descriptor_filename");
   }
 
   /**
-   * @brief Set the Filename to the semantic texture mesh, if one exists.
+   * @brief Sets the fully-qualified filename to the text file that describes
+   * the hierharchy of semantic information embedded in the Semantic Asset mesh.
+   * May be overridden by value specified in Scene Instance Attributes. This is
+   * only used internally and should not be saved to disk.
+   */
+  void setSemanticDescriptorFullPath(
+      const std::string& semanticDescriptorHandle) {
+    setHidden("__semanticDescriptorFullPath", semanticDescriptorHandle);
+  }
+
+  /**
+   * @brief Gets the fully-qualified filename to the text file that describes
+   * the hierharchy of semantic information embedded in the Semantic Asset mesh.
+   * May be overridden by value specified in Scene Instance Attributes. This is
+   * only used internally and should not be saved to disk.
+   */
+  std::string getSemanticDescriptorFullPath() const {
+    return get<std::string>("__semanticDescriptorFullPath");
+  }
+
+  /**
+   * @brief Set the retlative Filename to the semantic texture mesh, if one
+   * exists.
    */
   void setSemanticAssetHandle(const std::string& semanticAssetHandle) {
     set("semantic_asset", semanticAssetHandle);
   }
 
   /**
-   * @brief Get the Filename to the semantic texture mesh, if one exists.
+   * @brief Get the relative Filename to the semantic texture mesh, if one
+   * exists.
    */
   std::string getSemanticAssetHandle() const {
     return get<std::string>("semantic_asset");
+  }
+
+  /**
+   * @brief Sets the fully-qualified filepath for the semantic asset to be used
+   * to render the semantics for the stage this attributes describes. This is
+   * only used internally and should not be saved to disk.
+   */
+  void setSemanticAssetFullPath(const std::string& semanticAssetHandle) {
+    setHidden("__semanticAssetFullPath", semanticAssetHandle);
+  }
+
+  /**
+   * @brief Gets the fully-qualified filepath for the semantic asset to be used
+   * to render the semantics for the stage this attributes describes. This is
+   * only used internally and should not be saved to disk.
+   */
+  std::string getSemanticAssetFullPath() const {
+    return get<std::string>("__semanticAssetFullPath");
   }
 
   /**
