@@ -97,7 +97,8 @@ bool BulletRigidObject::constructCollisionShape() {
   auto initAttr = PhysicsObjectBase::getInitializationAttributes<
       metadata::attributes::ObjectAttributes>();
   // collision mesh/asset handle
-  const std::string collisionAssetHandle = initAttr->getCollisionAssetHandle();
+  const std::string collisionAssetHandle =
+      initAttr->getCollisionAssetFullPath();
 
   if (!initAttr->getUseMeshCollision()) {
     // if using prim collider get appropriate bullet collision primitive

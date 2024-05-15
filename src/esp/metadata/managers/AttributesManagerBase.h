@@ -15,6 +15,7 @@
 #include "esp/io/Io.h"
 
 namespace Cr = Corrade;
+namespace CrPath = Cr::Utility::Path;
 
 namespace esp {
 namespace core {
@@ -224,7 +225,7 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
    * @return actual name of attributes in attrMgr, or empty string if does not
    * exist.
    */
-  inline std::string getFullAttrNameFromStr(const std::string& attrName) {
+  inline std::string getFullAttrNameFromStr(const std::string& attrName) const {
     if (this->getObjectLibHasHandle(attrName)) {
       return attrName;
     }
@@ -236,6 +237,70 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
   }  // getFullAttrNameFromStr
 
  protected:
+  /**
+   * @brief Called internally right before attribute registration. Filepaths
+   * in the json configs for Habitat Datasets are specified relative to the
+   * location of the config in the file hierarchy. As the config is loaded,
+   * these filepaths will be fully qualified with absolute paths so that they
+   * can be easily found and consumed on command. However, saving fully
+   * qualified filepaths to JSON configs is undesirable.
+   *
+   * This function will query the passed @p attributes for a string using the
+   * @p relPathGetter to acquire the fully-qualified filename. It will set that
+   * value to be hidden in the attributes using @p fqPathSetter and then it will
+   * strip the attributes' filepath, if it is present, and set it as the
+   * relative value at @p relPathSetter .
+   *
+   * It is assumed that what is passed to this function always referneces a
+   * filepath, so if, for example, this is called on a render asseet filepath,
+   * it is assumed that that filepath does not reference a primitive
+   * (non-file-based) asset.
+   *
+   * @param attributes The Configuration-backed attributes owning the filepath
+   * in question.
+   * @param relPathGetter The relative filepath getter in the attributes
+   * @param relPathSetter The relative filepath setter in the attributes
+   * @param fqPathSetter The string tag for the filepath we want to be fully
+   * qualified.
+   */
+  void filterAttribsFilenames(
+      const attributes::AbstractAttributes::ptr& attributes,
+      const std::function<std::string(void)>& relPathGetter,
+      const std::function<void(const std::string&)>& relPathSetter,
+      const std::function<void(const std::string&)>& fqPathSetter) const {
+    // Get the attributes filepath that our desired filepath should be relative
+    // to
+    std::string attrFilepath = attributes->getFileDirectory();
+    // verify attributes filepath exists
+    if (CrPath::isDirectory(attrFilepath)) {
+      auto len = attrFilepath.length();
+      // Get the filepath
+      std::string fqFilepath = relPathGetter();
+      if (CrPath::exists(fqFilepath)) {
+        // Make sure attrFilepath is not longer than the filepath in
+        // question
+        if (len < fqFilepath.length()) {
+          if (fqFilepath.find(attrFilepath) != std::string::npos) {
+            // Set the fully qualified value
+            fqPathSetter(fqFilepath);
+
+            ESP_ERROR() << "AttrHandle :" << attributes->getHandle()
+                        << "|Getter result : " << fqFilepath
+                        << " filepath :" << attrFilepath;
+
+            auto relFilepath = std::string(fqFilepath);
+            // assume the undesired portion of the filepath always is at the
+            // beginning, adding 1 for the path separator
+            relFilepath.erase(0, len + 1);
+            //
+            relPathSetter(relFilepath);
+          }  // if currently set relative handle contains filepath
+        }    // if attributes dir is correct length
+      }      // if relative filepath actually exists/is findable (i.e.is fully
+             // qualified)
+    }        // if attributes dir is set properly
+  }          // filterAttribsFilenames
+
   /**
    * @brief Called intenrally from createObject.  This will create either a
    * file based AbstractAttributes or a default one based on whether the
@@ -359,14 +424,13 @@ std::vector<int> AttributesManager<T, Access>::loadAllFileBasedTemplates(
     bool saveAsDefaults) {
   std::vector<int> templateIndices(paths.size(), ID_UNDEFINED);
   if (paths.size() > 0) {
-    std::string dir = Cr::Utility::Path::split(paths[0]).first();
+    std::string dir = CrPath::split(paths[0]).first();
     ESP_DEBUG() << "Loading" << paths.size() << "" << this->objectType_
                 << "templates found in" << dir;
     for (int i = 0; i < paths.size(); ++i) {
       auto attributesFilename = paths[i];
-      ESP_VERY_VERBOSE()
-          << "Load" << this->objectType_ << "template:"
-          << Cr::Utility::Path::split(attributesFilename).second();
+      ESP_VERY_VERBOSE() << "Load" << this->objectType_ << "template:"
+                         << CrPath::split(attributesFilename).second();
       auto tmplt = this->createObject(attributesFilename, true);
       // If failed to load, do not attempt to modify further
       if (tmplt == nullptr) {
@@ -458,10 +522,9 @@ void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
 
     // TODO Eventually we should normalize all metadata paths in the system
     std::string dsFilePath =
-        normalizePaths
-            ? Cr::Utility::Path::join(configDir.substr(0, cfgLastDirLoc),
+        normalizePaths ? CrPath::join(configDir.substr(0, cfgLastDirLoc),
                                       std::string(fileString).substr(3))
-            : Cr::Utility::Path::join(configDir, fileString);
+                       : CrPath::join(configDir, fileString);
 
     ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
         << "<" << this->objectType_ << "> : Config dir : " << configDir
@@ -503,7 +566,7 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
            : this->getFormattedJSONFileName(filename));
   // Check if this configuration file exists and if so use it to build
   // attributes
-  bool jsonFileExists = Cr::Utility::Path::exists(jsonAttrFileName);
+  bool jsonFileExists = CrPath::exists(jsonAttrFileName);
   ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
       << "<" << this->objectType_ << ">: Proposing JSON name `"
       << jsonAttrFileName << "` from original name `" << filename
@@ -520,7 +583,7 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
     // default attributes.
     attrs = this->createDefaultObject(filename, registerObj);
     // check if original filename is an actual object
-    bool fileExists = Cr::Utility::Path::exists(filename);
+    bool fileExists = CrPath::exists(filename);
     // if filename passed is name of some kind of asset, or if it was not
     // found
     if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
@@ -583,7 +646,7 @@ bool AttributesManager<T, Access>::setFilenameFromDefaultTag(
   }
   // First check if tag references a file that already exists on disk and is
   // able to be found
-  if (Cr::Utility::Path::exists(srcAssetFilename)) {
+  if (CrPath::exists(srcAssetFilename)) {
     // set filename with verified filepath
     filenameSetter(srcAssetFilename);
     return true;
@@ -596,14 +659,14 @@ bool AttributesManager<T, Access>::setFilenameFromDefaultTag(
     // not.
     tempStr.replace(loc, strlen(CONFIG_NAME_AS_ASSET_FILENAME),
                     attributes->getSimplifiedHandle());
-    if (Cr::Utility::Path::exists(tempStr)) {
+    if (CrPath::exists(tempStr)) {
       // replace the component of the string containing the tag with the base
       // filename/handle, and verify it exists. Otherwise, clear it.
       filenameSetter(tempStr);
       return true;
     }
-    tempStr = Cr::Utility::Path::join(attributes->getFileDirectory(), tempStr);
-    if (Cr::Utility::Path::exists(tempStr)) {
+    tempStr = CrPath::join(attributes->getFileDirectory(), tempStr);
+    if (CrPath::exists(tempStr)) {
       // replace the component of the string containing the tag with the base
       // filename/handle, and verify it exists. Otherwise, clear it.
       filenameSetter(tempStr);
@@ -616,8 +679,8 @@ bool AttributesManager<T, Access>::setFilenameFromDefaultTag(
   }
   // no sentinel tag found - check if existing non-empty field exists.
   std::string tempStr =
-      Cr::Utility::Path::join(attributes->getFileDirectory(), srcAssetFilename);
-  if (Cr::Utility::Path::exists(tempStr)) {
+      CrPath::join(attributes->getFileDirectory(), srcAssetFilename);
+  if (CrPath::exists(tempStr)) {
     // path-prefixed filename exists on disk, so set as filename
     filenameSetter(tempStr);
     return true;

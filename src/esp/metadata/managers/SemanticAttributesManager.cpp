@@ -218,6 +218,47 @@ void SemanticAttributesManager::setValsFromJSONDoc(
 
 }  // SemanticAttributesManager::setValsFromJSONDoc
 
+core::managedContainers::ManagedObjectPreregistration
+SemanticAttributesManager::preRegisterObjectFinalize(
+    attributes::SemanticAttributes::ptr semanticAttributes,
+    const std::string& semanticAttrHandle,
+    CORRADE_UNUSED bool forceRegistration) {
+  // filter filepaths of full path qualifiers
+  // Semantic asset filename
+  this->filterAttribsFilenames(
+      semanticAttributes,
+      [semanticAttributes](void) -> std::string {
+        return semanticAttributes->getSemanticAssetHandle();
+      },
+      [semanticAttributes](const std::string& semanticAsset) {
+        semanticAttributes->setSemanticAssetHandle(semanticAsset);
+      },
+      [semanticAttributes](const std::string& semanticAsset) {
+        semanticAttributes->setSemanticAssetFullPath(semanticAsset);
+      });
+  // Semantic descriptor filename
+  this->filterAttribsFilenames(
+      semanticAttributes,
+      [semanticAttributes](void) -> std::string {
+        return semanticAttributes->getSemanticDescriptorFilename();
+      },
+      [semanticAttributes](const std::string& semanticAsset) {
+        semanticAttributes->setSemanticDescriptorFilename(semanticAsset);
+      },
+      [semanticAttributes](const std::string& semanticAsset) {
+        semanticAttributes->setSemanticDescriptorFullPath(semanticAsset);
+      });
+
+  ESP_ERROR(Mn::Debug::Flag::NoSpace)
+      << "Semantic Attr `" << semanticAttrHandle << "`| semantic asset fn `"
+      << semanticAttributes->getSemanticAssetHandle()
+      << "`| semantic descriptor fn `"
+      << semanticAttributes->getSemanticDescriptorFilename() << "`| file dir `"
+      << semanticAttributes->getFileDirectory() << "`";
+  // No pre-registration conditioning performed
+  return core::managedContainers::ManagedObjectPreregistration::Success;
+}
+
 }  // namespace managers
 }  // namespace metadata
 }  // namespace esp

@@ -113,7 +113,7 @@ void MetadataMediatorTest::testDataset0() {
     // verify that all attributes' names are the same as the render handles
     // (which were the original files)
     CORRADE_COMPARE(glbStageAttr->getHandle(),
-                    glbStageAttr->getRenderAssetHandle());
+                    glbStageAttr->getRenderAssetFullPath());
   }
 
   // get list of matching handles for base - should always only be 1
@@ -124,7 +124,7 @@ void MetadataMediatorTest::testDataset0() {
   auto stageAttr =
       stageAttributesMgr->getObjectCopyByHandle(stageAttrHandles[0]);
   // get render asset handle for later comparison
-  auto renderAssetHandle = stageAttr->getRenderAssetHandle();
+  auto renderAssetHandle = stageAttr->getRenderAssetFullPath();
   // verify existence
   CORRADE_VERIFY(stageAttr);
   // verify set to values in file
@@ -161,7 +161,7 @@ void MetadataMediatorTest::testDataset0() {
   // verify existence
   CORRADE_VERIFY(stageAttr);
   // verify set to values in dataset_config file
-  auto newRenderAssetHandle = stageAttr->getRenderAssetHandle();
+  auto newRenderAssetHandle = stageAttr->getRenderAssetFullPath();
   // verify same renderasset handle to loaded stage attributes
   CORRADE_COMPARE(renderAssetHandle, newRenderAssetHandle);
   // verify values set correctly
@@ -246,7 +246,7 @@ void MetadataMediatorTest::testDataset0() {
   // verify existence
   CORRADE_VERIFY(objAttr);
   // verify set to values in dataset_config file
-  newRenderAssetHandle = objAttr->getRenderAssetHandle();
+  newRenderAssetHandle = objAttr->getRenderAssetFullPath();
   // verify same renderasset handle to loaded stage attributes
   CORRADE_VERIFY(newRenderAssetHandle.find("dataset_test_object3.glb") !=
                  std::string::npos);
@@ -445,12 +445,12 @@ void MetadataMediatorTest::testDataset0() {
   const auto semanticAttr1 =
       semanticMgr->getObjectCopyByHandle("semantic_descriptor_path1");
 
-  CORRADE_COMPARE(semanticAttr1->getSemanticDescriptorFilename(),
+  CORRADE_COMPARE(semanticAttr1->getSemanticDescriptorFullPath(),
                   "test_semantic_descriptor_path1");
 
   const auto semanticAttr2 =
       semanticMgr->getObjectCopyByHandle("semantic_descriptor_path2");
-  CORRADE_COMPARE(semanticAttr2->getSemanticDescriptorFilename(),
+  CORRADE_COMPARE(semanticAttr2->getSemanticDescriptorFullPath(),
                   "test_semantic_descriptor_path2");
 
   // end test LoadSemanticScene

@@ -63,8 +63,11 @@ void SemanticVolumeAttributes::writeValuesToJson(
 // SemanticAttributes
 SemanticAttributes::SemanticAttributes(const std::string& handle)
     : AbstractAttributes("SemanticAttributes", handle) {
+  // set empty defaults for handles
   init("semantic_descriptor_filename", "");
+  setHidden("__semanticDescriptorFullPath", "");
   init("semantic_asset", "");
+  setHidden("__semanticAssetFullPath", "");
   init("semantic_up", Mn::Vector3{0.0, 1.0, 0.0});
   init("semantic_front", Mn::Vector3{0.0, 0.0, -1.0});
   init("use_semantic_frame", false);

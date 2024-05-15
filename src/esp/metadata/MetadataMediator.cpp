@@ -507,7 +507,7 @@ MetadataMediator::makeSceneAndReferenceStage(
   // by the ref that the scene attributes will use.
   std::pair<std::string, std::string> navmeshEntry =
       datasetAttr->addNavmeshPathEntry(
-          sceneName, stageAttributes->getNavmeshAssetHandle(), false);
+          sceneName, stageAttributes->getNavmeshAssetFullPath(), false);
   // navmeshEntry holds the navmesh key-value in the dataset to use by this
   // scene instance. NOTE : the key may have changed from what was passed if a
   // collision occurred with same key but different value, so we need to add
@@ -528,8 +528,8 @@ MetadataMediator::makeSceneAndReferenceStage(
   // add a ref to scene instance attributes of SemanticAttributes if any
   // Semantics info is specified in the passed stage stage, giving it an
   // appropriately obvious name.
-  if ((stageAttributes->getSemanticDescriptorFilename() != "") ||
-      (stageAttributes->getSemanticAssetHandle() != "")) {
+  if ((stageAttributes->getSemanticDescriptorFullPath() != "") ||
+      (stageAttributes->getSemanticAssetFullPath() != "")) {
     std::string sceneSemanticAttrHandle =
         datasetAttr->addSemanticSceneDescrPathEntry(sceneName, stageAttributes);
 

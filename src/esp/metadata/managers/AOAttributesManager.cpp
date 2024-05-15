@@ -121,21 +121,6 @@ AOAttributesManager::initNewObjectInternal(const std::string& attributesHandle,
   if (createNewAttributes) {
     newAttributes =
         attributes::ArticulatedObjectAttributes::create(attributesHandle);
-    // need to set base/default urdf_filepath to a valid potential filepath if
-    // a new attributes is being created here, to cover for older AO configs
-    // that may not reference their owning URDF files. This will only work for
-    // configs that reside in the same directory as their URDF counterparts.
-
-    const auto urdfFilePath = newAttributes->getURDFPath();
-    // If .urdf extension not found then replace with string with extension.
-    if (urdfFilePath.find(".urdf", urdfFilePath.length() - 5) ==
-        std::string::npos) {
-      newAttributes->setURDFPath(
-          Cr::Utility::Path::splitExtension(
-              Cr::Utility::Path::splitExtension(urdfFilePath).first())
-              .first() +
-          ".urdf");
-    }
   }
   // set the attributes source filedirectory, from the attributes name
   this->setFileDirectoryFromHandle(newAttributes);
@@ -156,7 +141,25 @@ AOAttributesManager::initNewObjectInternal(const std::string& attributesHandle,
                               [newAttributes](const std::string& newHandle) {
                                 newAttributes->setRenderAssetHandle(newHandle);
                               });
+  } else {
+    // need to set base/default urdf_filepath to a valid potential
+    // filepath if a new attributes is being created here, to cover for older AO
+    // configs that may not reference their owning URDF files. This will only
+    // work for configs that reside in the same directory as their URDF
+    // counterparts.
+
+    const auto urdfFilePath = newAttributes->getURDFPath();
+    // If .urdf extension not found then replace with string with extension.
+    if (urdfFilePath.find(".urdf", urdfFilePath.length() - 5) ==
+        std::string::npos) {
+      newAttributes->setURDFPath(
+          Cr::Utility::Path::splitExtension(
+              Cr::Utility::Path::splitExtension(urdfFilePath).first())
+              .first() +
+          ".urdf");
+    }
   }
+
   // set default URDF filename - only set filename defaults if
   // attributesHandle is not a config file (which would never be a valid URDF
   // filename). Otherise, expect handles to be set when built from a config
@@ -182,6 +185,7 @@ AOAttributesManager::preRegisterObjectFinalize(
   // ArticulatedObjectsAttributes must have a valid URDF_file it relates to or
   // it should not be registered.
   const std::string urdfFilePath = AOAttributesTemplate->getURDFPath();
+  const std::string urdfFullFilePath = AOAttributesTemplate->getURDFFullPath();
   if (urdfFilePath.empty()) {
     // URDF Filepath empty is bad
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
@@ -197,15 +201,30 @@ AOAttributesManager::preRegisterObjectFinalize(
         << "`, but this file cannot be found, so registration is aborted.";
     return core::managedContainers::ManagedObjectPreregistration::Failed;
   }
+  // URDF file this articulated object attributes references
+  this->filterAttribsFilenames(
+      AOAttributesTemplate, urdfFilePath, urdfFullFilePath,
+      [AOAttributesTemplate](const std::string& urdfAsset) {
+        AOAttributesTemplate->setURDFPath(urdfAsset);
+      },
+      [AOAttributesTemplate](const std::string& urdfAsset) {
+        AOAttributesTemplate->setURDFFullPath(urdfAsset);
+      });
 
   // Furthermore, if 'skin' is specified as render_mode and no skin is
   // specified or the specified skin cannot be found, the registration should
   // also fail and the template should not be registered.
   bool useSkinRenderMode = AOAttributesTemplate->getRenderMode() ==
                            attributes::ArticulatedObjectRenderMode::Skin;
+  std::string dispStr("");
   if (useSkinRenderMode) {
+    // if 'skin' render mode is specified as render mode
     const std::string renderAssetHandle =
         AOAttributesTemplate->getRenderAssetHandle();
+
+    const std::string renderAssetFullPath =
+        AOAttributesTemplate->getRenderAssetFullPath();
+
     const std::string urdfSimpleName =
         Corrade::Utility::Path::splitExtension(
             Corrade::Utility::Path::splitExtension(
@@ -223,6 +242,9 @@ AOAttributesManager::preRegisterObjectFinalize(
              "registration is aborted.";
       return core::managedContainers::ManagedObjectPreregistration::Failed;
     } else if (!Cr::Utility::Path::exists(renderAssetHandle)) {
+      // Otherwise, if renderAssetFullPath exists, this attributes is copy of an
+      // existing already-processed attributes with values set
+
       // Skin render asset specified not found is bad when 'skin' render mode
       // is specified
       ESP_ERROR(Mn::Debug::Flag::NoSpace)
@@ -234,9 +256,27 @@ AOAttributesManager::preRegisterObjectFinalize(
           << "` cannot be found, so registration is aborted.";
       return core::managedContainers::ManagedObjectPreregistration::Failed;
     }
-  }  // if 'skin' render mode is specified as render mode
+
+    // Render asset filename filter out path and set internal reference to
+    // full filepaath
+    this->filterAttribsFilenames(
+        AOAttributesTemplate, renderAssetHandle, renderAssetFullPath,
+        [AOAttributesTemplate](const std::string& renderAsset) {
+          AOAttributesTemplate->setRenderAssetHandle(renderAsset);
+        },
+        [AOAttributesTemplate](const std::string& renderAsset) {
+          AOAttributesTemplate->setRenderAssetFullPath(renderAsset);
+        });
+
+    dispStr = Cr::Utility::formatString(" and render asset file path `{}`",
+                                        renderAssetHandle);
+  }
+  ESP_ERROR(Mn::Debug::Flag::NoSpace)
+      << "AO : `" << AOAttributesHandle << "` has urdf filename `"
+      << urdfFilePath << "`" << dispStr << "| file dir `"
+      << AOAttributesTemplate->getFileDirectory() << "`";
   return core::managedContainers::ManagedObjectPreregistration::Success;
-}  // AOAttributesManager::registerObjectFinalize
+}  // AOAttributesManager::preRegisterObjectFinalize
 
 std::map<std::string, std::string>
 AOAttributesManager::getArticulatedObjectModelFilenames() const {
@@ -244,7 +284,7 @@ AOAttributesManager::getArticulatedObjectModelFilenames() const {
   for (const auto& val : this->objectLibrary_) {
     auto attr = this->getObjectByHandle(val.first);
     auto key = attr->getSimplifiedHandle();
-    auto urdf = attr->getURDFPath();
+    auto urdf = attr->getURDFFullPath();
     articulatedObjPaths[key] = urdf;
   }
   return articulatedObjPaths;
