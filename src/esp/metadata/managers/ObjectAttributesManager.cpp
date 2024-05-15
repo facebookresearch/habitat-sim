@@ -223,15 +223,20 @@ ObjectAttributesManager::preRegisterObjectFinalize(
 
   // Handles for rendering and collision assets
   std::string renderAssetHandle = objectTemplate->getRenderAssetHandle();
+  std::string renderAssetFullPath = objectTemplate->getRenderAssetFullPath();
   std::string collisionAssetHandle = objectTemplate->getCollisionAssetHandle();
+  std::string collisionAssetFullPath =
+      objectTemplate->getCollisionAssetFullPath();
+
   // Clear map to add to ptr from previous registration
   mapToAddTo_ = nullptr;
-
+  // verify these represent legitimate assets
   if (this->isValidPrimitiveAttributes(renderAssetHandle)) {
     // If renderAssetHandle corresponds to valid/existing primitive attributes
     // then setRenderAssetIsPrimitive to true and set map of IDs->Names to
     // physicsSynthObjTmpltLibByID_
     objectTemplate->setRenderAssetIsPrimitive(true);
+    objectTemplate->setRenderAssetFullPath(renderAssetHandle);
     mapToAddTo_ = &physicsSynthObjTmpltLibByID_;
   } else if (Cr::Utility::Path::exists(renderAssetHandle)) {
     // Check if renderAssetHandle is valid file name and is found in file system
@@ -239,6 +244,27 @@ ObjectAttributesManager::preRegisterObjectFinalize(
     // to physicsFileObjTmpltLibByID_ - verify file  exists
     objectTemplate->setRenderAssetIsPrimitive(false);
     mapToAddTo_ = &physicsFileObjTmpltLibByID_;
+    // Render asset filename filter out path and set internal reference to full
+    // filepaath
+    this->filterAttribsFilenames(
+        objectTemplate,
+        [objectTemplate](void) -> std::string {
+          return objectTemplate->getRenderAssetHandle();
+        },
+        [objectTemplate](const std::string& renderAsset) {
+          objectTemplate->setRenderAssetHandle(renderAsset);
+        },
+        [objectTemplate](const std::string& renderAsset) {
+          objectTemplate->setRenderAssetFullPath(renderAsset);
+        });
+    // Re-set to catch path removal.
+    renderAssetHandle = objectTemplate->getRenderAssetHandle();
+
+  } else if (Cr::Utility::Path::exists(renderAssetFullPath)) {
+    // not prim and does not exist on disk, perhaps the fully qualified version
+    // of the handle was set already and exists, which means we don't need to do
+    // anything else.
+    objectTemplate->setRenderAssetIsPrimitive(false);
   } else if (forceRegistration) {
     // Forcing registration in case of computationaly generated assets
     ESP_WARNING(Mn::Debug::Flag::NoSpace)
@@ -265,9 +291,30 @@ ObjectAttributesManager::preRegisterObjectFinalize(
     // If collisionAssetHandle corresponds to valid/existing primitive
     // attributes then setCollisionAssetIsPrimitive to true
     objectTemplate->setCollisionAssetIsPrimitive(true);
+    objectTemplate->setCollisionAssetFullPath(collisionAssetHandle);
   } else if (Cr::Utility::Path::exists(collisionAssetHandle)) {
     // Check if collisionAssetHandle is valid file name and is found in file
     // system - if so then setCollisionAssetIsPrimitive to false
+    objectTemplate->setCollisionAssetIsPrimitive(false);
+
+    // Collision asset filename filter out path and set internal reference to
+    // full filepaath
+    this->filterAttribsFilenames(
+        objectTemplate,
+        [objectTemplate](void) -> std::string {
+          return objectTemplate->getCollisionAssetHandle();
+        },
+        [objectTemplate](const std::string& colHndl) {
+          objectTemplate->setCollisionAssetHandle(colHndl);
+        },
+        [objectTemplate](const std::string& colHndl) {
+          objectTemplate->setCollisionAssetFullPath(colHndl);
+        });
+
+  } else if (Cr::Utility::Path::exists(collisionAssetFullPath)) {
+    // not prim and does not exist on disk, perhaps the fully qualified version
+    // of the handle was set already and exists, which means we don't need to do
+    // anything else.
     objectTemplate->setCollisionAssetIsPrimitive(false);
   } else {
     // Else, means no collision data specified, use specified render data
@@ -277,11 +324,21 @@ ObjectAttributesManager::preRegisterObjectFinalize(
         << "` does not correspond to any existing file or primitive render "
            "asset.  Overriding with given render asset handle :"
         << renderAssetHandle << ".";
+    // Set values to match render asset values
 
     objectTemplate->setCollisionAssetHandle(renderAssetHandle);
+    objectTemplate->setCollisionAssetFullPath(
+        objectTemplate->getRenderAssetFullPath());
+
     objectTemplate->setCollisionAssetIsPrimitive(
         objectTemplate->getRenderAssetIsPrimitive());
   }
+
+  // ESP_ERROR(Mn::Debug::Flag::NoSpace)
+  //     << "Obj `" << objectTemplateHandle << "`: Render fn `"
+  //     << objectTemplate->getRenderAssetHandle() << "`| Collision fn `"
+  //     << objectTemplate->getCollisionAssetHandle() << "`| file dir `"
+  //     << objectTemplate->getFileDirectory() << "`";
 
   // Clear dirty flag from when asset handles are changed
   objectTemplate->setIsClean();

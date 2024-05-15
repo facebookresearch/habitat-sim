@@ -28,8 +28,12 @@ StageAttributes::StageAttributes(const std::string& handle)
   initSemanticAssetTypeEnum(AssetType::InstanceMesh);
   // set empty defaults for handles
   init("nav_asset", "");
+  setHidden("__navmeshAssetFullPath", "");
   init("semantic_asset", "");
+  setHidden("__semanticAssetFullPath", "");
   init("semantic_descriptor_filename", "");
+  setHidden("__semanticDescriptorFullPath", "");
+
 }  // StageAttributes ctor
 
 void StageAttributes::writeValuesToJsonInternal(

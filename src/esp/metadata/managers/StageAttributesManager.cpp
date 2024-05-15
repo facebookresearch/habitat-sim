@@ -45,90 +45,6 @@ void StageAttributesManager::createDefaultPrimBasedAttributesTemplates() {
   this->undeletableObjectNames_.insert(std::move(tmpltHandle));
 }  // StageAttributesManager::createDefaultPrimBasedAttributesTemplates
 
-core::managedContainers::ManagedObjectPreregistration
-StageAttributesManager::preRegisterObjectFinalize(
-    StageAttributes::ptr stageAttributes,
-    const std::string& stageAttributesHandle,
-    bool forceRegistration) {
-  if (stageAttributes->getRenderAssetHandle().empty()) {
-    ESP_ERROR(Mn::Debug::Flag::NoSpace)
-        << "Attributes template named `" << stageAttributesHandle
-        << "` does not have a valid render asset handle specified, so "
-           "StageAttributes registration is aborted.";
-    return core::managedContainers::ManagedObjectPreregistration::Failed;
-  }
-
-  // Handles for rendering and collision assets
-  std::string renderAssetHandle = stageAttributes->getRenderAssetHandle();
-  std::string collisionAssetHandle = stageAttributes->getCollisionAssetHandle();
-
-  // verify these represent legitimate assets
-  if (StageAttributesManager::isValidPrimitiveAttributes(renderAssetHandle)) {
-    // If renderAssetHandle corresponds to valid/existing primitive attributes
-    // then setRenderAssetIsPrimitive to true and set map of IDs->Names to
-    // physicsSynthObjTmpltLibByID_
-    stageAttributes->setRenderAssetIsPrimitive(true);
-  } else if (Cr::Utility::Path::exists(renderAssetHandle)) {
-    // Check if renderAssetHandle is valid file name and is found in file
-    // system
-    // - if so then setRenderAssetIsPrimitive to false and set map of
-    // IDs->Names to physicsFileObjTmpltLibByID_ - verify file  exists
-    stageAttributes->setRenderAssetIsPrimitive(false);
-  } else if (std::string::npos != stageAttributesHandle.find("NONE")) {
-    // Render asset handle will be NONE as well - force type to be unknown
-    stageAttributes->setRenderAssetTypeEnum(AssetType::Unknown);
-    stageAttributes->setRenderAssetIsPrimitive(false);
-  } else if (forceRegistration) {
-    ESP_WARNING()
-        << "Render asset template handle :" << renderAssetHandle
-        << "specified in stage template with handle `" << stageAttributesHandle
-        << "` does not correspond to any existing file or primitive render "
-           "asset. This attributes is not in a valid state.";
-  } else {
-    // If renderAssetHandle is not valid file name needs to  fail
-    ESP_ERROR(Mn::Debug::Flag::NoSpace)
-        << "Render asset template handle `" << renderAssetHandle
-        << "` specified in stage template with handle :"
-        << stageAttributesHandle
-        << "does not correspond to any existing file or primitive render "
-           "asset, so StageAttributes registration is aborted.";
-    return core::managedContainers::ManagedObjectPreregistration::Failed;
-  }
-
-  if (StageAttributesManager::isValidPrimitiveAttributes(
-          collisionAssetHandle)) {
-    // If collisionAssetHandle corresponds to valid/existing primitive
-    // attributes then setCollisionAssetIsPrimitive to true
-    stageAttributes->setCollisionAssetIsPrimitive(true);
-  } else if (Cr::Utility::Path::exists(collisionAssetHandle)) {
-    // Check if collisionAssetHandle is valid file name and is found in file
-    // system - if so then setCollisionAssetIsPrimitive to false
-    stageAttributes->setCollisionAssetIsPrimitive(false);
-  } else if (std::string::npos != stageAttributesHandle.find("NONE")) {
-    // Collision asset handle will be NONE as well - force type to be unknown
-    stageAttributes->setCollisionAssetType(
-        getAssetTypeName(AssetType::Unknown));
-    stageAttributes->setCollisionAssetIsPrimitive(false);
-  } else {
-    // Else, means no collision data specified, use specified render data
-    ESP_DEBUG()
-        << "Collision asset template handle :" << collisionAssetHandle
-        << "specified in stage template with handle :" << stageAttributesHandle
-        << "does not correspond to any existing file or primitive render "
-           "asset.  Overriding with given render asset handle :"
-        << renderAssetHandle << ".";
-
-    stageAttributes->setCollisionAssetHandle(renderAssetHandle);
-    stageAttributes->setCollisionAssetIsPrimitive(
-        stageAttributes->getRenderAssetIsPrimitive());
-  }
-  // Clear dirty flag from when asset handles are changed
-  stageAttributes->setIsClean();
-
-  return core::managedContainers::ManagedObjectPreregistration::Success;
-
-}  // StageAttributesManager::registerAttributesTemplate
-
 StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
     const std::string& primAssetHandle,
     bool registerTemplate) {
@@ -348,7 +264,7 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
     // coordinate frame to -Z gravity
     up = up2;
     fwd = fwd2;
-  } else if (StageAttributesManager::isValidPrimitiveAttributes(fileName)) {
+  } else if (this->isValidPrimitiveAttributes(fileName)) {
     assetTypeSetter(AssetType::Primitive);
   } else {
     assetTypeSetter(AssetType::Unknown);
@@ -449,6 +365,181 @@ void StageAttributesManager::setValsFromJSONDoc(
   this->parseUserDefinedJsonVals(stageAttributes, jsonConfig);
 
 }  // StageAttributesManager::setValsFromJSONDoc
+
+core::managedContainers::ManagedObjectPreregistration
+StageAttributesManager::preRegisterObjectFinalize(
+    StageAttributes::ptr stageAttributes,
+    const std::string& stageAttributesHandle,
+    bool forceRegistration) {
+  if (stageAttributes->getRenderAssetHandle().empty()) {
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "Attributes template named `" << stageAttributesHandle
+        << "` does not have a valid render asset handle specified, so "
+           "StageAttributes registration is aborted.";
+    return core::managedContainers::ManagedObjectPreregistration::Failed;
+  }
+
+  // Handles for rendering and collision assets
+  std::string renderAssetHandle = stageAttributes->getRenderAssetHandle();
+  std::string renderAssetFullPath = stageAttributes->getRenderAssetFullPath();
+  std::string collisionAssetHandle = stageAttributes->getCollisionAssetHandle();
+  std::string collisionAssetFullPath =
+      stageAttributes->getCollisionAssetFullPath();
+  bool stageIsNone = stageAttributesHandle.find("NONE") != std::string::npos;
+  // verify these represent legitimate assets
+  if (this->isValidPrimitiveAttributes(renderAssetHandle)) {
+    // If renderAssetHandle corresponds to valid/existing primitive attributes
+    // then setRenderAssetIsPrimitive to true and set map of IDs->Names to
+    // physicsSynthObjTmpltLibByID_
+    stageAttributes->setRenderAssetIsPrimitive(true);
+    stageAttributes->setRenderAssetFullPath(renderAssetHandle);
+  } else if (Cr::Utility::Path::exists(renderAssetHandle)) {
+    // Check if renderAssetHandle is valid file name and is found in file
+    // system - if so then setRenderAssetIsPrimitive to false and set map of
+    // IDs->Names to physicsFileObjTmpltLibByID_ - verify file  exists
+    stageAttributes->setRenderAssetIsPrimitive(false);
+    // Render asset filename filter out path and set internal reference to full
+    // filepaath
+    this->filterAttribsFilenames(
+        stageAttributes,
+        [stageAttributes](void) -> std::string {
+          return stageAttributes->getRenderAssetHandle();
+        },
+        [stageAttributes](const std::string& renderAsset) {
+          stageAttributes->setRenderAssetHandle(renderAsset);
+        },
+        [stageAttributes](const std::string& renderAsset) {
+          stageAttributes->setRenderAssetFullPath(renderAsset);
+        });
+    // Re-set to catch path removal.
+    renderAssetHandle = stageAttributes->getRenderAssetHandle();
+  } else if (Cr::Utility::Path::exists(renderAssetFullPath)) {
+    // not prim and does not exist on disk, perhaps the fully qualified version
+    // of the handle was set already and exists, which means we don't need to do
+    // anything else.
+    stageAttributes->setRenderAssetIsPrimitive(false);
+  } else if (stageIsNone) {
+    // Render asset handle will be NONE as well - force type to be unknown
+    stageAttributes->setRenderAssetTypeEnum(AssetType::Unknown);
+    stageAttributes->setRenderAssetIsPrimitive(false);
+    stageAttributes->setRenderAssetFullPath("NONE");
+  } else if (forceRegistration) {
+    ESP_WARNING()
+        << "Render asset template handle :" << renderAssetHandle
+        << "specified in stage template with handle `" << stageAttributesHandle
+        << "` does not correspond to any existing file or primitive render "
+           "asset. This attributes is not in a valid state.";
+  } else {
+    // If renderAssetHandle is not valid file name needs to fail
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "Render asset template handle `" << renderAssetHandle
+        << "` specified in stage template with handle :"
+        << stageAttributesHandle
+        << "does not correspond to any existing file or primitive render "
+           "asset, so StageAttributes registration is aborted.";
+    return core::managedContainers::ManagedObjectPreregistration::Failed;
+  }
+
+  if (this->isValidPrimitiveAttributes(collisionAssetHandle)) {
+    // If collisionAssetHandle corresponds to valid/existing primitive
+    // attributes then setCollisionAssetIsPrimitive to true
+    stageAttributes->setCollisionAssetIsPrimitive(true);
+    stageAttributes->setCollisionAssetFullPath(collisionAssetHandle);
+  } else if (Cr::Utility::Path::exists(collisionAssetHandle)) {
+    // Check if collisionAssetHandle is valid file name and is found in file
+    // system - if so then setCollisionAssetIsPrimitive to false
+    stageAttributes->setCollisionAssetIsPrimitive(false);
+    // Collision asset filename filter out path and set internal reference to
+    // full filepaath
+    this->filterAttribsFilenames(
+        stageAttributes,
+        [stageAttributes](void) -> std::string {
+          return stageAttributes->getCollisionAssetHandle();
+        },
+        [stageAttributes](const std::string& colHndl) {
+          stageAttributes->setCollisionAssetHandle(colHndl);
+        },
+        [stageAttributes](const std::string& colHndl) {
+          stageAttributes->setCollisionAssetFullPath(colHndl);
+        });
+  } else if (Cr::Utility::Path::exists(collisionAssetFullPath)) {
+    // not prim and does not exist on disk, perhaps the fully qualified version
+    // of the handle was set already and exists, which means we don't need to do
+    // anything else.
+    stageAttributes->setCollisionAssetIsPrimitive(false);
+  } else if (std::string::npos != stageAttributesHandle.find("NONE")) {
+    // Collision asset handle will be NONE as well - force type to be unknown
+    stageAttributes->setCollisionAssetType(
+        getAssetTypeName(AssetType::Unknown));
+    stageAttributes->setCollisionAssetIsPrimitive(false);
+    stageAttributes->setCollisionAssetFullPath("NONE");
+  } else {
+    // Else, means no collision data specified, use specified render data
+    ESP_DEBUG()
+        << "Collision asset template handle :" << collisionAssetHandle
+        << "specified in stage template with handle :" << stageAttributesHandle
+        << "does not correspond to any existing file or primitive render "
+           "asset.  Overriding with given render asset handle :"
+        << renderAssetHandle << ".";
+
+    stageAttributes->setCollisionAssetHandle(renderAssetHandle);
+    stageAttributes->setCollisionAssetIsPrimitive(
+        stageAttributes->getRenderAssetIsPrimitive());
+  }
+  // filter filepaths of full path qualifiers
+  // Navmesh asset filename
+  this->filterAttribsFilenames(
+      stageAttributes,
+      [stageAttributes](void) -> std::string {
+        return stageAttributes->getNavmeshAssetHandle();
+      },
+      [stageAttributes](const std::string& semanticAsset) {
+        stageAttributes->setNavmeshAssetHandle(semanticAsset);
+      },
+      [stageAttributes](const std::string& semanticAsset) {
+        stageAttributes->setNavmeshAssetFullPath(semanticAsset);
+      });
+  // Semantic asset filename
+  this->filterAttribsFilenames(
+      stageAttributes,
+      [stageAttributes](void) -> std::string {
+        return stageAttributes->getSemanticAssetHandle();
+      },
+      [stageAttributes](const std::string& semanticAsset) {
+        stageAttributes->setSemanticAssetHandle(semanticAsset);
+      },
+      [stageAttributes](const std::string& semanticAsset) {
+        stageAttributes->setSemanticAssetFullPath(semanticAsset);
+      });
+  // Semantic descriptor filename
+  this->filterAttribsFilenames(
+      stageAttributes,
+      [stageAttributes](void) -> std::string {
+        return stageAttributes->getSemanticDescriptorFilename();
+      },
+      [stageAttributes](const std::string& semanticAsset) {
+        stageAttributes->setSemanticDescriptorFilename(semanticAsset);
+      },
+      [stageAttributes](const std::string& semanticAsset) {
+        stageAttributes->setSemanticDescriptorFullPath(semanticAsset);
+      });
+
+  ESP_ERROR(Mn::Debug::Flag::NoSpace)
+      << "Stage `" << stageAttributesHandle << "`: Render fn `"
+      << stageAttributes->getRenderAssetHandle() << "`| Collision fn `"
+      << stageAttributes->getCollisionAssetHandle() << "`| navmesh fn `"
+      << stageAttributes->getNavmeshAssetHandle() << "`| semantic asset fn `"
+      << stageAttributes->getSemanticAssetHandle()
+      << "`| semantic descriptor fn `"
+      << stageAttributes->getSemanticDescriptorFilename() << "`| file dir `"
+      << stageAttributes->getFileDirectory() << "`";
+
+  // Clear dirty flag from when asset handles are changed
+  stageAttributes->setIsClean();
+
+  return core::managedContainers::ManagedObjectPreregistration::Success;
+
+}  // StageAttributesManager::registerAttributesTemplate
 
 }  // namespace managers
 }  // namespace metadata

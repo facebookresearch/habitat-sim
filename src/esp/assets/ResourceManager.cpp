@@ -312,7 +312,7 @@ bool ResourceManager::loadSemanticScene(
         semanticAttr,
     const std::string& activeSceneName) {
   const std::string ssdFilename =
-      semanticAttr != nullptr ? semanticAttr->getSemanticDescriptorFilename()
+      semanticAttr != nullptr ? semanticAttr->getSemanticDescriptorFullPath()
                               : "";
   semanticScene_ = nullptr;
   if ((ssdFilename != "") || ((semanticAttr != nullptr) &&
@@ -600,11 +600,11 @@ ResourceManager::createStageAssetInfosFromAttributes(
   // create render asset info
   AssetType renderType = stageAttributes->getRenderAssetType();
   AssetInfo renderInfo{
-      renderType,                               // type
-      stageAttributes->getRenderAssetHandle(),  // file path
-      frame,                                    // frame
-      virtualUnitToMeters,                      // virtualUnitToMeters
-      stageAttributes->getForceFlatShading()    // forceFlatShading
+      renderType,                                 // type
+      stageAttributes->getRenderAssetFullPath(),  // file path
+      frame,                                      // frame
+      virtualUnitToMeters,                        // virtualUnitToMeters
+      stageAttributes->getForceFlatShading()      // forceFlatShading
   };
   renderInfo.shaderTypeToUse = stageAttributes->getShaderType();
   std::string debugStr{};
@@ -619,11 +619,11 @@ ResourceManager::createStageAssetInfosFromAttributes(
     // create collision asset info if requested
     AssetType colType = stageAttributes->getCollisionAssetType();
     AssetInfo collisionInfo{
-        colType,                                     // type
-        stageAttributes->getCollisionAssetHandle(),  // file path
-        frame,                                       // frame
-        virtualUnitToMeters,                         // virtualUnitToMeters
-        true                                         // forceFlatShading
+        colType,                                       // type
+        stageAttributes->getCollisionAssetFullPath(),  // file path
+        frame,                                         // frame
+        virtualUnitToMeters,                           // virtualUnitToMeters
+        true                                           // forceFlatShading
     };
     // Only construct debug string if debug logging level is enabled
     if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
@@ -647,11 +647,11 @@ ResourceManager::createStageAssetInfosFromAttributes(
           stageAttributes->getOrigin());
     }
     AssetInfo semanticInfo{
-        semanticType,                               // type
-        stageAttributes->getSemanticAssetHandle(),  // file path
-        frame,                                      // frame
-        virtualUnitToMeters,                        // virtualUnitToMeters
-        true,                                       // forceFlatShading
+        semanticType,                                 // type
+        stageAttributes->getSemanticAssetFullPath(),  // file path
+        frame,                                        // frame
+        virtualUnitToMeters,                          // virtualUnitToMeters
+        true,                                         // forceFlatShading
         // only split semantic mesh if doing frustum culling
         stageAttributes->getFrustumCulling()  // splitInstanceMesh
     };
@@ -2896,7 +2896,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
   }
 
   // get render asset handle
-  std::string renderAssetHandle = objectAttributes->getRenderAssetHandle();
+  std::string renderAssetHandle = objectAttributes->getRenderAssetFullPath();
   // whether attributes requires lighting
   bool forceFlatShading = objectAttributes->getForceFlatShading();
   bool renderMeshSuccess = false;
@@ -2930,7 +2930,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
   //        Probably just need to check attr->isCollidable()
   if (!objectAttributes->getCollisionAssetIsPrimitive()) {
     const auto collisionAssetHandle =
-        objectAttributes->getCollisionAssetHandle();
+        objectAttributes->getCollisionAssetFullPath();
     if (resourceDict_.count(collisionAssetHandle) == 0) {
       bool collisionMeshSuccess = loadObjectMeshDataFromFile(
           collisionAssetHandle, objectAttributes, "collision",
@@ -3022,7 +3022,7 @@ void ResourceManager::addObjectToDrawables(
     //! Add mesh to rendering stack
 
     const std::string& renderObjectName =
-        ObjectAttributes->getRenderAssetHandle();
+        ObjectAttributes->getRenderAssetFullPath();
 
     RenderAssetInstanceCreationInfo::Flags flags;
     flags |= RenderAssetInstanceCreationInfo::Flag::IsRGBD;

@@ -498,16 +498,20 @@ bool Simulator::instanceStageForSceneAttributes(
   // SemanticAttributes
   if (semanticAttr != nullptr) {
     const std::string semanticAttrSSDName =
-        semanticAttr->getSemanticDescriptorFilename();
+        semanticAttr->getSemanticDescriptorFullPath();
     const std::string semanticAttrAssetName =
-        semanticAttr->getSemanticAssetHandle();
+        semanticAttr->getSemanticAssetFullPath();
     // - Set stage semantic values if appropriate - this overrides whatever is
     // specified previoussly in stage attributes.
     if (semanticAttrSSDName != "") {
-      stageAttributes->setSemanticDescriptorFilename(semanticAttrSSDName);
+      stageAttributes->setSemanticDescriptorFilename(
+          semanticAttr->getSemanticDescriptorFilename());
+      stageAttributes->setSemanticDescriptorFullPath(semanticAttrSSDName);
     }
     if (semanticAttrAssetName != "") {
-      stageAttributes->setSemanticAssetHandle(semanticAttrAssetName);
+      stageAttributes->setSemanticAssetHandle(
+          semanticAttr->getSemanticAssetHandle());
+      stageAttributes->setSemanticAssetFullPath(semanticAttrAssetName);
       stageAttributes->setSemanticAssetTypeEnum(
           semanticAttr->getSemanticAssetType());
       if (semanticAttr->getSemanticOrientFront() !=
@@ -534,9 +538,9 @@ bool Simulator::instanceStageForSceneAttributes(
   std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
   ESP_DEBUG() << "Start to load stage named :" << stageAttributes->getHandle()
               << "with render asset :"
-              << stageAttributes->getRenderAssetHandle()
+              << stageAttributes->getRenderAssetFullPath()
               << "and collision asset :"
-              << stageAttributes->getCollisionAssetHandle();
+              << stageAttributes->getCollisionAssetFullPath();
 
   // Load stage
   bool loadSuccess = resourceManager_->loadStage(
@@ -883,7 +887,7 @@ assets::MeshData::ptr Simulator::getJoinedMesh(
   auto stageInitAttrs = physicsManager_->getStageInitAttributes();
   if (stageInitAttrs != nullptr) {
     joinedMesh = resourceManager_->createJoinedCollisionMesh(
-        stageInitAttrs->getRenderAssetHandle());
+        stageInitAttrs->getRenderAssetFullPath());
   }
 
   // add STATIC collision objects
@@ -915,9 +919,9 @@ assets::MeshData::ptr Simulator::getJoinedMesh(
         objectTransform.scale(Magnum::EigenIntegration::cast<vec3f>(
             initializationTemplate->getScale()));
         std::string meshHandle =
-            initializationTemplate->getCollisionAssetHandle();
+            initializationTemplate->getCollisionAssetFullPath();
         if (meshHandle.empty()) {
-          meshHandle = initializationTemplate->getRenderAssetHandle();
+          meshHandle = initializationTemplate->getRenderAssetFullPath();
         }
         meshComponentStates[meshHandle].push_back(objectTransform);
       }
@@ -981,7 +985,7 @@ assets::MeshData::ptr Simulator::getJoinedSemanticMesh(
   auto stageInitAttrs = physicsManager_->getStageInitAttributes();
   if (stageInitAttrs != nullptr) {
     joinedSemanticMesh = resourceManager_->createJoinedSemanticCollisionMesh(
-        objectIds, stageInitAttrs->getSemanticAssetHandle());
+        objectIds, stageInitAttrs->getSemanticAssetFullPath());
   }
 
   return joinedSemanticMesh;

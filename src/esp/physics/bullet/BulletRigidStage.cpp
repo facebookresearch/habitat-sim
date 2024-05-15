@@ -70,7 +70,7 @@ void BulletRigidStage::constructAndAddCollisionObjects() {
     auto initAttr = PhysicsObjectBase::getInitializationAttributes<
         metadata::attributes::StageAttributes>();
     // construct the objects first time
-    const auto collisionAssetHandle = initAttr->getCollisionAssetHandle();
+    const auto collisionAssetHandle = initAttr->getCollisionAssetFullPath();
 
     const std::vector<assets::CollisionMeshData>& meshGroup =
         resMgr_.getCollisionMesh(collisionAssetHandle);
