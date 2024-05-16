@@ -402,7 +402,7 @@ jobs:
           command: |
               # Disable clone protection for git lfs
               export GIT_CLONE_PROTECTION_ACTIVE=false
-              
+
               sudo apt install git-lfs
               git --version
               git-lfs --version
