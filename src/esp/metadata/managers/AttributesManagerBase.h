@@ -710,7 +710,7 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
   const std::string curFullyQualifiedPathName =
       (curFQPathName.empty() ? curRelPathName : curFQPathName);
   const std::string curRelativePathName =
-      (curRelPathName.empty() ? curFQPathName : curRelPathName);
+      (curRelPathName.empty() ? curFullyQualifiedPathName : curRelPathName);
 
   std::string dispString = Cr::Utility::formatString(
       "AttrHandle `{}` class :`{}`|curRelPathName `{}`|curFQPathName "
@@ -719,9 +719,11 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
       attributes->getHandle(), attributes->getClassKey(), curRelPathName,
       curFQPathName, curRelativePathName, curFullyQualifiedPathName);
 
+  // If both relative and fully qualified paths are empty,
   if (curRelativePathName.empty() && curFullyQualifiedPathName.empty()) {
     ESP_ERROR() << "BOTH RELATIVE AND FQ PATHS ARE EMPTY Skipping: "
-                << dispString << "\n";
+                << dispString;
+    return;
   }
 
   // Initialize potentially empty fields
@@ -732,7 +734,7 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
   // relative to
   const std::string attrFilepath = attributes->getFileDirectory();
   if (attrFilepath.empty()) {
-    ESP_ERROR() << "EMPTY FILEPATH Skipping : " << dispString << "\n";
+    ESP_ERROR() << "EMPTY FILEPATH Skipping : " << dispString;
     // if filepath is empty, do nothing.
     return;
   }
@@ -742,7 +744,6 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
     Cr::Utility::formatInto(dispString, dispString.size(),
                             "|attr Filepath `{}`", attrFilepath);
 
-    auto len = attrFilepath.length();
     // Check if expected relative filepath is accessible on disk (therefore is
     // fully qualified)
     if (CrPath::exists(curRelativePathName)) {

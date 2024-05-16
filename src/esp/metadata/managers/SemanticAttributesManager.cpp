@@ -221,7 +221,7 @@ void SemanticAttributesManager::setValsFromJSONDoc(
 core::managedContainers::ManagedObjectPreregistration
 SemanticAttributesManager::preRegisterObjectFinalize(
     attributes::SemanticAttributes::ptr semanticAttributes,
-    const std::string& semanticAttrHandle,
+    CORRADE_UNUSED const std::string& semanticAttrHandle,
     CORRADE_UNUSED bool forceRegistration) {
   // filter all paths properly so that the handles don't have filepaths and the
   // accessors are hidden fields
@@ -234,13 +234,13 @@ void SemanticAttributesManager::finalizeAttrPathsBeforeRegister(
     const attributes::SemanticAttributes::ptr& semanticAttributes) const {
   // filter filepaths of full path qualifiers
   // ESP_ERROR(Mn::Debug::Flag::NoSpace)
-  //     << "BEFORE : Semantic Attr `" << semanticAttrHandle
+  //     << "BEFORE : Semantic Attr `" << semanticAttributes->getHandle()
   //     << "`| semantic asset fn `"
   //     << semanticAttributes->getSemanticAssetHandle()
   //     << "`| semantic descriptor fn `"
   //     << semanticAttributes->getSemanticDescriptorFilename()
-  //     << "`| file dir `"
-  //     << semanticAttributes->getFileDirectory() << "`";
+  //     << "`| file directory `" << semanticAttributes->getFileDirectory() <<
+  //     "`";
   // Semantic asset filename
   this->filterAttribsFilenames(
       semanticAttributes, semanticAttributes->getSemanticAssetHandle(),
@@ -263,14 +263,13 @@ void SemanticAttributesManager::finalizeAttrPathsBeforeRegister(
       });
 
   // ESP_ERROR(Mn::Debug::Flag::NoSpace)
-  //     << "AFTER : Semantic Attr `" << semanticAttrHandle
+  //     << "AFTER : Semantic Attr `" << semanticAttributes->getHandle()
   //     << "`| semantic asset fn `"
   //     << semanticAttributes->getSemanticAssetHandle()
   //     << "`| semantic descriptor fn `"
   //     << semanticAttributes->getSemanticDescriptorFilename()
-  //     << "`| file dir `"
-  //     << semanticAttributes->getFileDirectory() << "`";
-  // No pre-registration conditioning performed
+  //     << "`| file directory `" << semanticAttributes->getFileDirectory() <<
+  //     "`";
 
 }  // SemanticAttributesManager::finalizeAttrPathsBeforeRegister
 

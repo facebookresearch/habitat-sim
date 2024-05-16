@@ -457,7 +457,9 @@ StageAttributesManager::preRegisterObjectFinalize(
   }
   // filter all paths properly so that the handles don't have filepaths and the
   // accessors are hidden fields
-  this->finalizeAttrPathsBeforeRegister(stageAttributes);
+  if (!stageIsNone) {
+    this->finalizeAttrPathsBeforeRegister(stageAttributes);
+  }
 
   stageAttributes->setIsClean();
 
