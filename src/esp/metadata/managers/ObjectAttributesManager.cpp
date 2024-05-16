@@ -221,12 +221,10 @@ ObjectAttributesManager::preRegisterObjectFinalize(
     return core::managedContainers::ManagedObjectPreregistration::Failed;
   }
 
-  // Handles for rendering and collision assets
-  std::string renderAssetHandle = objectTemplate->getRenderAssetHandle();
-  std::string renderAssetFullPath = objectTemplate->getRenderAssetFullPath();
-  std::string collisionAssetHandle = objectTemplate->getCollisionAssetHandle();
-  std::string collisionAssetFullPath =
-      objectTemplate->getCollisionAssetFullPath();
+  // Handles for rendering assets
+  const std::string renderAssetHandle = objectTemplate->getRenderAssetHandle();
+  const std::string renderAssetFullPath =
+      objectTemplate->getRenderAssetFullPath();
 
   // Clear map to add to ptr from previous registration
   mapToAddTo_ = nullptr;
@@ -238,33 +236,13 @@ ObjectAttributesManager::preRegisterObjectFinalize(
     objectTemplate->setRenderAssetIsPrimitive(true);
     objectTemplate->setRenderAssetFullPath(renderAssetHandle);
     mapToAddTo_ = &physicsSynthObjTmpltLibByID_;
-  } else if (Cr::Utility::Path::exists(renderAssetHandle)) {
+  } else if (Cr::Utility::Path::exists(renderAssetHandle) ||
+             Cr::Utility::Path::exists(renderAssetFullPath)) {
     // Check if renderAssetHandle is valid file name and is found in file system
     // - if so then setRenderAssetIsPrimitive to false and set map of IDs->Names
     // to physicsFileObjTmpltLibByID_ - verify file  exists
     objectTemplate->setRenderAssetIsPrimitive(false);
     mapToAddTo_ = &physicsFileObjTmpltLibByID_;
-    // Render asset filename filter out path and set internal reference to full
-    // filepaath
-    this->filterAttribsFilenames(
-        objectTemplate,
-        [objectTemplate](void) -> std::string {
-          return objectTemplate->getRenderAssetHandle();
-        },
-        [objectTemplate](const std::string& renderAsset) {
-          objectTemplate->setRenderAssetHandle(renderAsset);
-        },
-        [objectTemplate](const std::string& renderAsset) {
-          objectTemplate->setRenderAssetFullPath(renderAsset);
-        });
-    // Re-set to catch path removal.
-    renderAssetHandle = objectTemplate->getRenderAssetHandle();
-
-  } else if (Cr::Utility::Path::exists(renderAssetFullPath)) {
-    // not prim and does not exist on disk, perhaps the fully qualified version
-    // of the handle was set already and exists, which means we don't need to do
-    // anything else.
-    objectTemplate->setRenderAssetIsPrimitive(false);
   } else if (forceRegistration) {
     // Forcing registration in case of computationaly generated assets
     ESP_WARNING(Mn::Debug::Flag::NoSpace)
@@ -286,35 +264,21 @@ ObjectAttributesManager::preRegisterObjectFinalize(
            "asset, so registration is aborted.";
     return core::managedContainers::ManagedObjectPreregistration::Failed;
   }
+  // Handles for collision assets
+  const std::string collisionAssetHandle =
+      objectTemplate->getCollisionAssetHandle();
+  const std::string collisionAssetFullPath =
+      objectTemplate->getCollisionAssetFullPath();
 
   if (this->isValidPrimitiveAttributes(collisionAssetHandle)) {
     // If collisionAssetHandle corresponds to valid/existing primitive
     // attributes then setCollisionAssetIsPrimitive to true
     objectTemplate->setCollisionAssetIsPrimitive(true);
     objectTemplate->setCollisionAssetFullPath(collisionAssetHandle);
-  } else if (Cr::Utility::Path::exists(collisionAssetHandle)) {
+  } else if (Cr::Utility::Path::exists(collisionAssetHandle) ||
+             Cr::Utility::Path::exists(collisionAssetFullPath)) {
     // Check if collisionAssetHandle is valid file name and is found in file
     // system - if so then setCollisionAssetIsPrimitive to false
-    objectTemplate->setCollisionAssetIsPrimitive(false);
-
-    // Collision asset filename filter out path and set internal reference to
-    // full filepaath
-    this->filterAttribsFilenames(
-        objectTemplate,
-        [objectTemplate](void) -> std::string {
-          return objectTemplate->getCollisionAssetHandle();
-        },
-        [objectTemplate](const std::string& colHndl) {
-          objectTemplate->setCollisionAssetHandle(colHndl);
-        },
-        [objectTemplate](const std::string& colHndl) {
-          objectTemplate->setCollisionAssetFullPath(colHndl);
-        });
-
-  } else if (Cr::Utility::Path::exists(collisionAssetFullPath)) {
-    // not prim and does not exist on disk, perhaps the fully qualified version
-    // of the handle was set already and exists, which means we don't need to do
-    // anything else.
     objectTemplate->setCollisionAssetIsPrimitive(false);
   } else {
     // Else, means no collision data specified, use specified render data
@@ -326,25 +290,60 @@ ObjectAttributesManager::preRegisterObjectFinalize(
         << renderAssetHandle << ".";
     // Set values to match render asset values
 
-    objectTemplate->setCollisionAssetHandle(renderAssetHandle);
+    objectTemplate->setCollisionAssetHandle(
+        objectTemplate->getRenderAssetHandle());
     objectTemplate->setCollisionAssetFullPath(
         objectTemplate->getRenderAssetFullPath());
-
     objectTemplate->setCollisionAssetIsPrimitive(
         objectTemplate->getRenderAssetIsPrimitive());
   }
-
-  // ESP_ERROR(Mn::Debug::Flag::NoSpace)
-  //     << "Obj `" << objectTemplateHandle << "`: Render fn `"
-  //     << objectTemplate->getRenderAssetHandle() << "`| Collision fn `"
-  //     << objectTemplate->getCollisionAssetHandle() << "`| file dir `"
-  //     << objectTemplate->getFileDirectory() << "`";
-
+  // filter all paths properly so that the handles don't have filepaths and the
+  // accessors are hidden fields
+  if (!objectTemplate->getRenderAssetIsPrimitive()) {
+    this->finalizeAttrPathsBeforeRegister(objectTemplate);
+  }
   // Clear dirty flag from when asset handles are changed
   objectTemplate->setIsClean();
 
   return core::managedContainers::ManagedObjectPreregistration::Success;
 }  // ObjectAttributesManager::preRegisterObjectFinalize
+
+void ObjectAttributesManager::finalizeAttrPathsBeforeRegister(
+    const attributes::ObjectAttributes::ptr& objectTemplate) const {
+  // ESP_ERROR(Mn::Debug::Flag::NoSpace)
+  //     << "BEFORE Obj `" << objectTemplateHandle << "`: Render fn `"
+  //     << objectTemplate->getRenderAssetHandle() << "`| Collision fn `"
+  //     << objectTemplate->getCollisionAssetHandle() << "`| file dir `"
+  //     << objectTemplate->getFileDirectory() << "`";
+  // Render asset filename filter out path and set internal reference to full
+  // filepaath
+  this->filterAttribsFilenames(
+      objectTemplate, objectTemplate->getRenderAssetHandle(),
+      objectTemplate->getRenderAssetFullPath(),
+      [objectTemplate](const std::string& renderAsset) {
+        objectTemplate->setRenderAssetHandle(renderAsset);
+      },
+      [objectTemplate](const std::string& renderAsset) {
+        objectTemplate->setRenderAssetFullPath(renderAsset);
+      });
+  // Collision asset filename filter out path and set internal reference to
+  // full filepaath
+  this->filterAttribsFilenames(
+      objectTemplate, objectTemplate->getCollisionAssetHandle(),
+      objectTemplate->getCollisionAssetFullPath(),
+      [objectTemplate](const std::string& colHndl) {
+        objectTemplate->setCollisionAssetHandle(colHndl);
+      },
+      [objectTemplate](const std::string& colHndl) {
+        objectTemplate->setCollisionAssetFullPath(colHndl);
+      });
+
+  // ESP_ERROR(Mn::Debug::Flag::NoSpace)
+  //     << "AFTER Obj `" << objectTemplateHandle << "`: Render fn `"
+  //     << objectTemplate->getRenderAssetHandle() << "`| Collision fn `"
+  //     << objectTemplate->getCollisionAssetHandle() << "`| file dir `"
+  //     << objectTemplate->getFileDirectory() << "`";
+}
 
 void ObjectAttributesManager::postRegisterObjectHandling(
     int objectTemplateID,

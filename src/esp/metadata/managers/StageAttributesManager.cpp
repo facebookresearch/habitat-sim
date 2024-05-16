@@ -379,12 +379,10 @@ StageAttributesManager::preRegisterObjectFinalize(
     return core::managedContainers::ManagedObjectPreregistration::Failed;
   }
 
-  // Handles for rendering and collision assets
-  std::string renderAssetHandle = stageAttributes->getRenderAssetHandle();
-  std::string renderAssetFullPath = stageAttributes->getRenderAssetFullPath();
-  std::string collisionAssetHandle = stageAttributes->getCollisionAssetHandle();
-  std::string collisionAssetFullPath =
-      stageAttributes->getCollisionAssetFullPath();
+  // Handles for rendering assets
+  const std::string renderAssetHandle = stageAttributes->getRenderAssetHandle();
+  const std::string renderAssetFullPath =
+      stageAttributes->getRenderAssetFullPath();
   bool stageIsNone = stageAttributesHandle.find("NONE") != std::string::npos;
   // verify these represent legitimate assets
   if (this->isValidPrimitiveAttributes(renderAssetHandle)) {
@@ -393,30 +391,10 @@ StageAttributesManager::preRegisterObjectFinalize(
     // physicsSynthObjTmpltLibByID_
     stageAttributes->setRenderAssetIsPrimitive(true);
     stageAttributes->setRenderAssetFullPath(renderAssetHandle);
-  } else if (Cr::Utility::Path::exists(renderAssetHandle)) {
+  } else if (Cr::Utility::Path::exists(renderAssetHandle) ||
+             Cr::Utility::Path::exists(renderAssetFullPath)) {
     // Check if renderAssetHandle is valid file name and is found in file
-    // system - if so then setRenderAssetIsPrimitive to false and set map of
-    // IDs->Names to physicsFileObjTmpltLibByID_ - verify file  exists
-    stageAttributes->setRenderAssetIsPrimitive(false);
-    // Render asset filename filter out path and set internal reference to full
-    // filepaath
-    this->filterAttribsFilenames(
-        stageAttributes,
-        [stageAttributes](void) -> std::string {
-          return stageAttributes->getRenderAssetHandle();
-        },
-        [stageAttributes](const std::string& renderAsset) {
-          stageAttributes->setRenderAssetHandle(renderAsset);
-        },
-        [stageAttributes](const std::string& renderAsset) {
-          stageAttributes->setRenderAssetFullPath(renderAsset);
-        });
-    // Re-set to catch path removal.
-    renderAssetHandle = stageAttributes->getRenderAssetHandle();
-  } else if (Cr::Utility::Path::exists(renderAssetFullPath)) {
-    // not prim and does not exist on disk, perhaps the fully qualified version
-    // of the handle was set already and exists, which means we don't need to do
-    // anything else.
+    // system - if so then setRenderAssetIsPrimitive to false
     stageAttributes->setRenderAssetIsPrimitive(false);
   } else if (stageIsNone) {
     // Render asset handle will be NONE as well - force type to be unknown
@@ -440,34 +418,22 @@ StageAttributesManager::preRegisterObjectFinalize(
     return core::managedContainers::ManagedObjectPreregistration::Failed;
   }
 
+  // Handles for collision assets
+  const std::string collisionAssetHandle =
+      stageAttributes->getCollisionAssetHandle();
+  const std::string collisionAssetFullPath =
+      stageAttributes->getCollisionAssetFullPath();
   if (this->isValidPrimitiveAttributes(collisionAssetHandle)) {
     // If collisionAssetHandle corresponds to valid/existing primitive
     // attributes then setCollisionAssetIsPrimitive to true
     stageAttributes->setCollisionAssetIsPrimitive(true);
     stageAttributes->setCollisionAssetFullPath(collisionAssetHandle);
-  } else if (Cr::Utility::Path::exists(collisionAssetHandle)) {
+  } else if (Cr::Utility::Path::exists(collisionAssetHandle) ||
+             (Cr::Utility::Path::exists(collisionAssetFullPath))) {
     // Check if collisionAssetHandle is valid file name and is found in file
     // system - if so then setCollisionAssetIsPrimitive to false
     stageAttributes->setCollisionAssetIsPrimitive(false);
-    // Collision asset filename filter out path and set internal reference to
-    // full filepaath
-    this->filterAttribsFilenames(
-        stageAttributes,
-        [stageAttributes](void) -> std::string {
-          return stageAttributes->getCollisionAssetHandle();
-        },
-        [stageAttributes](const std::string& colHndl) {
-          stageAttributes->setCollisionAssetHandle(colHndl);
-        },
-        [stageAttributes](const std::string& colHndl) {
-          stageAttributes->setCollisionAssetFullPath(colHndl);
-        });
-  } else if (Cr::Utility::Path::exists(collisionAssetFullPath)) {
-    // not prim and does not exist on disk, perhaps the fully qualified version
-    // of the handle was set already and exists, which means we don't need to do
-    // anything else.
-    stageAttributes->setCollisionAssetIsPrimitive(false);
-  } else if (std::string::npos != stageAttributesHandle.find("NONE")) {
+  } else if (stageIsNone) {
     // Collision asset handle will be NONE as well - force type to be unknown
     stageAttributes->setCollisionAssetType(
         getAssetTypeName(AssetType::Unknown));
@@ -482,29 +448,75 @@ StageAttributesManager::preRegisterObjectFinalize(
            "asset.  Overriding with given render asset handle :"
         << renderAssetHandle << ".";
 
-    stageAttributes->setCollisionAssetHandle(renderAssetHandle);
+    stageAttributes->setCollisionAssetHandle(
+        stageAttributes->getCollisionAssetHandle());
+    stageAttributes->setCollisionAssetFullPath(
+        stageAttributes->getCollisionAssetFullPath());
     stageAttributes->setCollisionAssetIsPrimitive(
         stageAttributes->getRenderAssetIsPrimitive());
   }
+  // filter all paths properly so that the handles don't have filepaths and the
+  // accessors are hidden fields
+  this->finalizeAttrPathsBeforeRegister(stageAttributes);
+
+  stageAttributes->setIsClean();
+
+  return core::managedContainers::ManagedObjectPreregistration::Success;
+
+}  // StageAttributesManager::preRegisterObjectFinalize
+
+void StageAttributesManager::finalizeAttrPathsBeforeRegister(
+    const attributes::StageAttributes::ptr& stageAttributes) const {
+  // ESP_ERROR(Mn::Debug::Flag::NoSpace)
+  //     << "BEFORE : Stage `" << stageAttributesHandle << "`: Render rel `"
+  //     << stageAttributes->getRenderAssetHandle() << "`: Render FQ `"
+  //     << stageAttributes->getRenderAssetFullPath() << "`| Collision rel `"
+  //     << stageAttributes->getCollisionAssetHandle() << "`| Collision FQ `"
+  //     << stageAttributes->getCollisionAssetFullPath() << "`| navmesh rel `"
+  //     << stageAttributes->getNavmeshAssetHandle()
+  //     << "`| semantic asset rel `"
+  //     << stageAttributes->getSemanticAssetHandle()
+  //     << "`| semantic descriptor rel `"
+  //     << stageAttributes->getSemanticDescriptorFilename() << "`| file dir `"
+  //     << stageAttributes->getFileDirectory() << "`";
+
+  // Render asset filename filter out path and set internal reference to full
+  // filepath
+  this->filterAttribsFilenames(
+      stageAttributes, stageAttributes->getRenderAssetHandle(),
+      stageAttributes->getRenderAssetFullPath(),
+      [stageAttributes](const std::string& renderAsset) {
+        stageAttributes->setRenderAssetHandle(renderAsset);
+      },
+      [stageAttributes](const std::string& renderAsset) {
+        stageAttributes->setRenderAssetFullPath(renderAsset);
+      });
+  // Collision asset filename filter out path and set internal reference to
+  // full filepaath
+  this->filterAttribsFilenames(
+      stageAttributes, stageAttributes->getCollisionAssetHandle(),
+      stageAttributes->getCollisionAssetFullPath(),
+      [stageAttributes](const std::string& colHndl) {
+        stageAttributes->setCollisionAssetHandle(colHndl);
+      },
+      [stageAttributes](const std::string& colHndl) {
+        stageAttributes->setCollisionAssetFullPath(colHndl);
+      });
   // filter filepaths of full path qualifiers
   // Navmesh asset filename
   this->filterAttribsFilenames(
-      stageAttributes,
-      [stageAttributes](void) -> std::string {
-        return stageAttributes->getNavmeshAssetHandle();
+      stageAttributes, stageAttributes->getNavmeshAssetHandle(),
+      stageAttributes->getNavmeshAssetFullPath(),
+      [stageAttributes](const std::string& navmeshAsset) {
+        stageAttributes->setNavmeshAssetHandle(navmeshAsset);
       },
-      [stageAttributes](const std::string& semanticAsset) {
-        stageAttributes->setNavmeshAssetHandle(semanticAsset);
-      },
-      [stageAttributes](const std::string& semanticAsset) {
-        stageAttributes->setNavmeshAssetFullPath(semanticAsset);
+      [stageAttributes](const std::string& navmeshAsset) {
+        stageAttributes->setNavmeshAssetFullPath(navmeshAsset);
       });
   // Semantic asset filename
   this->filterAttribsFilenames(
-      stageAttributes,
-      [stageAttributes](void) -> std::string {
-        return stageAttributes->getSemanticAssetHandle();
-      },
+      stageAttributes, stageAttributes->getSemanticAssetHandle(),
+      stageAttributes->getSemanticAssetFullPath(),
       [stageAttributes](const std::string& semanticAsset) {
         stageAttributes->setSemanticAssetHandle(semanticAsset);
       },
@@ -513,33 +525,30 @@ StageAttributesManager::preRegisterObjectFinalize(
       });
   // Semantic descriptor filename
   this->filterAttribsFilenames(
-      stageAttributes,
-      [stageAttributes](void) -> std::string {
-        return stageAttributes->getSemanticDescriptorFilename();
+      stageAttributes, stageAttributes->getSemanticDescriptorFilename(),
+      stageAttributes->getSemanticDescriptorFullPath(),
+      [stageAttributes](const std::string& ssd) {
+        stageAttributes->setSemanticDescriptorFilename(ssd);
       },
-      [stageAttributes](const std::string& semanticAsset) {
-        stageAttributes->setSemanticDescriptorFilename(semanticAsset);
-      },
-      [stageAttributes](const std::string& semanticAsset) {
-        stageAttributes->setSemanticDescriptorFullPath(semanticAsset);
+      [stageAttributes](const std::string& ssd) {
+        stageAttributes->setSemanticDescriptorFullPath(ssd);
       });
 
-  ESP_ERROR(Mn::Debug::Flag::NoSpace)
-      << "Stage `" << stageAttributesHandle << "`: Render fn `"
-      << stageAttributes->getRenderAssetHandle() << "`| Collision fn `"
-      << stageAttributes->getCollisionAssetHandle() << "`| navmesh fn `"
-      << stageAttributes->getNavmeshAssetHandle() << "`| semantic asset fn `"
-      << stageAttributes->getSemanticAssetHandle()
-      << "`| semantic descriptor fn `"
-      << stageAttributes->getSemanticDescriptorFilename() << "`| file dir `"
-      << stageAttributes->getFileDirectory() << "`";
+  // ESP_ERROR(Mn::Debug::Flag::NoSpace)
+  //     << "AFTER : Stage `" << stageAttributesHandle << "`: Render rel `"
+  //     << stageAttributes->getRenderAssetHandle() << "`: Render FQ `"
+  //     << stageAttributes->getRenderAssetFullPath() << "`| Collision rel `"
+  //     << stageAttributes->getCollisionAssetHandle() << "`| Collision FQ `"
+  //     << stageAttributes->getCollisionAssetFullPath() << "`| navmesh rel `"
+  //     << stageAttributes->getNavmeshAssetHandle()
+  //     << "`| semantic asset rel `"
+  //     << stageAttributes->getSemanticAssetHandle()
+  //     << "`| semantic descriptor rel `"
+  //     << stageAttributes->getSemanticDescriptorFilename() << "`| file dir `"
+  //     << stageAttributes->getFileDirectory() << "`";
 
   // Clear dirty flag from when asset handles are changed
-  stageAttributes->setIsClean();
-
-  return core::managedContainers::ManagedObjectPreregistration::Success;
-
-}  // StageAttributesManager::registerAttributesTemplate
+}
 
 }  // namespace managers
 }  // namespace metadata

@@ -95,6 +95,20 @@ class PbrShaderAttributesManager
     }
   }  // PbrShaderAttributesManager::setAllDirectLightsEnabled
 
+  /**
+   * @brief This function will be called to finalize attributes' paths before
+   * registration, moving fully qualified paths to the appropriate hidden
+   * attribute fields. This can also be called without registration to make sure
+   * the paths specified in an attributes are properly configured.
+   *
+   * TODO : If/When we begin treating IBL filepaths like we do other paths, this
+   * will need to be implemented.
+   * @param attributes The attributes to be filtered.
+   */
+  void finalizeAttrPathsBeforeRegister(
+      CORRADE_UNUSED const attributes::PbrShaderAttributes::ptr& attributes)
+      const override{};
+
  protected:
   /**
    * @brief Used Internally.  Create and configure newly-created attributes with
