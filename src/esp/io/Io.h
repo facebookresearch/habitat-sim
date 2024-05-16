@@ -31,6 +31,16 @@ std::string changeExtension(const std::string& file, const std::string& ext);
 std::string normalizePath(const std::string& srcPath);
 
 /**
+ * @brief This function will find the relative path of @p toRelPath relative to
+ * @p absPath
+ * @param toRelPath The absolute path to be converted to relative
+ * @param absPath The absolute path the conversion should be relative to
+ * @return the relative path of @p toRelPath relative to @p absPath
+ */
+std::string getPathRealtiveToAbsPath(const std::string& toRelPath,
+                                     const std::string& absPath);
+
+/**
  * @brief This function will perform [glob-based pattern matching]
  * (https://en.wikipedia.org/wiki/Glob_(programming)) to find and return all the
  * files and directories that match the pattern.

@@ -46,6 +46,46 @@ std::string normalizePath(const std::string& srcPath) {
   return normalizePath(filteredPath);
 }  // normalizePath
 
+std::string getPathRealtiveToAbsPath(const std::string& toRelPath,
+                                     const std::string& absPath) {
+  std::string result = "";
+  const char delim = '/';
+
+  std::vector<std::string> absDirs = Cr::Utility::String::split(absPath, delim),
+                           relDirs =
+                               Cr::Utility::String::split(toRelPath, delim);
+  auto absIter = absDirs.cbegin();
+  auto relIter = relDirs.cbegin();
+
+  // find where both paths diverge - skip shared path components
+  while (*relIter == *absIter && absIter != absDirs.cend() &&
+         relIter != relDirs.cend()) {
+    ++relIter;
+    ++absIter;
+  }
+
+  // Add back-path components for each directory in abspath not found in
+  // toRelPaath
+  while (absIter != absDirs.cend()) {
+    if (*absIter != *absDirs.crbegin()) {
+      Cr::Utility::formatInto(result, result.size(), "..{}", delim);
+    }
+    ++absIter;
+  }
+  std::string scratch = "";
+  // build relative path in scratch
+  while (relIter != relDirs.cend()) {
+    if (*relIter == *relDirs.crbegin()) {
+      Cr::Utility::formatInto(result, result.size(), "{}{}", scratch,
+                              *relDirs.crbegin());
+    } else {
+      Cr::Utility::formatInto(scratch, scratch.size(), "{}{}", *relIter, delim);
+    }
+    ++relIter;
+  }
+  return result;
+}  // getPathRealtiveToAbsPath
+
 std::vector<std::string> globDirs(const std::string& pattern) {
   // Check for ellipsis, if so process here.
   glob_t glob_result;
