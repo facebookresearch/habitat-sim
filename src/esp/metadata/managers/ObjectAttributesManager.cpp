@@ -299,9 +299,7 @@ ObjectAttributesManager::preRegisterObjectFinalize(
   }
   // filter all paths properly so that the handles don't have filepaths and the
   // accessors are hidden fields
-  if (!objectTemplate->getRenderAssetIsPrimitive()) {
-    this->finalizeAttrPathsBeforeRegister(objectTemplate);
-  }
+  this->finalizeAttrPathsBeforeRegister(objectTemplate);
   // Clear dirty flag from when asset handles are changed
   objectTemplate->setIsClean();
 
