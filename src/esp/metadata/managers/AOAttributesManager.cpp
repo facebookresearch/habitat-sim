@@ -193,30 +193,22 @@ AOAttributesManager::preRegisterObjectFinalize(
         << "` does not specify a valid URDF Filepath, so registration is "
            "aborted.";
     return core::managedContainers::ManagedObjectPreregistration::Failed;
-  } else if (!Cr::Utility::Path::exists(urdfFilePath)) {
+  } else if (!Cr::Utility::Path::exists(urdfFilePath) &&
+             !Cr::Utility::Path::exists(urdfFullFilePath)) {
     // URDF File not found is bad
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
         << "ArticulatedObjectAttributes template named `" << AOAttributesHandle
-        << "` specifies the URDF Filepath `" << urdfFilePath
+        << "` specifies the URDF Filepath `" << urdfFilePath << "` full path `"
+        << urdfFullFilePath
         << "`, but this file cannot be found, so registration is aborted.";
     return core::managedContainers::ManagedObjectPreregistration::Failed;
   }
-  // URDF file this articulated object attributes references
-  this->filterAttribsFilenames(
-      AOAttributesTemplate, urdfFilePath, urdfFullFilePath,
-      [AOAttributesTemplate](const std::string& urdfAsset) {
-        AOAttributesTemplate->setURDFPath(urdfAsset);
-      },
-      [AOAttributesTemplate](const std::string& urdfAsset) {
-        AOAttributesTemplate->setURDFFullPath(urdfAsset);
-      });
 
   // Furthermore, if 'skin' is specified as render_mode and no skin is
   // specified or the specified skin cannot be found, the registration should
   // also fail and the template should not be registered.
   bool useSkinRenderMode = AOAttributesTemplate->getRenderMode() ==
                            attributes::ArticulatedObjectRenderMode::Skin;
-  std::string dispStr("");
   if (useSkinRenderMode) {
     // if 'skin' render mode is specified as render mode
     const std::string renderAssetHandle =
@@ -231,7 +223,7 @@ AOAttributesManager::preRegisterObjectFinalize(
                 Corrade::Utility::Path::split(urdfFilePath).second())
                 .first())
             .first();
-    if (renderAssetHandle.empty()) {
+    if (renderAssetHandle.empty() && renderAssetFullPath.empty()) {
       // Empty is bad when 'skin' render mode is specified
       ESP_ERROR(Mn::Debug::Flag::NoSpace)
           << "ArticulatedObjectAttributes template named `"
@@ -241,10 +233,8 @@ AOAttributesManager::preRegisterObjectFinalize(
           << "`, but no render asset was specifed in the configuration, so "
              "registration is aborted.";
       return core::managedContainers::ManagedObjectPreregistration::Failed;
-    } else if (!Cr::Utility::Path::exists(renderAssetHandle)) {
-      // Otherwise, if renderAssetFullPath exists, this attributes is copy of an
-      // existing already-processed attributes with values set
-
+    } else if (!Cr::Utility::Path::exists(renderAssetHandle) &&
+               !Cr::Utility::Path::exists(renderAssetFullPath)) {
       // Skin render asset specified not found is bad when 'skin' render mode
       // is specified
       ESP_ERROR(Mn::Debug::Flag::NoSpace)
@@ -252,31 +242,48 @@ AOAttributesManager::preRegisterObjectFinalize(
           << AOAttributesHandle
           << "` specifies a render mode of `skin` for the AO created by `"
           << urdfSimpleName << "`, but the render asset specified, `"
-          << renderAssetHandle
+          << renderAssetHandle << "` full path `" << renderAssetFullPath
           << "` cannot be found, so registration is aborted.";
       return core::managedContainers::ManagedObjectPreregistration::Failed;
     }
+  }
+  // filter all paths properly so that the handles don't have filepaths and the
+  // accessors are hidden fields
+  this->finalizeAttrPathsBeforeRegister(AOAttributesTemplate);
 
+  return core::managedContainers::ManagedObjectPreregistration::Success;
+}  // AOAttributesManager::preRegisterObjectFinalize
+
+void AOAttributesManager::finalizeAttrPathsBeforeRegister(
+    const attributes::ArticulatedObjectAttributes::ptr& AOAttributesTemplate)
+    const {
+  // URDF file this articulated object attributes references
+  this->filterAttribsFilenames(
+      AOAttributesTemplate, AOAttributesTemplate->getURDFPath(),
+      AOAttributesTemplate->getURDFFullPath(),
+      [AOAttributesTemplate](const std::string& urdfAsset) {
+        AOAttributesTemplate->setURDFPath(urdfAsset);
+      },
+      [AOAttributesTemplate](const std::string& urdfAsset) {
+        AOAttributesTemplate->setURDFFullPath(urdfAsset);
+      });
+
+  bool useSkinRenderMode = AOAttributesTemplate->getRenderMode() ==
+                           attributes::ArticulatedObjectRenderMode::Skin;
+  if (useSkinRenderMode) {
     // Render asset filename filter out path and set internal reference to
-    // full filepaath
+    // full filepath
     this->filterAttribsFilenames(
-        AOAttributesTemplate, renderAssetHandle, renderAssetFullPath,
+        AOAttributesTemplate, AOAttributesTemplate->getRenderAssetHandle(),
+        AOAttributesTemplate->getRenderAssetFullPath(),
         [AOAttributesTemplate](const std::string& renderAsset) {
           AOAttributesTemplate->setRenderAssetHandle(renderAsset);
         },
         [AOAttributesTemplate](const std::string& renderAsset) {
           AOAttributesTemplate->setRenderAssetFullPath(renderAsset);
         });
-
-    dispStr = Cr::Utility::formatString(" and render asset file path `{}`",
-                                        renderAssetHandle);
   }
-  ESP_ERROR(Mn::Debug::Flag::NoSpace)
-      << "AO : `" << AOAttributesHandle << "` has urdf filename `"
-      << urdfFilePath << "`" << dispStr << "| file dir `"
-      << AOAttributesTemplate->getFileDirectory() << "`";
-  return core::managedContainers::ManagedObjectPreregistration::Success;
-}  // AOAttributesManager::preRegisterObjectFinalize
+}  // AOAttributesManager::finalizeAttrPathsBeforeRegister
 
 std::map<std::string, std::string>
 AOAttributesManager::getArticulatedObjectModelFilenames() const {

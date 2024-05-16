@@ -70,6 +70,16 @@ class SemanticAttributesManager
     return attributes::SemanticVolumeAttributes::create(handle);
   }
 
+  /**
+   * @brief This function will be called to finalize attributes' paths before
+   * registration, moving fully qualified paths to the appropriate hidden
+   * attribute fields. This can also be called without registration to make sure
+   * the paths specified in an attributes are properly configured.
+   * @param attributes The attributes to be filtered.
+   */
+  void finalizeAttrPathsBeforeRegister(
+      const attributes::SemanticAttributes::ptr& attributes) const override;
+
  protected:
   /**
    * @brief Used Internally.  Create a @ref

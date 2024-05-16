@@ -154,6 +154,16 @@ class StageAttributesManager
       bool forceRegistration) override;
 
   /**
+   * @brief This function will be called to finalize attributes' paths before
+   * registration, moving fully qualified paths to the appropriate hidden
+   * attribute fields. This can also be called without registration to make sure
+   * the paths specified in an attributes are properly configured.
+   * @param attributes The attributes to be filtered.
+   */
+  void finalizeAttrPathsBeforeRegister(
+      const attributes::StageAttributes::ptr& attributes) const override;
+
+  /**
    * @brief Not required for this manager.
    *
    * This method will perform any final manager-related handling after

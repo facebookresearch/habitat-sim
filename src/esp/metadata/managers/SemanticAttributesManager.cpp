@@ -223,13 +223,28 @@ SemanticAttributesManager::preRegisterObjectFinalize(
     attributes::SemanticAttributes::ptr semanticAttributes,
     const std::string& semanticAttrHandle,
     CORRADE_UNUSED bool forceRegistration) {
+  // filter all paths properly so that the handles don't have filepaths and the
+  // accessors are hidden fields
+  this->finalizeAttrPathsBeforeRegister(semanticAttributes);
+
+  return core::managedContainers::ManagedObjectPreregistration::Success;
+}  // SemanticAttributesManager::preRegisterObjectFinalize
+
+void SemanticAttributesManager::finalizeAttrPathsBeforeRegister(
+    const attributes::SemanticAttributes::ptr& semanticAttributes) const {
   // filter filepaths of full path qualifiers
+  // ESP_ERROR(Mn::Debug::Flag::NoSpace)
+  //     << "BEFORE : Semantic Attr `" << semanticAttrHandle
+  //     << "`| semantic asset fn `"
+  //     << semanticAttributes->getSemanticAssetHandle()
+  //     << "`| semantic descriptor fn `"
+  //     << semanticAttributes->getSemanticDescriptorFilename()
+  //     << "`| file dir `"
+  //     << semanticAttributes->getFileDirectory() << "`";
   // Semantic asset filename
   this->filterAttribsFilenames(
-      semanticAttributes,
-      [semanticAttributes](void) -> std::string {
-        return semanticAttributes->getSemanticAssetHandle();
-      },
+      semanticAttributes, semanticAttributes->getSemanticAssetHandle(),
+      semanticAttributes->getSemanticAssetFullPath(),
       [semanticAttributes](const std::string& semanticAsset) {
         semanticAttributes->setSemanticAssetHandle(semanticAsset);
       },
@@ -238,10 +253,8 @@ SemanticAttributesManager::preRegisterObjectFinalize(
       });
   // Semantic descriptor filename
   this->filterAttribsFilenames(
-      semanticAttributes,
-      [semanticAttributes](void) -> std::string {
-        return semanticAttributes->getSemanticDescriptorFilename();
-      },
+      semanticAttributes, semanticAttributes->getSemanticDescriptorFilename(),
+      semanticAttributes->getSemanticDescriptorFullPath(),
       [semanticAttributes](const std::string& semanticAsset) {
         semanticAttributes->setSemanticDescriptorFilename(semanticAsset);
       },
@@ -249,15 +262,17 @@ SemanticAttributesManager::preRegisterObjectFinalize(
         semanticAttributes->setSemanticDescriptorFullPath(semanticAsset);
       });
 
-  ESP_ERROR(Mn::Debug::Flag::NoSpace)
-      << "Semantic Attr `" << semanticAttrHandle << "`| semantic asset fn `"
-      << semanticAttributes->getSemanticAssetHandle()
-      << "`| semantic descriptor fn `"
-      << semanticAttributes->getSemanticDescriptorFilename() << "`| file dir `"
-      << semanticAttributes->getFileDirectory() << "`";
+  // ESP_ERROR(Mn::Debug::Flag::NoSpace)
+  //     << "AFTER : Semantic Attr `" << semanticAttrHandle
+  //     << "`| semantic asset fn `"
+  //     << semanticAttributes->getSemanticAssetHandle()
+  //     << "`| semantic descriptor fn `"
+  //     << semanticAttributes->getSemanticDescriptorFilename()
+  //     << "`| file dir `"
+  //     << semanticAttributes->getFileDirectory() << "`";
   // No pre-registration conditioning performed
-  return core::managedContainers::ManagedObjectPreregistration::Success;
-}
+
+}  // SemanticAttributesManager::finalizeAttrPathsBeforeRegister
 
 }  // namespace managers
 }  // namespace metadata

@@ -236,6 +236,16 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
     return "";
   }  // getFullAttrNameFromStr
 
+  /**
+   * @brief This function will be called to finalize attributes' paths before
+   * registration, moving fully qualified paths to the appropriate hidden
+   * attribute fields. This can also be called without registration to make sure
+   * the paths specified in an attributes are properly configured.
+   * @param attributes The attributes to be filtered.
+   */
+  virtual void finalizeAttrPathsBeforeRegister(
+      const AttribsPtr& attributes) const = 0;
+
  protected:
   /**
    * @brief Called internally right before attribute registration. Filepaths
@@ -245,11 +255,13 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
    * can be easily found and consumed on command. However, saving fully
    * qualified filepaths to JSON configs is undesirable.
    *
-   * This function will query the passed @p attributes for a string using the
-   * @p relPathGetter to acquire the fully-qualified filename. It will set that
-   * value to be hidden in the attributes using @p fqPathSetter and then it will
-   * strip the attributes' filepath, if it is present, and set it as the
-   * relative value at @p relPathSetter .
+   * This function will examine the @p curRelPathName to see that it is a
+   * relative path in relation to the @p attributes' set filepath, and if not it
+   * will strip out the path information and resave the name to @p rePathSetter.
+   * It will query the passed @p curFQPathName to see that it is a fully
+   * qualified path to a file that exists, and if not it will add the
+   * attributes' filepath and resave it to @p fqPathSetter.
+   *
    *
    * It is assumed that what is passed to this function always referneces a
    * filepath, so if, for example, this is called on a render asseet filepath,
@@ -258,48 +270,19 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
    *
    * @param attributes The Configuration-backed attributes owning the filepath
    * in question.
-   * @param relPathGetter The relative filepath getter in the attributes
+   * @param curRelPathName The currently set relative path filepath in the
+   * attributes
+   * @param curFQPathName The currently set fully qualified filepath in the
+   * attributes
    * @param relPathSetter The relative filepath setter in the attributes
-   * @param fqPathSetter The string tag for the filepath we want to be fully
-   * qualified.
+   * @param fqPathSetter The fully qualified filepath setter in the attributes
    */
   void filterAttribsFilenames(
-      const attributes::AbstractAttributes::ptr& attributes,
-      const std::function<std::string(void)>& relPathGetter,
+      const AttribsPtr& attributes,
+      const std::string& curRelPathName,
+      const std::string& curFQPathName,
       const std::function<void(const std::string&)>& relPathSetter,
-      const std::function<void(const std::string&)>& fqPathSetter) const {
-    // Get the attributes filepath that our desired filepath should be relative
-    // to
-    std::string attrFilepath = attributes->getFileDirectory();
-    // verify attributes filepath exists
-    if (CrPath::isDirectory(attrFilepath)) {
-      auto len = attrFilepath.length();
-      // Get the filepath
-      std::string fqFilepath = relPathGetter();
-      if (CrPath::exists(fqFilepath)) {
-        // Make sure attrFilepath is not longer than the filepath in
-        // question
-        if (len < fqFilepath.length()) {
-          if (fqFilepath.find(attrFilepath) != std::string::npos) {
-            // Set the fully qualified value
-            fqPathSetter(fqFilepath);
-
-            ESP_ERROR() << "AttrHandle :" << attributes->getHandle()
-                        << "|Getter result : " << fqFilepath
-                        << " filepath :" << attrFilepath;
-
-            auto relFilepath = std::string(fqFilepath);
-            // assume the undesired portion of the filepath always is at the
-            // beginning, adding 1 for the path separator
-            relFilepath.erase(0, len + 1);
-            //
-            relPathSetter(relFilepath);
-          }  // if currently set relative handle contains filepath
-        }    // if attributes dir is correct length
-      }      // if relative filepath actually exists/is findable (i.e.is fully
-             // qualified)
-    }        // if attributes dir is set properly
-  }          // filterAttribsFilenames
+      const std::function<void(const std::string&)>& fqPathSetter) const;
 
   /**
    * @brief Called intenrally from createObject.  This will create either a
@@ -310,7 +293,7 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
    * @param filename the file holding the configuration of the object
    * @param msg reference to progress message
    * @param registerObj whether the new object should be registered in library
-   * @return the create @ref esp::metadata::attributes::AbstractAttributes.
+   * @return the created @ref esp::metadata::attributes::AbstractAttributes.
    */
   AttribsPtr createFromJsonOrDefaultInternal(const std::string& filename,
                                              std::string& msg,
@@ -378,7 +361,7 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
    * asset filename exists or not.
    */
   bool setFilenameFromDefaultTag(
-      const attributes::AbstractAttributes::ptr& attributes,
+      const AttribsPtr& attributes,
       const std::string& srcAssetFilename,
       const std::function<void(const std::string&)>& filenameSetter);
 
@@ -407,7 +390,7 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
    * specification.
    */
   bool setAttributesHandleFromDefaultTag(
-      const attributes::AbstractAttributes::ptr& attributes,
+      const AttribsPtr& attributes,
       const std::string& srcAssetHandle,
       const std::function<void(const std::string&)>& handleSetter);
 
@@ -638,7 +621,7 @@ bool AttributesManager<T, Access>::parseSubconfigJsonVals(
 
 template <class T, ManagedObjectAccess Access>
 bool AttributesManager<T, Access>::setFilenameFromDefaultTag(
-    const attributes::AbstractAttributes::ptr& attributes,
+    const AttribsPtr& attributes,
     const std::string& srcAssetFilename,
     const std::function<void(const std::string&)>& filenameSetter) {
   if (srcAssetFilename.empty()) {
@@ -692,7 +675,7 @@ bool AttributesManager<T, Access>::setFilenameFromDefaultTag(
 
 template <class T, ManagedObjectAccess Access>
 bool AttributesManager<T, Access>::setAttributesHandleFromDefaultTag(
-    const attributes::AbstractAttributes::ptr& attributes,
+    const AttribsPtr& attributes,
     const std::string& srcAssetHandle,
     const std::function<void(const std::string&)>& handleSetter) {
   if (srcAssetHandle.empty()) {
@@ -716,6 +699,87 @@ bool AttributesManager<T, Access>::setAttributesHandleFromDefaultTag(
   }
   return false;
 }  // AttributesManager<T, Access>::setAttributesHandleFromDefaultTag
+
+template <class T, ManagedObjectAccess Access>
+void AttributesManager<T, Access>::filterAttribsFilenames(
+    const AttribsPtr& attributes,
+    const std::string& curRelPathName,
+    const std::string& curFQPathName,
+    const std::function<void(const std::string&)>& relPathSetter,
+    const std::function<void(const std::string&)>& fqPathSetter) const {
+  const std::string curFullyQualifiedPathName =
+      (curFQPathName.empty() ? curRelPathName : curFQPathName);
+  const std::string curRelativePathName =
+      (curRelPathName.empty() ? curFQPathName : curRelPathName);
+
+  std::string dispString = Cr::Utility::formatString(
+      "AttrHandle `{}` class :`{}`|curRelPathName `{}`|curFQPathName "
+      ":`{}`|nonEmptyRel "
+      "`{}`|nonEmptyFQ :`{}`",
+      attributes->getHandle(), attributes->getClassKey(), curRelPathName,
+      curFQPathName, curRelativePathName, curFullyQualifiedPathName);
+
+  if (curRelativePathName.empty() && curFullyQualifiedPathName.empty()) {
+    ESP_ERROR() << "BOTH RELATIVE AND FQ PATHS ARE EMPTY Skipping: "
+                << dispString << "\n";
+  }
+
+  // Initialize potentially empty fields
+  relPathSetter(curRelativePathName);
+  fqPathSetter(curFullyQualifiedPathName);
+
+  // Get the attributes filepath that our desired filepath should be
+  // relative to
+  const std::string attrFilepath = attributes->getFileDirectory();
+  if (attrFilepath.empty()) {
+    ESP_ERROR() << "EMPTY FILEPATH Skipping : " << dispString << "\n";
+    // if filepath is empty, do nothing.
+    return;
+  }
+
+  // verify attributes filepath exists
+  if (CrPath::isDirectory(attrFilepath)) {
+    Cr::Utility::formatInto(dispString, dispString.size(),
+                            "|attr Filepath `{}`", attrFilepath);
+
+    auto len = attrFilepath.length();
+    // Check if expected relative filepath is accessible on disk (therefore is
+    // fully qualified)
+    if (CrPath::exists(curRelativePathName)) {
+      // Set the fully qualified value to be the found curRelPathName
+      fqPathSetter(curRelativePathName);
+      // Get new path relative to attrFilepath
+      const std::string newRelFilepath =
+          io::getPathRealtiveToAbsPath(curRelativePathName, attrFilepath);
+      // save the new relative filepath
+      relPathSetter(newRelFilepath);
+      Cr::Utility::formatInto(dispString, dispString.size(),
+                              "|curRelPathName is FOUND/FQ|newRelFP `{}`",
+                              newRelFilepath);
+    } else if (curRelativePathName.empty()) {
+      Cr::Utility::formatInto(dispString, dispString.size(),
+                              "|!!! curRelPathName is empty");
+    } else {
+      // Current relative filepath cannot be found and is not empty, so assume
+      // it is already appropriately formatted
+    }
+
+    if (CrPath::exists(curFullyQualifiedPathName)) {
+      // Current fully qualified pathname is found
+      Cr::Utility::formatInto(dispString, dispString.size(),
+                              "|curFQPathName is FOUND/FQ");
+
+      // TODO : Populate relPathName with relative path pathname?
+    }
+
+  }  // if attributes dir is set properly
+  else {
+    Cr::Utility::formatInto(dispString, dispString.size(),
+                            "|NON-EXISTING FILEPATH `{}` ", attrFilepath);
+  }
+
+  ESP_ERROR() << "\n" << dispString << "\n";
+}  // filterAttribsFilenames
 
 template <class T, ManagedObjectAccess Access>
 template <class M>
