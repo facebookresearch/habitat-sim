@@ -1607,7 +1607,7 @@ class Configuration {
 
  private:
   /**
-   * @brief Write the passed @p configValue to a json objbect tagged with
+   * @brief Write the passed @p configValue to a json object tagged with
    * @p jsonName within the passed @p jsonObj . By here we have already verified
    * that this object should be written to Json (i.e. checks for being hidden or
    * only programmatically initialized have occurred already).

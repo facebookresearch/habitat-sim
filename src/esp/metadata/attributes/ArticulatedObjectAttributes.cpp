@@ -19,7 +19,7 @@ ArticulatedObjectAttributes::ArticulatedObjectAttributes(
   // Initialize the default base type to be free joint
   initTranslated("base_type",
                  getAOBaseTypeName(ArticulatedObjectBaseType::Free));
-  // Initialize the default source for the interia calculation to be computed
+  // Initialize the default source for the inertia calculation to be computed
   initTranslated(
       "inertia_source",
       getAOInertiaSourceName(ArticulatedObjectInertiaSource::Computed));

@@ -55,7 +55,7 @@ enum class ArticulatedObjectBaseType {
 };
 
 /**
- * @brief This enum class defines the source of the interia values to use for
+ * @brief This enum class defines the source of the inertia values to use for
  * the Articulated Object.
  */
 enum class ArticulatedObjectInertiaSource {
@@ -70,7 +70,7 @@ enum class ArticulatedObjectInertiaSource {
    */
   Computed,
   /**
-   * @brief Use the interia values specified in the URDF file.
+   * @brief Use the inertia values specified in the URDF file.
    */
   URDF,
   /**

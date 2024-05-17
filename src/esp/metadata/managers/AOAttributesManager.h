@@ -154,7 +154,7 @@ class AOAttributesManager
    * See @ref esp::attributes::managers::ObjectAttributesManager for an example.
    *
    * @param objectID the ID of the successfully registered managed object
-   * @param objectHandle The name of the managed objbect
+   * @param objectHandle The name of the managed object
    */
   void postRegisterObjectHandling(
       CORRADE_UNUSED int objectID,

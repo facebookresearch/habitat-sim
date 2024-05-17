@@ -230,7 +230,7 @@ class ObjectAttributesManager
    * successfully registering an object.
    *
    * @param objectID the ID of the successfully registered managed object
-   * @param objectHandle The name of the managed objbect
+   * @param objectHandle The name of the managed object
    */
   void postRegisterObjectHandling(int objectID,
                                   const std::string& objectHandle) override;

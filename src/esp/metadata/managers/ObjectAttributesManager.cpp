@@ -104,7 +104,7 @@ void ObjectAttributesManager::setValsFromJSONDoc(
         objAttributes->setJoinCollisionMeshes(join_collision_meshes);
       });
 
-  // The object's interia matrix diagonal
+  // The object's inertia matrix diagonal
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "inertia", [objAttributes](const Magnum::Vector3& inertia) {
         objAttributes->setInertia(inertia);

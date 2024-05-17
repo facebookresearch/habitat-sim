@@ -161,7 +161,7 @@ SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
   // Set the instance base type to be unspecified - if not set in instance json,
   // use ao_config value
   init("base_type", getAOBaseTypeName(ArticulatedObjectBaseType::Unspecified));
-  // Set the instance source for the interia calculation to be unspecified - if
+  // Set the instance source for the inertia calculation to be unspecified - if
   // not set in instance json, use ao_config value
   init("inertia_source",
        getAOInertiaSourceName(ArticulatedObjectInertiaSource::Unspecified));
@@ -190,7 +190,7 @@ SceneAOInstanceAttributes::SceneAOInstanceAttributes(
   setShaderType(getShaderTypeName(aObjAttribs->getShaderType()));
   // Set the instance base type to use aObjAttribs value
   setBaseType(getAOBaseTypeName(aObjAttribs->getBaseType()));
-  // Set the instance source for the interia calculation to use aObjAttribs
+  // Set the instance source for the inertia calculation to use aObjAttribs
   // value
   setInertiaSource(getAOInertiaSourceName(aObjAttribs->getInertiaSource()));
   // Set the instance link order to use aObjAttribs value
