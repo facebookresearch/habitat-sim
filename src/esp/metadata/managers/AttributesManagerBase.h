@@ -729,6 +729,13 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
   // Initialize potentially empty fields
   relPathSetter(curRelativePathName);
   fqPathSetter(curFullyQualifiedPathName);
+  // Check if expected relative filepath is accessible on disk (therefore is
+  // fully qualified)
+  bool relPathNameExists = CrPath::exists(curRelativePathName);
+  if (relPathNameExists) {
+    // Set the fully qualified value to be the found curRelPathName
+    fqPathSetter(curRelativePathName);
+  }
 
   // Get the attributes filepath that our desired filepath should be
   // relative to
@@ -746,9 +753,7 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
 
     // Check if expected relative filepath is accessible on disk (therefore is
     // fully qualified)
-    if (CrPath::exists(curRelativePathName)) {
-      // Set the fully qualified value to be the found curRelPathName
-      fqPathSetter(curRelativePathName);
+    if (relPathNameExists) {
       // Get new path relative to attrFilepath
       const std::string newRelFilepath =
           io::getPathRealtiveToAbsPath(curRelativePathName, attrFilepath);
