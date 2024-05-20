@@ -484,26 +484,39 @@ void StageAttributesManager::finalizeAttrPathsBeforeRegister(
 
   // Render asset filename filter out path and set internal reference to full
   // filepath
-  this->filterAttribsFilenames(
-      stageAttributes, stageAttributes->getRenderAssetHandle(),
-      stageAttributes->getRenderAssetFullPath(),
-      [stageAttributes](const std::string& renderAsset) {
-        stageAttributes->setRenderAssetHandle(renderAsset);
-      },
-      [stageAttributes](const std::string& renderAsset) {
-        stageAttributes->setRenderAssetFullPath(renderAsset);
-      });
+  const std::string renderAssetHandle = stageAttributes->getRenderAssetHandle();
+  if (!this->isValidPrimitiveAttributes(renderAssetHandle)) {
+    this->filterAttribsFilenames(
+        stageAttributes, renderAssetHandle,
+        stageAttributes->getRenderAssetFullPath(),
+        [stageAttributes](const std::string& renderAsset) {
+          stageAttributes->setRenderAssetHandle(renderAsset);
+        },
+        [stageAttributes](const std::string& renderAsset) {
+          stageAttributes->setRenderAssetFullPath(renderAsset);
+        });
+  } else {
+    // If handle refs a prim then just copy it over to full path
+    stageAttributes->setRenderAssetFullPath(renderAssetHandle);
+  }
   // Collision asset filename filter out path and set internal reference to
   // full filepaath
-  this->filterAttribsFilenames(
-      stageAttributes, stageAttributes->getCollisionAssetHandle(),
-      stageAttributes->getCollisionAssetFullPath(),
-      [stageAttributes](const std::string& colHndl) {
-        stageAttributes->setCollisionAssetHandle(colHndl);
-      },
-      [stageAttributes](const std::string& colHndl) {
-        stageAttributes->setCollisionAssetFullPath(colHndl);
-      });
+  const std::string collisionAssetHandle =
+      stageAttributes->getCollisionAssetHandle();
+  if (!this->isValidPrimitiveAttributes(collisionAssetHandle)) {
+    this->filterAttribsFilenames(
+        stageAttributes, collisionAssetHandle,
+        stageAttributes->getCollisionAssetFullPath(),
+        [stageAttributes](const std::string& colHndl) {
+          stageAttributes->setCollisionAssetHandle(colHndl);
+        },
+        [stageAttributes](const std::string& colHndl) {
+          stageAttributes->setCollisionAssetFullPath(colHndl);
+        });
+  } else {
+    // If handle refs a prim then just copy it over to full path
+    stageAttributes->setCollisionAssetFullPath(collisionAssetHandle);
+  }
   // filter filepaths of full path qualifiers
   // Navmesh asset filename
   this->filterAttribsFilenames(

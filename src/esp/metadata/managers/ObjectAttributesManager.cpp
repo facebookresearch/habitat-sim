@@ -315,26 +315,41 @@ void ObjectAttributesManager::finalizeAttrPathsBeforeRegister(
   //     << objectTemplate->getFileDirectory() << "`";
   // Render asset filename filter out path and set internal reference to full
   // filepaath
-  this->filterAttribsFilenames(
-      objectTemplate, objectTemplate->getRenderAssetHandle(),
-      objectTemplate->getRenderAssetFullPath(),
-      [objectTemplate](const std::string& renderAsset) {
-        objectTemplate->setRenderAssetHandle(renderAsset);
-      },
-      [objectTemplate](const std::string& renderAsset) {
-        objectTemplate->setRenderAssetFullPath(renderAsset);
-      });
+  // Render asset filename filter out path and set internal reference to full
+  // filepath
+  const std::string renderAssetHandle = objectTemplate->getRenderAssetHandle();
+  if (!this->isValidPrimitiveAttributes(renderAssetHandle)) {
+    this->filterAttribsFilenames(
+        objectTemplate, renderAssetHandle,
+        objectTemplate->getRenderAssetFullPath(),
+        [objectTemplate](const std::string& renderAsset) {
+          objectTemplate->setRenderAssetHandle(renderAsset);
+        },
+        [objectTemplate](const std::string& renderAsset) {
+          objectTemplate->setRenderAssetFullPath(renderAsset);
+        });
+  } else {
+    // If handle refs a prim then just copy it over to full path
+    objectTemplate->setRenderAssetFullPath(renderAssetHandle);
+  }
   // Collision asset filename filter out path and set internal reference to
   // full filepaath
-  this->filterAttribsFilenames(
-      objectTemplate, objectTemplate->getCollisionAssetHandle(),
-      objectTemplate->getCollisionAssetFullPath(),
-      [objectTemplate](const std::string& colHndl) {
-        objectTemplate->setCollisionAssetHandle(colHndl);
-      },
-      [objectTemplate](const std::string& colHndl) {
-        objectTemplate->setCollisionAssetFullPath(colHndl);
-      });
+  const std::string collisionAssetHandle =
+      objectTemplate->getCollisionAssetHandle();
+  if (!this->isValidPrimitiveAttributes(collisionAssetHandle)) {
+    this->filterAttribsFilenames(
+        objectTemplate, collisionAssetHandle,
+        objectTemplate->getCollisionAssetFullPath(),
+        [objectTemplate](const std::string& colHndl) {
+          objectTemplate->setCollisionAssetHandle(colHndl);
+        },
+        [objectTemplate](const std::string& colHndl) {
+          objectTemplate->setCollisionAssetFullPath(colHndl);
+        });
+  } else {
+    // If handle refs a prim then just copy it over to full path
+    objectTemplate->setCollisionAssetFullPath(collisionAssetHandle);
+  }
 
   // ESP_ERROR(Mn::Debug::Flag::NoSpace)
   //     << "AFTER Obj `" << objectTemplateHandle << "`: Render fn `"

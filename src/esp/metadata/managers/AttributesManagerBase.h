@@ -756,7 +756,7 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
     if (relPathNameExists) {
       // Get new path relative to attrFilepath
       const std::string newRelFilepath =
-          io::getPathRealtiveToAbsPath(curRelativePathName, attrFilepath);
+          io::getPathRelativeToAbsPath(curRelativePathName, attrFilepath);
       // save the new relative filepath
       relPathSetter(newRelFilepath);
       Cr::Utility::formatInto(dispString, dispString.size(),
