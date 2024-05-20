@@ -308,13 +308,11 @@ ObjectAttributesManager::preRegisterObjectFinalize(
 
 void ObjectAttributesManager::finalizeAttrPathsBeforeRegister(
     const attributes::ObjectAttributes::ptr& objectTemplate) const {
-  // ESP_ERROR(Mn::Debug::Flag::NoSpace)
-  //     << "BEFORE Obj `" << objectTemplateHandle << "`: Render fn `"
-  //     << objectTemplate->getRenderAssetHandle() << "`| Collision fn `"
-  //     << objectTemplate->getCollisionAssetHandle() << "`| file dir `"
-  //     << objectTemplate->getFileDirectory() << "`";
-  // Render asset filename filter out path and set internal reference to full
-  // filepaath
+  ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+      << "BEFORE Obj `" << objectTemplate->getHandle() << "`: Render fn `"
+      << objectTemplate->getRenderAssetHandle() << "`| Collision fn `"
+      << objectTemplate->getCollisionAssetHandle() << "`| file dir `"
+      << objectTemplate->getFileDirectory() << "`";
   // Render asset filename filter out path and set internal reference to full
   // filepath
   const std::string renderAssetHandle = objectTemplate->getRenderAssetHandle();
@@ -351,12 +349,12 @@ void ObjectAttributesManager::finalizeAttrPathsBeforeRegister(
     objectTemplate->setCollisionAssetFullPath(collisionAssetHandle);
   }
 
-  // ESP_ERROR(Mn::Debug::Flag::NoSpace)
-  //     << "AFTER Obj `" << objectTemplateHandle << "`: Render fn `"
-  //     << objectTemplate->getRenderAssetHandle() << "`| Collision fn `"
-  //     << objectTemplate->getCollisionAssetHandle() << "`| file dir `"
-  //     << objectTemplate->getFileDirectory() << "`";
-}
+  ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+      << "AFTER Obj `" << objectTemplate->getHandle() << "`: Render fn `"
+      << objectTemplate->getRenderAssetHandle() << "`| Collision fn `"
+      << objectTemplate->getCollisionAssetHandle() << "`| file dir `"
+      << objectTemplate->getFileDirectory() << "`";
+}  // ObjectAttributesManager::finalizeAttrPathsBeforeRegister
 
 void ObjectAttributesManager::postRegisterObjectHandling(
     int objectTemplateID,

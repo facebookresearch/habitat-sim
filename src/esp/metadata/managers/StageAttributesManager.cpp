@@ -469,18 +469,17 @@ StageAttributesManager::preRegisterObjectFinalize(
 
 void StageAttributesManager::finalizeAttrPathsBeforeRegister(
     const attributes::StageAttributes::ptr& stageAttributes) const {
-  // ESP_ERROR(Mn::Debug::Flag::NoSpace)
-  //     << "BEFORE : Stage `" << stageAttributesHandle << "`: Render rel `"
-  //     << stageAttributes->getRenderAssetHandle() << "`: Render FQ `"
-  //     << stageAttributes->getRenderAssetFullPath() << "`| Collision rel `"
-  //     << stageAttributes->getCollisionAssetHandle() << "`| Collision FQ `"
-  //     << stageAttributes->getCollisionAssetFullPath() << "`| navmesh rel `"
-  //     << stageAttributes->getNavmeshAssetHandle()
-  //     << "`| semantic asset rel `"
-  //     << stageAttributes->getSemanticAssetHandle()
-  //     << "`| semantic descriptor rel `"
-  //     << stageAttributes->getSemanticDescriptorFilename() << "`| file dir `"
-  //     << stageAttributes->getFileDirectory() << "`";
+  ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+      << "BEFORE : Stage `" << stageAttributes->getHandle() << "`: Render rel `"
+      << stageAttributes->getRenderAssetHandle() << "`: Render FQ `"
+      << stageAttributes->getRenderAssetFullPath() << "`| Collision rel `"
+      << stageAttributes->getCollisionAssetHandle() << "`| Collision FQ `"
+      << stageAttributes->getCollisionAssetFullPath() << "`| navmesh rel `"
+      << stageAttributes->getNavmeshAssetHandle() << "`| semantic asset rel `"
+      << stageAttributes->getSemanticAssetHandle()
+      << "`| semantic descriptor rel `"
+      << stageAttributes->getSemanticDescriptorFilename() << "`| file dir `"
+      << stageAttributes->getFileDirectory() << "`";
 
   // Render asset filename filter out path and set internal reference to full
   // filepath
@@ -549,18 +548,17 @@ void StageAttributesManager::finalizeAttrPathsBeforeRegister(
         stageAttributes->setSemanticDescriptorFullPath(ssd);
       });
 
-  // ESP_ERROR(Mn::Debug::Flag::NoSpace)
-  //     << "AFTER : Stage `" << stageAttributesHandle << "`: Render rel `"
-  //     << stageAttributes->getRenderAssetHandle() << "`: Render FQ `"
-  //     << stageAttributes->getRenderAssetFullPath() << "`| Collision rel `"
-  //     << stageAttributes->getCollisionAssetHandle() << "`| Collision FQ `"
-  //     << stageAttributes->getCollisionAssetFullPath() << "`| navmesh rel `"
-  //     << stageAttributes->getNavmeshAssetHandle()
-  //     << "`| semantic asset rel `"
-  //     << stageAttributes->getSemanticAssetHandle()
-  //     << "`| semantic descriptor rel `"
-  //     << stageAttributes->getSemanticDescriptorFilename() << "`| file dir `"
-  //     << stageAttributes->getFileDirectory() << "`";
+  ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+      << "AFTER : Stage `" << stageAttributes->getHandle() << "`: Render rel `"
+      << stageAttributes->getRenderAssetHandle() << "`: Render FQ `"
+      << stageAttributes->getRenderAssetFullPath() << "`| Collision rel `"
+      << stageAttributes->getCollisionAssetHandle() << "`| Collision FQ `"
+      << stageAttributes->getCollisionAssetFullPath() << "`| navmesh rel `"
+      << stageAttributes->getNavmeshAssetHandle() << "`| semantic asset rel `"
+      << stageAttributes->getSemanticAssetHandle()
+      << "`| semantic descriptor rel `"
+      << stageAttributes->getSemanticDescriptorFilename() << "`| file dir `"
+      << stageAttributes->getFileDirectory() << "`";
 
   // Clear dirty flag from when asset handles are changed
 }

@@ -721,8 +721,8 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
 
   // If both relative and fully qualified paths are empty,
   if (curRelativePathName.empty() && curFullyQualifiedPathName.empty()) {
-    ESP_ERROR() << "BOTH RELATIVE AND FQ PATHS ARE EMPTY Skipping: "
-                << dispString;
+    ESP_VERY_VERBOSE() << "BOTH RELATIVE AND FQ PATHS ARE EMPTY Skipping: "
+                       << dispString;
     return;
   }
 
@@ -741,7 +741,7 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
   // relative to
   const std::string attrFilepath = attributes->getFileDirectory();
   if (attrFilepath.empty()) {
-    ESP_ERROR() << "EMPTY FILEPATH Skipping : " << dispString;
+    ESP_VERY_VERBOSE() << "EMPTY FILEPATH Skipping : " << dispString;
     // if filepath is empty, do nothing.
     return;
   }
@@ -762,20 +762,6 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
       Cr::Utility::formatInto(dispString, dispString.size(),
                               "|curRelPathName is FOUND/FQ|newRelFP `{}`",
                               newRelFilepath);
-    } else if (curRelativePathName.empty()) {
-      Cr::Utility::formatInto(dispString, dispString.size(),
-                              "|!!! curRelPathName is empty");
-    } else {
-      // Current relative filepath cannot be found and is not empty, so assume
-      // it is already appropriately formatted
-    }
-
-    if (CrPath::exists(curFullyQualifiedPathName)) {
-      // Current fully qualified pathname is found
-      Cr::Utility::formatInto(dispString, dispString.size(),
-                              "|curFQPathName is FOUND/FQ");
-
-      // TODO : Populate relPathName with relative path pathname?
     }
 
   }  // if attributes dir is set properly
@@ -784,7 +770,7 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
                             "|NON-EXISTING FILEPATH `{}` ", attrFilepath);
   }
 
-  ESP_ERROR() << "\n" << dispString << "\n";
+  ESP_VERY_VERBOSE() << dispString;
 }  // filterAttribsFilenames
 
 template <class T, ManagedObjectAccess Access>

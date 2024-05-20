@@ -233,14 +233,13 @@ SemanticAttributesManager::preRegisterObjectFinalize(
 void SemanticAttributesManager::finalizeAttrPathsBeforeRegister(
     const attributes::SemanticAttributes::ptr& semanticAttributes) const {
   // filter filepaths of full path qualifiers
-  // ESP_ERROR(Mn::Debug::Flag::NoSpace)
-  //     << "BEFORE : Semantic Attr `" << semanticAttributes->getHandle()
-  //     << "`| semantic asset fn `"
-  //     << semanticAttributes->getSemanticAssetHandle()
-  //     << "`| semantic descriptor fn `"
-  //     << semanticAttributes->getSemanticDescriptorFilename()
-  //     << "`| file directory `" << semanticAttributes->getFileDirectory() <<
-  //     "`";
+  ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+      << "BEFORE : Semantic Attr `" << semanticAttributes->getHandle()
+      << "`| semantic asset fn `"
+      << semanticAttributes->getSemanticAssetHandle()
+      << "`| semantic descriptor fn `"
+      << semanticAttributes->getSemanticDescriptorFilename()
+      << "`| file directory `" << semanticAttributes->getFileDirectory() << "`";
   // Semantic asset filename
   this->filterAttribsFilenames(
       semanticAttributes, semanticAttributes->getSemanticAssetHandle(),
@@ -262,14 +261,13 @@ void SemanticAttributesManager::finalizeAttrPathsBeforeRegister(
         semanticAttributes->setSemanticDescriptorFullPath(semanticAsset);
       });
 
-  // ESP_ERROR(Mn::Debug::Flag::NoSpace)
-  //     << "AFTER : Semantic Attr `" << semanticAttributes->getHandle()
-  //     << "`| semantic asset fn `"
-  //     << semanticAttributes->getSemanticAssetHandle()
-  //     << "`| semantic descriptor fn `"
-  //     << semanticAttributes->getSemanticDescriptorFilename()
-  //     << "`| file directory `" << semanticAttributes->getFileDirectory() <<
-  //     "`";
+  ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+      << "AFTER : Semantic Attr `" << semanticAttributes->getHandle()
+      << "`| semantic asset fn `"
+      << semanticAttributes->getSemanticAssetHandle()
+      << "`| semantic descriptor fn `"
+      << semanticAttributes->getSemanticDescriptorFilename()
+      << "`| file directory `" << semanticAttributes->getFileDirectory() << "`";
 
 }  // SemanticAttributesManager::finalizeAttrPathsBeforeRegister
 

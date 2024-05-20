@@ -36,6 +36,8 @@ void Mp3dTest::testLoad() {
   auto mp3dAttr =
       esp::metadata::attributes::SemanticAttributes::create("mp3dTestAttrs");
   mp3dAttr->setSemanticDescriptorFilename(filename);
+  mp3dAttr->setSemanticDescriptorFullPath(filename);
+
   esp::scene::SemanticScene house;
   const esp::quatf alignGravity =
       esp::quatf::FromTwoVectors(-esp::vec3f::UnitZ(), esp::geo::ESP_GRAVITY);

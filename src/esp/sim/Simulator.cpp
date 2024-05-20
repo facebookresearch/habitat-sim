@@ -498,20 +498,20 @@ bool Simulator::instanceStageForSceneAttributes(
   // SemanticAttributes
   if (semanticAttr != nullptr) {
     const std::string semanticAttrSSDName =
-        semanticAttr->getSemanticDescriptorFullPath();
+        semanticAttr->getSemanticDescriptorFilename();
     const std::string semanticAttrAssetName =
-        semanticAttr->getSemanticAssetFullPath();
+        semanticAttr->getSemanticAssetHandle();
     // - Set stage semantic values if appropriate - this overrides whatever is
     // specified previoussly in stage attributes.
     if (semanticAttrSSDName != "") {
-      stageAttributes->setSemanticDescriptorFilename(
-          semanticAttr->getSemanticDescriptorFilename());
-      stageAttributes->setSemanticDescriptorFullPath(semanticAttrSSDName);
+      stageAttributes->setSemanticDescriptorFilename(semanticAttrSSDName);
+      stageAttributes->setSemanticDescriptorFullPath(
+          semanticAttr->getSemanticDescriptorFullPath());
     }
     if (semanticAttrAssetName != "") {
-      stageAttributes->setSemanticAssetHandle(
-          semanticAttr->getSemanticAssetHandle());
-      stageAttributes->setSemanticAssetFullPath(semanticAttrAssetName);
+      stageAttributes->setSemanticAssetHandle(semanticAttrAssetName);
+      stageAttributes->setSemanticAssetFullPath(
+          semanticAttr->getSemanticAssetFullPath());
       stageAttributes->setSemanticAssetTypeEnum(
           semanticAttr->getSemanticAssetType());
       if (semanticAttr->getSemanticOrientFront() !=
@@ -525,6 +525,8 @@ bool Simulator::instanceStageForSceneAttributes(
             semanticAttr->getSemanticOrientUp());
       }
     }
+    metadataMediator_->getStageAttributesManager()
+        ->finalizeAttrPathsBeforeRegister(stageAttributes);
   }
 
   // set visibility if explicitly specified in stage instance configs

@@ -169,6 +169,8 @@ std::string SceneDatasetAttributes::addSemanticSceneDescrPathEntry(
   if (setSemanticAssetData && semanticAttr->getSemanticAssetHandle().empty()) {
     // asset handle specified, get all stage-specified data
     semanticAttr->setSemanticAssetHandle(stageSemanticAssetFilename);
+    semanticAttr->setSemanticAssetFullPath(
+        stageAttributes->getSemanticAssetFullPath());
     semanticAttr->setSemanticAssetTypeEnum(
         stageAttributes->getSemanticAssetType());
     semanticAttr->setSemanticOrientUp(stageAttributes->getSemanticOrientUp());
@@ -179,6 +181,8 @@ std::string SceneDatasetAttributes::addSemanticSceneDescrPathEntry(
     // scene descriptor filename specified in stage, set in semantic
     // attributes.
     semanticAttr->setSemanticDescriptorFilename(stageSSDFilename);
+    semanticAttr->setSemanticDescriptorFullPath(
+        stageAttributes->getSemanticDescriptorFullPath());
   }
   // Save changes and make sure appropriate filtering happens
   semanticAttributesManager_->registerObject(semanticAttr, semanticHandle);

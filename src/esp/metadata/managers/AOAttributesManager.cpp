@@ -203,16 +203,20 @@ AOAttributesManager::preRegisterObjectFinalize(
         << "`, but this file cannot be found, so registration is aborted.";
     return core::managedContainers::ManagedObjectPreregistration::Failed;
   }
-
+  const std::string renderAssetHandle =
+      AOAttributesTemplate->getRenderAssetHandle();
   // Furthermore, if 'skin' is specified as render_mode and no skin is
   // specified or the specified skin cannot be found, the registration should
   // also fail and the template should not be registered.
-  bool useSkinRenderMode = AOAttributesTemplate->getRenderMode() ==
-                           attributes::ArticulatedObjectRenderMode::Skin;
+  bool useSkinRenderMode =
+      (AOAttributesTemplate->getRenderMode() ==
+       attributes::ArticulatedObjectRenderMode::Skin) ||
+      ((AOAttributesTemplate->getRenderMode() ==
+        attributes::ArticulatedObjectRenderMode::Default) &&
+       (!renderAssetHandle.empty()));
   if (useSkinRenderMode) {
-    // if 'skin' render mode is specified as render mode
-    const std::string renderAssetHandle =
-        AOAttributesTemplate->getRenderAssetHandle();
+    // if 'skin' render mode is specified as render mode or default and a skin
+    // is specified
 
     const std::string renderAssetFullPath =
         AOAttributesTemplate->getRenderAssetFullPath();
@@ -268,21 +272,18 @@ void AOAttributesManager::finalizeAttrPathsBeforeRegister(
         AOAttributesTemplate->setURDFFullPath(urdfAsset);
       });
 
-  bool useSkinRenderMode = AOAttributesTemplate->getRenderMode() ==
-                           attributes::ArticulatedObjectRenderMode::Skin;
-  if (useSkinRenderMode) {
-    // Render asset filename filter out path and set internal reference to
-    // full filepath
-    this->filterAttribsFilenames(
-        AOAttributesTemplate, AOAttributesTemplate->getRenderAssetHandle(),
-        AOAttributesTemplate->getRenderAssetFullPath(),
-        [AOAttributesTemplate](const std::string& renderAsset) {
-          AOAttributesTemplate->setRenderAssetHandle(renderAsset);
-        },
-        [AOAttributesTemplate](const std::string& renderAsset) {
-          AOAttributesTemplate->setRenderAssetFullPath(renderAsset);
-        });
-  }
+  // Render asset filename filter out path and set internal reference to
+  // full filepath
+  this->filterAttribsFilenames(
+      AOAttributesTemplate, AOAttributesTemplate->getRenderAssetHandle(),
+      AOAttributesTemplate->getRenderAssetFullPath(),
+      [AOAttributesTemplate](const std::string& renderAsset) {
+        AOAttributesTemplate->setRenderAssetHandle(renderAsset);
+      },
+      [AOAttributesTemplate](const std::string& renderAsset) {
+        AOAttributesTemplate->setRenderAssetFullPath(renderAsset);
+      });
+
 }  // AOAttributesManager::finalizeAttrPathsBeforeRegister
 
 std::map<std::string, std::string>
