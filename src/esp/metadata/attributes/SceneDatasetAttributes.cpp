@@ -153,11 +153,12 @@ void SceneDatasetAttributes::createSemanticAttribsFromDS(
 std::string SceneDatasetAttributes::addSemanticSceneDescrPathEntry(
     const std::string& semanticHandle,
     const attributes::StageAttributes::ptr& stageAttributes) {
-  const auto ssdFilename = stageAttributes->getSemanticDescriptorFullPath();
-  const auto semanticAssetFilename =
-      stageAttributes->getSemanticAssetFullPath();
-  bool setSemanticAssetData = (semanticAssetFilename != "");
-  bool setSSDFilename = (ssdFilename != "");
+  const auto stageSSDFilename =
+      stageAttributes->getSemanticDescriptorFilename();
+  const auto stageSemanticAssetFilename =
+      stageAttributes->getSemanticAssetHandle();
+  bool setSemanticAssetData = (stageSemanticAssetFilename != "");
+  bool setSSDFilename = (stageSSDFilename != "");
   // create a semantic attributes if DNE with given handle
   this->createSemanticAttribsFromDS(semanticHandle, "Stage Attributes");
 
@@ -165,23 +166,22 @@ std::string SceneDatasetAttributes::addSemanticSceneDescrPathEntry(
   auto semanticAttr =
       semanticAttributesManager_->getObjectByHandle(semanticHandle);
 
-  if (setSemanticAssetData &&
-      semanticAttr->getSemanticAssetFullPath().empty()) {
+  if (setSemanticAssetData && semanticAttr->getSemanticAssetHandle().empty()) {
     // asset handle specified, get all stage-specified data
-    semanticAttr->setSemanticAssetHandle(
-        stageAttributes->getSemanticAssetHandle());
-    semanticAttr->setSemanticAssetFullPath(semanticAssetFilename);
+    semanticAttr->setSemanticAssetHandle(stageSemanticAssetFilename);
     semanticAttr->setSemanticAssetTypeEnum(
         stageAttributes->getSemanticAssetType());
     semanticAttr->setSemanticOrientUp(stageAttributes->getSemanticOrientUp());
     semanticAttr->setSemanticOrientFront(
         stageAttributes->getSemanticOrientFront());
   }
-  if (setSSDFilename && semanticAttr->getSemanticDescriptorFullPath().empty()) {
+  if (setSSDFilename && semanticAttr->getSemanticDescriptorFilename().empty()) {
     // scene descriptor filename specified in stage, set in semantic
     // attributes.
-    semanticAttr->setSemanticDescriptorFilename(ssdFilename);
+    semanticAttr->setSemanticDescriptorFilename(stageSSDFilename);
   }
+  // Save changes and make sure appropriate filtering happens
+  semanticAttributesManager_->registerObject(semanticAttr, semanticHandle);
   return semanticAttr->getHandle();
 }  // SceneDatasetAttributes::addSemanticSceneDescrPathEntry
 
@@ -198,6 +198,8 @@ void SceneDatasetAttributes::setSemanticAttrSSDFilenames(
     auto semanticAttr =
         semanticAttributesManager_->getObjectByHandle(semanticHandle);
     semanticAttr->setSemanticDescriptorFilename(ssdFilename);
+    // Save changes and make sure appropriate filtering happens
+    semanticAttributesManager_->registerObject(semanticAttr, semanticHandle);
   }
 
 }  // SceneDatasetAttributes::setSemanticAttrSSDFilenames
