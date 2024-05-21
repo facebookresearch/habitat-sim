@@ -307,7 +307,7 @@ def test_stage_attributes_managers():
         assert template0.gravity == mn.Vector3(0.0, -9.8, 0.0)
 
         # verify creating new template
-        perform_add_blank_template_test(stage_mgr, template0.render_asset_handle)
+        perform_add_blank_template_test(stage_mgr, template0.render_asset_fullpath)
 
 
 def test_object_attributes_managers():
@@ -323,7 +323,7 @@ def test_object_attributes_managers():
         template0, _ = perform_general_tests(obj_mgr, rand_obj_handle)
 
         # verify creating new template
-        perform_add_blank_template_test(obj_mgr, template0.render_asset_handle)
+        perform_add_blank_template_test(obj_mgr, template0.render_asset_fullpath)
 
 
 def perform_asset_attrib_mgr_tests(attr_mgr, default_attribs, legalVal, illegalVal):
