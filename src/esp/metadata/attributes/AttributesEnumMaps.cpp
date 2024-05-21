@@ -17,17 +17,17 @@ const std::map<std::string, AssetType> AssetTypeNamesMap = {
     {"navmesh", AssetType::Navmesh},
     {"primitive", AssetType::Primitive}};
 
-std::string getMeshTypeName(AssetType meshTypeEnum) {
+std::string getAssetTypeName(AssetType assetTypeEnum) {
   // this verifies that enum value being checked is supported by string-keyed
   // map. The values below should be the minimum and maximum enums supported by
   // AssetTypeNamesMap
-  if (meshTypeEnum <= AssetType::Unknown ||
-      meshTypeEnum >= AssetType::EndAssetType) {
+  if (assetTypeEnum <= AssetType::Unknown ||
+      assetTypeEnum >= AssetType::EndAssetType) {
     return "unknown";
   }
   // Must always be valid value
   for (const auto& it : AssetTypeNamesMap) {
-    if (it.second == meshTypeEnum) {
+    if (it.second == assetTypeEnum) {
       return it.first;
     }
   }

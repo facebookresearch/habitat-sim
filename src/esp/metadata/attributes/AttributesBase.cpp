@@ -14,12 +14,14 @@ AbstractAttributes::AbstractAttributes(const std::string& attributesClassKey,
     : Configuration() {
   // set up an existing subgroup for user_defined attributes
   addOrEditSubgroup<Configuration>("user_defined");
-  AbstractAttributes::setClassKey(attributesClassKey);
-  AbstractAttributes::setHandle(handle);
-  // set initial vals, will be overwritten when registered
-  set("ID", 0);
-  set("fileDirectory", "");
-  set("actualFilename", "");
+
+  init("handle", handle);
+  // These fields are all hidden/internally used fields, so do not set them as
+  // initialized/default values. They still should never be written to file.
+  setHidden("__attributesClassKey", attributesClassKey);
+  setHidden("__ID", 0);
+  setHidden("__fileDirectory", "");
+  setHidden("__actualFilename", "");
 }
 
 }  // namespace attributes

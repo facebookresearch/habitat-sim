@@ -24,10 +24,10 @@ class ObjectAttributes : public AbstractObjectAttributes {
 
   // whether com is provided or not
   void setComputeCOMFromShape(bool computeCOMFromShape) {
-    set("compute_COM_from_shape", computeCOMFromShape);
+    setHidden("__computeCOMFromShape", computeCOMFromShape);
   }
   bool getComputeCOMFromShape() const {
-    return get<bool>("compute_COM_from_shape");
+    return get<bool>("__computeCOMFromShape");
   }
 
   void setMass(double mass) { set("mass", mass); }
@@ -81,7 +81,8 @@ class ObjectAttributes : public AbstractObjectAttributes {
    */
   std::string getAbstractObjectInfoHeaderInternal() const override {
     return "Mass,COM XYZ,I XX YY ZZ,Angular Damping,"
-           "Linear Damping,Semantic ID";
+           "Linear Damping,Use BBox Collisions,Join Collision Meshes,Semantic "
+           "ID";
   }
   /**
    * @brief get AbstractObject specific info for csv string

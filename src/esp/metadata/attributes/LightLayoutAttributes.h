@@ -60,9 +60,10 @@ class LightInstanceAttributes : public AbstractAttributes {
     auto mapIter = LightTypeNamesMap.find(lightType);
     ESP_CHECK(mapIter != LightTypeNamesMap.end(),
               "Illegal type value"
-                  << type << "attempted to be set in LightInstanceAttributes:"
+                  << type << ":" << lightType
+                  << "attempted to be set in LightInstanceAttributes:"
                   << getHandle() << ". Aborting.");
-    set("type", type);
+    setTranslated("type", type);
   }
 
   /** @brief Get the type of the light */
@@ -90,10 +91,10 @@ class LightInstanceAttributes : public AbstractAttributes {
     auto mapIter = LightPositionNamesMap.find(posModelLC);
     ESP_CHECK(mapIter != LightPositionNamesMap.end(),
               "Illegal position_model value"
-                  << position_model
+                  << position_model << ":" << posModelLC
                   << "attempted to be set in LightInstanceAttributes:"
                   << getHandle() << ". Aborting.");
-    set("position_model", position_model);
+    setTranslated("position_model", position_model);
   }
 
   /**

@@ -172,7 +172,7 @@ class ObjectAttributesManager
       attributes::ObjectAttributes::ptr attributes,
       bool setFrame,
       const std::string& meshHandle,
-      const std::function<void(int)>& assetTypeSetter) override;
+      const std::function<void(AssetType)>& assetTypeSetter) override;
 
   /**
    * @brief Used Internally.  Create and configure newly-created attributes
@@ -230,7 +230,7 @@ class ObjectAttributesManager
    * successfully registering an object.
    *
    * @param objectID the ID of the successfully registered managed object
-   * @param objectHandle The name of the managed objbect
+   * @param objectHandle The name of the managed object
    */
   void postRegisterObjectHandling(int objectID,
                                   const std::string& objectHandle) override;

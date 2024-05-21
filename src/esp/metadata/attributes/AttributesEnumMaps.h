@@ -55,7 +55,7 @@ enum class ArticulatedObjectBaseType {
 };
 
 /**
- * @brief This enum class defines the source of the interia values to use for
+ * @brief This enum class defines the source of the inertia values to use for
  * the Articulated Object.
  */
 enum class ArticulatedObjectInertiaSource {
@@ -70,7 +70,7 @@ enum class ArticulatedObjectInertiaSource {
    */
   Computed,
   /**
-   * @brief Use the interia values specified in the URDF file.
+   * @brief Use the inertia values specified in the URDF file.
    */
   URDF,
   /**
@@ -229,7 +229,7 @@ const extern std::map<std::string, AssetType> AssetTypeNamesMap;
  * @brief Get a string name representing the specified @ref
  * AssetType enum value.
  */
-std::string getMeshTypeName(AssetType meshTypeEnum);
+std::string getAssetTypeName(AssetType meshTypeEnum);
 
 /**
  * @brief Constant map to provide mappings from string tags to @ref

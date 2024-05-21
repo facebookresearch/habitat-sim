@@ -598,8 +598,7 @@ ResourceManager::createStageAssetInfosFromAttributes(
       stageAttributes->getOrientFront(), stageAttributes->getOrigin());
   float virtualUnitToMeters = stageAttributes->getUnitsToMeters();
   // create render asset info
-  auto renderType =
-      static_cast<AssetType>(stageAttributes->getRenderAssetType());
+  AssetType renderType = stageAttributes->getRenderAssetType();
   AssetInfo renderInfo{
       renderType,                               // type
       stageAttributes->getRenderAssetHandle(),  // file path
@@ -618,8 +617,7 @@ ResourceManager::createStageAssetInfosFromAttributes(
   resMap["render"] = renderInfo;
   if (createCollisionInfo) {
     // create collision asset info if requested
-    auto colType =
-        static_cast<AssetType>(stageAttributes->getCollisionAssetType());
+    AssetType colType = stageAttributes->getCollisionAssetType();
     AssetInfo collisionInfo{
         colType,                                     // type
         stageAttributes->getCollisionAssetHandle(),  // file path
@@ -638,8 +636,7 @@ ResourceManager::createStageAssetInfosFromAttributes(
   }
   if (createSemanticInfo) {
     // create semantic asset info if requested
-    auto semanticType =
-        static_cast<AssetType>(stageAttributes->getSemanticAssetType());
+    AssetType semanticType = stageAttributes->getSemanticAssetType();
     // This check being false means a specific orientation for semantic meshes
     // was specified in config file, so they should use -this- orientation
     // instead of the base render asset orientation.
@@ -669,7 +666,7 @@ ResourceManager::createStageAssetInfosFromAttributes(
           debugStr, debugStr.size(),
           "|{} for semantic mesh : `{}` of type `{}`|Semantic Txtrs : {}",
           frame.toString(), semanticInfo.filepath,
-          esp::metadata::attributes::getMeshTypeName(semanticInfo.type),
+          esp::metadata::attributes::getAssetTypeName(semanticInfo.type),
           (semanticInfo.hasSemanticTextures ? "True" : "False"));
     }
     resMap["semantic"] = semanticInfo;

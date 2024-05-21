@@ -9,30 +9,27 @@ namespace attributes {
 
 StageAttributes::StageAttributes(const std::string& handle)
     : AbstractObjectAttributes("StageAttributes", handle) {
-  setGravity({0, -9.8, 0});
-  setOrigin({0, 0, 0});
-  setSemanticOrientUp({0, 1, 0});
-  setSemanticOrientFront({0, 0, -1});
-  // setting defaults for semantic frame will have changed this to false. change
-  // to true so that only used if actually changed.
+  init("gravity", Mn::Vector3{0, -9.8, 0});
+  init("origin", Mn::Vector3{0.0, 0.0, 0.0});
+  init("semantic_up", Mn::Vector3{0.0, 1.0, 0.0});
+  init("semantic_front", Mn::Vector3{0.0, 0.0, -1.0});
+  // Set this to true so that only used if actually changed.
+  // Hidden field
   setUseFrameForAllOrientation(true);
 
   // setting default for semantic assets having semantically painted textures to
   // false
-  setHasSemanticTextures(false);
-  // default to use material-derived shader unless otherwise specified in config
-  // or instance config
-  setShaderType(getShaderTypeName(ObjectInstanceShaderType::Material));
+  init("has_semantic_textures", false);
   // TODO remove this once ShaderType support is complete
   setForceFlatShading(true);
-  // 0 corresponds to AssetType::Unknown->treated as general mesh
-  setCollisionAssetType(static_cast<int>(AssetType::Unknown));
-  // 4 corresponds to AssetType::InstanceMesh
-  setSemanticAssetType(static_cast<int>(AssetType::InstanceMesh));
+  // AssetType::Unknown->treated as general mesh
+  initCollisionAssetTypeEnum(AssetType::Unknown);
+  // AssetType::InstanceMesh->standard semantic mesh handling
+  initSemanticAssetTypeEnum(AssetType::InstanceMesh);
   // set empty defaults for handles
-  set("nav_asset", "");
-  set("semantic_asset", "");
-  set("semantic_descriptor_filename", "");
+  init("nav_asset", "");
+  init("semantic_asset", "");
+  init("semantic_descriptor_filename", "");
 }  // StageAttributes ctor
 
 void StageAttributes::writeValuesToJsonInternal(
@@ -42,13 +39,12 @@ void StageAttributes::writeValuesToJsonInternal(
   writeValueToJson("gravity", jsonObj, allocator);
   // only save values if they were actually set specifically
   if (!getUseFrameForAllOrientation()) {
-    writeValueToJson("semantic_orient_up", "semantic_up", jsonObj, allocator);
-    writeValueToJson("semantic_orient_front", "semantic_front", jsonObj,
-                     allocator);
+    writeValueToJson("semantic_up", jsonObj, allocator);
+    writeValueToJson("semantic_front", jsonObj, allocator);
   }
   writeValueToJson("has_semantic_textures", jsonObj, allocator);
-  writeValueToJson("semantic_asset", jsonObj, allocator);
   writeValueToJson("nav_asset", jsonObj, allocator);
+  writeValueToJson("semantic_asset", jsonObj, allocator);
   writeValueToJson("semantic_descriptor_filename", jsonObj, allocator);
 
 }  // StageAttributes::writeValuesToJsonInternal
@@ -73,8 +69,8 @@ std::string StageAttributes::getAbstractObjectInfoInternal() const {
 
   if (!getUseFrameForAllOrientation()) {
     Cr::Utility::formatInto(res, res.length(), "{},{},",
-                            getAsString("semantic_orient_up"),
-                            getAsString("semantic_orient_front"));
+                            getAsString("semantic_up"),
+                            getAsString("semantic_front"));
   }
   Cr::Utility::formatInto(res, res.length(), "{},{},{},{},{}",
                           getAsString("has_semantic_textures"),
