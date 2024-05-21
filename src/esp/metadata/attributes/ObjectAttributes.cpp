@@ -10,30 +10,27 @@ namespace attributes {
 ObjectAttributes::ObjectAttributes(const std::string& handle)
     : AbstractObjectAttributes("ObjectAttributes", handle) {
   // fill necessary attribute defaults
-  setMass(1.0);
-  setCOM({0, 0, 0});
-  setInertia({0, 0, 0});
-  setLinearDamping(0.2);
-  setAngularDamping(0.2);
+  init("mass", 1.0);
+  init("COM", Mn::Vector3{0.0, 0.0, 0.0});
+  init("inertia", Mn::Vector3{0.0, 0.0, 0.0});
+  init("linear_damping", 0.2);
+  init("angular_damping", 0.2);
 
   setComputeCOMFromShape(true);
 
-  setBoundingBoxCollisions(false);
-  setJoinCollisionMeshes(false);
-  // default to use material-derived shader unless otherwise specified in config
-  // or instance config
-  setShaderType(getShaderTypeName(ObjectInstanceShaderType::Material));
-  // TODO remove this once ShaderType support is complete
-  setForceFlatShading(false);
-  setIsVisible(true);
-  setSemanticId(0);
+  init("use_bounding_box_for_collision", false);
+  init("join_collision_meshes", false);
+
+  init("semantic_id", 0);
 }  // ObjectAttributes ctor
 
 std::string ObjectAttributes::getAbstractObjectInfoInternal() const {
   return Cr::Utility::formatString(
-      "{},{},{},{},{},{}", getAsString("mass"), getAsString("COM"),
+      "{},{},{},{},{},{},{},{}", getAsString("mass"), getAsString("COM"),
       getAsString("inertia"), getAsString("angular_damping"),
-      getAsString("linear_damping"), getAsString("semantic_id"));
+      getAsString("linear_damping"),
+      getAsString("use_bounding_box_for_collision"),
+      getAsString("join_collision_meshes"), getAsString("semantic_id"));
 }
 
 void ObjectAttributes::writeValuesToJsonInternal(
@@ -41,13 +38,13 @@ void ObjectAttributes::writeValuesToJsonInternal(
     io::JsonAllocator& allocator) const {
   // write ObjectAttributes values to json
   writeValueToJson("mass", jsonObj, allocator);
+  writeValueToJson("COM", jsonObj, allocator);
+  writeValueToJson("inertia", jsonObj, allocator);
   writeValueToJson("linear_damping", jsonObj, allocator);
   writeValueToJson("angular_damping", jsonObj, allocator);
   writeValueToJson("use_bounding_box_for_collision", jsonObj, allocator);
-  writeValueToJson("COM", jsonObj, allocator);
-  writeValueToJson("inertia", jsonObj, allocator);
-  writeValueToJson("semantic_id", jsonObj, allocator);
   writeValueToJson("join_collision_meshes", jsonObj, allocator);
+  writeValueToJson("semantic_id", jsonObj, allocator);
 
 }  // ObjectAttributes::writeValuesToJsonInternal
 

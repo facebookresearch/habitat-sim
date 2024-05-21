@@ -211,7 +211,7 @@ void initAttributesBindings(py::module& m) {
       .value("FIXED", metadata::attributes::ArticulatedObjectBaseType::Fixed);
 
   // ==== ArticulatedObjectInertiaSource enum ====
-  // Describes the source of the interia values to use for the Articulated
+  // Describes the source of the inertia values to use for the Articulated
   // Object.
   py::enum_<metadata::attributes::ArticulatedObjectInertiaSource>(
       m, "ArticulatedObjectInertiaSource")
@@ -233,6 +233,18 @@ void initAttributesBindings(py::module& m) {
              metadata::attributes::ArticulatedObjectLinkOrder::URDFOrder)
       .value("TREE_TRAVERSAL",
              metadata::attributes::ArticulatedObjectLinkOrder::TreeTraversal);
+
+  //
+  // ==== AssetType ====
+  // Describes the type of asset used for rendering, collsions, or semantics
+  py::enum_<metadata::attributes::AssetType>(m, "AssetType")
+      .value("UNKNOWN", metadata::attributes::AssetType::Unknown)
+      .value("MP3D", metadata::attributes::AssetType::Mp3dMesh)
+      .value("SEMANTIC", metadata::attributes::AssetType::InstanceMesh)
+      .value("NAVMESH", metadata::attributes::AssetType::Navmesh)
+      .value("PRIMITIVE", metadata::attributes::AssetType::Primitive);
+
+  // ======== Enums end ================
 
   // ==== Markersets and subordinate classes ===
 
@@ -539,15 +551,13 @@ void initAttributesBindings(py::module& m) {
           &AbstractObjectAttributes::getRestitutionCoefficient,
           &AbstractObjectAttributes::setRestitutionCoefficient,
           R"(Coefficient of restitution for constructions built from this template.)")
-      .def_property("render_asset_type",
-                    &AbstractObjectAttributes::getRenderAssetType,
-                    &AbstractObjectAttributes::setRenderAssetType,
-                    R"(Type of the mesh asset used to render constructions built
+      .def_property_readonly(
+          "render_asset_type", &AbstractObjectAttributes::getRenderAssetType,
+          R"(Type of the mesh asset used to render constructions built
           from this template.)")
-      .def_property(
+      .def_property_readonly(
           "collision_asset_type",
           &AbstractObjectAttributes::getCollisionAssetType,
-          &AbstractObjectAttributes::setCollisionAssetType,
           R"(Type of the mesh asset used for collision calculations for
           constructions built from this template.)")
       .def_property(
@@ -594,7 +604,7 @@ void initAttributesBindings(py::module& m) {
       .def_property_readonly(
           "is_dirty", &AbstractObjectAttributes::getIsDirty,
           R"(Whether values in this attributes have been changed requiring
-          re-registration before they can be used an object can be created. )");
+          re-registration before they can be used to create an object. )");
 
   // ==== ObjectAttributes ====
   py::class_<ObjectAttributes, AbstractObjectAttributes, ObjectAttributes::ptr>(
@@ -681,9 +691,8 @@ void initAttributesBindings(py::module& m) {
           &StageAttributes::setSemanticAssetHandle,
           R"(Handle of the asset used for semantic segmentation of stages
           built from this template.)")
-      .def_property(
+      .def_property_readonly(
           "semantic_asset_type", &StageAttributes::getSemanticAssetType,
-          &StageAttributes::setSemanticAssetType,
           R"(Type of asset used for collision calculations for constructions
           built from this template.)")
       .def_property(
@@ -1067,6 +1076,5 @@ void initAttributesBindings(py::module& m) {
           &UVSpherePrimitiveAttributes::create<bool, int, const std::string&>));
 
 }  // initAttributesBindings
-
 }  // namespace metadata
 }  // namespace esp

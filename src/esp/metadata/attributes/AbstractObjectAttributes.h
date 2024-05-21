@@ -47,26 +47,22 @@ class AbstractObjectAttributes : public AbstractAttributes {
   /**
    * @brief Set default up orientation for object/stage mesh
    */
-  void setOrientUp(const Magnum::Vector3& orientUp) {
-    set("orient_up", orientUp);
-  }
+  void setOrientUp(const Magnum::Vector3& orientUp) { set("up", orientUp); }
   /**
    * @brief get default up orientation for object/stage mesh
    */
-  Magnum::Vector3 getOrientUp() const {
-    return get<Magnum::Vector3>("orient_up");
-  }
+  Magnum::Vector3 getOrientUp() const { return get<Magnum::Vector3>("up"); }
   /**
    * @brief Set default forward orientation for object/stage mesh
    */
   void setOrientFront(const Magnum::Vector3& orientFront) {
-    set("orient_front", orientFront);
+    set("front", orientFront);
   }
   /**
    * @brief get default forward orientation for object/stage mesh
    */
   Magnum::Vector3 getOrientFront() const {
-    return get<Magnum::Vector3>("orient_front");
+    return get<Magnum::Vector3>("front");
   }
 
   /**
@@ -81,8 +77,8 @@ class AbstractObjectAttributes : public AbstractAttributes {
   double getUnitsToMeters() const { return get<double>("units_to_meters"); }
 
   /**
-   * @brief If not visible can add dynamic non-rendered object into a scene
-   * object.  If is not visible then should not add object to drawables.
+   * @brief If not visible can add dynamic non-rendered object into a scene. If
+   * is not visible then should not add object to drawables.
    */
   void setIsVisible(bool isVisible) { set("is_visible", isVisible); }
   bool getIsVisible() const { return get<bool>("is_visible"); }
@@ -111,17 +107,123 @@ class AbstractObjectAttributes : public AbstractAttributes {
   double getRestitutionCoefficient() const {
     return get<double>("restitution_coefficient");
   }
-  void setRenderAssetType(int renderAssetType) {
-    set("render_asset_type", renderAssetType);
-  }
-  int getRenderAssetType() { return get<int>("render_asset_type"); }
-
+  /**
+   * @brief Sets the relative path/filename for the render asset to be used to
+   * render the construct this attributes describes. This is relative to the
+   * on-disk location of the file responsible for this configuration.
+   */
   void setRenderAssetHandle(const std::string& renderAssetHandle) {
     set("render_asset", renderAssetHandle);
     setIsDirty();
   }
+
+  /**
+   * @brief Gets the relative path/filename for the render asset to be used to
+   * render the construct this attributes describes. This is relative to the
+   * on-disk location of the file responsible for this configuration.
+   */
   std::string getRenderAssetHandle() const {
     return get<std::string>("render_asset");
+  }
+
+  /**
+   * @brief Sets the render asset type, as specified by @ref AssetType.
+   * This specification was generally intended for specifying certain criteria
+   * such as orientation for the loaded asset based on file name, which was in
+   * turn queried for type. This is an artifact of a very early version of
+   * Habitat-Sim and effort should be spent to remove this entirely, as more
+   * accurate and thorough mechanisms have been implemented in its place.
+   */
+  void setRenderAssetType(const std::string& renderAssetType) {
+    const std::string rAssetTypeLC =
+        Cr::Utility::String::lowercase(renderAssetType);
+
+    auto mapIter = AssetTypeNamesMap.find(rAssetTypeLC);
+    ESP_CHECK(mapIter != AssetTypeNamesMap.end(),
+              "Illegal render_asset_type value"
+                  << renderAssetType << ":" << rAssetTypeLC
+                  << "attempted to be set in AbstractObjectAttributes:"
+                  << getHandle() << ". Aborting.");
+    setTranslated("render_asset_type", renderAssetType);
+  }
+
+  /**
+   * @brief Initialize the render asset type, as specified by @ref AssetType.
+   * This specification was generally intended for specifying certain criteria
+   * such as orientation for the loaded asset based on file name, which was in
+   * turn queried for type. This is an artifact of a very early version of
+   * Habitat-Sim and effort should be spent to remove this entirely, as more
+   * accurate and thorough mechanisms have been implemented in its place.
+   */
+  void initRenderAssetType(const std::string& renderAssetType) {
+    const std::string rAssetTypeLC =
+        Cr::Utility::String::lowercase(renderAssetType);
+
+    auto mapIter = AssetTypeNamesMap.find(rAssetTypeLC);
+    ESP_CHECK(mapIter != AssetTypeNamesMap.end(),
+              "Illegal render_asset_type value"
+                  << renderAssetType << ":" << rAssetTypeLC
+                  << "attempted to be initialized in AbstractObjectAttributes:"
+                  << getHandle() << ". Aborting.");
+    initTranslated("render_asset_type", renderAssetType);
+  }
+  /**
+   * @brief Sets the render asset type, as specified by @ref AssetType.
+   * This specification was generally intended for specifying certain criteria
+   * such as orientation for the loaded asset based on file name, which was in
+   * turn queried for type. This is an artifact of a very early version of
+   * Habitat-Sim and effort should be spent to remove this entirely, as more
+   * accurate and thorough mechanisms have been implemented in its place.
+   */
+  void setRenderAssetTypeEnum(AssetType assetTypeEnum) {
+    const std::string renderAssetType = getAssetTypeName(assetTypeEnum);
+
+    auto mapIter = AssetTypeNamesMap.find(renderAssetType);
+    ESP_CHECK(mapIter != AssetTypeNamesMap.end(),
+              "Illegal render_asset_type enum value given"
+                  << static_cast<int>(assetTypeEnum) << ":" << renderAssetType
+                  << "attempted to be set in AbstractObjectAttributes:"
+                  << getHandle() << ". Aborting.");
+    setTranslated("render_asset_type", renderAssetType);
+  }
+
+  /**
+   * @brief Initialize the render asset type, as specified by @ref AssetType.
+   * This specification was generally intended for specifying certain criteria
+   * such as orientation for the loaded asset based on file name, which was in
+   * turn queried for type. This is an artifact of a very early version of
+   * Habitat-Sim and effort should be spent to remove this entirely, as more
+   * accurate and thorough mechanisms have been implemented in its place.
+   */
+  void initRenderAssetTypeEnum(AssetType assetTypeEnum) {
+    const std::string renderAssetType = getAssetTypeName(assetTypeEnum);
+
+    auto mapIter = AssetTypeNamesMap.find(renderAssetType);
+    ESP_CHECK(mapIter != AssetTypeNamesMap.end(),
+              "Illegal render_asset_type enum value given"
+                  << static_cast<int>(assetTypeEnum) << ":" << renderAssetType
+                  << "attempted to be initialized in AbstractObjectAttributes:"
+                  << getHandle() << ". Aborting.");
+    initTranslated("render_asset_type", renderAssetType);
+  }
+
+  /**
+   * @brief Gets the render asset type, as specified by @ref AssetType.
+   * This specification was generally intended for specifying certain criteria
+   * such as orientation for the loaded asset based on file name, which was in
+   * turn queried for type. This is an artifact of a very early version of
+   * Habitat-Sim and effort should be spent to remove this entirely, as more
+   * accurate and thorough mechanisms have been implemented in its place.
+   */
+  AssetType getRenderAssetType() {
+    const std::string val =
+        Cr::Utility::String::lowercase(get<std::string>("render_asset_type"));
+    auto mapIter = AssetTypeNamesMap.find(val);
+    if (mapIter != AssetTypeNamesMap.end()) {
+      return mapIter->second;
+    }
+    // Asset type is unknown or unspecified.
+    return AssetType::Unknown;
   }
 
   /**
@@ -131,7 +233,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * primitive or not
    */
   void setRenderAssetIsPrimitive(bool renderAssetIsPrimitive) {
-    set("renderAssetIsPrimitive", renderAssetIsPrimitive);
+    setHidden("__renderAssetIsPrimitive", renderAssetIsPrimitive);
   }
   /**
    * @brief Get whether this object uses file-based mesh render object or
@@ -140,25 +242,145 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * primitive or not
    */
   bool getRenderAssetIsPrimitive() const {
-    return get<bool>("renderAssetIsPrimitive");
+    return get<bool>("__renderAssetIsPrimitive");
   }
 
+  /**
+   * @brief Sets the relative path/filename for the collision asset to be used
+   * for mesh collision detection for the construct this attributes describes.
+   * This is relative to the on-disk location of the file responsible for this
+   * configuration.
+   */
   void setCollisionAssetHandle(const std::string& collisionAssetHandle) {
     set("collision_asset", collisionAssetHandle);
     setIsDirty();
   }
+
+  /**
+   * @brief Gets the relative path/filename for the collision asset to be used
+   * for mesh collision detection for the construct this attributes describes.
+   * This is relative to the on-disk location of the file responsible for this
+   * configuration.
+   */
   std::string getCollisionAssetHandle() const {
     return get<std::string>("collision_asset");
   }
 
-  void setCollisionAssetType(int collisionAssetType) {
-    set("collision_asset_type", collisionAssetType);
-  }
-  int getCollisionAssetType() { return get<int>("collision_asset_type"); }
+  /**
+   * @brief Sets the collision asset type, as specified by @ref AssetType.
+   * This specification was generally intended for specifying certain criteria
+   * such as orientation for the loaded asset based on file name, which was in
+   * turn queried for type. This is an artifact of a very early version of
+   * Habitat-Sim and effort should be spent to remove this entirely, as more
+   * accurate and thorough mechanisms have been implemented in its place.
+   */
+  void setCollisionAssetType(const std::string& collisionAssetType) {
+    const std::string cAssetTypeLC =
+        Cr::Utility::String::lowercase(collisionAssetType);
 
+    auto mapIter = AssetTypeNamesMap.find(cAssetTypeLC);
+    ESP_CHECK(mapIter != AssetTypeNamesMap.end(),
+              "Illegal collision_asset_type value"
+                  << collisionAssetType << ":" << cAssetTypeLC
+                  << "attempted to be set in AbstractObjectAttributes:"
+                  << getHandle() << ". Aborting.");
+    setTranslated("collision_asset_type", collisionAssetType);
+  }
+
+  /**
+   * @brief Initialize the collision asset type, as specified by @ref AssetType.
+   * This specification was generally intended for specifying certain criteria
+   * such as orientation for the loaded asset based on file name, which was in
+   * turn queried for type. This is an artifact of a very early version of
+   * Habitat-Sim and effort should be spent to remove this entirely, as more
+   * accurate and thorough mechanisms have been implemented in its place.
+   */
+  void initCollisionAssetType(const std::string& collisionAssetType) {
+    const std::string cAssetTypeLC =
+        Cr::Utility::String::lowercase(collisionAssetType);
+
+    auto mapIter = AssetTypeNamesMap.find(cAssetTypeLC);
+    ESP_CHECK(mapIter != AssetTypeNamesMap.end(),
+              "Illegal collision_asset_type value"
+                  << collisionAssetType << ":" << cAssetTypeLC
+                  << "attempted to be set in AbstractObjectAttributes:"
+                  << getHandle() << ". Aborting.");
+    initTranslated("collision_asset_type", collisionAssetType);
+  }
+
+  /**
+   * @brief Sets the collision asset type, as specified by @ref AssetType.
+   * This specification was generally intended for specifying certain criteria
+   * such as orientation for the loaded asset based on file name, which was in
+   * turn queried for type. This is an artifact of a very early version of
+   * Habitat-Sim and effort should be spent to remove this entirely, as more
+   * accurate and thorough mechanisms have been implemented in its place.
+   */
+  void setCollisionAssetTypeEnum(AssetType assetTypeEnum) {
+    const std::string collisionAssetType = getAssetTypeName(assetTypeEnum);
+
+    auto mapIter = AssetTypeNamesMap.find(collisionAssetType);
+    ESP_CHECK(
+        mapIter != AssetTypeNamesMap.end(),
+        "Illegal collision_asset_type enum value given"
+            << static_cast<int>(assetTypeEnum) << ":" << collisionAssetType
+            << "attempted to be set in AbstractObjectAttributes:" << getHandle()
+            << ". Aborting.");
+    setTranslated("collision_asset_type", collisionAssetType);
+  }
+
+  /**
+   * @brief Initialize the collision asset type, as specified by @ref AssetType.
+   * This specification was generally intended for specifying certain criteria
+   * such as orientation for the loaded asset based on file name, which was in
+   * turn queried for type. This is an artifact of a very early version of
+   * Habitat-Sim and effort should be spent to remove this entirely, as more
+   * accurate and thorough mechanisms have been implemented in its place.
+   */
+  void initCollisionAssetTypeEnum(AssetType assetTypeEnum) {
+    const std::string collisionAssetType = getAssetTypeName(assetTypeEnum);
+
+    auto mapIter = AssetTypeNamesMap.find(collisionAssetType);
+    ESP_CHECK(
+        mapIter != AssetTypeNamesMap.end(),
+        "Illegal collision_asset_type enum value given"
+            << static_cast<int>(assetTypeEnum) << ":" << collisionAssetType
+            << "attempted to be set in AbstractObjectAttributes:" << getHandle()
+            << ". Aborting.");
+    initTranslated("collision_asset_type", collisionAssetType);
+  }
+
+  /**
+   * @brief Gets the collision asset type, as specified by @ref AssetType.
+   * This specification was generally intended for specifying certain criteria
+   * such as orientation for the loaded asset based on file name, which was in
+   * turn queried for type. This is an artifact of a very early version of
+   * Habitat-Sim and effort should be spent to remove this entirely, as more
+   * accurate and thorough mechanisms have been implemented in its place.
+   */
+  AssetType getCollisionAssetType() const {
+    const std::string val = Cr::Utility::String::lowercase(
+        get<std::string>("collision_asset_type"));
+    auto mapIter = AssetTypeNamesMap.find(val);
+    if (mapIter != AssetTypeNamesMap.end()) {
+      return mapIter->second;
+    }
+    // Asset type is unknown or unspecified.
+    return AssetType::Unknown;
+  }
+
+  /**
+   * @brief Sets the size/scale of the collision asset compared to the render
+   * asset so that the final constructs align.
+   */
   void setCollisionAssetSize(const Magnum::Vector3& collisionAssetSize) {
     set("collision_asset_size", collisionAssetSize);
   }
+
+  /**
+   * @brief Gets the size/scale of the collision asset compared to the render
+   * asset so that the final constructs align.
+   */
   Magnum::Vector3 getCollisionAssetSize() const {
     return get<Magnum::Vector3>("collision_asset_size");
   }
@@ -170,7 +392,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * primitive (implicitly calculated) or a mesh
    */
   void setCollisionAssetIsPrimitive(bool collisionAssetIsPrimitive) {
-    set("collisionAssetIsPrimitive", collisionAssetIsPrimitive);
+    setHidden("__collisionAssetIsPrimitive", collisionAssetIsPrimitive);
   }
   /**
    * @brief Gets whether this object uses file-based mesh collision object or
@@ -179,7 +401,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * primitive (implicitly calculated) or a mesh
    */
   bool getCollisionAssetIsPrimitive() const {
-    return get<bool>("collisionAssetIsPrimitive");
+    return get<bool>("__collisionAssetIsPrimitive");
   }
 
   /**
@@ -212,7 +434,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
                   << shader_type
                   << "attempted to be set in AbstractObjectAttributes:"
                   << getHandle() << ". Aborting.");
-    set("shader_type", shader_type);
+    setTranslated("shader_type", shader_type);
   }
 
   /**
@@ -244,7 +466,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
   bool getForceFlatShading() const { return get<bool>("force_flat_shading"); }
 
   bool getIsDirty() const { return get<bool>("__isDirty"); }
-  void setIsClean() { set("__isDirty", false); }
+  void setIsClean() { setHidden("__isDirty", false); }
 
   /**
    * @brief Populate a json object with all the first-level values held in this
@@ -261,7 +483,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * semantic mesh-specific frame is specified for stages.
    */
   bool getUseFrameForAllOrientation() const {
-    return get<bool>("use_frame_for_all_orientation");
+    return get<bool>("__useFrameForAllOrientation");
   }
 
   /**
@@ -297,7 +519,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * semantic mesh-specific frame is specified for stages.
    */
   void setUseFrameForAllOrientation(bool useFrameForAllOrientation) {
-    set("use_frame_for_all_orientation", useFrameForAllOrientation);
+    setHidden("__useFrameForAllOrientation", useFrameForAllOrientation);
   }
 
   /**
@@ -329,7 +551,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * @brief get AbstractObject specific info for csv string
    */
   virtual std::string getAbstractObjectInfoInternal() const { return ""; };
-  void setIsDirty() { set("__isDirty", true); }
+  void setIsDirty() { setHidden("__isDirty", true); }
 
  public:
   ESP_SMART_POINTERS(AbstractObjectAttributes)

@@ -159,9 +159,9 @@ ConfigValue::~ConfigValue() {
 
 void ConfigValue::copyValueFrom(const ConfigValue& otr) {
   // set new type
-  _type = otr._type;
-  if (isConfigValTypePointerBased(otr._type)) {
-    pointerBasedConfigTypeHandlerFor(_type).copier(otr._data, _data);
+  _typeAndFlags = otr._typeAndFlags;
+  if (isConfigValTypePointerBased(otr.getType())) {
+    pointerBasedConfigTypeHandlerFor(getType()).copier(otr._data, _data);
   } else {
     std::memcpy(_data, otr._data, sizeof(_data));
   }
@@ -169,9 +169,9 @@ void ConfigValue::copyValueFrom(const ConfigValue& otr) {
 
 void ConfigValue::moveValueFrom(ConfigValue&& otr) {
   // set new type
-  _type = otr._type;
-  if (isConfigValTypePointerBased(otr._type)) {
-    pointerBasedConfigTypeHandlerFor(_type).mover(otr._data, _data);
+  _typeAndFlags = otr._typeAndFlags;
+  if (isConfigValTypePointerBased(otr.getType())) {
+    pointerBasedConfigTypeHandlerFor(getType()).mover(otr._data, _data);
   } else {
     // moving character buffer ends up not being much better than copy
     std::memcpy(_data, otr._data, sizeof(_data));
@@ -179,14 +179,14 @@ void ConfigValue::moveValueFrom(ConfigValue&& otr) {
 }
 
 void ConfigValue::deleteCurrentValue() {
-  if (isConfigValTypePointerBased(_type)) {
-    pointerBasedConfigTypeHandlerFor(_type).destructor(_data);
+  if (isConfigValTypePointerBased(getType())) {
+    pointerBasedConfigTypeHandlerFor(getType()).destructor(_data);
   }
-  _type = ConfigValType::Unknown;
+  setType(ConfigValType::Unknown);
 }
 
 ConfigValue& ConfigValue::operator=(const ConfigValue& otr) {
-  if (this != &otr) {
+  if ((this != &otr) && isSafeToDeconstruct(otr)) {
     deleteCurrentValue();
     copyValueFrom(otr);
   }
@@ -194,20 +194,23 @@ ConfigValue& ConfigValue::operator=(const ConfigValue& otr) {
 }  // ConfigValue::operator=
 
 ConfigValue& ConfigValue::operator=(ConfigValue&& otr) noexcept {
-  deleteCurrentValue();
+  if (isSafeToDeconstruct(otr)) {
+    deleteCurrentValue();
+  }
   moveValueFrom(std::move(otr));
+
   return *this;
 }  // ConfigValue::operator=
 
 bool operator==(const ConfigValue& a, const ConfigValue& b) {
   // Verify types are equal
-  if (a._type != b._type) {
+  if (a._typeAndFlags != b._typeAndFlags) {
     return false;
   }
   // Pointer-backed data types need to have _data dereffed
-  if (isConfigValTypePointerBased(a._type)) {
+  if (isConfigValTypePointerBased(a.getType())) {
     // Pointer-backed data (i.e. nontrival types)
-    if (a._type == ConfigValType::String) {
+    if (a.getType() == ConfigValType::String) {
       return a.get<std::string>() == b.get<std::string>();
     } else {
       // Shouldn't get here
@@ -228,7 +231,7 @@ bool operator!=(const ConfigValue& a, const ConfigValue& b) {
 }
 
 std::string ConfigValue::getAsString() const {
-  switch (_type) {
+  switch (getType()) {
     case ConfigValType::Unknown: {
       return "Undefined value/Unknown type";
     }
@@ -343,7 +346,7 @@ io::JsonGenericValue ConfigValue::writeToJsonObject(
 bool ConfigValue::putValueInConfigGroup(
     const std::string& key,
     Cr::Utility::ConfigurationGroup& cfg) const {
-  switch (_type) {
+  switch (getType()) {
     case ConfigValType::Unknown:
       return false;
     case ConfigValType::Boolean:
@@ -563,14 +566,13 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
   return numConfigSettings;
 }  // Configuration::loadFromJson
 
-void Configuration::writeValueToJson(const char* key,
-                                     const char* jsonName,
-                                     io::JsonGenericValue& jsonObj,
-                                     io::JsonAllocator& allocator) const {
-  // Create Generic value for key, using allocator, to make sure its a copy
-  // and lives long enough
+void Configuration::writeValueToJsonInternal(
+    const ConfigValue& configValue,
+    const char* jsonName,
+    io::JsonGenericValue& jsonObj,
+    io::JsonAllocator& allocator) const {
   io::JsonGenericValue name{jsonName, allocator};
-  auto jsonVal = get(key).writeToJsonObject(allocator);
+  auto jsonVal = configValue.writeToJsonObject(allocator);
   jsonObj.AddMember(name, jsonVal, allocator);
 }
 
@@ -581,17 +583,18 @@ void Configuration::writeValuesToJson(io::JsonGenericValue& jsonObj,
   auto valIterPair = getValuesIterator();
   for (auto& valIter = valIterPair.first; valIter != valIterPair.second;
        ++valIter) {
-    if (valIter->second.isValid()) {
-      // Create Generic value for key, using allocator, to make sure its a copy
-      // and lives long enough
-      io::JsonGenericValue name{valIter->first.c_str(), allocator};
-      auto jsonVal = valIter->second.writeToJsonObject(allocator);
-      jsonObj.AddMember(name, jsonVal, allocator);
-    } else {
+    if (!valIter->second.isValid()) {
       ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
           << "Unitialized ConfigValue in Configuration @ key `"
           << valIter->first
           << "`, so nothing will be written to JSON for this key.";
+
+    } else if (valIter->second.shouldWriteToFile()) {
+      // Create Generic value for key, using allocator, to make sure its a copy
+      // and lives long enough
+      writeValueToJsonInternal(valIter->second, valIter->first.c_str(), jsonObj,
+                               allocator);
+    } else {
     }
   }  // iterate through all values
 }  // Configuration::writeValuesToJson

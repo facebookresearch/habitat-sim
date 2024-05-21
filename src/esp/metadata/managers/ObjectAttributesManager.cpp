@@ -45,11 +45,10 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
   primObjectAttributes->setScale({0.1, 0.1, 0.1});
 
   // set render mesh handle
-  int primType = static_cast<int>(AssetType::Primitive);
-  primObjectAttributes->setRenderAssetType(primType);
+  primObjectAttributes->setRenderAssetTypeEnum(AssetType::Primitive);
   // set collision mesh/primitive handle and default for primitives to not use
   // mesh collisions
-  primObjectAttributes->setCollisionAssetType(primType);
+  primObjectAttributes->setCollisionAssetTypeEnum(AssetType::Primitive);
   primObjectAttributes->setUseMeshCollision(false);
   // NOTE to eventually use mesh collisions with primitive objects, a
   // collision primitive mesh needs to be configured and set in MeshMetaData
@@ -105,7 +104,7 @@ void ObjectAttributesManager::setValsFromJSONDoc(
         objAttributes->setJoinCollisionMeshes(join_collision_meshes);
       });
 
-  // The object's interia matrix diagonal
+  // The object's inertia matrix diagonal
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "inertia", [objAttributes](const Magnum::Vector3& inertia) {
         objAttributes->setInertia(inertia);
@@ -176,14 +175,14 @@ ObjectAttributes::ptr ObjectAttributesManager::initNewObjectInternal(
     // set defaults for passed render asset handles
     this->setDefaultAssetNameBasedAttributes(
         newAttributes, true, newAttributes->getRenderAssetHandle(),
-        [newAttributes](int render_asset_type) {
-          newAttributes->setRenderAssetType(render_asset_type);
+        [newAttributes](AssetType render_asset_type) {
+          newAttributes->initRenderAssetTypeEnum(render_asset_type);
         });
     // set defaults for passed collision asset handles
     this->setDefaultAssetNameBasedAttributes(
         newAttributes, false, newAttributes->getCollisionAssetHandle(),
-        [newAttributes](int collision_asset_type) {
-          newAttributes->setCollisionAssetType(collision_asset_type);
+        [newAttributes](AssetType collision_asset_type) {
+          newAttributes->initCollisionAssetTypeEnum(collision_asset_type);
         });
   }
   return newAttributes;
@@ -195,17 +194,17 @@ void ObjectAttributesManager::setDefaultAssetNameBasedAttributes(
     ObjectAttributes::ptr attributes,
     bool setFrame,
     const std::string& meshHandle,
-    const std::function<void(int)>& assetTypeSetter) {
+    const std::function<void(AssetType)>& assetTypeSetter) {
   if (this->isValidPrimitiveAttributes(meshHandle)) {
     // value is valid primitive, and value is different than existing value
-    assetTypeSetter(static_cast<int>(AssetType::Primitive));
+    assetTypeSetter(AssetType::Primitive);
   } else {
     // use unknown for object mesh types of non-primitives
-    assetTypeSetter(static_cast<int>(AssetType::Unknown));
+    assetTypeSetter(AssetType::Unknown);
   }
   if (setFrame) {
-    attributes->setOrientUp({0, 1, 0});
-    attributes->setOrientFront({0, 0, -1});
+    attributes->init("up", Mn::Vector3{0.0, 1.0, 0.0});
+    attributes->init("front", Mn::Vector3{0.0, 0.0, -1.0});
   }
 }  // ObjectAttributesManager::setDefaultAssetNameBasedAttributes
 

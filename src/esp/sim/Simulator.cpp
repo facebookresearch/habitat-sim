@@ -508,7 +508,7 @@ bool Simulator::instanceStageForSceneAttributes(
     }
     if (semanticAttrAssetName != "") {
       stageAttributes->setSemanticAssetHandle(semanticAttrAssetName);
-      stageAttributes->setSemanticAssetType(
+      stageAttributes->setSemanticAssetTypeEnum(
           semanticAttr->getSemanticAssetType());
       if (semanticAttr->getSemanticOrientFront() !=
           stageAttributes->getSemanticOrientFront()) {
@@ -582,8 +582,7 @@ bool Simulator::instanceStageForSceneAttributes(
         (activeSemanticSceneID_ != activeSceneID_)) {
       sceneID_.push_back(activeSemanticSceneID_);
     } else {  // activeSemanticSceneID_ == activeSceneID_;
-      AssetType stageType =
-          static_cast<AssetType>(stageAttributes->getRenderAssetType());
+      AssetType stageType = stageAttributes->getRenderAssetType();
       // instance meshes contain their semantic annotations
       // empty scene has none to worry about
       if (!(stageType == AssetType::InstanceMesh ||

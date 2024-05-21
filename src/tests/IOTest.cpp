@@ -28,6 +28,7 @@ const std::string dataDir = Corrade::Utility::Path::join(SCENE_DATASETS, "../");
 struct IOTest : Cr::TestSuite::Tester {
   explicit IOTest();
   void fileReplaceExtTest();
+  void absToRelativePathConverison();
   void testEllipsisFilter();
   void parseURDF();
   void testJson();
@@ -52,8 +53,8 @@ struct IOTest : Cr::TestSuite::Tester {
 };
 
 IOTest::IOTest() {
-  addTests({&IOTest::fileReplaceExtTest, &IOTest::testEllipsisFilter,
-            &IOTest::parseURDF, &IOTest::testJson,
+  addTests({&IOTest::fileReplaceExtTest, &IOTest::absToRelativePathConverison,
+            &IOTest::testEllipsisFilter, &IOTest::parseURDF, &IOTest::testJson,
             &IOTest::testJsonBuiltinTypes, &IOTest::testJsonStlTypes,
             &IOTest::testJsonMagnumTypes, &IOTest::testJsonEspTypes,
             &IOTest::testJsonUserType});
@@ -136,6 +137,27 @@ void IOTest::testEllipsisFilter() {
   CORRADE_COMPARE(res, "/../test/path/DELETE/../to/test/initial/ignore.txt");
 
 }  // IOTest::testEllipsisFilter
+
+void IOTest::absToRelativePathConverison() {
+  // Test conversion of an absolute path to a path relative to another path.
+  // Path to be relative to
+  const std::string absPathTarget = "/aa/bb/cc/dd/ee/ff/gg/";
+
+  // Path to convert
+  std::string absPathToConvert = "/aa/bb/cc/dd/xx/yy/zz/";
+  // Result of conversion
+  std::string relPathToBaseTarget =
+      esp::io::getPathRelativeToAbsPath(absPathToConvert, absPathTarget);
+
+  CORRADE_COMPARE(relPathToBaseTarget, "../../../xx/yy/zz/");
+
+  absPathToConvert = "/aa/bb/cc/../dd/xx/yy/zz/";
+  relPathToBaseTarget =
+      esp::io::getPathRelativeToAbsPath(absPathToConvert, absPathTarget);
+
+  CORRADE_COMPARE(relPathToBaseTarget, "../../../../../dd/xx/yy/zz/");
+
+}  // IOTest::absToRelativePathConverison
 
 void IOTest::parseURDF() {
   const std::string iiwaURDF = Cr::Utility::Path::join(

@@ -21,34 +21,35 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
     : AbstractAttributes(type, handle) {
   // default to unknown for object instances, to use attributes-specified
   // defaults
-  setShaderType(getShaderTypeName(ObjectInstanceShaderType::Unspecified));
+  init("shader_type", getShaderTypeName(ObjectInstanceShaderType::Unspecified));
 
   // defaults to unknown/undefined
-  setMotionType(getMotionTypeName(esp::physics::MotionType::UNDEFINED));
+  init("motion_type", getMotionTypeName(esp::physics::MotionType::UNDEFINED));
   // set to no rotation or translation
-  setRotation(Mn::Quaternion(Mn::Math::IdentityInit));
-  setTranslation(Mn::Vector3());
+  init("rotation", Mn::Quaternion(Mn::Math::IdentityInit));
+  init("translation", Mn::Vector3());
   // don't override attributes-specified visibility. - sets int value to
   // ID_UNDEFINED
-  clearIsInstanceVisible();
+  init("is_instance_visible", ID_UNDEFINED);
   // defaults to unknown so that obj instances use scene instance setting
-  setTranslationOrigin(
-      getTranslationOriginName(SceneInstanceTranslationOrigin::Unknown));
+  init("translation_origin",
+       getTranslationOriginName(SceneInstanceTranslationOrigin::Unknown));
   // set default multiplicative scaling values
-  setUniformScale(1.0);
-  setNonUniformScale({1.0, 1.0, 1.0});
-  setMassScale(1.0);
-  setApplyScaleToMass(true);
+  init("uniform_scale", 1.0);
+  init("non_uniform_scale", Mn::Vector3{1.0, 1.0, 1.0});
+  init("mass_scale", 1.0);
+  init("apply_scale_to_mass", true);
 }
 
 SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
     const std::string& handle,
     const std::shared_ptr<AbstractObjectAttributes>& baseObjAttribs)
     : SceneObjectInstanceAttributes(handle) {
-  // initialize appropriate fields from abstract object attributes
-  setShaderType(getShaderTypeName(baseObjAttribs->getShaderType()));
+  // set appropriate fields from abstract object attributes
+  // Not initialize, since these are not default values
+  set("shader_type", getShaderTypeName(baseObjAttribs->getShaderType()));
   // set to match attributes setting
-  setIsInstanceVisible(baseObjAttribs->getIsVisible());
+  set("is_instance_visible", (baseObjAttribs->getIsVisible() ? 1 : 0));
   // set nonuniform scale to match attributes scale
   setNonUniformScale(baseObjAttribs->getScale());
   // Prepopulate user config to match baseObjAttribs' user config.
@@ -154,22 +155,24 @@ void SceneObjectInstanceAttributes::writeValuesToJson(
 
 SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
     : SceneObjectInstanceAttributes(handle, "SceneAOInstanceAttributes") {
-  // set default auto clamp values (only used for articulated object)
-  setAutoClampJointLimits(false);
+  // initialize default auto clamp values (only used for articulated object)
+  init("auto_clamp_joint_limits", false);
 
   // Set the instance base type to be unspecified - if not set in instance json,
   // use ao_config value
-  setBaseType(getAOBaseTypeName(ArticulatedObjectBaseType::Unspecified));
-  // Set the instance source for the interia calculation to be unspecified - if
+  init("base_type", getAOBaseTypeName(ArticulatedObjectBaseType::Unspecified));
+  // Set the instance source for the inertia calculation to be unspecified - if
   // not set in instance json, use ao_config value
-  setInertiaSource(
-      getAOInertiaSourceName(ArticulatedObjectInertiaSource::Unspecified));
+  init("inertia_source",
+       getAOInertiaSourceName(ArticulatedObjectInertiaSource::Unspecified));
   // Set the instance link order to use as unspecified - if not set in instance
   // json, use ao_config value
-  setLinkOrder(getAOLinkOrderName(ArticulatedObjectLinkOrder::Unspecified));
+  init("link_order",
+       getAOLinkOrderName(ArticulatedObjectLinkOrder::Unspecified));
   // Set render mode to be unspecified - if not set in instance json, use
   // ao_config value
-  setRenderMode(getAORenderModeName(ArticulatedObjectRenderMode::Unspecified));
+  init("render_mode",
+       getAORenderModeName(ArticulatedObjectRenderMode::Unspecified));
   editSubconfig<Configuration>("initial_joint_pose");
   editSubconfig<Configuration>("initial_joint_velocities");
 }
@@ -178,13 +181,16 @@ SceneAOInstanceAttributes::SceneAOInstanceAttributes(
     const std::string& handle,
     const std::shared_ptr<ArticulatedObjectAttributes>& aObjAttribs)
     : SceneObjectInstanceAttributes(handle, "SceneAOInstanceAttributes") {
-  // set default auto clamp values (only used for articulated object)
-  setAutoClampJointLimits(false);
+  // initialize default auto clamp values (only used for articulated object)
+  init("auto_clamp_joint_limits", false);
+
+  // Should not initialize these values but set them, since these are not
+  // default values, but from an existing AO attributes.
   // Set shader type to use aObjAttribs value
   setShaderType(getShaderTypeName(aObjAttribs->getShaderType()));
   // Set the instance base type to use aObjAttribs value
   setBaseType(getAOBaseTypeName(aObjAttribs->getBaseType()));
-  // Set the instance source for the interia calculation to use aObjAttribs
+  // Set the instance source for the inertia calculation to use aObjAttribs
   // value
   setInertiaSource(getAOInertiaSourceName(aObjAttribs->getInertiaSource()));
   // Set the instance link order to use aObjAttribs value
@@ -267,12 +273,12 @@ void SceneAOInstanceAttributes::writeValuesToJsonInternal(
 SceneInstanceAttributes::SceneInstanceAttributes(const std::string& handle)
     : AbstractAttributes("SceneInstanceAttributes", handle) {
   // defaults to no lights
-  setLightingHandle(NO_LIGHT_KEY);
+  init("default_lighting", NO_LIGHT_KEY);
   // defaults to asset local
-  setTranslationOrigin(
-      getTranslationOriginName(SceneInstanceTranslationOrigin::AssetLocal));
-  setNavmeshHandle("");
-  setSemanticSceneHandle("");
+  init("translation_origin",
+       getTranslationOriginName(SceneInstanceTranslationOrigin::AssetLocal));
+  init("navmesh_instance", "");
+  init("semantic_scene_instance", "");
   // get refs to internal subconfigs for object and ao instances
   objInstConfig_ = editSubconfig<Configuration>("object_instances");
   artObjInstConfig_ =

@@ -10,11 +10,11 @@ namespace attributes {
 
 PhysicsManagerAttributes::PhysicsManagerAttributes(const std::string& handle)
     : AbstractAttributes("PhysicsManagerAttributes", handle) {
-  setSimulator("bullet");
-  setTimestep(0.008);
-  setGravity({0, -9.8, 0});
-  setFrictionCoefficient(0.4);
-  setRestitutionCoefficient(0.1);
+  init("physics_simulator", "bullet");
+  init("timestep", 0.008);
+  init("gravity", Mn::Vector3{0, -9.8, 0});
+  init("friction_coefficient", 0.4);
+  init("restitution_coefficient", 0.1);
 }  // PhysicsManagerAttributes ctor
 
 void PhysicsManagerAttributes::writeValuesToJson(

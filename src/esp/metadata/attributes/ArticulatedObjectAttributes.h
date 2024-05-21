@@ -79,7 +79,7 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
           << get<std::string>("base_type") << " not changed.";
       return;
     }
-    set("base_type", baseType);
+    setTranslated("base_type", baseType);
   }
 
   /**
@@ -115,7 +115,7 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
           << get<std::string>("inertia_source") << "' not changed.";
       return;
     }
-    set("inertia_source", inertiaSrc);
+    setTranslated("inertia_source", inertiaSrc);
   }
 
   /**
@@ -151,7 +151,7 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
           << get<std::string>("link_order") << "' not changed.";
       return;
     }
-    set("link_order", linkOrder);
+    setTranslated("link_order", linkOrder);
   }
 
   /**
@@ -182,7 +182,7 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
                   << renderMode
                   << "attempted to be set in ArticulatedObjectAttributes:"
                   << getHandle() << ". Aborting.");
-    set("render_mode", renderMode);
+    setTranslated("render_mode", renderMode);
   }
 
   /**
@@ -211,10 +211,10 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
     auto mapIter = ShaderTypeNamesMap.find(shaderTypeLC);
     ESP_CHECK(mapIter != ShaderTypeNamesMap.end(),
               "Illegal shader_type value"
-                  << shader_type
+                  << shader_type << ":" << shaderTypeLC
                   << "attempted to be set in ArticulatedObjectAttributes:"
                   << getHandle() << ". Aborting.");
-    set("shader_type", shader_type);
+    setTranslated("shader_type", shader_type);
   }
 
   /**

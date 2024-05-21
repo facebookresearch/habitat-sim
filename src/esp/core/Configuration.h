@@ -98,6 +98,44 @@ enum class ConfigValType {
 };  // enum class ConfigValType
 
 /**
+ * @brief This enum lists the bit flags describing the various states @ref ConfigValue
+ * can be in or characteristics they may have. These mask the higher order DWORD
+ * of _typeAndFlags, and so begin on bit 32 of 0-63.
+ */
+enum ConfigValStatus : uint64_t {
+
+  /**
+   * @brief Whether or not the @ref ConfigValue was set with a default/initializing
+   * value. This flag is used, for example, to govern whether a value should be
+   * written to file or not - if the value was set only with a program-governed
+   * default value, it should not be written to file.
+   */
+  isDefault = 1ULL << 32,
+
+  /**
+   * @brief Specifies that this @ref ConfigValue is hidden and used as an internally
+   * tracked/managed variable, not part of the user-accessible metadata itself.
+   * These variables should never be written to file or displayed except for
+   * debugging purposes.
+   */
+  isHidden = 1ULL << 33,
+
+  /**
+   * @brief Specifies that this @ref ConfigValue is translated from a string value
+   * to some other value/representation, such as an enum, intended to provide
+   * constrained values and string representations. These types of values are
+   * stored as strings and translated (i.e. cast) to the appropriate Enums on
+   * access by the extending class for the @ref Configuration. They are saved
+   * to file as a string that is mapped from the enum value.
+   *
+   * NOTE : Any ConfigValues specified as @p isTranslated need
+   * to have their Json read handled by the consuming class, as they may not be
+   * properly read from or written to file otherwise.
+   */
+  isTranslated = 1ULL << 34,
+};  // enum class ConfigValStatus
+
+/**
  * @brief Retrieve a string description of the passed @ref ConfigValType enum
  * value.
  */
@@ -118,6 +156,7 @@ constexpr bool isConfigValTypeNonTrivial(ConfigValType type) {
   return static_cast<int>(type) >=
          static_cast<int>(ConfigValType::_nonTrivialTypes);
 }
+
 /**
  * @brief Function template to return type enum for specified type. All
  * supported types should have a specialization of this function handling their
@@ -243,39 +282,151 @@ MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug,
 class ConfigValue {
  private:
   /**
-   * @brief This is the type of the data represented in this ConfigValue.
+   * @brief This field holds various state flags in the higher 8 bytes and the
+   * type of the data represented in this @ref ConfigValue in the lower 8 bytes.
    */
-  ConfigValType _type{ConfigValType::Unknown};
+  uint64_t _typeAndFlags{0x00000000FFFFFFFF};
 
   /**
-   * @brief The data this ConfigValue holds.
-   * Aligns to individual 8-byte bounds. The _type is 4 bytes, 4 bytes of
-   * padding (on 64 bit machines) and 36 bytes for data.
+   * @brief The data this @ref ConfigValue holds.
+   * Aligns to individual 8-byte bounds. The _typeAndFlags is 8 bytes, and 8
+   * bytes for data.
    */
   alignas(8) char _data[CONFIG_VAL_SIZE] = {0};
 
   /**
-   * @brief Copy the passed @p val into this ConfigValue.  If this @ref
-   * ConfigValue's type is not trivial, this will call the appropriate copy
-   * handler for the type.
+   * @brief Copy the passed @p val into this @ref ConfigValue.  If this @ref
+   * ConfigValue's type is not pointer-based, this will call the appropriate
+   * copy handler for the type.
    * @param val source val to copy into this config
    */
   void copyValueFrom(const ConfigValue& val);
 
   /**
    * @brief Move the passed @p val into this ConfigVal. If this @ref
-   * ConfigValue's type is not trivial, this will call the appropriate move
-   * handler for the type.
+   * ConfigValue's type is not pointer-based, this will call the appropriate
+   * move handler for the type.
    * @param val source val to copy into this config
    */
   void moveValueFrom(ConfigValue&& val);
 
   /**
    * @brief Delete the current value. If this @ref
-   * ConfigValue's type is not trivial, this will call the appropriate
+   * ConfigValue's type is not pointer-based, this will call the appropriate
    * destructor handler for the type.
    */
   void deleteCurrentValue();
+
+  /**
+   * @brief These functions specify how the set and get functions should perform
+   * depending on whether or not the value is pointer-pased.
+   */
+
+  /**
+   * @brief Set the type component of @p _typeAndFlags to the passed @p type
+   * value, preserving the existing state of the flags component of
+   * @p _typeAndFlags .
+   */
+  inline void setType(const ConfigValType& type) {
+    // Clear out type component, retaining flags
+    _typeAndFlags &= 0xFFFFFFFF00000000;
+    // set new type component, preserving flags state via the mask
+    // (ConfigValType::for Unknown)
+    _typeAndFlags |= static_cast<uint64_t>(type) & 0x00000000FFFFFFFF;
+  }
+
+  /**
+   * @brief Set this ConfigVal to a new value. Type is stored as a Pointer.
+   */
+  template <typename T>
+  EnableIf<isConfigValTypePointerBased(configValTypeFor<T>()), void>
+  setInternalTyped(const T& value) {
+    T** tmpDst = reinterpret_cast<T**>(_data);
+    *tmpDst = new T(value);
+  }
+  /**
+   * @brief Set this ConfigVal to a new value. Type is stored directly in
+   * buffer.
+   */
+  template <typename T>
+  EnableIf<!isConfigValTypePointerBased(configValTypeFor<T>()), void>
+  setInternalTyped(const T& value) {
+    new (_data) T(value);
+  }
+
+  /**
+   * @brief Get this ConfigVal's value. Type is stored as a Pointer.
+   */
+  template <typename T>
+  EnableIf<isConfigValTypePointerBased(configValTypeFor<T>()), const T&>
+  getInternalTyped() const {
+    auto val = [&]() {
+      return *reinterpret_cast<const T* const*>(this->_data);
+    };
+    return *val();
+  }
+
+  /**
+   * @brief Get this ConfigVal's value. Type is stored directly in buffer.
+   */
+  template <typename T>
+  EnableIf<!isConfigValTypePointerBased(configValTypeFor<T>()), const T&>
+  getInternalTyped() const {
+    auto val = [&]() { return reinterpret_cast<const T*>(this->_data); };
+    return *val();
+  }
+
+  /**
+   * @brief Set the passed @p value as the data for this @ref ConfigValue, while also setting the appropriate type.
+   * @tparam The type of the @p value being set. Must be a handled type as specified by @ref ConfigValType.
+   * @param value The value to store in this @ref ConfigValue
+   */
+  template <typename T>
+  void setInternal(const T& value) {
+    deleteCurrentValue();
+    // This will blow up at compile time if given type is not supported
+    setType(configValTypeFor<T>());
+    // These asserts are checking the integrity of the support for T's type, and
+    // will fire if conditions are not met.
+
+    // This fails if we added a new type into @ref ConfigValType enum improperly
+    // (trivial type added after entry ConfigValType::_nonTrivialTypes, or
+    // vice-versa)
+    static_assert(isConfigValTypeNonTrivial(configValTypeFor<T>()) !=
+                      std::is_trivially_copyable<T>::value,
+                  "Something's incorrect about enum placement for added type "
+                  "(type is not trivially copyable, or vice-versa)");
+
+    // This verifies that any values that are too large to be stored directly
+    // (or are already specified as non-trivial) are pointer based, while those
+    // that are trivial and small are stored directly,
+    //
+    static_assert(
+        ((sizeof(T) <= sizeof(_data)) ||
+         isConfigValTypePointerBased(configValTypeFor<T>())),
+        "ConfigValue's internal storage is too small for added type!");
+    // This fails if a new type was added whose alignment does not match
+    // internal storage alignment
+    static_assert(
+        alignof(T) <= alignof(ConfigValue),
+        "ConfigValue's internal storage improperly aligned for added type!");
+
+    //_data should be destructed at this point, construct a new value
+    setInternalTyped(value);
+  }  // ConfigValue::setInternal
+
+  /**
+   * @brief Returns true if this and otr's _data arrays are not pointers to the
+   * same data, or are not pointerbased types.
+   */
+  inline bool isSafeToDeconstruct(const ConfigValue& otr) const {
+    // Don't want to clobber otr's data when we decon this if pointer backed
+    // type and each ConfigValue's _data arrays are equal (when cast to
+    // pointers)
+    return !isConfigValTypePointerBased(getType()) ||
+           !(reinterpret_cast<const void*>(_data) ==
+             reinterpret_cast<const void*>(otr._data));
+  }
 
  public:
   /**
@@ -306,51 +457,65 @@ class ConfigValue {
    * @brief Whether this @ref ConfigValue is valid.
    * @return Whether or not the specified type of this @ref ConfigValue is known.
    */
-  bool isValid() const { return _type != ConfigValType::Unknown; }
+  bool isValid() const { return getType() != ConfigValType::Unknown; }
 
   /**
-   * @brief Write this ConfigValue to an appropriately configured json object.
+   * @brief Write this @ref ConfigValue to an appropriately configured json object.
    */
   io::JsonGenericValue writeToJsonObject(io::JsonAllocator& allocator) const;
 
   /**
-   * @brief Set the passed @p value as the data for this @ref ConfigValue, while also setting the appropriate type.
-   * @tparam The type of the @p value being set. Must be a handled type as specified by @ref ConfigValType.
+   * @brief Set the passed @p value as the data for this @ref ConfigValue, while
+   * also setting the appropriate type.
+   * @tparam The type of the @p value being set. Must be a handled type as
+   * specified by @ref ConfigValType.
    * @param value The value to store in this @ref ConfigValue
+   * @param isTranslated Whether this value is translated before use or not.
    */
   template <typename T>
-  void set(const T& value) {
-    deleteCurrentValue();
-    // This will blow up at compile time if given type is not supported
-    _type = configValTypeFor<T>();
-    // These asserts are checking the integrity of the support for T's type, and
-    // will fire if conditions are not met.
-
-    // This fails if we added a new type into @ref ConfigValType enum improperly
-    // (trivial type added after entry ConfigValType::_nonTrivialTypes, or
-    // vice-versa)
-    static_assert(isConfigValTypeNonTrivial(configValTypeFor<T>()) !=
-                      std::is_trivially_copyable<T>::value,
-                  "Something's incorrect about enum placement for added type "
-                  "(type is not trivially copyable, or vice-versa)");
-
-    // This verifies that any values that are too large to be stored directly
-    // (or are already specified as non-trivial) are pointer based, while those
-    // that are trivial and small are stored directly,
-    //
-    static_assert(
-        ((sizeof(T) >= sizeof(_data)) ||
-         isConfigValTypeNonTrivial(configValTypeFor<T>()) ==
-             (isConfigValTypePointerBased(configValTypeFor<T>()))),
-        "ConfigValue's internal storage is too small for added type!");
-    // This fails if a new type was added whose alignment does not match
-    // internal storage alignment
-    static_assert(
-        alignof(T) <= alignof(ConfigValue),
-        "ConfigValue's internal storage improperly aligned for added type!");
-
-    //_data should be destructed at this point, construct a new value
+  void set(const T& value, bool isTranslated = false) {
     setInternal(value);
+    // set default value state to false
+    setDefaultVal(false);
+    setHiddenVal(false);
+    setTranslatedVal(isTranslated);
+  }
+
+  /**
+   * @brief Set the passed @p value as the data for this @ref ConfigValue, while
+   * also setting the appropriate type. This ConfigValue is hidden, to be used
+   * internally and not expected to be exposed to user interaction except for
+   * potentially debugging.
+   * @tparam The type of the @p value being set. Must be a handled type as
+   * specified by @ref ConfigValType.
+   * @param value The value to store in this @ref ConfigValue
+   * @param isTranslated Whether this value is translated before use or not.
+   */
+  template <typename T>
+  void setHidden(const T& value, bool isTranslated = false) {
+    setInternal(value);
+    // set default value state to false
+    setDefaultVal(false);
+    setHiddenVal(true);
+    setTranslatedVal(isTranslated);
+  }
+
+  /**
+   * @brief Set the passed @p value as the programmatic default/initialization
+   * data for this @ref ConfigValue, while also setting the appropriate type. This value
+   * will not be saved to file unless it is changed by file read or user input.
+   * @tparam The type of the @p value being set. Must be a handled type as
+   * specified by @ref ConfigValType.
+   * @param value The value to store in this @ref ConfigValue
+   * @param isTranslated Whether this value is translated before use or not.
+   */
+  template <typename T>
+  void init(const T& value, bool isTranslated = false) {
+    setInternal(value);
+    // set default value state to true
+    setDefaultVal(true);
+    setHiddenVal(false);
+    setTranslatedVal(isTranslated);
   }
 
   /**
@@ -359,16 +524,111 @@ class ConfigValue {
    */
   template <typename T>
   const T& get() const {
-    ESP_CHECK(_type == configValTypeFor<T>(),
-              "Attempting to access ConfigValue of" << _type << "with type"
+    ESP_CHECK(getType() == configValTypeFor<T>(),
+              "Attempting to access ConfigValue of" << getType() << "with type"
                                                     << configValTypeFor<T>());
-    return getInternal<T>();
+    return getInternalTyped<T>();
   }
 
   /**
    * @brief Returns the current type of this @ref ConfigValue
    */
-  ConfigValType getType() const { return _type; }
+  inline ConfigValType getType() const {
+    return static_cast<ConfigValType>(_typeAndFlags & 0xFFFFFFFF);
+  }
+
+  /**
+   * @brief Get whether the flags specified by @p mask are true or not
+   */
+  inline bool getState(const uint64_t mask) const {
+    return (_typeAndFlags & mask) == mask;
+  }
+  /**
+   * @brief Set the flags specified by @p mask to be @p val
+   */
+  inline void setState(const uint64_t mask, bool val) {
+    if (val) {
+      _typeAndFlags |= mask;
+    } else {
+      _typeAndFlags &= ~mask;
+    }
+  }
+
+  /**
+   * @brief Check whether this ConfigVal was set as a programmatic default value
+   * or was set from metadata or other intentional sources. We may not wish to
+   * write this value to file if it was only populated with a default value
+   * programmatically.
+   */
+  inline bool isDefaultVal() const {
+    return getState(ConfigValStatus::isDefault);
+  }
+  /**
+   * @brief Set whether this ConfigVal was set as a programmatic default value
+   * or was set from metadata or other intentional sources. We may not wish to
+   * write this value to file if it was only populated with a default value
+   * programmatically.
+   */
+  inline void setDefaultVal(bool isDefault) {
+    setState(ConfigValStatus::isDefault, isDefault);
+  }
+
+  /**
+   * @brief Check whether this ConfigVal is an internal value used
+   * programmatically in conjunction with other data in the owning
+   * Configuration. These values probably should never be written to file or
+   * shared with the user except for debugging purposes.
+   */
+  inline bool isHiddenVal() const {
+    return getState(ConfigValStatus::isHidden);
+  }
+  /**
+   * @brief Set whether this ConfigVal is an internal value used
+   * programmatically in conjunction with other data in the owning
+   * Configuration. These values probably should never be written to file or
+   * shared with the user except for debugging purposes.
+   */
+  inline void setHiddenVal(bool isHidden) {
+    setState(ConfigValStatus::isHidden, isHidden);
+  }
+
+  /**
+   * @brief Check whether this ConfigVal is translated before use, for example
+   * to an enum. This is generally to limit values and provide context and
+   * meaning to the values it holds. These ConfigVals are stored intnerally in a
+   * Configuration as strings but are consumed as their translated value (i.e
+   * enums). Because of this, they need custom handling to be read from file.
+   *
+   *  NOTE : Any ConfigValues specified as @p isTranslated need to have their
+   * Json read handled by the consuming class, as they will not be necessarily
+   * properly read from file otherwise.
+   */
+  inline bool isTranslated() const {
+    return getState(ConfigValStatus::isTranslated);
+  }
+  /**
+   * @brief Set whether this ConfigVal is translated before use, for example
+   * to an enum. This is generally to limit values and provide context and
+   * meaning to the values it holds. These ConfigVals are stored intnerally in a
+   * Configuration as strings but are consumed as their translated value (i.e
+   * enums). Because of this, they need custom handling to be read from file.
+   *
+   *  NOTE : Any ConfigValues specified as @p isTranslated need to have their
+   * Json read handled by the consuming class, as they will not be necessarily
+   * properly read from file otherwise.
+   */
+  inline void setTranslatedVal(bool isTranslated) {
+    setState(ConfigValStatus::isTranslated, isTranslated);
+  }
+
+  /**
+   * @brief Whether or not this @ref ConfigValue should be written to file during
+   * common execution. The reason we may not want to do this might be that the
+   * value was only set to a programmatic default value, and not set
+   * intentionally from the source file or user input; we also do not want to
+   * write any internal/hidden values to files.
+   */
+  bool shouldWriteToFile() const { return !(isDefaultVal() || isHiddenVal()); }
 
   /**
    * @brief Retrieve a string representation of the data held in this @ref
@@ -382,37 +642,6 @@ class ConfigValue {
   bool putValueInConfigGroup(const std::string& key,
                              Cr::Utility::ConfigurationGroup& cfg) const;
 
- private:
-  template <typename T>
-  EnableIf<isConfigValTypePointerBased(configValTypeFor<T>()), void>
-  setInternal(const T& value) {
-    T** tmpDst = reinterpret_cast<T**>(_data);
-    *tmpDst = new T(value);
-  }
-
-  template <typename T>
-  EnableIf<!isConfigValTypePointerBased(configValTypeFor<T>()), void>
-  setInternal(const T& value) {
-    new (_data) T(value);
-  }
-
-  template <typename T>
-  EnableIf<isConfigValTypePointerBased(configValTypeFor<T>()), const T&>
-  getInternal() const {
-    auto val = [&]() {
-      return *reinterpret_cast<const T* const*>(this->_data);
-    };
-    return *val();
-  }
-
-  template <typename T>
-  EnableIf<!isConfigValTypePointerBased(configValTypeFor<T>()), const T&>
-  getInternal() const {
-    auto val = [&]() { return reinterpret_cast<const T*>(this->_data); };
-    return *val();
-  }
-
- public:
   /**
    * @brief Comparison
    */
@@ -431,8 +660,8 @@ class ConfigValue {
 MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value);
 
 /**
- * @brief This class holds configuration data in a map of ConfigValues, and
- * also supports nested configurations via a map of smart pointers to this
+ * @brief This class holds Configuration data in a map of ConfigValues, and
+ * also supports nested Configurations via a map of smart pointers to this
  * type.
  */
 class Configuration {
@@ -442,7 +671,7 @@ class Configuration {
    */
   typedef std::unordered_map<std::string, ConfigValue> ValueMapType;
   /**
-   * @brief Convenience typedef for the subconfiguration map
+   * @brief Convenience typedef for the subConfiguration map
    */
   typedef std::map<std::string, std::shared_ptr<Configuration>> ConfigMapType;
 
@@ -469,7 +698,7 @@ class Configuration {
         valueMap_(std::move(otr.valueMap_)) {}  // move ctor
 
   // virtual destructor set to that pybind11 recognizes attributes inheritance
-  // from configuration to be polymorphic
+  // from Configuration to be polymorphic
   virtual ~Configuration() = default;
 
   /**
@@ -495,7 +724,7 @@ class Configuration {
     if (mapIter != valueMap_.end()) {
       return mapIter->second;
     }
-    ESP_WARNING() << "Key :" << key << "not present in configuration";
+    ESP_WARNING() << "Key :" << key << "not present in Configuration";
     return {};
   }
 
@@ -517,7 +746,7 @@ class Configuration {
         (mapIter->second.getType() == desiredType)) {
       return mapIter->second.get<T>();
     }
-    ESP_ERROR() << "Key :" << key << "not present in configuration as"
+    ESP_ERROR() << "Key :" << key << "not present in Configuration as"
                 << getNameForStoredType(desiredType);
     return {};
   }
@@ -532,7 +761,7 @@ class Configuration {
     if (mapIter != valueMap_.end()) {
       return mapIter->second.getType();
     }
-    ESP_ERROR() << "Key :" << key << "not present in configuration.";
+    ESP_ERROR() << "Key :" << key << "not present in Configuration.";
     return ConfigValType::Unknown;
   }
 
@@ -559,7 +788,7 @@ class Configuration {
    * @brief Retrieve list of keys present in this @ref Configuration's
    * valueMap_. Subconfigs are not included.
    * @return a vector of strings representing the subconfig keys for this
-   * configuration.
+   * Configuration.
    */
   std::vector<std::string> getKeys(bool sorted = false) const {
     std::vector<std::string> keys;
@@ -577,7 +806,7 @@ class Configuration {
    * @brief This function returns this @ref Configuration's subconfig keys.
    * @param sorted whether the keys should be sorted or not.
    * @return a vector of strings representing the subconfig keys for this
-   * configuration.
+   * Configuration.
    */
   std::vector<std::string> getSubconfigKeys(bool sorted = false) const {
     std::vector<std::string> keys;
@@ -632,7 +861,7 @@ class Configuration {
     valueMap_[key].set<T>(value);
   }
   /**
-   * @brief Save the passed @p value char* as a string to the configuration at
+   * @brief Save the passed @p value char* as a string to the Configuration at
    * the passed @p key.
    * @param key The key to assign to the passed value.
    * @param value The char* to save at given @p key as a string.
@@ -651,6 +880,161 @@ class Configuration {
     valueMap_[key].set<double>(static_cast<double>(value));
   }
 
+  /**
+   * @brief Save the passed string @p value using specified @p key as an
+   * translated/enum-backed value. This value will be translated by the consumer
+   * of this Configuration to be an enum constant and so should not use
+   * the generic Configuration file read functionality but rather an
+   * implementation that will verify the validity of the input.
+   * @param key The key to assign to the passed value.
+   * @param value The string value to save at given @p key
+   */
+  void setTranslated(const std::string& key, const char* value) {
+    valueMap_[key].set<std::string>(std::string(value), true);
+  }
+  /**
+   * @brief Save the passed string @p value using specified @p key as an
+   * translated/enum-backed value. This value will be translated by the consumer
+   * of this Configuration to be an enum constant and so should not use
+   * the generic Configuration file read functionality but rather an
+   * implementation that will verify the validity of the input.
+   * @param key The key to assign to the passed value.
+   * @param value The string value to save at given @p key
+   */
+  void setTranslated(const std::string& key, const std::string& value) {
+    valueMap_[key].set<std::string>(value, true);
+  }
+
+  /**
+   * @brief Save the passed @p value using specified @p key as a hidden value,
+   * to be used internally but not saved or exposed to the user except for debug
+   * purposes.
+   * @tparam The type of the value to be saved.
+   * @param key The key to assign to the passed value.
+   * @param value The value to save at given @p key
+   */
+  template <typename T>
+  void setHidden(const std::string& key, const T& value) {
+    valueMap_[key].setHidden<T>(value);
+  }
+  /**
+   * @brief Save the passed @p value char* as a string to the Configuration at
+   * the passed @p key as a hidden value,  to be used internally but not saved
+   * or exposed to the user except for debug purposes.
+   * @param key The key to assign to the passed value.
+   * @param value The char* to save at given @p key as a string.
+   */
+  void setHidden(const std::string& key, const char* value) {
+    valueMap_[key].setHidden<std::string>(std::string(value));
+  }
+
+  /**
+   * @brief Save the passed float @p value as a double using the specified
+   * @p key as a hidden value, to be used internally but not saved or exposed to
+   * the user except for debug purposes.
+   * @param key The key to assign to the passed value.
+   * @param value The float value to save at given @p key as a double.
+   */
+  void setHidden(const std::string& key, float value) {
+    valueMap_[key].setHidden<double>(static_cast<double>(value));
+  }
+
+  /**
+   * @brief Save the passed string @p value using specified @p key as an
+   * translated/enum-backed valuethat is also a hidden value, to be used
+   * internally but not saved or exposed to the user except for debug
+   * purposes.This value will be translated by the consumer of this
+   * Configuration to be an enum constant and so should not use the generic
+   * Configuration file read functionality but rather an implementation that
+   * will verify the validity of the input.
+   * @param key The key to assign to the passed value.
+   * @param value The string value to save at given @p key
+   */
+  void setHiddenTranslated(const std::string& key, const char* value) {
+    valueMap_[key].setHidden<std::string>(std::string(value), true);
+  }
+
+  /**
+   * @brief Save the passed string @p value using specified @p key as an
+   * translated/enum-backed valuethat is also a hidden value, to be used
+   * internally but not saved or exposed to the user except for debug
+   * purposes.This value will be translated by the consumer of this
+   * Configuration to be an enum constant and so should not use the generic
+   * Configuration file read functionality but rather an implementation that
+   * will verify the validity of the input.
+   * @param key The key to assign to the passed value.
+   * @param value The string value to save at given @p key
+   */
+  void setHiddenTranslated(const std::string& key, const std::string& value) {
+    valueMap_[key].setHidden<std::string>(value, true);
+  }
+
+  /**
+   * @brief Save the passed @p value using specified @p key as a
+   * programmatically set initial value (will not be written to file if this
+   * Configuration is saved unless it is changed via a file read or user input).
+   * @tparam The type of the value to be saved.
+   * @param key The key to assign to the passed value.
+   * @param value The value to save at given @p key
+   */
+  template <typename T>
+  void init(const std::string& key, const T& value) {
+    valueMap_[key].init<T>(value);
+  }
+  /**
+   * @brief Save the passed @p value char* as a string to the Configuration at
+   * the passed @p key as a programmatically set initial value (will not be
+   * written to file if this Configuration is saved unless it is changed via a
+   * file read or user input).
+   * @param key The key to assign to the passed value.
+   * @param value The char* to save at given @p key as a string.
+   */
+  void init(const std::string& key, const char* value) {
+    valueMap_[key].init<std::string>(std::string(value));
+  }
+
+  /**
+   * @brief Save the passed float @p value as a double using the specified
+   * @p key as a programmatically set initial value (will not be written to file
+   * if this Configuration is saved unless it is changed via a file read or user
+   * input).
+   * @param key The key to assign to the passed value.
+   * @param value The float value to save at given @p key as a double.
+   */
+  void init(const std::string& key, float value) {
+    valueMap_[key].init<double>(static_cast<double>(value));
+  }
+
+  /**
+   * @brief Save the passed string @p value using specified @p key as a
+   * programmatically set initial value (will not be written to file if this
+   * Configuration is saved unless it is changed via a file read or user input)
+   * of the translated/enum-backed value. This value will be translated by the
+   * consumer of this Configuration to be an enum constant and so should not use
+   * the generic Configuration file read functionality but rather an
+   * implementation that will verify the validity of the input.
+   * @param key The key to assign to the passed value.
+   * @param value The string value to save at given @p key
+   */
+  void initTranslated(const std::string& key, const char* value) {
+    valueMap_[key].init<std::string>(std::string(value), true);
+  }
+
+  /**
+   * @brief Save the passed string @p value using specified @p key as a
+   * programmatically set initial value (will not be written to file if this
+   * Configuration is saved unless it is changed via a file read or user input)
+   * of the translated/enum-backed value. This value will be translated by the
+   * consumer of this Configuration to be an enum constant and so should not use
+   * the generic Configuration file read functionality but rather an
+   * implementation that will verify the validity of the input.
+   * @param key The key to assign to the passed value.
+   * @param value The string value to save at given @p key
+   */
+  void initTranslated(const std::string& key, const std::string& value) {
+    valueMap_[key].init<std::string>(value, true);
+  }
+
   // ****************** Value removal ******************
 
   /**
@@ -667,7 +1051,7 @@ class Configuration {
       valueMap_.erase(mapIter);
       return mapIter->second;
     }
-    ESP_WARNING() << "Key :" << key << "not present in configuration";
+    ESP_WARNING() << "Key :" << key << "not present in Configuration";
     return {};
   }
 
@@ -690,7 +1074,7 @@ class Configuration {
       valueMap_.erase(mapIter);
       return mapIter->second.get<T>();
     }
-    ESP_WARNING() << "Key :" << key << "not present in configuration as"
+    ESP_WARNING() << "Key :" << key << "not present in Configuration as"
                   << getNameForStoredType(desiredType);
     return {};
   }
@@ -714,7 +1098,7 @@ class Configuration {
 
   /**
    * @brief Return number of value and subconfig entries in this
-   * Configuration. This only counts each subconfiguration entry as a single
+   * Configuration. This only counts each subConfiguration entry as a single
    * entry.
    */
   int getNumEntries() const { return configMap_.size() + valueMap_.size(); }
@@ -732,7 +1116,7 @@ class Configuration {
   }
   /**
    * @brief Return number of subconfig entries in this Configuration. This
-   * only counts each subconfiguration entry as a single entry.
+   * only counts each subConfiguration entry as a single entry.
    */
   int getNumSubconfigs() const { return configMap_.size(); }
 
@@ -767,7 +1151,7 @@ class Configuration {
 
   /**
    * @brief Returns whether this @ref Configuration has the passed @p key as a
-   * non-configuration value. Does not check subconfigurations.
+   * non-Configuration value. Does not check subConfigurations.
    */
   bool hasValue(const std::string& key) const {
     return valueMap_.count(key) > 0;
@@ -787,8 +1171,8 @@ class Configuration {
 
   /**
    * @brief Checks if passed @p key is contained in this Configuration.
-   * Returns a list of nested subconfiguration keys, in order, to the
-   * configuration where the key was found, ending in the requested @p key.
+   * Returns a list of nested subConfiguration keys, in order, to the
+   * Configuration where the key was found, ending in the requested @p key.
    * If list is empty, @p key was not found.
    * @param key The key to look for
    * @return A breadcrumb list to where the value referenced by @p key
@@ -800,7 +1184,7 @@ class Configuration {
    * @brief Builds and returns @ref Corrade::Utility::ConfigurationGroup
    * holding the values in this esp::core::config::Configuration.
    *
-   * @return a reference to a configuration group for this Configuration
+   * @return a reference to a Configuration group for this Configuration
    * object.
    */
   Cr::Utility::ConfigurationGroup getConfigGroup() const {
@@ -822,11 +1206,11 @@ class Configuration {
     return res;
   }
 
-  // ****************** Subconfiguration accessors ******************
+  // ****************** SubConfiguration accessors ******************
 
   /**
    * @brief return if passed key corresponds to a subconfig in this
-   * configuration
+   * Configuration
    */
   bool hasSubconfig(const std::string& key) const {
     ConfigMapType::const_iterator mapIter = configMap_.find(key);
@@ -840,8 +1224,8 @@ class Configuration {
    *
    * @tparam Type to return. Must inherit from @ref
    * esp::core::config::Configuration
-   * @param name The name of the configuration to retrieve.
-   * @return A pointer to a copy of the configuration having the requested
+   * @param name The name of the Configuration to retrieve.
+   * @return A pointer to a copy of the Configuration having the requested
    * name, cast to the appropriate type, or nullptr if not found.
    */
 
@@ -860,16 +1244,16 @@ class Configuration {
   }
 
   /**
-   * @brief return pointer to read-only sub-configuration of given @p name.
-   * Will fail if configuration with given name dne.
-   * @param name The name of the desired configuration.
+   * @brief return pointer to read-only sub-Configuration of given @p name.
+   * Will fail if Configuration with given name dne.
+   * @param name The name of the desired Configuration.
    */
   std::shared_ptr<const Configuration> getSubconfigView(
       const std::string& name) const {
     auto configIter = configMap_.find(name);
     CORRADE_ASSERT(
         configIter != configMap_.end(),
-        "Subconfiguration with name " << name << " not found in Configuration.",
+        "SubConfiguration with name " << name << " not found in Configuration.",
         nullptr);
     // if exists return actual object
     return configIter->second;
@@ -879,14 +1263,14 @@ class Configuration {
    * @brief Templated Version. Retrieves the stored shared pointer to the
    * subConfig @ref esp::core::config::Configuration that has the passed @p name
    * , cast to the specified type. This will create a shared pointer to a new
-   * sub-configuration if none exists and return it, cast to specified type.
+   * sub-Configuration if none exists and return it, cast to specified type.
    *
    * Use this function when you wish to modify this Configuration's
    * subgroup, possibly creating it in the process.
    * @tparam The type to cast the @ref esp::core::config::Configuration to. Type
    * is checked to verify that it inherits from Configuration.
-   * @param name The name of the configuration to edit.
-   * @return The actual pointer to the configuration having the requested
+   * @param name The name of the Configuration to edit.
+   * @return The actual pointer to the Configuration having the requested
    * name, cast to the specified type.
    */
   template <typename T>
@@ -901,10 +1285,10 @@ class Configuration {
 
   /**
    * @brief move specified subgroup config into configMap at desired name.
-   * Will replace any subconfiguration at given name without warning if
+   * Will replace any subConfiguration at given name without warning if
    * present.
-   * @param name The name of the subconfiguration to add
-   * @param configPtr A pointer to a subconfiguration to add.
+   * @param name The name of the subConfiguration to add
+   * @param configPtr A pointer to a subConfiguration to add.
    */
   template <typename T>
   void setSubconfigPtr(const std::string& name, std::shared_ptr<T>& configPtr) {
@@ -918,8 +1302,8 @@ class Configuration {
   /**
    * @brief Removes and returns the named subconfig. If not found, returns an
    * empty subconfig with a warning.
-   * @param name The name of the subconfiguration to delete
-   * @return a shared pointer to the removed subconfiguration.
+   * @param name The name of the subConfiguration to delete
+   * @return a shared pointer to the removed subConfiguration.
    */
   std::shared_ptr<Configuration> removeSubconfig(const std::string& name) {
     ConfigMapType::const_iterator mapIter = configMap_.find(name);
@@ -928,7 +1312,7 @@ class Configuration {
       return mapIter->second;
     }
     ESP_WARNING() << "Name :" << name
-                  << "not present in map of subconfigurations.";
+                  << "not present in map of subConfigurations.";
     return {};
   }
 
@@ -966,11 +1350,11 @@ class Configuration {
   }
 
   /**
-   * @brief Merges configuration pointed to by @p config into this
-   * configuration, including all subconfigs.  Passed config overwrites
+   * @brief Merges Configuration pointed to by @p src into this
+   * Configuration, including all subconfigs.  Passed config overwrites
    * existing data in this config.
-   * @param src The source of configuration data we wish to merge into this
-   * configuration.
+   * @param src The source of Configuration data we wish to merge into this
+   * Configuration.
    */
   void overwriteWithConfig(const std::shared_ptr<const Configuration>& src) {
     if (src->getNumEntries() == 0) {
@@ -998,7 +1382,7 @@ class Configuration {
   }
 
   /**
-   * @brief Returns a const iterator across the map of subconfigurations.
+   * @brief Returns a const iterator across the map of subConfigurations.
    */
   std::pair<ConfigMapType::const_iterator, ConfigMapType::const_iterator>
   getSubconfigIterator() const {
@@ -1062,9 +1446,9 @@ class Configuration {
 
   /**
    * @brief Load values into this Configuration from the passed @p jsonObj.
-   * Will recurse for subconfigurations.
+   * Will recurse for subConfigurations.
    * @param jsonObj The JSON object to read from for the data for this
-   * configuration.
+   * Configuration.
    * @return The number of fields successfully read and populated.
    */
   int loadFromJson(const io::JsonGenericValue& jsonObj);
@@ -1077,8 +1461,8 @@ class Configuration {
 
   /**
    * @brief Populate a json object with all the first-level values held in
-   * this configuration.  May be overridden to handle special cases for
-   * root-level configuration of Attributes classes derived from
+   * this Configuration.  May be overridden to handle special cases for
+   * root-level Configuration of Attributes classes derived from
    * Configuration.
    */
   virtual void writeValuesToJson(io::JsonGenericValue& jsonObj,
@@ -1086,7 +1470,7 @@ class Configuration {
 
   /**
    * @brief Populate a json object with all the data from the
-   * subconfigurations, held in json sub-objects, for this Configuration.
+   * subConfigurations, held in json sub-objects, for this Configuration.
    */
   virtual void writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
                                      io::JsonAllocator& allocator) const;
@@ -1094,7 +1478,7 @@ class Configuration {
   /**
    * @brief Take the passed @p key and query the config value for that key,
    * writing it to @p jsonName within the passed @p jsonObj.
-   * @param key The key of the data in the configuration
+   * @param key The key of the data in the Configuration
    * @param jsonName The tag to use in the json file
    * @param jsonObj The json object to write to
    * @param allocator The json allocator to use to build the json object
@@ -1102,19 +1486,27 @@ class Configuration {
   void writeValueToJson(const char* key,
                         const char* jsonName,
                         io::JsonGenericValue& jsonObj,
-                        io::JsonAllocator& allocator) const;
+                        io::JsonAllocator& allocator) const {
+    auto cfgVal = get(key);
+    if (cfgVal.shouldWriteToFile()) {
+      writeValueToJsonInternal(cfgVal, jsonName, jsonObj, allocator);
+    }
+  }
 
   /**
    * @brief Take the passed @p key and query the config value for that key,
    * writing it to tag with @p key as name within the passed @p jsonObj.
-   * @param key The key of the data in the configuration
+   * @param key The key of the data in the Configuration
    * @param jsonObj The json object to write to
    * @param allocator The json allocator to use to build the json object
    */
   void writeValueToJson(const char* key,
                         io::JsonGenericValue& jsonObj,
                         io::JsonAllocator& allocator) const {
-    writeValueToJson(key, key, jsonObj, allocator);
+    auto cfgVal = get(key);
+    if (cfgVal.shouldWriteToFile()) {
+      writeValueToJsonInternal(cfgVal, key, jsonObj, allocator);
+    }
   }
 
   /**
@@ -1126,7 +1518,7 @@ class Configuration {
   std::string getAllValsAsString(const std::string& newLineStr = "\n") const;
 
   /**
-   * @brief Find the subconfiguration with the given handle and rekey it such
+   * @brief Find the subConfiguration with the given handle and rekey it such
    * that all the value entries it contains are keyed by sequential numeric
    * strings. These keys will preserve the order of the original keys.
    *
@@ -1157,7 +1549,7 @@ class Configuration {
   /**
    * @brief Friend function.  Checks if passed @p key is contained in @p
    * config. Returns the highest level where @p key was found
-   * @param config The configuration to search for passed key
+   * @param config The Configuration to search for passed key
    * @param key The key to look for
    * @param parentLevel The parent level to the current iteration.  If
    * iteration finds @p key, it will return parentLevel+1
@@ -1206,7 +1598,7 @@ class Configuration {
     // Attempt to insert an empty pointer
     auto result = configMap_.emplace(name, std::shared_ptr<T>{});
     // If name not already present (insert succeeded) then add new
-    // configuration
+    // Configuration
     if (result.second) {
       result.first->second = std::make_shared<T>();
     }
@@ -1214,6 +1606,21 @@ class Configuration {
   }
 
  private:
+  /**
+   * @brief Write the passed @p configValue to a json object tagged with
+   * @p jsonName within the passed @p jsonObj . By here we have already verified
+   * that this object should be written to Json (i.e. checks for being hidden or
+   * only programmatically initialized have occurred already).
+   * @param configValue The @ref ConfigValue we want to write to the json file.
+   * @param jsonName The tag to use in the json file
+   * @param jsonObj The json object to write to
+   * @param allocator The json allocator to use to build the json object
+   */
+  void writeValueToJsonInternal(const ConfigValue& configValue,
+                                const char* jsonName,
+                                io::JsonGenericValue& jsonObj,
+                                io::JsonAllocator& allocator) const;
+
   /**
    * @brief Process passed json object into this Configuration, using passed
    * key.
@@ -1269,25 +1676,25 @@ void Configuration::setSubconfigValsOfTypeInVector(
 /**
  * @brief Retrieves a shared pointer to a copy of the subConfig @ref
  * esp::core::config::Configuration that has the passed @p name . This will
- * create a pointer to a new sub-configuration if none exists already with
+ * create a pointer to a new sub-Configuration if none exists already with
  * that name, but will not add this Configuration to this Configuration's
  * internal storage.
  *
- * @param name The name of the configuration to retrieve.
- * @return A pointer to a copy of the configuration having the requested
- * name, or a pointer to an empty configuration.
+ * @param name The name of the Configuration to retrieve.
+ * @return A pointer to a copy of the Configuration having the requested
+ * name, or a pointer to an empty Configuration.
  */
 
 template <>
 std::shared_ptr<Configuration> Configuration::getSubconfigCopy<Configuration>(
     const std::string& name) const;
 /**
- * @brief Retrieve a shared pointer to the actual subconfiguration given by @p
- * name, or a new subconfiguration with that name, if none exists.
+ * @brief Retrieve a shared pointer to the actual subConfiguration given by @p
+ * name, or a new subConfiguration with that name, if none exists.
  *
- * @param name The name of the desired subconfiguration
- * @return A pointer to the configuration having the requested
- * name, or a pointer to an empty configuration.
+ * @param name The name of the desired subConfiguration
+ * @return A pointer to the Configuration having the requested
+ * name, or a pointer to an empty Configuration.
  */
 template <>
 std::shared_ptr<Configuration> Configuration::editSubconfig<Configuration>(
@@ -1295,7 +1702,7 @@ std::shared_ptr<Configuration> Configuration::editSubconfig<Configuration>(
 
 /**
  * @brief Save the passed @ref Configuration pointed to by @p configPtr at location specified by @p name
- * @param name The name to save the subconfiguration by
+ * @param name The name to save the subConfiguration by
  * @param configPtr A pointer to the @ref Configuration to save with the given @p name .
  */
 template <>

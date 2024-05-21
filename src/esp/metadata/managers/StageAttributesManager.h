@@ -104,7 +104,7 @@ class StageAttributesManager
       attributes::StageAttributes::ptr attributes,
       bool setFrame,
       const std::string& meshHandle,
-      const std::function<void(int)>& assetTypeSetter) override;
+      const std::function<void(AssetType)>& assetTypeSetter) override;
   /**
    * @brief Used Internally.  Create and configure newly-created attributes with
    * any default values, before any specific values are set.
@@ -162,7 +162,7 @@ class StageAttributesManager
    * See @ref esp::attributes::managers::ObjectAttributesManager for an example.
    *
    * @param objectID the ID of the successfully registered managed object
-   * @param objectHandle The name of the managed objbect
+   * @param objectHandle The name of the managed object
    */
   void postRegisterObjectHandling(
       CORRADE_UNUSED int objectID,
