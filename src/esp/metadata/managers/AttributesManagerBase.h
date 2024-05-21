@@ -714,8 +714,7 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
 
   std::string dispString = Cr::Utility::formatString(
       "AttrHandle `{}` class :`{}`|curRelPathName `{}`|curFQPathName "
-      ":`{}`|nonEmptyRel "
-      "`{}`|nonEmptyFQ :`{}`",
+      ":`{}`|nonEmptyRel proposal :`{}`|nonEmptyFQ proposal :`{}`",
       attributes->getHandle(), attributes->getClassKey(), curRelPathName,
       curFQPathName, curRelativePathName, curFullyQualifiedPathName);
 
@@ -749,7 +748,7 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
   // verify attributes filepath exists
   if (CrPath::isDirectory(attrFilepath)) {
     Cr::Utility::formatInto(dispString, dispString.size(),
-                            "|attr Filepath `{}`", attrFilepath);
+                            "|attributes Filepath :`{}`", attrFilepath);
 
     // Check if expected relative filepath is accessible on disk (therefore is
     // fully qualified)
@@ -760,14 +759,15 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
       // save the new relative filepath
       relPathSetter(newRelFilepath);
       Cr::Utility::formatInto(dispString, dispString.size(),
-                              "|curRelPathName is FOUND/FQ|newRelFP `{}`",
+                              "|curRelPathName is FOUND/FQ|newRelFP :`{}`",
                               newRelFilepath);
     }
 
   }  // if attributes dir is set properly
   else {
     Cr::Utility::formatInto(dispString, dispString.size(),
-                            "|NON-EXISTING FILEPATH `{}` ", attrFilepath);
+                            "|FILEPATH DOES NOT EXIST IN SYSTEM :`{}` ",
+                            attrFilepath);
   }
 
   ESP_VERY_VERBOSE() << dispString;
