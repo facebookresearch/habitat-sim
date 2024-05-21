@@ -411,7 +411,7 @@ jobs:
               conda install -y gitpython git-lfs
               cd habitat-sim
               git lfs install
-              python src_python/habitat_sim/utils/datasets_download.py --uids ci_test_assets --replace --data-path data/ --no-prune
+              python src_python/habitat_sim/utils/datasets_download.py --uids ci_test_assets ycb rearrange_dataset_v2 --replace --data-path data/ --no-prune
               ls -la data/scene_datasets/habitat-test-scenes/
 
       - run:
