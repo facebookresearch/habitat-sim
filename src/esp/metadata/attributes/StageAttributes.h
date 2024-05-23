@@ -92,12 +92,65 @@ class StageAttributes : public AbstractObjectAttributes {
   std::string getSemanticDescriptorFilename() const {
     return get<std::string>("semantic_descriptor_filename");
   }
+
+  /**
+   * @brief Sets the fully-qualified filepath for the semantic asset to be used
+   * to semantic the construct this attributes describes. This is only used
+   * internally and should not be saved to disk.
+   */
+  void setSemanticDescriptorFullPath(
+      const std::string& semanticDescriptorHandle) {
+    setHidden("__semanticDescriptorFullPath", semanticDescriptorHandle);
+    setIsDirty();
+  }
+
+  /**
+   * @brief Gets the fully-qualified filepath for the semantic asset to be used
+   * to semantic the construct this attributes describes. This is only used
+   * internally and should not be saved to disk.
+   */
+  std::string getSemanticDescriptorFullPath() const {
+    return get<std::string>("__semanticDescriptorFullPath");
+  }
+
+  /**
+   * @brief Sets the relative path/filename for the semantic asset to be used to
+   * render the semantics for the stage this attributes describes. This is
+   * relative to the on-disk location of the file responsible for this
+   * configuration.
+   */
   void setSemanticAssetHandle(const std::string& semanticAssetHandle) {
     set("semantic_asset", semanticAssetHandle);
     setIsDirty();
   }
+
+  /**
+   * @brief Gets the relative path/filename for the semantic asset to be used to
+   * render the semantics for the stage this attributes describes. This is
+   * relative to the on-disk location of the file responsible for this
+   * configuration.
+   */
   std::string getSemanticAssetHandle() const {
     return get<std::string>("semantic_asset");
+  }
+
+  /**
+   * @brief Sets the fully-qualified filepath for the semantic asset to be used
+   * to render the semantics for the stage this attributes describes. This is
+   * only used internally and should not be saved to disk.
+   */
+  void setSemanticAssetFullPath(const std::string& semanticAssetHandle) {
+    setHidden("__semanticAssetFullPath", semanticAssetHandle);
+    setIsDirty();
+  }
+
+  /**
+   * @brief Gets the fully-qualified filepath for the semantic asset to be used
+   * to render the semantics for the stage this attributes describes. This is
+   * only used internally and should not be saved to disk.
+   */
+  std::string getSemanticAssetFullPath() const {
+    return get<std::string>("__semanticAssetFullPath");
   }
 
   /**
@@ -249,6 +302,25 @@ class StageAttributes : public AbstractObjectAttributes {
   }
   std::string getNavmeshAssetHandle() const {
     return get<std::string>("nav_asset");
+  }
+
+  /**
+   * @brief Sets the fully-qualified filepath for the navmesh asset to be used
+   * with the stage this attributes describes. This is only used internally and
+   * should not be saved to disk.
+   */
+  void setNavmeshAssetFullPath(const std::string& navmeshAssetHandle) {
+    setHidden("__navmeshAssetFullPath", navmeshAssetHandle);
+    setIsDirty();
+  }
+
+  /**
+   * @brief Gets the fully-qualified filepath for the navmesh asset to be used
+   * with the stage this attributes describes. This is only used internally and
+   * should not be saved to disk.
+   */
+  std::string getNavmeshAssetFullPath() const {
+    return get<std::string>("__navmeshAssetFullPath");
   }
 
   /**

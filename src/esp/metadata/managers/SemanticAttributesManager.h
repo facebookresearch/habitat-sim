@@ -70,6 +70,16 @@ class SemanticAttributesManager
     return attributes::SemanticVolumeAttributes::create(handle);
   }
 
+  /**
+   * @brief This function will be called to finalize attributes' paths before
+   * registration, moving fully qualified paths to the appropriate hidden
+   * attribute fields. This can also be called without registration to make sure
+   * the paths specified in an attributes are properly configured.
+   * @param attributes The attributes to be filtered.
+   */
+  void finalizeAttrPathsBeforeRegister(
+      const attributes::SemanticAttributes::ptr& attributes) const override;
+
  protected:
   /**
    * @brief Used Internally.  Create a @ref
@@ -124,11 +134,9 @@ class SemanticAttributesManager
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
   /**
-   * @brief Not required for this manager.
-   *
-   * This method will perform any essential updating to the managed object
-   * before registration is performed. If this updating fails, registration will
-   * also fail.
+   * @brief This method will perform any essential updating to the managed
+   * object before registration is performed. If this updating fails,
+   * registration will also fail.
    * @param object the managed object to be registered
    * @param objectHandle the name to register the managed object with.
    * Expected to be valid.
@@ -138,13 +146,9 @@ class SemanticAttributesManager
    * register the object if it has.
    */
   core::managedContainers::ManagedObjectPreregistration
-  preRegisterObjectFinalize(
-      CORRADE_UNUSED attributes::SemanticAttributes::ptr object,
-      CORRADE_UNUSED const std::string& objectHandle,
-      CORRADE_UNUSED bool forceRegistration) override {
-    // No pre-registration conditioning performed
-    return core::managedContainers::ManagedObjectPreregistration::Success;
-  }
+  preRegisterObjectFinalize(attributes::SemanticAttributes::ptr object,
+                            const std::string& objectHandle,
+                            CORRADE_UNUSED bool forceRegistration) override;
 
   /**
    * @brief Not required for this manager.

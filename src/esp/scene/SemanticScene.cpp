@@ -26,7 +26,7 @@ namespace scene {
 bool SemanticScene::
     loadSemanticSceneDescriptor(const std::shared_ptr<metadata::attributes::SemanticAttributes>& semanticAttr, SemanticScene& scene, const quatf& rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY) */) {
   const std::string ssdFileName =
-      semanticAttr != nullptr ? semanticAttr->getSemanticDescriptorFilename()
+      semanticAttr != nullptr ? semanticAttr->getSemanticDescriptorFullPath()
                               : "";
 
   bool loadSuccess = false;

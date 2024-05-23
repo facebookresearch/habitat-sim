@@ -45,7 +45,9 @@ AbstractObjectAttributes::AbstractObjectAttributes(
   init("units_to_meters", 1.0);
   init("render_asset", "");
   init("collision_asset", "");
-
+  // initialize these so they exist in Configuration
+  setHidden("__renderAssetFullPath", "");
+  setHidden("__collisionAssetFullPath", "");
   // This specifies that we want to investigate the state of the render and
   // collision handles before we allow this attributes to be registered.
   // Hidden field

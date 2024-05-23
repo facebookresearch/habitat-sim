@@ -452,12 +452,23 @@ void initAttributesBindings(py::module& m) {
           &ArticulatedObjectAttributes::setURDFPath,
           R"(Relative filepath of the URDF file used to create the Articulated Object
           described by this template.)")
+      .def_property_readonly(
+          "urdf_fullpath", &ArticulatedObjectAttributes::getURDFFullPath,
+          R"(Fully qualified filepath of the URDF file used to create the Articulated Object
+          described by this template. This filepath will only be available/accurate
+          after the owning attributes is registered)")
       .def_property(
           "render_asset_handle",
           &ArticulatedObjectAttributes::getRenderAssetHandle,
           &ArticulatedObjectAttributes::setRenderAssetHandle,
           R"(Handle of the asset used to render constructions built from
           this articulated object template.)")
+      .def_property_readonly(
+          "render_asset_fullpath",
+          &ArticulatedObjectAttributes::getRenderAssetFullPath,
+          R"(Fully qualified filepath of the asset used to render constructions built from
+          this template. This filepath will only be available/accurate
+          after the owning attributes is registered)")
       .def_property(
           "semantic_id", &ArticulatedObjectAttributes::getSemanticId,
           &ArticulatedObjectAttributes::setSemanticId,
@@ -572,6 +583,18 @@ void initAttributesBindings(py::module& m) {
           &AbstractObjectAttributes::setCollisionAssetHandle,
           R"(Handle of the asset used to calculate collsions for constructions
           built from this template.)")
+      .def_property_readonly(
+          "render_asset_fullpath",
+          &AbstractObjectAttributes::getRenderAssetFullPath,
+          R"(Fully qualified filepath of the asset used to render constructions built from
+          this template. This filepath will only be available/accurate
+          after the owning attributes is registered)")
+      .def_property_readonly(
+          "collision_asset_fullpath",
+          &AbstractObjectAttributes::getCollisionAssetFullPath,
+          R"(Fully qualified filepath of the asset used to calculate collsions for constructions
+          built from this template. This filepath will only be available/accurate
+          after the owning attributes is registered)")
       .def_property(
           "shader_type", &AbstractObjectAttributes::getShaderType,
           &AbstractObjectAttributes::setShaderType,
@@ -692,6 +715,11 @@ void initAttributesBindings(py::module& m) {
           R"(Handle of the asset used for semantic segmentation of stages
           built from this template.)")
       .def_property_readonly(
+          "semantic_asset_fullpath", &StageAttributes::getSemanticAssetFullPath,
+          R"(Fully qualified filepath of the asset used for semantic segmentation of stages
+          built from this template. This filepath will only be available/accurate after
+          the owning attributes is registered)")
+      .def_property_readonly(
           "semantic_asset_type", &StageAttributes::getSemanticAssetType,
           R"(Type of asset used for collision calculations for constructions
           built from this template.)")
@@ -705,6 +733,11 @@ void initAttributesBindings(py::module& m) {
           &StageAttributes::setSemanticDescriptorFilename,
           R"(Handle for file containing semantic type maps and hierarchy for
           constructions built from this template.)")
+      .def_property_readonly(
+          "house_fq_filename", &StageAttributes::getSemanticDescriptorFullPath,
+          R"(Fully qualified path of file containing semantic type maps and hierarchy for
+          constructions built from this template. This filepath will only be available/accurate
+          after the owning attributes is registered)")
       .def_property(
           "frustum_culling", &StageAttributes::getFrustumCulling,
           &StageAttributes::setFrustumCulling,

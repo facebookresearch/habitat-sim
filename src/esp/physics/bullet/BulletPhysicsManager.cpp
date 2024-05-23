@@ -126,7 +126,7 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
     // acquire context if available
     simulator_->getRenderGLContext();
   }
-  const std::string urdfFilepath = artObjAttributes->getURDFPath();
+  const std::string urdfFilepath = artObjAttributes->getURDFFullPath();
   // Load model and set active
   ESP_CHECK(urdfImporter_->loadURDF(urdfFilepath, forceReload),
             "failed to parse/load URDF file" << urdfFilepath);
@@ -155,7 +155,7 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
   auto model = u2b->getModel();
 
   // if the AO attributes specifies a render asset, load and link it
-  const auto renderAssetPath = artObjAttributes->getRenderAssetHandle();
+  const auto renderAssetPath = artObjAttributes->getRenderAssetFullPath();
   if (renderAssetPath != "") {
     instantiateSkinnedModel(articulatedObject, artObjAttributes,
                             renderAssetPath, objectNode, drawables, lightSetup);

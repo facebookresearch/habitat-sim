@@ -150,7 +150,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
    * @param handle String name of primitive asset attributes desired
    * @return whether handle exists or not in asset attributes library
    */
-  bool isValidPrimitiveAttributes(const std::string& handle) {
+  bool isValidPrimitiveAttributes(const std::string& handle) const {
     return assetAttributesMgr_->getObjectLibHasHandle(handle);
   }
 

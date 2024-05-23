@@ -145,6 +145,16 @@ class ObjectAttributesManager
         physicsSynthObjTmpltLibByID_, subStr, contains, sorted);
   }
 
+  /**
+   * @brief This function will be called to finalize attributes' paths before
+   * registration, moving fully qualified paths to the appropriate hidden
+   * attribute fields. This can also be called without registration to make sure
+   * the paths specified in an attributes are properly configured.
+   * @param attributes The attributes to be filtered.
+   */
+  void finalizeAttrPathsBeforeRegister(
+      const attributes::ObjectAttributes::ptr& attributes) const override;
+
   // ======== End File-based and primitive-based partition functions ========
 
  protected:
