@@ -218,7 +218,7 @@ class SemanticAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Set the retlative Filename to the semantic texture mesh, if one
+   * @brief Set the relative Filename to the semantic texture mesh, if one
    * exists.
    */
   void setSemanticAssetHandle(const std::string& semanticAssetHandle) {

@@ -568,7 +568,7 @@ class AssetAttributesManager
   }  // AssetAttributeManager::createPrimAttributes
 
   /**
-   * @brief Any Assset-attributes-specific resetting that needs to happen on
+   * @brief Any Asset-attributes-specific resetting that needs to happen on
    * reset.
    */
   void resetFinalize() override {

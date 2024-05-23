@@ -181,7 +181,7 @@ std::string SemanticAttributes::getObjectInfoInternal() const {
   // std::string res = "";
   // TODO do this for any SemanticAttributes level values
   std::string res = Cr::Utility::formatString(
-      "\nSemantic Scene Descriptor Filename,Semantic Mesh Assset,\n{},{}\n",
+      "\nSemantic Scene Descriptor Filename,Semantic Mesh Asset,\n{},{}\n",
       getSemanticDescriptorFilename(), getSemanticAssetHandle());
 
   int iter = 0;

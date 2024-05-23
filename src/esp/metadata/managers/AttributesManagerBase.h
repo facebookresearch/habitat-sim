@@ -249,8 +249,8 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
  protected:
   /**
    * @brief Called internally right before attribute registration. Filepaths
-   * in the json configs for Habitat Datasets are specified relative to the
-   * location of the config in the file hierarchy. As the config is loaded,
+   * in the json configs for Habitat SceneDatasets are specified relative to
+   * the location of the config in the file hierarchy. As the config is loaded,
    * these filepaths will be fully qualified with absolute paths so that they
    * can be easily found and consumed on command. However, saving fully
    * qualified filepaths to JSON configs is undesirable.
@@ -264,7 +264,7 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
    *
    *
    * It is assumed that what is passed to this function always referneces a
-   * filepath, so if, for example, this is called on a render asseet filepath,
+   * filepath, so if, for example, this is called on a render asset filepath,
    * it is assumed that that filepath does not reference a primitive
    * (non-file-based) asset.
    *
