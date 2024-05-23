@@ -707,71 +707,92 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
     const std::string& curFQPathName,
     const std::function<void(const std::string&)>& relPathSetter,
     const std::function<void(const std::string&)>& fqPathSetter) const {
+  // Get substitute pathnames if either target is empty
   const std::string curFullyQualifiedPathName =
       (curFQPathName.empty() ? curRelPathName : curFQPathName);
   const std::string curRelativePathName =
       (curRelPathName.empty() ? curFullyQualifiedPathName : curRelPathName);
-
-  std::string dispString = Cr::Utility::formatString(
-      "AttrHandle `{}` class :`{}`|curRelPathName `{}`|curFQPathName "
-      ":`{}`|nonEmptyRel proposal :`{}`|nonEmptyFQ proposal :`{}`",
-      attributes->getHandle(), attributes->getClassKey(), curRelPathName,
-      curFQPathName, curRelativePathName, curFullyQualifiedPathName);
-
-  // If both relative and fully qualified paths are empty,
+  // Verbose Debug string - only build if we have appropriate logging enabled.
+  std::string dispString{""};
+  if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::VeryVerbose)) {
+    dispString = Cr::Utility::formatString(
+        "AttrHandle `{}` class :`{}`|Arg RelPathname `{}`|Arg FQPathName "
+        ":`{}`|Rel proposal :`{}`|FQ proposal :`{}`",
+        attributes->getHandle(), attributes->getClassKey(), curRelPathName,
+        curFQPathName, curRelativePathName, curFullyQualifiedPathName);
+  }
+  // If both relative and fully qualified paths are empty, skip further
+  // processing.
   if (curRelativePathName.empty() && curFullyQualifiedPathName.empty()) {
     ESP_VERY_VERBOSE() << "BOTH RELATIVE AND FQ PATHS ARE EMPTY Skipping: "
                        << dispString;
     return;
   }
 
-  // Initialize potentially empty fields
+  // Initialize potentially empty field.
   relPathSetter(curRelativePathName);
-  fqPathSetter(curFullyQualifiedPathName);
   // Check if expected relative filepath is accessible on disk (therefore is
   // fully qualified)
   bool relPathNameExists = CrPath::exists(curRelativePathName);
   if (relPathNameExists) {
-    // Set the fully qualified value to be the found curRelPathName
+    if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::VeryVerbose)) {
+      Cr::Utility::formatInto(dispString, dispString.size(),
+                              "|Rel proposal is FOUND/FQ");
+    }
+    // Set the fully qualified value to be the curRelativePathName since it
+    // exists in the filesystem.
     fqPathSetter(curRelativePathName);
+  } else {
+    // initialize fully-qualified name if empty
+    fqPathSetter(curFullyQualifiedPathName);
   }
 
   // Get the attributes filepath that our desired filepath should be
-  // relative to
+  // relative to. If this is empty or unknown then we have no path to set the
+  // target configuration path relative to and so we will preserve whatever is
+  // currently set as the path in the target relative field. This potentially
+  // fully qualified path will also be saved to file should the owning
+  // attributes be saved.
   const std::string attrFilepath = attributes->getFileDirectory();
   if (attrFilepath.empty()) {
     ESP_VERY_VERBOSE() << "EMPTY FILEPATH Skipping : " << dispString;
-    // if filepath is empty, do nothing.
+    // if filepath is empty, do nothing more.
     return;
   }
 
-  // verify attributes filepath exists
+  // Verify non-empty attributes filepath exists in the filesystem
   if (CrPath::isDirectory(attrFilepath)) {
-    Cr::Utility::formatInto(dispString, dispString.size(),
-                            "|attributes Filepath :`{}`", attrFilepath);
+    if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::VeryVerbose)) {
+      Cr::Utility::formatInto(dispString, dispString.size(),
+                              "|attributes Filepath :`{}`", attrFilepath);
+    }
 
-    // Check if expected relative filepath is accessible on disk (therefore is
-    // fully qualified)
+    // If expected relative filepath is accessible on disk, and therefore is
+    // fully qualified, then make relative to attributes filepath.
     if (relPathNameExists) {
       // Get new path relative to attrFilepath
       const std::string newRelFilepath =
           io::getPathRelativeToAbsPath(curRelativePathName, attrFilepath);
       // save the new relative filepath
       relPathSetter(newRelFilepath);
-      Cr::Utility::formatInto(dispString, dispString.size(),
-                              "|curRelPathName is FOUND/FQ|newRelFP :`{}`",
-                              newRelFilepath);
+      if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::VeryVerbose)) {
+        Cr::Utility::formatInto(dispString, dispString.size(),
+                                "|New Rel proposal :`{}`", newRelFilepath);
+      }
     }
-
   }  // if attributes dir is set properly
   else {
-    Cr::Utility::formatInto(dispString, dispString.size(),
-                            "|FILEPATH DOES NOT EXIST IN SYSTEM :`{}` ",
-                            attrFilepath);
+    // This means the attributes filepath is not empty but is not found on
+    // disk either, probably indicative of a much bigger issue.
+    if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::VeryVerbose)) {
+      Cr::Utility::formatInto(dispString, dispString.size(),
+                              "|ATTR PATH DOES NOT EXIST IN SYSTEM :`{}` ",
+                              attrFilepath);
+    }
   }
 
   ESP_VERY_VERBOSE() << dispString;
-}  // filterAttribsFilenames
+}  // AttributesManager<T, Access>::filterAttribsFilenames
 
 template <class T, ManagedObjectAccess Access>
 template <class M>
@@ -807,7 +828,7 @@ void AttributesManager<T, Access>::setEnumStringFromJsonDoc(
       valueSetter("unspecified");
     }
   }
-}  // setEnumStringFromJsonDoc
+}  // AttributesManager<T, Access>::setEnumStringFromJsonDoc
 
 }  // namespace managers
 }  // namespace metadata

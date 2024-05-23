@@ -441,25 +441,25 @@ StageAttributesManager::preRegisterObjectFinalize(
     stageAttributes->setCollisionAssetFullPath("NONE");
   } else {
     // Else, means no collision data specified, use specified render data
-    ESP_DEBUG()
-        << "Collision asset template handle :" << collisionAssetHandle
-        << "specified in stage template with handle :" << stageAttributesHandle
-        << "does not correspond to any existing file or primitive render "
-           "asset.  Overriding with given render asset handle :"
-        << renderAssetHandle << ".";
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << "Collision asset template handle : `" << collisionAssetHandle
+        << "` specified in stage template with handle : `"
+        << stageAttributesHandle
+        << "` does not correspond to any existing file or known primitive "
+           "asset. Overriding with given render asset handle : `"
+        << renderAssetHandle << "`.";
 
     stageAttributes->setCollisionAssetHandle(
-        stageAttributes->getCollisionAssetHandle());
+        stageAttributes->getRenderAssetHandle());
     stageAttributes->setCollisionAssetFullPath(
-        stageAttributes->getCollisionAssetFullPath());
+        stageAttributes->getRenderAssetFullPath());
     stageAttributes->setCollisionAssetIsPrimitive(
         stageAttributes->getRenderAssetIsPrimitive());
   }
   // filter all paths properly so that the handles don't have filepaths and the
   // accessors are hidden fields
-  if (!stageIsNone) {
-    this->finalizeAttrPathsBeforeRegister(stageAttributes);
-  }
+
+  this->finalizeAttrPathsBeforeRegister(stageAttributes);
 
   stageAttributes->setIsClean();
 
