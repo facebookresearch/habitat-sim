@@ -721,6 +721,7 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
         attributes->getHandle(), attributes->getClassKey(), curRelPathName,
         curFQPathName, curRelativePathName, curFullyQualifiedPathName);
   }
+  ESP_VERY_VERBOSE() << dispString;
   // If both relative and fully qualified paths are empty, skip further
   // processing.
   if (curRelativePathName.empty() && curFullyQualifiedPathName.empty()) {
@@ -729,6 +730,7 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
     return;
   }
 
+  ESP_VERY_VERBOSE() << dispString;
   // Initialize potentially empty field.
   relPathSetter(curRelativePathName);
   // Check if expected relative filepath is accessible on disk (therefore is
@@ -746,6 +748,7 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
     // initialize fully-qualified name if empty
     fqPathSetter(curFullyQualifiedPathName);
   }
+  ESP_VERY_VERBOSE() << dispString;
 
   // Get the attributes filepath that our desired filepath should be
   // relative to. If this is empty or unknown then we have no path to set the
@@ -759,6 +762,7 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
     // if filepath is empty, do nothing more.
     return;
   }
+  ESP_VERY_VERBOSE() << dispString;
 
   // Verify non-empty attributes filepath exists in the filesystem
   if (CrPath::isDirectory(attrFilepath)) {
@@ -766,7 +770,7 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
       Cr::Utility::formatInto(dispString, dispString.size(),
                               "|attributes Filepath :`{}`", attrFilepath);
     }
-
+    ESP_VERY_VERBOSE() << dispString;
     // If expected relative filepath is accessible on disk, and therefore is
     // fully qualified, then make relative to attributes filepath.
     if (relPathNameExists) {
