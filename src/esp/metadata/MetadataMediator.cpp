@@ -439,6 +439,8 @@ MetadataMediator::makeSceneAndReferenceStage(
     const attributes::StageAttributes::ptr& stageAttributes,
     const managers::SceneInstanceAttributesManager::ptr& dsSceneAttrMgr,
     const std::string& sceneName) {
+  ESP_VERY_VERBOSE() << "About to process stage attributes/instance for "
+                     << sceneName;
   // Verify that a Scene Dataset (possibly default) exists.
   ESP_CHECK(
       datasetAttr,

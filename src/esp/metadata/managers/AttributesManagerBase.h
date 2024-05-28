@@ -721,7 +721,7 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
         attributes->getHandle(), attributes->getClassKey(), curRelPathName,
         curFQPathName, curRelativePathName, curFullyQualifiedPathName);
   }
-  ESP_VERY_VERBOSE() << dispString;
+  ESP_VERY_VERBOSE() << "Start : " << dispString;
   // If both relative and fully qualified paths are empty, skip further
   // processing.
   if (curRelativePathName.empty() && curFullyQualifiedPathName.empty()) {
@@ -729,8 +729,7 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
                        << dispString;
     return;
   }
-
-  ESP_VERY_VERBOSE() << dispString;
+  ESP_VERY_VERBOSE() << "Both are not empty : " << dispString;
   // Initialize potentially empty field.
   relPathSetter(curRelativePathName);
   // Check if expected relative filepath is accessible on disk (therefore is
@@ -741,10 +740,14 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
       Cr::Utility::formatInto(dispString, dispString.size(),
                               "|Rel proposal is FOUND/FQ");
     }
+    ESP_VERY_VERBOSE() << "Relative path exists, setting it to fq : "
+                       << dispString;
     // Set the fully qualified value to be the curRelativePathName since it
     // exists in the filesystem.
     fqPathSetter(curRelativePathName);
   } else {
+    ESP_VERY_VERBOSE() << "Relative path dne, setting fq as existing fq : "
+                       << dispString;
     // initialize fully-qualified name if empty
     fqPathSetter(curFullyQualifiedPathName);
   }
@@ -762,7 +765,7 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
     // if filepath is empty, do nothing more.
     return;
   }
-  ESP_VERY_VERBOSE() << dispString;
+  ESP_VERY_VERBOSE() << "Attributes path exists : " << dispString;
 
   // Verify non-empty attributes filepath exists in the filesystem
   if (CrPath::isDirectory(attrFilepath)) {
@@ -770,7 +773,8 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
       Cr::Utility::formatInto(dispString, dispString.size(),
                               "|attributes Filepath :`{}`", attrFilepath);
     }
-    ESP_VERY_VERBOSE() << dispString;
+    ESP_VERY_VERBOSE() << "Attributes path is directory : " << dispString;
+
     // If expected relative filepath is accessible on disk, and therefore is
     // fully qualified, then make relative to attributes filepath.
     if (relPathNameExists) {
@@ -783,6 +787,7 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
         Cr::Utility::formatInto(dispString, dispString.size(),
                                 "|New Rel proposal :`{}`", newRelFilepath);
       }
+      ESP_VERY_VERBOSE() << "Set new relative path : " << dispString;
     }
   }  // if attributes dir is set properly
   else {
@@ -793,6 +798,7 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
                               "|ATTR PATH DOES NOT EXIST IN SYSTEM :`{}` ",
                               attrFilepath);
     }
+    ESP_VERY_VERBOSE() << "Attributes path is not directory : " << dispString;
   }
 
   ESP_VERY_VERBOSE() << dispString;
