@@ -10,6 +10,8 @@
 #include <Corrade/Utility/String.h>
 #include <glob.h>
 
+#include "esp/core/Logging.h"
+
 namespace Cr = Corrade;
 namespace esp {
 namespace io {
@@ -50,39 +52,71 @@ std::string getPathRelativeToAbsPath(const std::string& toRelPath,
                                      const std::string& absPath) {
   std::string result = "";
   const char* delim = "/";
-
+  ESP_VERY_VERBOSE(Magnum::Debug::Flag::NoSpace)
+      << "Making path `" << toRelPath << "` relative to `" << absPath << "`";
   std::vector<std::string> absDirs =
                                Cr::Utility::String::split(absPath, delim[0]),
                            relDirs =
                                Cr::Utility::String::split(toRelPath, delim[0]);
+  ESP_VERY_VERBOSE(Magnum::Debug::Flag::NoSpace)
+      << "Size of resultant vectors relDirs : " << relDirs.size()
+      << " absDirs : " << absDirs.size();
+
   auto absIter = absDirs.cbegin();
   auto relIter = relDirs.cbegin();
-
+  ESP_VERY_VERBOSE(Magnum::Debug::Flag::NoSpace)
+      << "First entry relDirs : " << *relIter << " absDirs : " << *absIter;
   // find where both paths diverge - skip shared path components
+  int i = 0;
   while (*relIter == *absIter && absIter != absDirs.cend() &&
          relIter != relDirs.cend()) {
     ++relIter;
     ++absIter;
+    ESP_VERY_VERBOSE(Magnum::Debug::Flag::NoSpace)
+        << "Matching iteration : " << i++ << "th entry relDirs : " << *relIter
+        << " absDirs : " << *absIter;
   }
 
   // Add back-path components for each directory in abspath not found in
-  // toRelPaath
+  // toRelPath
+  i = 0;
   while (absIter != absDirs.cend()) {
     if (*absIter != *absDirs.crbegin()) {
       Cr::Utility::formatInto(result, result.size(), "..{}", delim);
     }
     ++absIter;
+    ESP_VERY_VERBOSE(Magnum::Debug::Flag::NoSpace)
+        << "Backpath iteration : " << i++ << "th entry relDirs : " << *relIter
+        << " absDirs : " << *absIter;
   }
   std::string scratch = "";
+  ESP_VERY_VERBOSE(Magnum::Debug::Flag::NoSpace)
+      << "Before relative path being built : relDirs : " << *relIter
+      << " absDirs : " << *absIter << " | result : " << result
+      << " | scratch : `" << scratch << "`";
   // build relative path in scratch
   while (relIter != relDirs.cend()) {
+    std::string checkStr("");
     if (*relIter == *relDirs.crbegin()) {
       Cr::Utility::formatInto(result, result.size(), "{}{}", scratch,
                               *relDirs.crbegin());
+      Cr::Utility::formatInto(
+          checkStr, checkStr.size(),
+          "Reliter : {} points to last element, adding Scratch : `{}`",
+          *relIter, scratch);
+
     } else {
       Cr::Utility::formatInto(scratch, scratch.size(), "{}{}", *relIter, delim);
+      Cr::Utility::formatInto(
+          checkStr, checkStr.size(),
+          "Scratch : `{}` being extended with Reliter : `{}` ", scratch,
+          *relIter);
     }
     ++relIter;
+    ESP_VERY_VERBOSE(Magnum::Debug::Flag::NoSpace)
+        << "As relative path being built : " << checkStr
+        << " relDirs : " << *relIter << " absDirs : " << *absIter
+        << " | result : " << result << " | scratch : " << scratch;
   }
   return result;
 }  // getPathRelativeToAbsPath
