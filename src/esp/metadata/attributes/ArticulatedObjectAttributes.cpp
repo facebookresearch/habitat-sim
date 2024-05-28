@@ -37,6 +37,11 @@ ArticulatedObjectAttributes::ArticulatedObjectAttributes(
 
   init("uniform_scale", 1.0f);
   init("mass_scale", 1.0);
+
+  // Initialize these so they exist in the configuration
+  setHidden("__urdfFullPath", "");
+  setHidden("__renderAssetFullPath", "");
+
   // set up an existing subgroup for marker_sets attributes
   addOrEditSubgroup<MarkerSets>("marker_sets");
 }  // ArticulatedObjectAttributes ctor

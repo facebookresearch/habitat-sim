@@ -928,7 +928,7 @@ void AttributesManagersTest::testPrimitiveAssetAttributes() {
     // test that a new template can be created from the specified handles
     testAssetAttributesTemplateCreateFromHandle(uvSphereWireframeHandle);
   }
-}  // AttributesManagersTest::AsssetAttributesManagerGetAndModify test
+}  // AttributesManagersTest::AssetAttributesManagerGetAndModify test
 
 void AttributesManagersTest::testPrimitiveBasedObjectAttributes() {
   // get all handles of templates for primitive-based render objects

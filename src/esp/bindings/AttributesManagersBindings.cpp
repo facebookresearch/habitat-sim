@@ -244,8 +244,7 @@ void declareBaseAttributesManager(py::module& m,
                &MgrClass::getFirstMatchingObjectOrCopyByHandle),
            ("This returns a copy of the first " + attrType +
             " template containing the passed handle substring if any exist, "
-            "and NULL "
-            "if none could be found.")
+            "and NULL if none could be found.")
                .c_str(),
            "handle_substr"_a)
       .def("get_templates_by_handle_substring",
@@ -258,6 +257,12 @@ void declareBaseAttributesManager(py::module& m,
             "on the value of boolean contains.")
                .c_str(),
            "search_str"_a = "", "contains"_a = true)
+      .def("filter_filepaths", &MgrClass::finalizeAttrPathsBeforeRegister,
+           ("This attempts to filter any filenames in the passed " + attrType +
+            " template so that the fields that would be saved to file would "
+            "only contain relative paths.")
+               .c_str(),
+           "attributes"_a)
       .def("save_template_by_handle",
            static_cast<bool (MgrClass::*)(const std::string&, bool) const>(
                &MgrClass::saveManagedObjectToFile),

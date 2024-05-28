@@ -127,6 +127,25 @@ class AbstractObjectAttributes : public AbstractAttributes {
   }
 
   /**
+   * @brief Sets the fully-qualified filepath for the render asset to be used to
+   * render the construct this attributes describes. This is only used
+   * internally and should not be saved to disk.
+   */
+  void setRenderAssetFullPath(const std::string& renderAssetHandle) {
+    setHidden("__renderAssetFullPath", renderAssetHandle);
+    setIsDirty();
+  }
+
+  /**
+   * @brief Gets the fully-qualified filepath for the render asset to be used to
+   * render the construct this attributes describes. This is only used
+   * internally and should not be saved to disk.
+   */
+  std::string getRenderAssetFullPath() const {
+    return get<std::string>("__renderAssetFullPath");
+  }
+
+  /**
    * @brief Sets the render asset type, as specified by @ref AssetType.
    * This specification was generally intended for specifying certain criteria
    * such as orientation for the loaded asset based on file name, which was in
@@ -265,7 +284,24 @@ class AbstractObjectAttributes : public AbstractAttributes {
   std::string getCollisionAssetHandle() const {
     return get<std::string>("collision_asset");
   }
+  /**
+   * @brief Sets the fully-qualified filepath for the collision asset to be used
+   * for mesh collision detection for the construct this attributes describes.
+   * This is only used internally and should not be saved to disk.
+   */
+  void setCollisionAssetFullPath(const std::string& collisionAssetHandle) {
+    setHidden("__collisionAssetFullPath", collisionAssetHandle);
+    setIsDirty();
+  }
 
+  /**
+   * @brief Gets the fully-qualified filepath for the collision asset to be used
+   * for mesh collision detection for the construct this attributes describes.
+   * This is only used internally and should not be saved to disk.
+   */
+  std::string getCollisionAssetFullPath() const {
+    return get<std::string>("__collisionAssetFullPath");
+  }
   /**
    * @brief Sets the collision asset type, as specified by @ref AssetType.
    * This specification was generally intended for specifying certain criteria

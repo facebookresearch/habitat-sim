@@ -80,6 +80,17 @@ class LightLayoutAttributesManager
   gfx::LightSetup createLightSetupFromAttributes(
       const std::string& lightConfigName);
 
+  /**
+   * @brief This function will be called to finalize attributes' paths before
+   * registration, moving fully qualified paths to the appropriate hidden
+   * attribute fields. This can also be called without registration to make sure
+   * the paths specified in an attributes are properly configured.
+   * @param attributes The attributes to be filtered.
+   */
+  void finalizeAttrPathsBeforeRegister(
+      CORRADE_UNUSED const attributes::LightLayoutAttributes::ptr& attributes)
+      const override {}
+
  protected:
   /**
    * @brief Used Internally.  Create and configure newly-created attributes

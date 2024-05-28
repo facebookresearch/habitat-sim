@@ -586,7 +586,7 @@ void SimTest::loadingObjectTemplates() {
   CORRADE_COMPARE(templateIndex2, templateIndex);
   ObjectAttributes::ptr newTemplate2 =
       objectAttribsMgr->getObjectCopyByHandle(boxPath);
-  CORRADE_COMPARE(newTemplate2->getRenderAssetHandle(), chairPath);
+  CORRADE_COMPARE(newTemplate2->getRenderAssetFullPath(), chairPath);
 }
 
 void SimTest::buildingPrimAssetObjectTemplates() {

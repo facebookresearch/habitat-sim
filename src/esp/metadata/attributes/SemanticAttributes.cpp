@@ -63,8 +63,11 @@ void SemanticVolumeAttributes::writeValuesToJson(
 // SemanticAttributes
 SemanticAttributes::SemanticAttributes(const std::string& handle)
     : AbstractAttributes("SemanticAttributes", handle) {
+  // set empty defaults for handles
   init("semantic_descriptor_filename", "");
+  setHidden("__semanticDescriptorFullPath", "");
   init("semantic_asset", "");
+  setHidden("__semanticAssetFullPath", "");
   init("semantic_up", Mn::Vector3{0.0, 1.0, 0.0});
   init("semantic_front", Mn::Vector3{0.0, 0.0, -1.0});
   init("use_semantic_frame", false);
@@ -178,7 +181,7 @@ std::string SemanticAttributes::getObjectInfoInternal() const {
   // std::string res = "";
   // TODO do this for any SemanticAttributes level values
   std::string res = Cr::Utility::formatString(
-      "\nSemantic Scene Descriptor Filename,Semantic Mesh Assset,\n{},{}\n",
+      "\nSemantic Scene Descriptor Filename,Semantic Mesh Asset,\n{},{}\n",
       getSemanticDescriptorFilename(), getSemanticAssetHandle());
 
   int iter = 0;

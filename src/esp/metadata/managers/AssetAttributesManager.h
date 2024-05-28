@@ -127,6 +127,17 @@ class AssetAttributesManager
       const io::JsonGenericValue& jsonConfig) override;
 
   /**
+   * @brief This function will be called to finalize attributes' paths before
+   * registration, moving fully qualified paths to the appropriate hidden
+   * attribute fields. This can also be called without registration to make sure
+   * the paths specified in an attributes are properly configured.
+   * @param attributes The attributes to be filtered.
+   */
+  void finalizeAttrPathsBeforeRegister(
+      CORRADE_UNUSED const attributes::AbstractPrimitiveAttributes::ptr&
+          attributes) const override {}
+
+  /**
    * @brief Method to take an existing attributes and set its values from passed
    * json config file.
    * @param attribs (out) an existing attributes to be modified.
@@ -557,7 +568,7 @@ class AssetAttributesManager
   }  // AssetAttributeManager::createPrimAttributes
 
   /**
-   * @brief Any Assset-attributes-specific resetting that needs to happen on
+   * @brief Any Asset-attributes-specific resetting that needs to happen on
    * reset.
    */
   void resetFinalize() override {

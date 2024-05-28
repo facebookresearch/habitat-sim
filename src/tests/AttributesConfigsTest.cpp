@@ -1134,11 +1134,11 @@ void AttributesConfigsTest::testSemanticAttrVals(
     std::shared_ptr<Attrs::SemanticAttributes> semanticAttr,
     const std::string& assetPath) {
   CORRADE_COMPARE(
-      semanticAttr->getSemanticDescriptorFilename(),
+      semanticAttr->getSemanticDescriptorFullPath(),
       Cr::Utility::Path::join(assetPath, "test_semantic_lexicon.json"));
 
   CORRADE_COMPARE(
-      semanticAttr->getSemanticAssetHandle(),
+      semanticAttr->getSemanticAssetFullPath(),
       Cr::Utility::Path::join(assetPath, "test_semantic_asset.glb"));
 
   // verify regions
@@ -1319,8 +1319,8 @@ void AttributesConfigsTest::testStageAttrVals(
                   Mn::Vector3(2.0, 0.0, 0.0));
   CORRADE_COMPARE(stageAttr->getSemanticOrientUp(), Mn::Vector3(0.0, 2.0, 0.0));
 
-  CORRADE_COMPARE(stageAttr->getRenderAssetHandle(), assetPath);
-  CORRADE_COMPARE(stageAttr->getCollisionAssetHandle(), assetPath);
+  CORRADE_COMPARE(stageAttr->getRenderAssetFullPath(), assetPath);
+  CORRADE_COMPARE(stageAttr->getCollisionAssetFullPath(), assetPath);
   CORRADE_VERIFY(!stageAttr->getIsCollidable());
   // stage-specific attributes
   CORRADE_COMPARE(stageAttr->getOrigin(), Mn::Vector3(1, 2, 3));
@@ -1330,8 +1330,8 @@ void AttributesConfigsTest::testStageAttrVals(
   // make sure that is not default value "flat"
   CORRADE_COMPARE(static_cast<int>(stageAttr->getShaderType()),
                   static_cast<int>(Attrs::ObjectInstanceShaderType::Material));
-  CORRADE_COMPARE(stageAttr->getSemanticAssetHandle(), assetPath);
-  CORRADE_COMPARE(stageAttr->getNavmeshAssetHandle(), assetPath);
+  CORRADE_COMPARE(stageAttr->getSemanticAssetFullPath(), assetPath);
+  CORRADE_COMPARE(stageAttr->getNavmeshAssetFullPath(), assetPath);
   // test stage attributes-level user config vals
   testUserDefinedConfigVals(
       stageAttr->getUserConfiguration(), 4, "stage defined string", false, 3,
@@ -1592,8 +1592,8 @@ void AttributesConfigsTest::testObjectAttrVals(
   CORRADE_COMPARE(objAttr->getUnitsToMeters(), 1.1);
   CORRADE_COMPARE(objAttr->getOrientUp(), Mn::Vector3(2.1, 0, 0));
   CORRADE_COMPARE(objAttr->getOrientFront(), Mn::Vector3(0, 2.1, 0));
-  CORRADE_COMPARE(objAttr->getRenderAssetHandle(), assetPath);
-  CORRADE_COMPARE(objAttr->getCollisionAssetHandle(), assetPath);
+  CORRADE_COMPARE(objAttr->getRenderAssetFullPath(), assetPath);
+  CORRADE_COMPARE(objAttr->getCollisionAssetFullPath(), assetPath);
   CORRADE_VERIFY(!objAttr->getIsCollidable());
   CORRADE_COMPARE(objAttr->getSemanticId(), 7);
   // object-specific attributes
@@ -1869,8 +1869,8 @@ void AttributesConfigsTest::testArticulatedObjectAttrVals(
     const std::string& assetPath,
     const std::string& urdfPath) {
   // match values set in test JSON
-  CORRADE_COMPARE(artObjAttr->getURDFPath(), urdfPath);
-  CORRADE_COMPARE(artObjAttr->getRenderAssetHandle(), assetPath);
+  CORRADE_COMPARE(artObjAttr->getURDFFullPath(), urdfPath);
+  CORRADE_COMPARE(artObjAttr->getRenderAssetFullPath(), assetPath);
   CORRADE_COMPARE(artObjAttr->getSemanticId(), 100);
 
   CORRADE_COMPARE(static_cast<int>(artObjAttr->getBaseType()),

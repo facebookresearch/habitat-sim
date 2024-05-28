@@ -250,8 +250,10 @@ def test_object_template_editing():
             assert obj.object_id != habitat_sim.stage_id
 
             # test getting initialization templates
+            # NOTE : After template is registered, the read-only 'render_asset_fullpath'
+            # field holds the fully qualified path
             stage_init_template = sim.get_stage_initialization_template()
-            assert stage_init_template.render_asset_handle == cfg_settings["scene"]
+            assert stage_init_template.render_asset_fullpath == cfg_settings["scene"]
 
             obj_init_template = obj.creation_attributes
             assert obj_init_template.render_asset_handle.endswith("sphere.glb")

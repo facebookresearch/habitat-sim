@@ -79,6 +79,16 @@ class StageAttributesManager
   void setValsFromJSONDoc(attributes::StageAttributes::ptr attribs,
                           const io::JsonGenericValue& jsonConfig) override;
 
+  /**
+   * @brief This function will be called to finalize attributes' paths before
+   * registration, moving fully qualified paths to the appropriate hidden
+   * attribute fields. This can also be called without registration to make sure
+   * the paths specified in an attributes are properly configured.
+   * @param attributes The attributes to be filtered.
+   */
+  void finalizeAttrPathsBeforeRegister(
+      const attributes::StageAttributes::ptr& attributes) const override;
+
  protected:
   /**
    * @brief Create and save default primitive asset-based object templates,

@@ -73,6 +73,17 @@ class AOAttributesManager
    */
   std::map<std::string, std::string> getArticulatedObjectModelFilenames() const;
 
+  /**
+   * @brief This function will be called to finalize attributes' paths before
+   * registration, moving fully qualified paths to the appropriate hidden
+   * attribute fields. This can also be called without registration to make sure
+   * the paths specified in an attributes are properly configured.
+   * @param attributes The attributes to be filtered.
+   */
+  void finalizeAttrPathsBeforeRegister(
+      const attributes::ArticulatedObjectAttributes::ptr& attributes)
+      const override;
+
  protected:
   /**
    * @brief Parse Marker_sets object in json, if present.

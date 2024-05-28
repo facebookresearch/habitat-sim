@@ -262,7 +262,7 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
                 (key == "configs")) {
               // These keys have been processed already
               continue;
-            }  // if has configs cell
+            }  // if has paths, default_attributes or configs cell
             else {
               if (it->value.IsString()) {
                 strKeyMap->emplace(key, it->value.GetString());
@@ -275,7 +275,6 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
               }
             }
           }  // for each sub-cell within main cell
-
         } else {
           // No map was passed - only applicable for
           // semantic_scene_descriptor_instances
@@ -284,10 +283,10 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
                 << "Unable to load semantic scene map due to destination "
                    "map being null.";
           }
-        }
-      }  // process unexpected member tags
-    }    // if cell is an object
-  }      // if cell exists
+        }  // map passed to this function
+      }    // process unexpected member tags
+    }      // if cell is an object
+  }        // if cell exists
 }  // SceneDatasetAttributesManager::readDatasetJSONCell
 
 void SceneDatasetAttributesManager::validateMap(
@@ -297,17 +296,18 @@ void SceneDatasetAttributesManager::validateMap(
   // now verify that all entries in map exist.  If not replace entry with
   // dsDir-prepended entry
   for (std::pair<const std::string, std::string>& entry : map) {
+    const std::string key = entry.first;
     const std::string loc = entry.second;
     if (!Cr::Utility::Path::exists(loc)) {
       std::string newLoc = Cr::Utility::Path::join(dsDir, loc);
       if (!Cr::Utility::Path::exists(newLoc)) {
         ESP_ERROR(Mn::Debug::Flag::NoSpace)
-            << "`" << tag << "` Value : `" << loc
+            << "`" << tag << "` Key : `" << key << "` Value : `" << loc
             << "` not found on disk as absolute path or relative to `" << dsDir
             << "`";
       } else {
         // replace value with dataset-augmented absolute path
-        map[entry.first] = newLoc;
+        map[key] = newLoc;
       }
     }  // loc does not exist
   }    // for each loc
