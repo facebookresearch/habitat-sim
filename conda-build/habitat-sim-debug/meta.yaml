@@ -13,7 +13,7 @@
 
 
 package:
-  name: habitat-sim
+  name: habitat-sim-debug
   version: "{{ environ.get('VERSION') }}"
 
 source:
