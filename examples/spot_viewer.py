@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -38,7 +40,7 @@ if not os.path.isfile(SPOT_DIR):
 class EditMode(Enum):
     MOVE = 0
     ROTATE = 1
-    NUM_VALS = 2
+    NUM_VALS = 2  # last value
 
 
 EDIT_MODE_NAMES = ["Move object", "Rotate object"]
