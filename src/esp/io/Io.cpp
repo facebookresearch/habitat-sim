@@ -105,6 +105,8 @@ std::string getPathRelativeToAbsPath(const std::string& toRelPath,
       << "About to do backpath iteration : " << i++
       << "th entry : " << absEndStr << relEndStr;
 
+  // Add back-path components for each directory in abspath not found in
+  // toRelPath
   while (absIter != absDirs.cend()) {
     Cr::Utility::formatInto(result, result.size(), "..{}", delim);
 
