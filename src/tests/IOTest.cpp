@@ -141,7 +141,7 @@ void IOTest::testEllipsisFilter() {
 void IOTest::absToRelativePathConverison() {
   // Test conversion of an absolute path to a path relative to another path.
   // Path to be relative to
-  const std::string absPathTarget = "/aa/bb/cc/dd/ee/ff/gg/";
+  std::string absPathTarget = "/aa/bb/cc/dd/ee/ff/gg/";
 
   // Path to convert
   std::string absPathToConvert = "/aa/bb/cc/dd/xx/yy/zz/";
@@ -156,6 +156,36 @@ void IOTest::absToRelativePathConverison() {
       esp::io::getPathRelativeToAbsPath(absPathToConvert, absPathTarget);
 
   CORRADE_COMPARE(relPathToBaseTarget, "../../../../../dd/xx/yy/zz/");
+
+  absPathToConvert = "/aa/bb/cc/dd/ee/ff/gg/test.xyz";
+  relPathToBaseTarget =
+      esp::io::getPathRelativeToAbsPath(absPathToConvert, absPathTarget);
+
+  CORRADE_COMPARE(relPathToBaseTarget, "test.xyz");
+
+  // Test conversion of an absolute path to a path relative to another path.
+  // Path to be relative to
+  absPathTarget = "aa/bb/cc/dd/ee/ff/gg/";
+
+  // Path to convert
+  absPathToConvert = "/aa/bb/cc/dd/xx/yy/zz/";
+  // Result of conversion
+  relPathToBaseTarget =
+      esp::io::getPathRelativeToAbsPath(absPathToConvert, absPathTarget);
+
+  CORRADE_COMPARE(relPathToBaseTarget, "../../../xx/yy/zz/");
+
+  absPathToConvert = "/aa/bb/cc/../dd/xx/yy/zz/";
+  relPathToBaseTarget =
+      esp::io::getPathRelativeToAbsPath(absPathToConvert, absPathTarget);
+
+  CORRADE_COMPARE(relPathToBaseTarget, "../../../../../dd/xx/yy/zz/");
+
+  absPathToConvert = "/aa/bb/cc/dd/ee/ff/gg/test.xyz";
+  relPathToBaseTarget =
+      esp::io::getPathRelativeToAbsPath(absPathToConvert, absPathTarget);
+
+  CORRADE_COMPARE(relPathToBaseTarget, "test.xyz");
 
 }  // IOTest::absToRelativePathConverison
 
