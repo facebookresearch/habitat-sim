@@ -52,9 +52,11 @@ std::string getPathRelativeToAbsPath(const std::string& toRelPath,
   const char* delim = "/";
 
   std::vector<std::string> absDirs =
-                               Cr::Utility::String::split(absPath, delim[0]),
+                               Cr::Utility::String::splitWithoutEmptyParts(
+                                   absPath, delim[0]),
                            relDirs =
-                               Cr::Utility::String::split(toRelPath, delim[0]);
+                               Cr::Utility::String::splitWithoutEmptyParts(
+                                   toRelPath, delim[0]);
   auto absIter = absDirs.cbegin();
   auto relIter = relDirs.cbegin();
 
@@ -66,11 +68,10 @@ std::string getPathRelativeToAbsPath(const std::string& toRelPath,
   }
 
   // Add back-path components for each directory in abspath not found in
-  // toRelPaath
+  // toRelPath
   while (absIter != absDirs.cend()) {
-    if (*absIter != *absDirs.crbegin()) {
-      Cr::Utility::formatInto(result, result.size(), "..{}", delim);
-    }
+    Cr::Utility::formatInto(result, result.size(), "..{}", delim);
+
     ++absIter;
   }
   std::string scratch = "";
