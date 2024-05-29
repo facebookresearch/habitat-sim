@@ -55,9 +55,11 @@ std::string getPathRelativeToAbsPath(const std::string& toRelPath,
   ESP_VERY_VERBOSE(Magnum::Debug::Flag::NoSpace)
       << "Making path `" << toRelPath << "` relative to `" << absPath << "`";
   std::vector<std::string> absDirs =
-                               Cr::Utility::String::split(absPath, delim[0]),
+                               Cr::Utility::String::splitWithoutEmptyParts(
+                                   absPath, delim[0]),
                            relDirs =
-                               Cr::Utility::String::split(toRelPath, delim[0]);
+                               Cr::Utility::String::splitWithoutEmptyParts(
+                                   toRelPath, delim[0]);
   ESP_VERY_VERBOSE(Magnum::Debug::Flag::NoSpace)
       << "Size of resultant vectors relDirs : " << relDirs.size()
       << " absDirs : " << absDirs.size();
@@ -100,9 +102,7 @@ std::string getPathRelativeToAbsPath(const std::string& toRelPath,
       << "th entry : " << absEndStr << relEndStr;
 
   while (absIter != absDirs.cend()) {
-    if (*absIter != *absDirs.crbegin()) {
-      Cr::Utility::formatInto(result, result.size(), "..{}", delim);
-    }
+    Cr::Utility::formatInto(result, result.size(), "..{}", delim);
     ESP_VERY_VERBOSE(Magnum::Debug::Flag::NoSpace)
         << "Backpath iteration : " << i++ << "th entry absIter : `" << *absIter
         << "` result : `" << result << "`";
