@@ -78,14 +78,14 @@ std::string getPathRelativeToAbsPath(const std::string& toRelPath,
 
     ++absIter;
   }
-  std::string scratch = "";
-  // build relative path in scratch
+  // Relative tail of path
+  std::string relTail = "";
   while (relIter != relDirs.cend()) {
     if (*relIter == *relDirs.crbegin()) {
-      Cr::Utility::formatInto(result, result.size(), "{}{}", scratch,
+      Cr::Utility::formatInto(result, result.size(), "{}{}", relTail,
                               *relDirs.crbegin());
     } else {
-      Cr::Utility::formatInto(scratch, scratch.size(), "{}{}", *relIter, delim);
+      Cr::Utility::formatInto(relTail, relTail.size(), "{}{}", *relIter, delim);
     }
     ++relIter;
   }
