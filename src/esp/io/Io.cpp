@@ -64,60 +64,82 @@ std::string getPathRelativeToAbsPath(const std::string& toRelPath,
 
   auto absIter = absDirs.cbegin();
   auto relIter = relDirs.cbegin();
-  ESP_VERY_VERBOSE(Magnum::Debug::Flag::NoSpace)
-      << "First entry relDirs : " << *relIter << " absDirs : " << *absIter;
+
   // find where both paths diverge - skip shared path components
   int i = 0;
   while (*relIter == *absIter && absIter != absDirs.cend() &&
          relIter != relDirs.cend()) {
+    ESP_VERY_VERBOSE(Magnum::Debug::Flag::NoSpace)
+        << "Matching iteration : " << ++i << "th entry relIter : `" << *relIter
+        << "` absDirs : `" << *absIter << "`";
     ++relIter;
     ++absIter;
-    ESP_VERY_VERBOSE(Magnum::Debug::Flag::NoSpace)
-        << "Matching iteration : " << i++ << "th entry relDirs : " << *relIter
-        << " absDirs : " << *absIter;
   }
-
+  ESP_VERY_VERBOSE(Magnum::Debug::Flag::NoSpace) << "Finished matching";
   // Add back-path components for each directory in abspath not found in
   // toRelPath
   i = 0;
+  std::string absEndStr("");
+  std::string relEndStr("");
+
+  if (absIter == absDirs.cend()) {
+    Cr::Utility::formatInto(absEndStr, absEndStr.size(), " | absIter at end");
+  } else {
+    Cr::Utility::formatInto(absEndStr, absEndStr.size(), " | absIter : `{}`",
+                            *absIter);
+  }
+
+  if (relIter == relDirs.cend()) {
+    Cr::Utility::formatInto(relEndStr, relEndStr.size(), " | relIter at end");
+  } else {
+    Cr::Utility::formatInto(relEndStr, relEndStr.size(), " | relIter : `{}`",
+                            *relIter);
+  }
+  ESP_VERY_VERBOSE(Magnum::Debug::Flag::NoSpace)
+      << "About to do backpath iteration : " << i++
+      << "th entry : " << absEndStr << relEndStr;
+
   while (absIter != absDirs.cend()) {
     if (*absIter != *absDirs.crbegin()) {
       Cr::Utility::formatInto(result, result.size(), "..{}", delim);
     }
     ESP_VERY_VERBOSE(Magnum::Debug::Flag::NoSpace)
-        << "Backpath iteration : " << i++ << "th entry relDirs : " << *relIter
-        << " absDirs : " << *absIter;
+        << "Backpath iteration : " << i++ << "th entry absIter : `" << *absIter
+        << "` result : `" << result << "`";
     ++absIter;
   }
   std::string scratch = "";
   ESP_VERY_VERBOSE(Magnum::Debug::Flag::NoSpace)
-      << "Before relative path being built : relDirs : " << *relIter
-      << " absDirs : " << *absIter << " | result : " << result
-      << " | scratch : `" << scratch << "`";
+      << "Finished Backpath | Before relative path being built : " << absEndStr
+      << relEndStr << "| result : `" << result << "` | scratch : `" << scratch
+      << "`";
   // build relative path in scratch
+  i = 0;
   while (relIter != relDirs.cend()) {
     std::string checkStr("");
     if (*relIter == *relDirs.crbegin()) {
       Cr::Utility::formatInto(result, result.size(), "{}{}", scratch,
                               *relDirs.crbegin());
-      Cr::Utility::formatInto(
-          checkStr, checkStr.size(),
-          "Reliter : {} points to last element, adding Scratch : `{}`",
-          *relIter, scratch);
-
+      Cr::Utility::formatInto(checkStr, checkStr.size(),
+                              "{}ith loop : Reliter : {} points to "
+                              "last element, adding Scratch : `{}`",
+                              i++, *relIter, scratch);
     } else {
       Cr::Utility::formatInto(scratch, scratch.size(), "{}{}", *relIter, delim);
-      Cr::Utility::formatInto(
-          checkStr, checkStr.size(),
-          "Scratch : `{}` being extended with Reliter : `{}` ", scratch,
-          *relIter);
+      Cr::Utility::formatInto(checkStr, checkStr.size(),
+                              "{}ith loop : Scratch : `{}` being "
+                              "extended with relIter : `{}` ",
+                              i++, scratch, *relIter);
     }
-    ++relIter;
     ESP_VERY_VERBOSE(Magnum::Debug::Flag::NoSpace)
-        << "As relative path being built : " << checkStr
-        << " relDirs : " << *relIter << " absDirs : " << *absIter
-        << " | result : " << result << " | scratch : " << scratch;
+        << "As relative path being built : " << checkStr << " " << absEndStr
+        << " | relIter : " << *relIter << " | result : `" << result
+        << "` | scratch : `" << scratch << "`";
+
+    ++relIter;
   }
+  ESP_VERY_VERBOSE(Magnum::Debug::Flag::NoSpace)
+      << "Final result `" << result << "`";
   return result;
 }  // getPathRelativeToAbsPath
 

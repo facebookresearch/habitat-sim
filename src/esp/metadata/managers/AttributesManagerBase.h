@@ -721,7 +721,7 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
         attributes->getHandle(), attributes->getClassKey(), curRelPathName,
         curFQPathName, curRelativePathName, curFullyQualifiedPathName);
   }
-  ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace) << "Start : " << dispString;
+  ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace) << "START : " << dispString;
   // If both relative and fully qualified paths are empty, skip further
   // processing.
   if (curRelativePathName.empty() && curFullyQualifiedPathName.empty()) {
