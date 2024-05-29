@@ -783,8 +783,12 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
     // fully qualified, then make relative to attributes filepath.
     if (relPathNameExists) {
       // Get new path relative to attrFilepath
+      ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+          << "Before call to getPathRelativeToAbsPath";
       const std::string newRelFilepath =
           io::getPathRelativeToAbsPath(curRelativePathName, attrFilepath);
+      ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+          << "After call to getPathRelativeToAbsPath";
       // save the new relative filepath
       relPathSetter(newRelFilepath);
       if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::VeryVerbose)) {
