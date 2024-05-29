@@ -84,10 +84,10 @@ std::string getPathRelativeToAbsPath(const std::string& toRelPath,
     if (*absIter != *absDirs.crbegin()) {
       Cr::Utility::formatInto(result, result.size(), "..{}", delim);
     }
-    ++absIter;
     ESP_VERY_VERBOSE(Magnum::Debug::Flag::NoSpace)
         << "Backpath iteration : " << i++ << "th entry relDirs : " << *relIter
         << " absDirs : " << *absIter;
+    ++absIter;
   }
   std::string scratch = "";
   ESP_VERY_VERBOSE(Magnum::Debug::Flag::NoSpace)
