@@ -65,8 +65,8 @@ std::string getPathRelativeToAbsPath(const std::string& toRelPath,
   auto relIter = relDirs.cbegin();
 
   // find where both paths diverge - skip shared path components
-  while (*relIter == *absIter && absIter != absDirs.cend() &&
-         relIter != relDirs.cend()) {
+  while (absIter != absDirs.cend() && relIter != relDirs.cend() &&
+         *relIter == *absIter) {
     ++relIter;
     ++absIter;
   }
