@@ -73,8 +73,8 @@ std::string getPathRelativeToAbsPath(const std::string& toRelPath,
 
   // find where both paths diverge - skip shared path components
   int i = 0;
-  while (*relIter == *absIter && absIter != absDirs.cend() &&
-         relIter != relDirs.cend()) {
+  while (absIter != absDirs.cend() && relIter != relDirs.cend() &&
+         *relIter == *absIter) {
     ESP_VERY_VERBOSE(Magnum::Debug::Flag::NoSpace)
         << "Matching iteration : " << ++i << "th entry relIter : `" << *relIter
         << "` absDirs : `" << *absIter << "`";
