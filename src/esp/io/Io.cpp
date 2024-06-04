@@ -47,40 +47,45 @@ std::string normalizePath(const std::string& srcPath) {
 }  // normalizePath
 
 std::string getPathRelativeToAbsPath(const std::string& toRelPath,
-                                     const std::string& absPath) {
+                                     const std::string& absPathArg) {
+  // Check if absPath is a path or filename - only use the path if it is a
+  // filenaame
+  const std::string absPath = Cr::Utility::Path::split(absPathArg).first();
+
   std::string result = "";
   const char* delim = "/";
 
   std::vector<std::string> absDirs =
-                               Cr::Utility::String::split(absPath, delim[0]),
+                               Cr::Utility::String::splitWithoutEmptyParts(
+                                   absPath, delim[0]),
                            relDirs =
-                               Cr::Utility::String::split(toRelPath, delim[0]);
+                               Cr::Utility::String::splitWithoutEmptyParts(
+                                   toRelPath, delim[0]);
   auto absIter = absDirs.cbegin();
   auto relIter = relDirs.cbegin();
 
   // find where both paths diverge - skip shared path components
-  while (*relIter == *absIter && absIter != absDirs.cend() &&
-         relIter != relDirs.cend()) {
+  while (absIter != absDirs.cend() && relIter != relDirs.cend() &&
+         *relIter == *absIter) {
     ++relIter;
     ++absIter;
   }
 
   // Add back-path components for each directory in abspath not found in
-  // toRelPaath
+  // toRelPath
   while (absIter != absDirs.cend()) {
-    if (*absIter != *absDirs.crbegin()) {
-      Cr::Utility::formatInto(result, result.size(), "..{}", delim);
-    }
+    Cr::Utility::formatInto(result, result.size(), "..{}", delim);
+
     ++absIter;
   }
-  std::string scratch = "";
-  // build relative path in scratch
+  // Relative tail of path
+  std::string relTail = "";
   while (relIter != relDirs.cend()) {
     if (*relIter == *relDirs.crbegin()) {
-      Cr::Utility::formatInto(result, result.size(), "{}{}", scratch,
+      Cr::Utility::formatInto(result, result.size(), "{}{}", relTail,
                               *relDirs.crbegin());
     } else {
-      Cr::Utility::formatInto(scratch, scratch.size(), "{}{}", *relIter, delim);
+      Cr::Utility::formatInto(relTail, relTail.size(), "{}{}", *relIter, delim);
     }
     ++relIter;
   }

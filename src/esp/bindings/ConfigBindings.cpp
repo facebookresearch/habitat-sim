@@ -105,6 +105,13 @@ void initConfigBindings(py::module& m) {
           "key"_a, "value"_a)
       .def(
           "set",
+          [](Configuration& self, const std::string& key, const bool val) {
+            self.set(key, val);
+          },
+          R"(Set the value specified by given string key to be specified boolean value)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
           [](Configuration& self, const std::string& key, const int val) {
             self.set(key, val);
           },
@@ -116,13 +123,6 @@ void initConfigBindings(py::module& m) {
             self.set(key, val);
           },
           R"(Set the value specified by given string key to be specified double value)",
-          "key"_a, "value"_a)
-      .def(
-          "set",
-          [](Configuration& self, const std::string& key, const bool val) {
-            self.set(key, val);
-          },
-          R"(Set the value specified by given string key to be specified boolean value)",
           "key"_a, "value"_a)
       .def(
           "set",

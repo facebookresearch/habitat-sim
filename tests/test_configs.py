@@ -30,8 +30,9 @@ def test_core_configuration():
     config.remove("test")
     assert not config.has_value("test")
 
-    config.set("bool", np.array(True))
+    config.set("bool", True)
     assert config.get("bool") == True
+    assert type(config.get("bool")) == bool
 
     config.set("integer", 3)
     assert config.get("integer") == 3
