@@ -35,7 +35,14 @@ from habitat_sim import ReplayRenderer, ReplayRendererConfiguration, physics
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
-from habitat_sim.utils.sim_utils import MarkerSetsInfo, ObjectEditor
+from habitat_sim.utils.sim_utils import (
+    MarkerSetsInfo,
+    ObjectEditor,
+    get_all_ao_objects,
+    get_bb_corners,
+    get_obj_from_handle,
+    get_obj_from_id,
+)
 
 # add tools directory so I can import things to try them in the viewer
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../tools"))
@@ -288,6 +295,7 @@ class HabitatSimInteractiveViewer(Application):
         self.selected_object = None
         self.selected_rec = None
         self.ao_link_map = None
+        self.navmesh_dirty = False
 
         # index of the largest indoor island
         self.largest_island_ix = -1
@@ -449,7 +457,7 @@ class HabitatSimInteractiveViewer(Application):
                             receptacle.bounds, g_trans
                         )
                     elif isinstance(receptacle, hab_receptacle.AnyObjectReceptacle):
-                        global_keypoints = sutils.get_bb_corners(
+                        global_keypoints = get_bb_corners(
                             receptacle._get_global_bb(self.sim)
                         )
 
@@ -574,7 +582,7 @@ class HabitatSimInteractiveViewer(Application):
         ]
         for receptacle in self.receptacles:
             if receptacle not in self.rec_to_poh:
-                po_handle = sutils.get_obj_from_handle(
+                po_handle = get_obj_from_handle(
                     self.sim, receptacle.parent_object_handle
                 ).creation_attributes.handle
                 self.rec_to_poh[receptacle] = po_handle
@@ -730,13 +738,9 @@ class HabitatSimInteractiveViewer(Application):
                         num_segments=12,
                     )
 
-            rec_obj = sutils.get_obj_from_handle(
-                self.sim, receptacle.parent_object_handle
-            )
+            rec_obj = get_obj_from_handle(self.sim, receptacle.parent_object_handle)
             key_points = [r_trans.translation]
-            key_points.extend(
-                sutils.get_bb_corners(rec_obj.root_scene_node.cumulative_bb)
-            )
+            key_points.extend(get_bb_corners(rec_obj.root_scene_node.cumulative_bb))
 
             in_view = False
             for ix, key_point in enumerate(key_points):
@@ -840,13 +844,14 @@ class HabitatSimInteractiveViewer(Application):
             )
         if self.receptacles is not None and self.display_receptacles:
             self.draw_receptacles(debug_line_render)
+        if self.selected_object is not None:
+            self.obj_editor.draw_selected_object(debug_line_render)
         # mouse raycast circle
-        white = mn.Color4(mn.Vector3(1.0), 1.0)
         if self.mouse_cast_has_hits:
             debug_line_render.draw_circle(
                 translation=self.mouse_cast_results.hits[0].point,
                 radius=0.005,
-                color=white,
+                color=mn.Color4(mn.Vector3(1.0), 1.0),
                 normal=self.mouse_cast_results.hits[0].normal,
             )
 
@@ -895,7 +900,9 @@ class HabitatSimInteractiveViewer(Application):
 
             if global_call is not None:
                 global_call()
-
+            if self.navmesh_dirty:
+                self.navmesh_config_and_recompute()
+                self.navmesh_dirty = False
             # reset time_since_last_simulation, accounting for potential overflow
             self.time_since_last_simulation = math.fmod(
                 self.time_since_last_simulation, 1.0 / self.fps
@@ -1291,6 +1298,16 @@ class HabitatSimInteractiveViewer(Application):
             event.accepted = True
             self.exit_event(Application.ExitEvent)
             return
+        elif key == pressed.ONE:
+            # save scene instance
+            # clear furniture joint positions before saving
+            self.clear_furniture_joint_states()
+            # save scene instance to original file location
+            self.sim.save_current_scene_config(overwrite=True)
+            print("Saved modified scene instance JSON to original location.")
+        elif key == pressed.TWO:
+            # Undo any edits
+            self.obj_editor.undo_edit()
 
         elif key == pressed.SIX:
             # Reset mouse wheel FOV zoom
@@ -1299,12 +1316,6 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.TAB:
             # Cycle through scenes
             self.cycleScene(True, shift_pressed=shift_pressed)
-
-        elif key == pressed.B:
-            self.obj_editor.change_edit_vals(shift_pressed=shift_pressed)
-
-        elif key == pressed.G:
-            self.obj_editor.change_edit_mode(shift_pressed=shift_pressed)
 
         elif key == pressed.SPACE:
             if not self.sim.config.sim_cfg.enable_physics:
@@ -1324,20 +1335,29 @@ class HabitatSimInteractiveViewer(Application):
             self.debug_bullet_draw = not self.debug_bullet_draw
             logger.info(f"Command: toggle Bullet debug draw: {self.debug_bullet_draw}")
 
+        elif key == pressed.B:
+            # Change editor values
+            self.obj_editor.change_edit_vals(toggle=shift_pressed)
+
         elif key == pressed.C:
-            if shift_pressed:
-                self.contact_debug_draw = not self.contact_debug_draw
-                logger.info(
-                    f"Command: toggle contact debug draw: {self.contact_debug_draw}"
-                )
-            else:
+            self.contact_debug_draw = not self.contact_debug_draw
+            log_str = f"Command: toggle contact debug draw: {self.contact_debug_draw}"
+            if self.contact_debug_draw:
                 # perform a discrete collision detection pass and enable contact debug drawing to visualize the results
-                logger.info(
-                    "Command: perform discrete collision detection and visualize active contacts."
-                )
-                self.sim.perform_discrete_collision_detection()
-                self.contact_debug_draw = True
                 # TODO: add a nice log message with concise contact pair naming.
+                log_str = f"{log_str}: performing discrete collision detection and visualize active contacts."
+                self.sim.perform_discrete_collision_detection()
+            logger.info(log_str)
+
+        elif key == pressed.E:
+            new_state_idx = (self.semantic_region_debug_draw_state + 1) % len(
+                self.semantic_region_debug_draw_choices
+            )
+            logger.info(
+                f"Change Region Draw from {self.semantic_region_debug_draw_choices[self.semantic_region_debug_draw_state]} to {self.semantic_region_debug_draw_choices[new_state_idx]}"
+            )
+            # Increment visualize semantic bboxes. Currently only regions supported
+            self.semantic_region_debug_draw_state = new_state_idx
 
         elif key == pressed.F:
             # toggle, load(+ALT), or save(+SHIFT) filtering
@@ -1349,21 +1369,28 @@ class HabitatSimInteractiveViewer(Application):
                 self.show_filtered = not self.show_filtered
                 print(f"self.show_filtered = {self.show_filtered}")
 
+        elif key == pressed.G:
+            # Change editor mode
+            self.obj_editor.change_edit_mode(toggle=shift_pressed)
+
         elif key == pressed.H:
             self.print_help_text()
 
+        elif key == pressed.I:
+            self.navmesh_dirty = self.obj_editor.edit_up(
+                self.navmesh_dirty, toggle=shift_pressed
+            )
+
         elif key == pressed.J:
-            self.clear_furniture_joint_states()
+            self.navmesh_dirty = self.obj_editor.edit_left(self.navmesh_dirty)
 
         elif key == pressed.K:
-            new_state_idx = (self.semantic_region_debug_draw_state + 1) % len(
-                self.semantic_region_debug_draw_choices
+            self.navmesh_dirty = self.obj_editor.edit_down(
+                self.navmesh_dirty, toggle=shift_pressed
             )
-            logger.info(
-                f"Change Region Draw from {self.semantic_region_debug_draw_choices[self.semantic_region_debug_draw_state]} to {self.semantic_region_debug_draw_choices[new_state_idx]}"
-            )
-            # Increment visualize semantic bboxes. Currently only regions supported
-            self.semantic_region_debug_draw_state = new_state_idx
+
+        elif key == pressed.L:
+            self.navmesh_dirty = self.obj_editor.edit_right(self.navmesh_dirty)
 
         elif key == pressed.M:
             if shift_pressed:
@@ -1455,81 +1482,10 @@ class HabitatSimInteractiveViewer(Application):
                         for obj in self.col_proxy_objs:
                             obj.translation = obj.translation - mn.Vector3(200, 0, 0)
 
-        elif key == pressed.R:
-            # Reload current scene
-            self.cycleScene(False, shift_pressed=shift_pressed)
+        elif key == pressed.P:
+            self.clear_furniture_joint_states()
 
-        elif key == pressed.T:
-            if shift_pressed:
-                # open all the AO default links
-                all_objects = sutils.get_all_objects(self.sim)
-                aos = [
-                    obj
-                    for obj in all_objects
-                    if isinstance(obj, habitat_sim.physics.ManagedArticulatedObject)
-                ]
-                for ao in aos:
-                    default_link = sutils.get_ao_default_link(ao, True)
-                    sutils.open_link(ao, default_link)
-                # compute and set the receptacle filters
-                for rix, rec in enumerate(self.receptacles):
-                    rec_accessible, filter_type = self.check_rec_accessibility(rec)
-                    self.set_filter_status_for_rec(rec, filter_type)
-                    print(f"-- progress = {rix}/{len(self.receptacles)} --")
-            else:
-                if self.selected_rec is not None:
-                    rec_accessible, filter_type = self.check_rec_accessibility(
-                        self.selected_rec, clean_up=False
-                    )
-                    self.set_filter_status_for_rec(self.selected_rec, filter_type)
-                else:
-                    print("No selected receptacle, can't test accessibility.")
-            # self.modify_param_from_term()
-
-            # load URDF
-            # fixed_base = alt_pressed
-            # urdf_file_path = ""
-            # if shift_pressed and self.cached_urdf:
-            #     urdf_file_path = self.cached_urdf
-            # else:
-            #     urdf_file_path = input("Load URDF: provide a URDF filepath:").strip()
-            # if not urdf_file_path:
-            #     logger.warn("Load URDF: no input provided. Aborting.")
-            # elif not urdf_file_path.endswith((".URDF", ".urdf")):
-            #     logger.warn("Load URDF: input is not a URDF. Aborting.")
-            # elif os.path.exists(urdf_file_path):
-            #     self.cached_urdf = urdf_file_path
-            #     aom = self.sim.get_articulated_object_manager()
-            #     ao = aom.add_articulated_object_from_urdf(
-            #         urdf_file_path,
-            #         fixed_base,
-            #         1.0,
-            #         1.0,
-            #         True,
-            #         maintain_link_order=False,
-            #         intertia_from_urdf=False,
-            #     )
-            #     ao.translation = (
-            #         self.default_agent.scene_node.transformation.transform_point(
-            #             [0.0, 1.0, -1.5]
-            #         )
-            #     )
-            #     # check removal and auto-creation
-            #     joint_motor_settings = habitat_sim.physics.JointMotorSettings(
-            #         position_target=0.0,
-            #         position_gain=1.0,
-            #         velocity_target=0.0,
-            #         velocity_gain=1.0,
-            #         max_impulse=1000.0,
-            #     )
-            #     existing_motor_ids = ao.existing_joint_motor_ids
-            #     for motor_id in existing_motor_ids:
-            #         ao.remove_joint_motor(motor_id)
-            #     ao.create_all_motors(joint_motor_settings)
-            # else:
-            #     logger.warn("Load URDF: input file not found. Aborting.")
-
-        elif key == pressed.U:
+        elif key == pressed.Q:
             rom = self.sim.get_rigid_object_manager()
             # add objects to the selected receptacle or remove al objects
             if shift_pressed:
@@ -1595,6 +1551,94 @@ class HabitatSimInteractiveViewer(Application):
                 else:
                     print("No object selected, cannot sample clutter.")
 
+        elif key == pressed.R:
+            # Reload current scene
+            self.cycleScene(False, shift_pressed=shift_pressed)
+
+        elif key == pressed.T:
+            if shift_pressed:
+                # open all the AO default links
+                aos = get_all_ao_objects(self.sim)
+                for ao in aos:
+                    default_link = sutils.get_ao_default_link(ao, True)
+                    sutils.open_link(ao, default_link)
+                # compute and set the receptacle filters
+                for rix, rec in enumerate(self.receptacles):
+                    rec_accessible, filter_type = self.check_rec_accessibility(rec)
+                    self.set_filter_status_for_rec(rec, filter_type)
+                    print(f"-- progress = {rix}/{len(self.receptacles)} --")
+            else:
+                if self.selected_rec is not None:
+                    rec_accessible, filter_type = self.check_rec_accessibility(
+                        self.selected_rec, clean_up=False
+                    )
+                    self.set_filter_status_for_rec(self.selected_rec, filter_type)
+                else:
+                    print("No selected receptacle, can't test accessibility.")
+            # self.modify_param_from_term()
+
+            # load URDF
+            # fixed_base = alt_pressed
+            # urdf_file_path = ""
+            # if shift_pressed and self.cached_urdf:
+            #     urdf_file_path = self.cached_urdf
+            # else:
+            #     urdf_file_path = input("Load URDF: provide a URDF filepath:").strip()
+            # if not urdf_file_path:
+            #     logger.warn("Load URDF: no input provided. Aborting.")
+            # elif not urdf_file_path.endswith((".URDF", ".urdf")):
+            #     logger.warn("Load URDF: input is not a URDF. Aborting.")
+            # elif os.path.exists(urdf_file_path):
+            #     self.cached_urdf = urdf_file_path
+            #     aom = self.sim.get_articulated_object_manager()
+            #     ao = aom.add_articulated_object_from_urdf(
+            #         urdf_file_path,
+            #         fixed_base,
+            #         1.0,
+            #         1.0,
+            #         True,
+            #         maintain_link_order=False,
+            #         intertia_from_urdf=False,
+            #     )
+            #     ao.translation = (
+            #         self.default_agent.scene_node.transformation.transform_point(
+            #             [0.0, 1.0, -1.5]
+            #         )
+            #     )
+            #     # check removal and auto-creation
+            #     joint_motor_settings = habitat_sim.physics.JointMotorSettings(
+            #         position_target=0.0,
+            #         position_gain=1.0,
+            #         velocity_target=0.0,
+            #         velocity_gain=1.0,
+            #         max_impulse=1000.0,
+            #     )
+            #     existing_motor_ids = ao.existing_joint_motor_ids
+            #     for motor_id in existing_motor_ids:
+            #         ao.remove_joint_motor(motor_id)
+            #     ao.create_all_motors(joint_motor_settings)
+            # else:
+            #     logger.warn("Load URDF: input file not found. Aborting.")
+
+        elif key == pressed.U:
+            # Remove object
+            if self.selected_object is not None:
+                print(f"Removing {self.selected_object.handle}")
+                if isinstance(
+                    self.selected_object, habitat_sim.physics.ManagedBulletRigidObject
+                ):
+                    self.sim.get_rigid_object_manager().remove_object_by_handle(
+                        self.selected_object.handle
+                    )
+                else:
+                    self.sim.get_articulated_object_manager().remove_object_by_handle(
+                        self.selected_object.handle
+                    )
+                self.selected_object = None
+                # clear out selected object in editor
+                self.obj_editor.set_sel_obj(None)
+                self.navmesh_config_and_recompute()
+
         elif key == pressed.V:
             # load receptacles and toggle visibilty or color mode (+SHIFT)
             if self.receptacles is None:
@@ -1658,7 +1702,7 @@ class HabitatSimInteractiveViewer(Application):
         hit_info = self.mouse_cast_results.hits[0]
 
         if hit_info.object_id > habitat_sim.stage_id:
-            obj = sutils.get_obj_from_id(self.sim, hit_info.object_id, self.ao_link_map)
+            obj = get_obj_from_id(self.sim, hit_info.object_id, self.ao_link_map)
 
             if obj is None:
                 raise AssertionError(
@@ -1776,7 +1820,7 @@ class HabitatSimInteractiveViewer(Application):
             if hit_id == habitat_sim.stage_id:
                 print("This is the stage.")
             else:
-                obj = sutils.get_obj_from_id(self.sim, hit_id)
+                obj = get_obj_from_id(self.sim, hit_id)
                 link_id = None
                 if obj.object_id != hit_id:
                     # this is a link
@@ -1864,6 +1908,12 @@ class HabitatSimInteractiveViewer(Application):
                 self.ao_link_map,
                 event.button == button.LEFT,
             )
+        self.obj_editor.set_sel_obj(self.selected_object)
+        # # record current selected object's transformation, to restore if undo is pressed
+        # if self.selected_object is not None:
+        #     self.selected_object_orig_transform = (
+        #         self.selected_object.transformation
+        #     )
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
@@ -2073,6 +2123,7 @@ In LOOK mode (default):
         Click an object to select the object. Prints object name and attached receptacle names. Selected object displays sample points when cpo is initialized.
         (+SHIFT) select a receptacle.
         (+ALT) add or remove a receptacle from the "manual filter set".
+
 In GRAB mode (with 'enable-physics'):
     LEFT:
         Click and drag to pickup and move an object with a point-to-point constraint (e.g. ball joint).
@@ -2087,6 +2138,21 @@ In GRAB mode (with 'enable-physics'):
 In MARKER mode :
 
 
+Edit Commands :
+---------------
+    'g' : Change Edit mode to either Move or Rotate the selected object
+    'b' (+ SHIFT) : Increment (Decrement) the current edit amounts.
+    - With an object selected:
+        When Edit Mode: Move Object mode is selected :
+        - 'j'/'l' : move the object along global X axis.
+        - 'i'/'k' : move the object along global Z axis.
+            (+SHIFT): move the object up/down (global Y axis)
+        When Edit Mode: Rotate Object mode is selected :
+        - 'j'/'l' : rotate the object around global Y axis.
+        - 'i'/'k' : arrow keys: rotate the object around global Z axis.
+            (+SHIFT): rotate the object around global X axis.
+        - 'u': delete the selected object
+
 Key Commands:
 -------------
     esc:        Exit the application.
@@ -2099,15 +2165,17 @@ Key Commands:
     arrow keys: Turn the agent's body left/right and camera look up/down.
 
     Utilities:
+    '1 (one)':  Save current scene instance, overwriting existing scene instance.
     'r':        Reset the simulator with the most recently loaded scene.
     'n':        Show/hide NavMesh wireframe.
                 (+SHIFT) Recompute NavMesh with default settings.
                 (+ALT) Re-sample the agent(camera)'s position and orientation from the NavMesh.
     ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep).
-    'c':        Run a discrete collision detection pass and render a debug wireframe overlay showing active contact points and normals (yellow=fixed length normals, red=collision distances).
-                (+SHIFT) Toggle the contact point debug render overlay on/off.
-    'j'         Clear the joint states of all articulated objects.
-    'k'         Toggle Semantic visualization bounds (currently only Semantic Region annotations)
+    'c':        Toggle the contact point debug render overlay on/off. If toggled to true,
+                then run a discrete collision detection pass and render a debug wireframe overlay
+                showing active contact points and normals (yellow=fixed length normals, red=collision distances).
+    'p'         Clear the joint states of all articulated objects.
+    'e'         Toggle Semantic visualization bounds (currently only Semantic Region annotations)
 
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
@@ -2122,7 +2190,7 @@ Key Commands:
     'o':        Toggle display of collision proxy shapes for the scene.
                 (+SHIFT) Toggle display of original render shapes (and Receptacles).
     't':        CLI for modifying un-bound viewer parameters during runtime.
-    'u':        Sample an object placement from the currently selected object or receptacle.
+    'q':        Sample an object placement from the currently selected object or receptacle.
                 (+SHIFT) Remove all previously sampled objects.
                 (+ALT) Sample from all "active" unfiltered Receptacles.
 

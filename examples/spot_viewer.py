@@ -458,6 +458,7 @@ class HabitatSimInteractiveViewer(Application):
         """
         Additional draw commands to be called during draw_event.
         """
+        debug_line_render = self.sim.get_debug_line_render()
         if self.debug_bullet_draw:
             render_cam = self.render_camera.render_camera
             proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
@@ -465,7 +466,7 @@ class HabitatSimInteractiveViewer(Application):
         if self.contact_debug_draw:
             self.draw_contact_debug()
         if self.last_hit_details is not None:
-            self.sim.get_debug_line_render().draw_circle(
+            debug_line_render.draw_circle(
                 translation=self.last_hit_details.point,
                 radius=0.02,
                 normal=self.last_hit_details.normal,
@@ -473,47 +474,7 @@ class HabitatSimInteractiveViewer(Application):
                 num_segments=12,
             )
         if self.selected_object is not None:
-            aabb = None
-            if isinstance(
-                self.selected_object, habitat_sim.physics.ManagedBulletRigidObject
-            ):
-                aabb = self.selected_object.collision_shape_aabb
-            else:
-                aabb = sutils.get_ao_root_bb(self.selected_object)
-            dblr = self.sim.get_debug_line_render()
-            dblr.push_transform(self.selected_object.transformation)
-            dblr.draw_box(aabb.min, aabb.max, mn.Color4.magenta())
-            dblr.pop_transform()
-
-            ot = self.selected_object.translation
-            # draw global coordinate axis
-            dblr.draw_transformed_line(
-                ot - mn.Vector3.x_axis(), ot + mn.Vector3.x_axis(), mn.Color4.red()
-            )
-            dblr.draw_transformed_line(
-                ot - mn.Vector3.y_axis(), ot + mn.Vector3.y_axis(), mn.Color4.green()
-            )
-            dblr.draw_transformed_line(
-                ot - mn.Vector3.z_axis(), ot + mn.Vector3.z_axis(), mn.Color4.blue()
-            )
-            dblr.draw_circle(
-                ot + mn.Vector3.x_axis() * 0.95,
-                radius=0.05,
-                color=mn.Color4.red(),
-                normal=mn.Vector3.x_axis(),
-            )
-            dblr.draw_circle(
-                ot + mn.Vector3.y_axis() * 0.95,
-                radius=0.05,
-                color=mn.Color4.green(),
-                normal=mn.Vector3.y_axis(),
-            )
-            dblr.draw_circle(
-                ot + mn.Vector3.z_axis() * 0.95,
-                radius=0.05,
-                color=mn.Color4.blue(),
-                normal=mn.Vector3.z_axis(),
-            )
+            self.obj_editor.draw_selected_object(debug_line_render)
         self.draw_removed_objects_debug_frames()
 
     def draw_event(
@@ -867,23 +828,19 @@ class HabitatSimInteractiveViewer(Application):
             logger.info(f"Command: toggle Bullet debug draw: {self.debug_bullet_draw}")
 
         elif key == pressed.LEFT:
-            self.navmesh_dirty = self.obj_editor.edit_left(
-                self.selected_object, self.navmesh_dirty
-            )
+            self.navmesh_dirty = self.obj_editor.edit_left(self.navmesh_dirty)
 
         elif key == pressed.RIGHT:
-            self.navmesh_dirty = self.obj_editor.edit_right(
-                self.selected_object, self.navmesh_dirty
-            )
+            self.navmesh_dirty = self.obj_editor.edit_right(self.navmesh_dirty)
 
         elif key == pressed.UP:
             self.navmesh_dirty = self.obj_editor.edit_up(
-                self.selected_object, self.navmesh_dirty, alt_pressed=alt_pressed
+                self.navmesh_dirty, toggle=alt_pressed
             )
 
         elif key == pressed.DOWN:
             self.navmesh_dirty = self.obj_editor.edit_down(
-                self.selected_object, self.navmesh_dirty, alt_pressed=alt_pressed
+                self.navmesh_dirty, toggle=alt_pressed
             )
 
         elif key == pressed.BACKSPACE or key == pressed.C:
@@ -903,12 +860,13 @@ class HabitatSimInteractiveViewer(Application):
                         self.selected_object.handle
                     )
                 self.selected_object = None
+                self.obj_editor.set_sel_obj(self.selected_object)
                 self.navmesh_config_and_recompute()
         elif key == pressed.B:
-            self.obj_editor.change_edit_vals(shift_pressed=shift_pressed)
+            self.obj_editor.change_edit_vals(toggle=shift_pressed)
 
         elif key == pressed.G:
-            self.obj_editor.change_edit_mode(shift_pressed=shift_pressed)
+            self.obj_editor.change_edit_mode(toggle=shift_pressed)
 
         elif key == pressed.I:
             # dump the modified object states buffer to JSON.
@@ -976,20 +934,21 @@ class HabitatSimInteractiveViewer(Application):
             pass
 
         elif key == pressed.U:
-            # if an object is selected, restore its last transformation state - UNDO of edits since last selected
-            print("Undo selected")
-            if self.selected_object is not None:
-                print(
-                    f"Sel Obj : {self.selected_object.handle} : Current object transformation : \n{self.selected_object.transformation}\n Being replaced by saved transformation : \n{self.selected_object.transformation}"
-                )
-                orig_mt = self.selected_object.motion_type
-                self.selected_object.motion_type = (
-                    habitat_sim.physics.MotionType.KINEMATIC
-                )
-                self.selected_object.transformation = (
-                    self.selected_object_orig_transform
-                )
-                self.selected_object.motion_type = orig_mt
+            self.obj_editor.undo_edit()
+            # # if an object is selected, restore its last transformation state - UNDO of edits since last selected
+            # print("Undo selected")
+            # if self.selected_object is not None:
+            #     print(
+            #         f"Sel Obj : {self.selected_object.handle} : Current object transformation : \n{self.selected_object.transformation}\n Being replaced by saved transformation : \n{self.selected_object.transformation}"
+            #     )
+            #     orig_mt = self.selected_object.motion_type
+            #     self.selected_object.motion_type = (
+            #         habitat_sim.physics.MotionType.KINEMATIC
+            #     )
+            #     self.selected_object.transformation = (
+            #         self.selected_object_orig_transform
+            #     )
+            #     self.selected_object.motion_type = orig_mt
 
         elif key == pressed.V:
             # inject a new AO by handle substring in front of the agent
@@ -1094,11 +1053,12 @@ class HabitatSimInteractiveViewer(Application):
                     )
                 else:
                     print("This is the stage.")
-            # record current selected object's transformation, to restore if undo is pressed
-            if self.selected_object is not None:
-                self.selected_object_orig_transform = (
-                    self.selected_object.transformation
-                )
+            self.obj_editor.set_sel_obj(self.selected_object)
+            # # record current selected object's transformation, to restore if undo is pressed
+            # if self.selected_object is not None:
+            #     self.selected_object_orig_transform = (
+            #         self.selected_object.transformation
+            #     )
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
@@ -1254,14 +1214,14 @@ Key Commands:
     'g' : Change Edit mode to either Move or Rotate the selected object
     'b' (+ SHIFT) : Increment (Decrement) the current edit amounts.
         - With an object selected:
-            When Move Object mode is selected :
-            - LEFT/RIGHT arrow keys: move the object along global X axis.
-            - UP/DOWN arrow keys: move the object along global Z axis.
-                (+ALT): move the object up/down (global Y axis)
-            When Rotate Object mode is selected :
-            - LEFT/RIGHT arrow keys: rotate the object around global Y axis.
-            - UP/DOWN arrow keys: rotate the object around global Z axis.
-                (+ALT): rotate the object around global X axis.
+            When Edit Mode Move Object mode is selected :
+            - 'j'/'l' : move the object along global X axis.
+            - 'i'/'k' : move the object along global Z axis.
+                (+SHIFT): move the object up/down (global Y axis)
+            When Edit Mode Rotate Object mode is selected :
+            - 'j'/'l' : rotate the object around global Y axis.
+            - 'i'/'k' : arrow keys: rotate the object around global Z axis.
+                (+SHIFT): rotate the object around global X axis.
             - BACKSPACE: delete the selected object
             - 'c': delete the selected object and record it as clutter.
     'i': save the current, modified, scene_instance file. Also save removed_clutter.txt containing object names of all removed clutter objects.

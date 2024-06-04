@@ -6,7 +6,7 @@
 
 
 from enum import Enum
-from typing import Any, Dict, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 import magnum as mn
 import numpy as np
@@ -96,6 +96,113 @@ def get_obj_from_handle(
         return aom.get_object_by_handle(obj_handle)
 
     return None
+
+
+def get_all_ao_objects(
+    sim: habitat_sim.Simulator,
+) -> List[habitat_sim.physics.ManagedArticulatedObject]:
+    """
+    Get a list of all ManagedArticulatedObjects in the scene.
+
+    :param sim: The Simulator instance.
+
+    :return: a list of ManagedObject wrapper instances containing all articulated objects currently instantiated in the scene.
+    """
+    return (
+        sim.get_articulated_object_manager().get_objects_by_handle_substring().values()
+    )
+
+
+def get_all_rigid_objects(
+    sim: habitat_sim.Simulator,
+) -> List[habitat_sim.physics.ManagedArticulatedObject]:
+    """
+    Get a list of all ManagedRigidObjects in the scene.
+
+    :param sim: The Simulator instance.
+
+    :return: a list of ManagedObject wrapper instances containing all rigid objects currently instantiated in the scene.
+    """
+    return sim.get_rigid_object_manager().get_objects_by_handle_substring().values()
+
+
+def get_all_objects(
+    sim: habitat_sim.Simulator,
+) -> List[
+    Union[
+        habitat_sim.physics.ManagedRigidObject,
+        habitat_sim.physics.ManagedArticulatedObject,
+    ]
+]:
+    """
+    Get a list of all ManagedRigidObjects and ManagedArticulatedObjects in the scene.
+
+    :param sim: The Simulator instance.
+
+    :return: a list of ManagedObject wrapper instances containing all objects currently instantiated in the scene.
+    """
+
+    managers = [
+        sim.get_rigid_object_manager(),
+        sim.get_articulated_object_manager(),
+    ]
+    all_objects = []
+    for mngr in managers:
+        all_objects.extend(mngr.get_objects_by_handle_substring().values())
+    return all_objects
+
+
+def get_bb_corners(range3d: mn.Range3D) -> List[mn.Vector3]:
+    """
+    Return a list of AABB (Range3D) corners in object local space.
+    """
+    return [
+        range3d.back_bottom_left,
+        range3d.back_bottom_right,
+        range3d.back_top_right,
+        range3d.back_top_left,
+        range3d.front_top_left,
+        range3d.front_top_right,
+        range3d.front_bottom_right,
+        range3d.front_bottom_left,
+    ]
+
+
+def get_ao_root_bb(
+    ao: habitat_sim.physics.ManagedArticulatedObject,
+) -> mn.Range3D:
+    """
+    Get the local bounding box of all links of an articulated object in the root frame.
+
+    :param ao: The ArticulatedObject instance.
+    """
+
+    # NOTE: we'd like to use SceneNode AABB, but this won't work because the links are not in the subtree of the root:
+    # ao.root_scene_node.compute_cumulative_bb()
+
+    ao_local_part_bb_corners = []
+
+    link_nodes = [ao.get_link_scene_node(ix) for ix in range(-1, ao.num_links)]
+    for link_node in link_nodes:
+        local_bb_corners = get_bb_corners(link_node.cumulative_bb)
+        global_bb_corners = [
+            link_node.absolute_transformation().transform_point(bb_corner)
+            for bb_corner in local_bb_corners
+        ]
+        ao_local_bb_corners = [
+            ao.transformation.inverted().transform_point(p) for p in global_bb_corners
+        ]
+        ao_local_part_bb_corners.extend(ao_local_bb_corners)
+
+    # get min and max of each dimension
+    # TODO: use numpy arrays for more elegance...
+    max_vec = mn.Vector3(ao_local_part_bb_corners[0])
+    min_vec = mn.Vector3(ao_local_part_bb_corners[0])
+    for point in ao_local_part_bb_corners:
+        for dim in range(3):
+            max_vec[dim] = max(max_vec[dim], point[dim])
+            min_vec[dim] = min(min_vec[dim], point[dim])
+    return mn.Range3D(min_vec, max_vec)
 
 
 class MarkerSetsInfo:
@@ -540,7 +647,8 @@ class ObjectEditor:
     BASE_EDIT_ROT_AMT = np.pi / 180.0
 
     def __init__(self):
-        # Editing
+        self.sel_obj = None
+        self.sel_obj_orig_transform = mn.Matrix4().identity_init()
         # Edit mode
         self.curr_edit_mode = ObjectEditor.EditMode.MOVE
         # Edit distance/amount
@@ -549,6 +657,7 @@ class ObjectEditor:
         self.modified_objects_buffer: Dict[
             habitat_sim.physics.ManagedRigidObject, mn.Matrix4
         ] = {}
+        # Set initial values
         self.set_edit_vals()
 
     def set_edit_vals(self):
@@ -582,9 +691,18 @@ Edit Value: {edit_distance_mode_string}
           """
         return disp_str
 
+    def set_sel_obj(self, obj):
+        """
+        Set the selected object and cache its original transformation
+        """
+        self.sel_obj = obj
+        if self.sel_obj is not None:
+            self.sel_obj_orig_transform = self.sel_obj.transformation
+        else:
+            self.sel_obj_orig_transform = mn.Matrix4().identity_init()
+
     def move_object(
         self,
-        obj,
         navmesh_dirty,
         translation: Optional[mn.Vector3] = None,
         rotation: Optional[mn.Quaternion] = None,
@@ -593,7 +711,8 @@ Edit Value: {edit_distance_mode_string}
         Move the selected object with a given modification and save the resulting state to the buffer.
         """
         modify_buffer = translation is not None or rotation is not None
-        if obj is not None and modify_buffer:
+        if self.sel_obj is not None and modify_buffer:
+            obj = self.sel_obj
             orig_mt = obj.motion_type
             obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
             if translation is not None:
@@ -605,18 +724,16 @@ Edit Value: {edit_distance_mode_string}
             return True
         return navmesh_dirty
 
-    def edit_left(self, obj, navmesh_dirty: bool):
+    def edit_left(self, navmesh_dirty: bool):
         # if movement mode
         if self.curr_edit_mode == ObjectEditor.EditMode.MOVE:
             navmesh_dirty = self.move_object(
-                obj=obj,
                 navmesh_dirty=navmesh_dirty,
                 translation=mn.Vector3.x_axis() * self.edit_translation_dist,
             )
         # if rotation mode : rotate around y axis
         else:
             navmesh_dirty = self.move_object(
-                obj=obj,
                 navmesh_dirty=navmesh_dirty,
                 rotation=mn.Quaternion.rotation(
                     mn.Rad(self.edit_rotation_amt), mn.Vector3.y_axis()
@@ -624,18 +741,16 @@ Edit Value: {edit_distance_mode_string}
             )
         return navmesh_dirty
 
-    def edit_right(self, obj, navmesh_dirty: bool):
+    def edit_right(self, navmesh_dirty: bool):
         # if movement mode
         if self.curr_edit_mode == ObjectEditor.EditMode.MOVE:
             navmesh_dirty = self.move_object(
-                obj=obj,
                 navmesh_dirty=navmesh_dirty,
                 translation=-mn.Vector3.x_axis() * self.edit_translation_dist,
             )
         # if rotation mode : rotate around y axis
         else:
             navmesh_dirty = self.move_object(
-                obj=obj,
                 navmesh_dirty=navmesh_dirty,
                 rotation=mn.Quaternion.rotation(
                     -mn.Rad(self.edit_rotation_amt), mn.Vector3.y_axis()
@@ -643,27 +758,24 @@ Edit Value: {edit_distance_mode_string}
             )
         return navmesh_dirty
 
-    def edit_up(self, obj, navmesh_dirty: bool, alt_pressed: bool):
+    def edit_up(self, navmesh_dirty: bool, toggle: bool):
         # if movement mode
         if self.curr_edit_mode == ObjectEditor.EditMode.MOVE:
-            if alt_pressed:
+            if toggle:
                 navmesh_dirty = self.move_object(
-                    obj=obj,
                     navmesh_dirty=navmesh_dirty,
                     translation=mn.Vector3.y_axis() * self.edit_translation_dist,
                 )
             else:
                 navmesh_dirty = self.move_object(
-                    obj=obj,
                     navmesh_dirty=navmesh_dirty,
                     translation=mn.Vector3.z_axis() * self.edit_translation_dist,
                 )
         # if rotation mode : rotate around x or z axis
         else:
-            if alt_pressed:
+            if toggle:
                 # rotate around x axis
                 navmesh_dirty = self.move_object(
-                    obj=obj,
                     navmesh_dirty=navmesh_dirty,
                     rotation=mn.Quaternion.rotation(
                         mn.Rad(self.edit_rotation_amt), mn.Vector3.x_axis()
@@ -672,7 +784,6 @@ Edit Value: {edit_distance_mode_string}
             else:
                 # rotate around z axis
                 navmesh_dirty = self.move_object(
-                    obj=obj,
                     navmesh_dirty=navmesh_dirty,
                     rotation=mn.Quaternion.rotation(
                         mn.Rad(self.edit_rotation_amt), mn.Vector3.z_axis()
@@ -681,27 +792,24 @@ Edit Value: {edit_distance_mode_string}
 
         return navmesh_dirty
 
-    def edit_down(self, obj, navmesh_dirty: bool, alt_pressed: bool):
+    def edit_down(self, navmesh_dirty: bool, toggle: bool):
         # if movement mode
         if self.curr_edit_mode == ObjectEditor.EditMode.MOVE:
-            if alt_pressed:
+            if toggle:
                 navmesh_dirty = self.move_object(
-                    obj=obj,
                     navmesh_dirty=navmesh_dirty,
                     translation=-mn.Vector3.y_axis() * self.edit_translation_dist,
                 )
             else:
                 navmesh_dirty = self.move_object(
-                    obj=obj,
                     navmesh_dirty=navmesh_dirty,
                     translation=-mn.Vector3.z_axis() * self.edit_translation_dist,
                 )
         # if rotation mode : rotate around x or z axis
         else:
-            if alt_pressed:
+            if toggle:
                 # rotate around x axis
                 navmesh_dirty = self.move_object(
-                    obj=obj,
                     navmesh_dirty=navmesh_dirty,
                     rotation=mn.Quaternion.rotation(
                         -mn.Rad(self.edit_rotation_amt), mn.Vector3.x_axis()
@@ -710,7 +818,6 @@ Edit Value: {edit_distance_mode_string}
             else:
                 # rotate around z axis
                 navmesh_dirty = self.move_object(
-                    obj=obj,
                     navmesh_dirty=navmesh_dirty,
                     rotation=mn.Quaternion.rotation(
                         -mn.Rad(self.edit_rotation_amt), mn.Vector3.z_axis()
@@ -718,17 +825,17 @@ Edit Value: {edit_distance_mode_string}
                 )
         return navmesh_dirty
 
-    def change_edit_mode(self, shift_pressed: bool):
+    def change_edit_mode(self, toggle: bool):
         # toggle edit mode
-        mod_val = -1 if shift_pressed else 1
+        mod_val = -1 if toggle else 1
         self.curr_edit_mode = ObjectEditor.EditMode(
             (self.curr_edit_mode.value + ObjectEditor.EditMode.NUM_VALS.value + mod_val)
             % ObjectEditor.EditMode.NUM_VALS.value
         )
 
-    def change_edit_vals(self, shift_pressed: bool):
+    def change_edit_vals(self, toggle: bool):
         # cycle through edit dist/amount multiplier
-        mod_val = -1 if shift_pressed else 1
+        mod_val = -1 if toggle else 1
         self.curr_edit_multiplier = ObjectEditor.DistanceMode(
             (
                 self.curr_edit_multiplier.value
@@ -739,3 +846,57 @@ Edit Value: {edit_distance_mode_string}
         )
         # update the edit values
         self.set_edit_vals()
+
+    def undo_edit(self):
+        """
+        Undo the edits that have been performed on the selected object
+        """
+        if self.sel_obj is not None:
+            obj = self.sel_obj
+            print(
+                f"Sel Obj : {obj.handle} : Current object transformation : \n{obj.transformation}\n Being replaced by saved transformation : \n{obj.transformation}"
+            )
+            orig_mt = obj.motion_type
+            obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+            obj.transformation = self.sel_obj_orig_transform
+            obj.motion_type = orig_mt
+
+    def draw_selected_object(self, debug_line_render):
+        aabb = None
+        if isinstance(self.sel_obj, habitat_sim.physics.ManagedBulletRigidObject):
+            aabb = self.sel_obj.collision_shape_aabb
+        else:
+            aabb = get_ao_root_bb(self.sel_obj)
+        debug_line_render.push_transform(self.sel_obj.transformation)
+        debug_line_render.draw_box(aabb.min, aabb.max, mn.Color4.magenta())
+        debug_line_render.pop_transform()
+
+        ot = self.sel_obj.translation
+        # draw global coordinate axis
+        debug_line_render.draw_transformed_line(
+            ot - mn.Vector3.x_axis(), ot + mn.Vector3.x_axis(), mn.Color4.red()
+        )
+        debug_line_render.draw_transformed_line(
+            ot - mn.Vector3.y_axis(), ot + mn.Vector3.y_axis(), mn.Color4.green()
+        )
+        debug_line_render.draw_transformed_line(
+            ot - mn.Vector3.z_axis(), ot + mn.Vector3.z_axis(), mn.Color4.blue()
+        )
+        debug_line_render.draw_circle(
+            ot + mn.Vector3.x_axis() * 0.95,
+            radius=0.05,
+            color=mn.Color4.red(),
+            normal=mn.Vector3.x_axis(),
+        )
+        debug_line_render.draw_circle(
+            ot + mn.Vector3.y_axis() * 0.95,
+            radius=0.05,
+            color=mn.Color4.green(),
+            normal=mn.Vector3.y_axis(),
+        )
+        debug_line_render.draw_circle(
+            ot + mn.Vector3.z_axis() * 0.95,
+            radius=0.05,
+            color=mn.Color4.blue(),
+            normal=mn.Vector3.z_axis(),
+        )
