@@ -10,7 +10,6 @@ import os
 import string
 import sys
 import time
-from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 flags = sys.getdlopenflags()
@@ -29,40 +28,12 @@ import habitat_sim
 from habitat_sim import ReplayRenderer, ReplayRendererConfiguration
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
+from habitat_sim.utils.sim_utils import ObjectEditor
 
 SPOT_DIR = "data/robots/hab_spot_arm/urdf/hab_spot_arm.urdf"
 if not os.path.isfile(SPOT_DIR):
     # support other layout
     SPOT_DIR = "data/scene_datasets/robots/hab_spot_arm/urdf/hab_spot_arm.urdf"
-
-
-# Describe edit type
-class EditMode(Enum):
-    MOVE = 0
-    ROTATE = 1
-    NUM_VALS = 2  # last value
-
-
-EDIT_MODE_NAMES = ["Move object", "Rotate object"]
-
-
-# Describe edit distance values
-class DistanceMode(Enum):
-    TINY = 0
-    VERY_SMALL = 1
-    SMALL = 2
-    MEDIUM = 3
-    LARGE = 4
-    HUGE = 5
-    NUM_VALS = 6
-
-
-# distance values in m
-DISTANCE_MODE_VALS = [0.001, 0.01, 0.02, 0.05, 0.1, 0.5]
-# angle value multipliers (in degrees) - multiplied by conversion
-ROTATION_MULT_VALS = [1.0, 10.0, 30.0, 45.0, 60.0, 90.0]
-# 1 radian
-BASE_EDIT_ROT_AMT = math.pi / 180.0
 
 
 class ExtractedBaseVelNonCylinderAction:
@@ -323,13 +294,7 @@ class HabitatSimInteractiveViewer(Application):
         self.num_frames_to_track = 60
 
         # Editing
-        # Edit mode
-        self.curr_edit_mode = EditMode.MOVE
-        # Edit distance/amount
-        self.curr_edit_multiplier = DistanceMode.VERY_SMALL
-
-        # Initialize base edit changes
-        self.set_edit_vals()
+        self.obj_editor = ObjectEditor()
 
         self.previous_mouse_point = None
 
@@ -379,15 +344,6 @@ class HabitatSimInteractiveViewer(Application):
         LoggingContext.reinitialize_from_env()
         logger.setLevel("INFO")
         self.print_help_text()
-
-    def set_edit_vals(self):
-        # Set current scene object edit values for translation and rotation
-        # 1 cm * multiplier
-        self.edit_translation_dist = DISTANCE_MODE_VALS[self.curr_edit_multiplier.value]
-        # 1 radian * multiplier
-        self.edit_rotation_amt = (
-            BASE_EDIT_ROT_AMT * ROTATION_MULT_VALS[self.curr_edit_multiplier.value]
-        )
 
     def draw_removed_objects_debug_frames(self):
         """
@@ -845,8 +801,10 @@ class HabitatSimInteractiveViewer(Application):
         gravity: mn.Vector3 = self.sim.get_gravity() * -1
         self.sim.set_gravity(gravity)
 
-    def move_selected_object(
+    def move_object(
         self,
+        obj,
+        navmesh_dirty,
         translation: Optional[mn.Vector3] = None,
         rotation: Optional[mn.Quaternion] = None,
     ):
@@ -854,20 +812,17 @@ class HabitatSimInteractiveViewer(Application):
         Move the selected object with a given modification and save the resulting state to the buffer.
         """
         modify_buffer = translation is not None or rotation is not None
-        if self.selected_object is not None and modify_buffer:
-            orig_mt = self.selected_object.motion_type
-            self.selected_object.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+        if obj is not None and modify_buffer:
+            orig_mt = obj.motion_type
+            obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
             if translation is not None:
-                self.selected_object.translation = (
-                    self.selected_object.translation + translation
-                )
+                obj.translation = obj.translation + translation
             if rotation is not None:
-                self.selected_object.rotation = rotation * self.selected_object.rotation
-            self.selected_object.motion_type = orig_mt
-            self.navmesh_dirty = True
-            self.modified_objects_buffer[
-                self.selected_object
-            ] = self.selected_object.transformation
+                obj.rotation = rotation * obj.rotation
+            obj.motion_type = orig_mt
+            self.modified_objects_buffer[obj] = obj.transformation
+            return True
+        return navmesh_dirty
 
     def key_press_event(self, event: Application.KeyEvent) -> None:
         """
@@ -882,7 +837,6 @@ class HabitatSimInteractiveViewer(Application):
         shift_pressed = bool(event.modifiers & mod.SHIFT)
         alt_pressed = bool(event.modifiers & mod.ALT)
         # warning: ctrl doesn't always pass through with other key-presses
-
         if key == pressed.ESC:
             event.accepted = True
             self.exit_event(Application.ExitEvent)
@@ -913,86 +867,24 @@ class HabitatSimInteractiveViewer(Application):
             logger.info(f"Command: toggle Bullet debug draw: {self.debug_bullet_draw}")
 
         elif key == pressed.LEFT:
-            # if movement mode
-            if self.curr_edit_mode == EditMode.MOVE:
-                self.move_selected_object(
-                    translation=mn.Vector3.x_axis() * self.edit_translation_dist
-                )
-            # if rotation mode : rotate around y axis
-            else:
-                self.move_selected_object(
-                    rotation=mn.Quaternion.rotation(
-                        mn.Rad(self.edit_rotation_amt), mn.Vector3.y_axis()
-                    )
-                )
+            self.navmesh_dirty = self.obj_editor.edit_left(
+                self.selected_object, self.navmesh_dirty
+            )
+
         elif key == pressed.RIGHT:
-            # if movement mode
-            if self.curr_edit_mode == EditMode.MOVE:
-                self.move_selected_object(
-                    translation=-mn.Vector3.x_axis() * self.edit_translation_dist
-                )
-            # if rotation mode : rotate around y axis
-            else:
-                self.move_selected_object(
-                    rotation=mn.Quaternion.rotation(
-                        -mn.Rad(self.edit_rotation_amt), mn.Vector3.y_axis()
-                    )
-                )
+            self.navmesh_dirty = self.obj_editor.edit_right(
+                self.selected_object, self.navmesh_dirty
+            )
+
         elif key == pressed.UP:
-            # if movement mode
-            if self.curr_edit_mode == EditMode.MOVE:
-                if alt_pressed:
-                    self.move_selected_object(
-                        translation=mn.Vector3.y_axis() * self.edit_translation_dist
-                    )
-                else:
-                    self.move_selected_object(
-                        translation=mn.Vector3.z_axis() * self.edit_translation_dist
-                    )
-            # if rotation mode : rotate around x or z axis
-            else:
-                if alt_pressed:
-                    # rotate around x axis
-                    self.move_selected_object(
-                        rotation=mn.Quaternion.rotation(
-                            mn.Rad(self.edit_rotation_amt), mn.Vector3.x_axis()
-                        )
-                    )
-                else:
-                    # rotate around z axis
-                    self.move_selected_object(
-                        rotation=mn.Quaternion.rotation(
-                            mn.Rad(self.edit_rotation_amt), mn.Vector3.z_axis()
-                        )
-                    )
+            self.navmesh_dirty = self.obj_editor.edit_up(
+                self.selected_object, self.navmesh_dirty, alt_pressed=alt_pressed
+            )
 
         elif key == pressed.DOWN:
-            # if movement mode
-            if self.curr_edit_mode == EditMode.MOVE:
-                if alt_pressed:
-                    self.move_selected_object(
-                        translation=-mn.Vector3.y_axis() * self.edit_translation_dist
-                    )
-                else:
-                    self.move_selected_object(
-                        translation=-mn.Vector3.z_axis() * self.edit_translation_dist
-                    )
-            # if rotation mode : rotate around x or z axis
-            else:
-                if alt_pressed:
-                    # rotate around x axis
-                    self.move_selected_object(
-                        rotation=mn.Quaternion.rotation(
-                            -mn.Rad(self.edit_rotation_amt), mn.Vector3.x_axis()
-                        )
-                    )
-                else:
-                    # rotate around z axis
-                    self.move_selected_object(
-                        rotation=mn.Quaternion.rotation(
-                            -mn.Rad(self.edit_rotation_amt), mn.Vector3.z_axis()
-                        )
-                    )
+            self.navmesh_dirty = self.obj_editor.edit_down(
+                self.selected_object, self.navmesh_dirty, alt_pressed=alt_pressed
+            )
 
         elif key == pressed.BACKSPACE or key == pressed.C:
             if self.selected_object is not None:
@@ -1013,26 +905,10 @@ class HabitatSimInteractiveViewer(Application):
                 self.selected_object = None
                 self.navmesh_config_and_recompute()
         elif key == pressed.B:
-            # cycle through edit dist/amount multiplier
-            mod_val = -1 if shift_pressed else 1
-            self.curr_edit_multiplier = DistanceMode(
-                (
-                    self.curr_edit_multiplier.value
-                    + DistanceMode.NUM_VALS.value
-                    + mod_val
-                )
-                % DistanceMode.NUM_VALS.value
-            )
-            # update the edit values
-            self.set_edit_vals()
+            self.obj_editor.change_edit_vals(shift_pressed=shift_pressed)
 
         elif key == pressed.G:
-            # toggle edit mode
-            mod_val = -1 if shift_pressed else 1
-            self.curr_edit_mode = EditMode(
-                (self.curr_edit_mode.value + EditMode.NUM_VALS.value + mod_val)
-                % EditMode.NUM_VALS.value
-            )
+            self.obj_editor.change_edit_mode(shift_pressed=shift_pressed)
 
         elif key == pressed.I:
             # dump the modified object states buffer to JSON.
@@ -1331,22 +1207,14 @@ class HabitatSimInteractiveViewer(Application):
 
         sensor_type_string = str(sensor_spec.sensor_type.name)
         sensor_subtype_string = str(sensor_spec.sensor_subtype.name)
-        edit_mode_string = EDIT_MODE_NAMES[self.curr_edit_mode.value]
-
-        dist_mode_substr = (
-            f"Translation: {self.edit_translation_dist}m"
-            if self.curr_edit_mode == EditMode.MOVE
-            else f"Rotation:{ROTATION_MULT_VALS[self.curr_edit_multiplier.value]} deg "
-        )
-        edit_distance_mode_string = f"{dist_mode_substr}"
+        edit_string = self.obj_editor.edit_disp_str()
         self.window_text.render(
             f"""
 {self.fps} FPS
 Scene ID : {os.path.split(self.cfg.sim_cfg.scene_id)[1].split('.scene_instance')[0]}
 Sensor Type: {sensor_type_string}
 Sensor Subtype: {sensor_subtype_string}
-Edit Mode: {edit_mode_string}
-Edit Value: {edit_distance_mode_string}
+{edit_string}
             """
         )
         self.shader.draw(self.window_text.mesh)

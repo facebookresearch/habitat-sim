@@ -4,6 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+
+from enum import Enum
 from typing import Any, Dict, Optional, Set, Union
 
 import magnum as mn
@@ -502,3 +504,231 @@ class MarkerSetsInfo:
                                 color=marker_set_color,
                                 normal=camera_position - global_marker_pos,
                             )
+
+
+class ObjectEditor:
+    # Describe edit type
+    class EditMode(Enum):
+        MOVE = 0
+        ROTATE = 1
+        NUM_VALS = 2  # last value
+
+    EDIT_MODE_NAMES = ["Move object", "Rotate object"]
+
+    # Describe edit distance values
+    class DistanceMode(Enum):
+        TINY = 0
+        VERY_SMALL = 1
+        SMALL = 2
+        MEDIUM = 3
+        LARGE = 4
+        HUGE = 5
+        NUM_VALS = 6
+
+    # distance values in m
+    DISTANCE_MODE_VALS = [0.001, 0.01, 0.02, 0.05, 0.1, 0.5]
+    # angle value multipliers (in degrees) - multiplied by conversion
+    ROTATION_MULT_VALS = [1.0, 10.0, 30.0, 45.0, 60.0, 90.0]
+    # 1 radian
+    BASE_EDIT_ROT_AMT = np.pi / 180.0
+
+    def __init__(self):
+        # Editing
+        # Edit mode
+        self.curr_edit_mode = ObjectEditor.EditMode.MOVE
+        # Edit distance/amount
+        self.curr_edit_multiplier = ObjectEditor.DistanceMode.VERY_SMALL
+        # cache modified states of any objects moved by the interface.
+        self.modified_objects_buffer: Dict[
+            habitat_sim.physics.ManagedRigidObject, mn.Matrix4
+        ] = {}
+        self.set_edit_vals()
+
+    def set_edit_vals(self):
+        # Set current scene object edit values for translation and rotation
+        # 1 cm * multiplier
+        self.edit_translation_dist = ObjectEditor.DISTANCE_MODE_VALS[
+            self.curr_edit_multiplier.value
+        ]
+        # 1 radian * multiplier
+        self.edit_rotation_amt = (
+            ObjectEditor.BASE_EDIT_ROT_AMT
+            * ObjectEditor.ROTATION_MULT_VALS[self.curr_edit_multiplier.value]
+        )
+
+    def edit_disp_str(self):
+        """
+        Specify display quantities for editing
+        """
+
+        edit_mode_string = ObjectEditor.EDIT_MODE_NAMES[self.curr_edit_mode.value]
+
+        dist_mode_substr = (
+            f"Translation: {self.edit_translation_dist}m"
+            if self.curr_edit_mode == ObjectEditor.EditMode.MOVE
+            else f"Rotation:{ObjectEditor.ROTATION_MULT_VALS[self.curr_edit_multiplier.value]} deg "
+        )
+        edit_distance_mode_string = f"{dist_mode_substr}"
+
+        disp_str = f"""Edit Mode: {edit_mode_string}
+Edit Value: {edit_distance_mode_string}
+          """
+        return disp_str
+
+    def move_object(
+        self,
+        obj,
+        navmesh_dirty,
+        translation: Optional[mn.Vector3] = None,
+        rotation: Optional[mn.Quaternion] = None,
+    ):
+        """
+        Move the selected object with a given modification and save the resulting state to the buffer.
+        """
+        modify_buffer = translation is not None or rotation is not None
+        if obj is not None and modify_buffer:
+            orig_mt = obj.motion_type
+            obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+            if translation is not None:
+                obj.translation = obj.translation + translation
+            if rotation is not None:
+                obj.rotation = rotation * obj.rotation
+            obj.motion_type = orig_mt
+            self.modified_objects_buffer[obj] = obj.transformation
+            return True
+        return navmesh_dirty
+
+    def edit_left(self, obj, navmesh_dirty: bool):
+        # if movement mode
+        if self.curr_edit_mode == ObjectEditor.EditMode.MOVE:
+            navmesh_dirty = self.move_object(
+                obj=obj,
+                navmesh_dirty=navmesh_dirty,
+                translation=mn.Vector3.x_axis() * self.edit_translation_dist,
+            )
+        # if rotation mode : rotate around y axis
+        else:
+            navmesh_dirty = self.move_object(
+                obj=obj,
+                navmesh_dirty=navmesh_dirty,
+                rotation=mn.Quaternion.rotation(
+                    mn.Rad(self.edit_rotation_amt), mn.Vector3.y_axis()
+                ),
+            )
+        return navmesh_dirty
+
+    def edit_right(self, obj, navmesh_dirty: bool):
+        # if movement mode
+        if self.curr_edit_mode == ObjectEditor.EditMode.MOVE:
+            navmesh_dirty = self.move_object(
+                obj=obj,
+                navmesh_dirty=navmesh_dirty,
+                translation=-mn.Vector3.x_axis() * self.edit_translation_dist,
+            )
+        # if rotation mode : rotate around y axis
+        else:
+            navmesh_dirty = self.move_object(
+                obj=obj,
+                navmesh_dirty=navmesh_dirty,
+                rotation=mn.Quaternion.rotation(
+                    -mn.Rad(self.edit_rotation_amt), mn.Vector3.y_axis()
+                ),
+            )
+        return navmesh_dirty
+
+    def edit_up(self, obj, navmesh_dirty: bool, alt_pressed: bool):
+        # if movement mode
+        if self.curr_edit_mode == ObjectEditor.EditMode.MOVE:
+            if alt_pressed:
+                navmesh_dirty = self.move_object(
+                    obj=obj,
+                    navmesh_dirty=navmesh_dirty,
+                    translation=mn.Vector3.y_axis() * self.edit_translation_dist,
+                )
+            else:
+                navmesh_dirty = self.move_object(
+                    obj=obj,
+                    navmesh_dirty=navmesh_dirty,
+                    translation=mn.Vector3.z_axis() * self.edit_translation_dist,
+                )
+        # if rotation mode : rotate around x or z axis
+        else:
+            if alt_pressed:
+                # rotate around x axis
+                navmesh_dirty = self.move_object(
+                    obj=obj,
+                    navmesh_dirty=navmesh_dirty,
+                    rotation=mn.Quaternion.rotation(
+                        mn.Rad(self.edit_rotation_amt), mn.Vector3.x_axis()
+                    ),
+                )
+            else:
+                # rotate around z axis
+                navmesh_dirty = self.move_object(
+                    obj=obj,
+                    navmesh_dirty=navmesh_dirty,
+                    rotation=mn.Quaternion.rotation(
+                        mn.Rad(self.edit_rotation_amt), mn.Vector3.z_axis()
+                    ),
+                )
+
+        return navmesh_dirty
+
+    def edit_down(self, obj, navmesh_dirty: bool, alt_pressed: bool):
+        # if movement mode
+        if self.curr_edit_mode == ObjectEditor.EditMode.MOVE:
+            if alt_pressed:
+                navmesh_dirty = self.move_object(
+                    obj=obj,
+                    navmesh_dirty=navmesh_dirty,
+                    translation=-mn.Vector3.y_axis() * self.edit_translation_dist,
+                )
+            else:
+                navmesh_dirty = self.move_object(
+                    obj=obj,
+                    navmesh_dirty=navmesh_dirty,
+                    translation=-mn.Vector3.z_axis() * self.edit_translation_dist,
+                )
+        # if rotation mode : rotate around x or z axis
+        else:
+            if alt_pressed:
+                # rotate around x axis
+                navmesh_dirty = self.move_object(
+                    obj=obj,
+                    navmesh_dirty=navmesh_dirty,
+                    rotation=mn.Quaternion.rotation(
+                        -mn.Rad(self.edit_rotation_amt), mn.Vector3.x_axis()
+                    ),
+                )
+            else:
+                # rotate around z axis
+                navmesh_dirty = self.move_object(
+                    obj=obj,
+                    navmesh_dirty=navmesh_dirty,
+                    rotation=mn.Quaternion.rotation(
+                        -mn.Rad(self.edit_rotation_amt), mn.Vector3.z_axis()
+                    ),
+                )
+        return navmesh_dirty
+
+    def change_edit_mode(self, shift_pressed: bool):
+        # toggle edit mode
+        mod_val = -1 if shift_pressed else 1
+        self.curr_edit_mode = ObjectEditor.EditMode(
+            (self.curr_edit_mode.value + ObjectEditor.EditMode.NUM_VALS.value + mod_val)
+            % ObjectEditor.EditMode.NUM_VALS.value
+        )
+
+    def change_edit_vals(self, shift_pressed: bool):
+        # cycle through edit dist/amount multiplier
+        mod_val = -1 if shift_pressed else 1
+        self.curr_edit_multiplier = ObjectEditor.DistanceMode(
+            (
+                self.curr_edit_multiplier.value
+                + ObjectEditor.DistanceMode.NUM_VALS.value
+                + mod_val
+            )
+            % ObjectEditor.DistanceMode.NUM_VALS.value
+        )
+        # update the edit values
+        self.set_edit_vals()
