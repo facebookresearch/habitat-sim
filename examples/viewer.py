@@ -35,7 +35,7 @@ from habitat_sim import ReplayRenderer, ReplayRendererConfiguration, physics
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
-from habitat_sim.utils.sim_utils import MarkerSetsInfo
+from habitat_sim.utils.sim_utils import MarkerSetsInfo, ObjectEditor
 
 # add tools directory so I can import things to try them in the viewer
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../tools"))
@@ -266,6 +266,7 @@ class HabitatSimInteractiveViewer(Application):
         self.rec_color_mode = RecColorMode.FILTERING
         # map receptacle to parent objects
         self.rec_to_poh: Dict[hab_receptacle.Receptacle, str] = {}
+        self.poh_to_rec: Dict[str, List[hab_receptacle.Receptacle]] = {}
         # contains filtering metadata and classification of meshes filtered automatically and manually
         self.rec_filter_data = None
         # TODO need to determine filter path for each scene during tabbing?
@@ -298,6 +299,9 @@ class HabitatSimInteractiveViewer(Application):
         task_names_set = set()
         task_names_set.add("faucets")
         self.markersets_util = MarkerSetsInfo(self.sim, task_names_set)
+
+        # Editing
+        self.obj_editor = ObjectEditor()
 
         # sys.exit(0)
         # load appropriate filter file for scene
@@ -416,19 +420,45 @@ class HabitatSimInteractiveViewer(Application):
             return None
         closest_rec = None
         closest_rec_dist = max_dist
-        for receptacle in self.receptacles:
+        recs = (
+            self.receptacles
+            if (
+                self.selected_object is None
+                or self.selected_object.handle not in self.poh_to_rec
+            )
+            else self.poh_to_rec[self.selected_object.handle]
+        )
+        for receptacle in recs:
             g_trans = receptacle.get_global_transform(self.sim)
             # transform the query point once instead of all verts
             local_point = g_trans.inverted().transform_point(pos)
             if (g_trans.translation - pos).length() < max_dist:
                 # receptacles object transform should be close to the point
-                for vert in receptacle.mesh_data.attribute(
-                    mn.trade.MeshAttribute.POSITION
-                ):
-                    v_dist = (local_point - vert).length()
-                    if v_dist < closest_rec_dist:
-                        closest_rec_dist = v_dist
-                        closest_rec = receptacle
+                if isinstance(receptacle, hab_receptacle.TriangleMeshReceptacle):
+                    for vert in receptacle.mesh_data.attribute(
+                        mn.trade.MeshAttribute.POSITION
+                    ):
+                        v_dist = (local_point - vert).length()
+                        if v_dist < closest_rec_dist:
+                            closest_rec_dist = v_dist
+                            closest_rec = receptacle
+                else:
+                    global_keypoints = None
+                    if isinstance(receptacle, hab_receptacle.AABBReceptacle):
+                        global_keypoints = sutils.get_global_keypoints_from_bb(
+                            receptacle.bounds, g_trans
+                        )
+                    elif isinstance(receptacle, hab_receptacle.AnyObjectReceptacle):
+                        global_keypoints = sutils.get_bb_corners(
+                            receptacle._get_global_bb(self.sim)
+                        )
+
+                    for g_point in global_keypoints:
+                        v_dist = (pos - g_point).length()
+                        if v_dist < closest_rec_dist:
+                            closest_rec_dist = v_dist
+                            closest_rec = receptacle
+
         return closest_rec
 
     def compute_rec_filter_state(
@@ -460,6 +490,7 @@ class HabitatSimInteractiveViewer(Application):
                 "access_threshold": access_threshold,  # set in filter procedure
                 "stability_filtered": [],
                 "stability threshold": stab_threshold,  # set in filter procedure
+                "cook_surface": [],
                 # TODO:
                 "height_filtered": [],
                 "max_height": 0,
@@ -547,6 +578,9 @@ class HabitatSimInteractiveViewer(Application):
                     self.sim, receptacle.parent_object_handle
                 ).creation_attributes.handle
                 self.rec_to_poh[receptacle] = po_handle
+                if receptacle.parent_object_handle not in self.poh_to_rec:
+                    self.poh_to_rec[receptacle.parent_object_handle] = []
+                self.poh_to_rec[receptacle.parent_object_handle].append(receptacle)
 
     def add_col_proxy_object(
         self, obj_instance: habitat_sim.physics.ManagedRigidObject
@@ -756,7 +790,9 @@ class HabitatSimInteractiveViewer(Application):
                     ) and self.rec_color_mode == RecColorMode.FILTERING:
                         # blue indicates no filter data for the receptacle, it may be newer than the filter file.
                         rec_color = mn.Color4.blue()
-                        if rec_unique_name in self.rec_filter_data["active"]:
+                        if rec_unique_name in self.rec_filter_data["cook_surface"]:
+                            rec_color = mn.Color4(1.0, 0.66, 0.0, 1.0)  # orange again
+                        elif rec_unique_name in self.rec_filter_data["active"]:
                             rec_color = mn.Color4.green()
                         elif (
                             rec_unique_name in self.rec_filter_data["manually_filtered"]
@@ -770,8 +806,8 @@ class HabitatSimInteractiveViewer(Application):
                         ):
                             rec_color = mn.Color4.magenta()
                         elif rec_unique_name in self.rec_filter_data["height_filtered"]:
-                            # orange
-                            rec_color = mn.Color4(1.0, 0.66, 0.0, 1.0)
+                            # I changed the height filter from orange to dark purple
+                            rec_color = mn.Color4(0.5, 0, 0.5, 1.0)
                     elif (
                         self.cpo_initialized
                         and self.rec_color_mode != RecColorMode.DEFAULT
@@ -1026,7 +1062,6 @@ class HabitatSimInteractiveViewer(Application):
                     self.replay_renderer.preload_file(composite_file)
 
         self.ao_link_map = sutils.get_ao_link_id_map(self.sim)
-        # self.marker_sets = sutils.parse_scene_marker_sets(self.sim)
         self.dbv = DebugVisualizer(self.sim)
 
         Timer.start()
@@ -1271,6 +1306,12 @@ class HabitatSimInteractiveViewer(Application):
             # Cycle through scenes
             self.cycleScene(True, shift_pressed=shift_pressed)
 
+        elif key == pressed.B:
+            self.obj_editor.change_edit_vals(shift_pressed=shift_pressed)
+
+        elif key == pressed.G:
+            self.obj_editor.change_edit_mode(shift_pressed=shift_pressed)
+
         elif key == pressed.SPACE:
             if not self.sim.config.sim_cfg.enable_physics:
                 logger.warn("Warning: physics was not enabled during setup")
@@ -1332,11 +1373,8 @@ class HabitatSimInteractiveViewer(Application):
 
         elif key == pressed.M:
             if shift_pressed:
-                # save config for object handle's markersets
-                for obj_handle, is_dirty in self.marker_sets_changed.items:
-                    if is_dirty:
-                        obj = sutils.get_obj_from_handle(obj_handle)
-                        self.save_markerset_attributes(obj)
+                # Save all markersets that have been changed
+                self.markersets_util.save_all_dirty_markersets()
             else:
                 self.cycle_mouse_mode()
                 logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
@@ -1400,7 +1438,6 @@ class HabitatSimInteractiveViewer(Application):
                             obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
                             obj.translation = obj.translation - mn.Vector3(200, 0, 0)
                             obj.motion_type = habitat_sim.physics.MotionType.STATIC
-
             else:
                 if self.col_proxy_objs is None:
                     self.col_proxy_objs = []
@@ -1544,12 +1581,12 @@ class HabitatSimInteractiveViewer(Application):
                         orientation_sample="up",
                         num_objects=(1, 10),
                     )
+                    obj_samp.receptacle_instances = self.receptacles
                     rec_set_obj = hab_receptacle.ReceptacleSet(
                         "rec set", [""], [], rec_set_unique_names, []
                     )
-                    obj_count_dict = {rec.unique_name: 200 for rec in rec_set}
                     recep_tracker = hab_receptacle.ReceptacleTracker(
-                        obj_count_dict,
+                        {},
                         {"rec set": rec_set_obj},
                     )
                     new_objs = obj_samp.sample(
@@ -1578,6 +1615,20 @@ class HabitatSimInteractiveViewer(Application):
             else:
                 self.display_receptacles = not self.display_receptacles
                 print(f"self.display_receptacles = {self.display_receptacles}")
+
+        elif key == pressed.Y and self.selected_rec is not None:
+            if self.selected_rec.unique_name in self.rec_filter_data["cook_surface"]:
+                print(self.selected_rec.unique_name + " removed from 'cook_surface'")
+                self.rec_filter_data["cook_surface"].remove(
+                    self.selected_rec.unique_name
+                )
+                self.selected_rec = None
+            else:
+                print(self.selected_rec.unique_name + " added to 'cook_surface'")
+                self.rec_filter_data["cook_surface"].append(
+                    self.selected_rec.unique_name
+                )
+                self.selected_rec = None
 
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
@@ -1726,13 +1777,16 @@ class HabitatSimInteractiveViewer(Application):
             self.selected_object = None
             self.selected_rec = None
             hit_info = self.mouse_cast_results.hits[0]
-            print(f"Marker : Mouse click object : {hit_info.object_id}")
             hit_id = hit_info.object_id
             # right click in look mode to print object information
             if hit_id == habitat_sim.stage_id:
                 print("This is the stage.")
             else:
                 obj = sutils.get_obj_from_id(self.sim, hit_id)
+                link_id = None
+                if obj.object_id != hit_id:
+                    # this is a link
+                    link_id = obj.link_object_ids[hit_id]
                 self.selected_object = obj
                 print(f"Object: {obj.handle}")
                 if self.receptacles is not None:
@@ -1740,6 +1794,15 @@ class HabitatSimInteractiveViewer(Application):
                         if rec.parent_object_handle == obj.handle:
                             print(f"    - Receptacle: {rec.name}")
                 if shift_pressed:
+                    if obj.handle not in self.poh_to_rec:
+                        new_rec = hab_receptacle.AnyObjectReceptacle(
+                            obj.handle + "_aor",
+                            parent_object_handle=obj.handle,
+                            parent_link=link_id,
+                        )
+                        self.receptacles.append(new_rec)
+                        self.poh_to_rec[obj.handle] = [new_rec]
+                        self.rec_to_poh[new_rec] = obj.creation_attributes.handle
                     self.selected_rec = self.get_closest_tri_receptacle(hit_info.point)
                     if self.selected_rec is not None:
                         print(f"Selected Receptacle: {self.selected_rec.name}")
@@ -1977,6 +2040,8 @@ class HabitatSimInteractiveViewer(Application):
             mouse_mode_string = "GRAB"
         elif self.mouse_interaction == MouseMode.MARKER:
             mouse_mode_string = "MARKER"
+
+        edit_string = self.obj_editor.edit_disp_str()
         self.window_text.render(
             f"""
 {self.fps} FPS
@@ -1984,6 +2049,7 @@ Scene ID : {os.path.split(self.cfg.sim_cfg.scene_id)[1].split('.scene_instance')
 Sensor Type: {sensor_type_string}
 Sensor Subtype: {sensor_subtype_string}
 Mouse Interaction Mode: {mouse_mode_string}
+{edit_string}
 Selected MarkerSets TaskSet name : {self.markersets_util.get_current_markerset_taskname()}
 Unstable Objects: {self.num_unstable_objects} of {len(self.clutter_object_instances)}
             """

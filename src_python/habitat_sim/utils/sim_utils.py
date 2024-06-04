@@ -313,6 +313,13 @@ class MarkerSetsInfo:
                                     normal=camera_position - global_marker_pos,
                                 )
 
+    def save_all_dirty_markersets(self) -> None:
+        # save config for object handle's markersets
+        for obj_handle, is_dirty in self.marker_sets_changed.items():
+            if is_dirty:
+                obj = get_obj_from_handle(self.sim, obj_handle)
+                self.save_markerset_attributes(obj)
+
     def save_markerset_attributes(self, obj) -> None:
         """
         Modify the attributes for the passed object to include the
