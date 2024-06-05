@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 
+import os
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Union
 
@@ -620,6 +621,9 @@ class MarkerSetsInfo:
                             )
 
 
+# Class to control editing objects
+# Create an instance and then map various keyboard keys/interactive inputs to appropriate functions.
+# Be sure to always specify selected object when it changes.
 class ObjectEditor:
     # Describe edit type
     class EditMode(Enum):
@@ -709,9 +713,12 @@ Edit Value: {edit_distance_mode_string}
     ):
         """
         Move the selected object with a given modification and save the resulting state to the buffer.
+        Returns whether the navmesh should be rebuilt due to an object changing position, or previous edits.
         """
-        modify_buffer = translation is not None or rotation is not None
-        if self.sel_obj is not None and modify_buffer:
+        if self.sel_obj is None:
+            print("No object is selected so ignoring move request")
+            return navmesh_dirty
+        if translation is not None or rotation is not None:
             obj = self.sel_obj
             orig_mt = obj.motion_type
             obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
@@ -727,103 +734,65 @@ Edit Value: {edit_distance_mode_string}
     def edit_left(self, navmesh_dirty: bool):
         # if movement mode
         if self.curr_edit_mode == ObjectEditor.EditMode.MOVE:
-            navmesh_dirty = self.move_object(
+            return self.move_object(
                 navmesh_dirty=navmesh_dirty,
                 translation=mn.Vector3.x_axis() * self.edit_translation_dist,
             )
         # if rotation mode : rotate around y axis
-        else:
-            navmesh_dirty = self.move_object(
-                navmesh_dirty=navmesh_dirty,
-                rotation=mn.Quaternion.rotation(
-                    mn.Rad(self.edit_rotation_amt), mn.Vector3.y_axis()
-                ),
-            )
-        return navmesh_dirty
+        return self.move_object(
+            navmesh_dirty=navmesh_dirty,
+            rotation=mn.Quaternion.rotation(
+                mn.Rad(self.edit_rotation_amt), mn.Vector3.y_axis()
+            ),
+        )
 
     def edit_right(self, navmesh_dirty: bool):
         # if movement mode
         if self.curr_edit_mode == ObjectEditor.EditMode.MOVE:
-            navmesh_dirty = self.move_object(
+            return self.move_object(
                 navmesh_dirty=navmesh_dirty,
                 translation=-mn.Vector3.x_axis() * self.edit_translation_dist,
             )
         # if rotation mode : rotate around y axis
-        else:
-            navmesh_dirty = self.move_object(
-                navmesh_dirty=navmesh_dirty,
-                rotation=mn.Quaternion.rotation(
-                    -mn.Rad(self.edit_rotation_amt), mn.Vector3.y_axis()
-                ),
-            )
+        return self.move_object(
+            navmesh_dirty=navmesh_dirty,
+            rotation=mn.Quaternion.rotation(
+                -mn.Rad(self.edit_rotation_amt), mn.Vector3.y_axis()
+            ),
+        )
         return navmesh_dirty
 
     def edit_up(self, navmesh_dirty: bool, toggle: bool):
         # if movement mode
         if self.curr_edit_mode == ObjectEditor.EditMode.MOVE:
-            if toggle:
-                navmesh_dirty = self.move_object(
-                    navmesh_dirty=navmesh_dirty,
-                    translation=mn.Vector3.y_axis() * self.edit_translation_dist,
-                )
-            else:
-                navmesh_dirty = self.move_object(
-                    navmesh_dirty=navmesh_dirty,
-                    translation=mn.Vector3.z_axis() * self.edit_translation_dist,
-                )
-        # if rotation mode : rotate around x or z axis
-        else:
-            if toggle:
-                # rotate around x axis
-                navmesh_dirty = self.move_object(
-                    navmesh_dirty=navmesh_dirty,
-                    rotation=mn.Quaternion.rotation(
-                        mn.Rad(self.edit_rotation_amt), mn.Vector3.x_axis()
-                    ),
-                )
-            else:
-                # rotate around z axis
-                navmesh_dirty = self.move_object(
-                    navmesh_dirty=navmesh_dirty,
-                    rotation=mn.Quaternion.rotation(
-                        mn.Rad(self.edit_rotation_amt), mn.Vector3.z_axis()
-                    ),
-                )
+            trans_axis = mn.Vector3.y_axis() if toggle else mn.Vector3.z_axis()
+            return self.move_object(
+                navmesh_dirty=navmesh_dirty,
+                translation=trans_axis * self.edit_translation_dist,
+            )
 
-        return navmesh_dirty
+        # if rotation mode : rotate around x or z axis
+        rot_axis = mn.Vector3.x_axis() if toggle else mn.Vector3.z_axis()
+        return self.move_object(
+            navmesh_dirty=navmesh_dirty,
+            rotation=mn.Quaternion.rotation(mn.Rad(self.edit_rotation_amt), rot_axis),
+        )
 
     def edit_down(self, navmesh_dirty: bool, toggle: bool):
         # if movement mode
         if self.curr_edit_mode == ObjectEditor.EditMode.MOVE:
-            if toggle:
-                navmesh_dirty = self.move_object(
-                    navmesh_dirty=navmesh_dirty,
-                    translation=-mn.Vector3.y_axis() * self.edit_translation_dist,
-                )
-            else:
-                navmesh_dirty = self.move_object(
-                    navmesh_dirty=navmesh_dirty,
-                    translation=-mn.Vector3.z_axis() * self.edit_translation_dist,
-                )
+            trans_axis = -mn.Vector3.y_axis() if toggle else -mn.Vector3.z_axis()
+
+            return self.move_object(
+                navmesh_dirty=navmesh_dirty,
+                translation=trans_axis * self.edit_translation_dist,
+            )
         # if rotation mode : rotate around x or z axis
-        else:
-            if toggle:
-                # rotate around x axis
-                navmesh_dirty = self.move_object(
-                    navmesh_dirty=navmesh_dirty,
-                    rotation=mn.Quaternion.rotation(
-                        -mn.Rad(self.edit_rotation_amt), mn.Vector3.x_axis()
-                    ),
-                )
-            else:
-                # rotate around z axis
-                navmesh_dirty = self.move_object(
-                    navmesh_dirty=navmesh_dirty,
-                    rotation=mn.Quaternion.rotation(
-                        -mn.Rad(self.edit_rotation_amt), mn.Vector3.z_axis()
-                    ),
-                )
-        return navmesh_dirty
+        rot_axis = mn.Vector3.x_axis() if toggle else mn.Vector3.z_axis()
+        return self.move_object(
+            navmesh_dirty=navmesh_dirty,
+            rotation=mn.Quaternion.rotation(-mn.Rad(self.edit_rotation_amt), rot_axis),
+        )
 
     def change_edit_mode(self, toggle: bool):
         # toggle edit mode
@@ -900,3 +869,252 @@ Edit Value: {edit_distance_mode_string}
             color=mn.Color4.blue(),
             normal=mn.Vector3.z_axis(),
         )
+
+
+# Class to instantiate and maneuver spot from a viewer
+class SpotAgent:
+    from habitat.articulated_agents.robots.spot_robot import SpotRobot
+    from habitat.datasets.rearrange.navmesh_utils import get_largest_island_index
+    from omegaconf import DictConfig
+
+    SPOT_DIR = "data/robots/hab_spot_arm/urdf/hab_spot_arm.urdf"
+    if not os.path.isfile(SPOT_DIR):
+        # support other layout
+        SPOT_DIR = "data/scene_datasets/robots/hab_spot_arm/urdf/hab_spot_arm.urdf"
+
+    class ExtractedBaseVelNonCylinderAction:
+        def __init__(self, sim, spot):
+            self._sim = sim
+            self.spot = spot
+            self.base_vel_ctrl = habitat_sim.physics.VelocityControl()
+            self.base_vel_ctrl.controlling_lin_vel = True
+            self.base_vel_ctrl.lin_vel_is_local = True
+            self.base_vel_ctrl.controlling_ang_vel = True
+            self.base_vel_ctrl.ang_vel_is_local = True
+            self._allow_dyn_slide = True
+            self._allow_back = True
+            self._longitudinal_lin_speed = 10.0
+            self._lateral_lin_speed = 10.0
+            self._ang_speed = 10.0
+            self._navmesh_offset = [[0.0, 0.0], [0.25, 0.0], [-0.25, 0.0]]
+            self._enable_lateral_move = True
+            self._collision_threshold = 1e-5
+
+        def collision_check(
+            self, trans, target_trans, target_rigid_state, compute_sliding
+        ):
+            """
+            trans: the transformation of the current location of the robot
+            target_trans: the transformation of the target location of the robot given the center original Navmesh
+            target_rigid_state: the target state of the robot given the center original Navmesh
+            compute_sliding: if we want to compute sliding or not
+            """
+            # Get the offset positions
+            num_check_cylinder = len(self._navmesh_offset)
+            nav_pos_3d = [np.array([xz[0], 0.0, xz[1]]) for xz in self._navmesh_offset]
+            cur_pos = [trans.transform_point(xyz) for xyz in nav_pos_3d]
+            goal_pos = [target_trans.transform_point(xyz) for xyz in nav_pos_3d]
+
+            # For step filter of offset positions
+            end_pos = []
+            for i in range(num_check_cylinder):
+                pos = self._sim.step_filter(cur_pos[i], goal_pos[i])
+                # Sanitize the height
+                pos[1] = 0.0
+                cur_pos[i][1] = 0.0
+                goal_pos[i][1] = 0.0
+                end_pos.append(pos)
+
+            # Planar move distance clamped by NavMesh
+            move = []
+            for i in range(num_check_cylinder):
+                move.append((end_pos[i] - goal_pos[i]).length())
+
+            # For detection of linear or angualr velocities
+            # There is a collision if the difference between the clamped NavMesh position and target position is too great for any point.
+            diff = len([v for v in move if v > self._collision_threshold])
+
+            if diff > 0:
+                # Wrap the move direction if we use sliding
+                # Find the largest diff moving direction, which means that there is a collision in that cylinder
+                if compute_sliding:
+                    max_idx = np.argmax(move)
+                    move_vec = end_pos[max_idx] - cur_pos[max_idx]
+                    new_end_pos = trans.translation + move_vec
+                    return True, mn.Matrix4.from_(
+                        target_rigid_state.rotation.to_matrix(), new_end_pos
+                    )
+                return True, trans
+            else:
+                return False, target_trans
+
+        def update_base(self, if_rotation):
+            """
+            Update the base of the robot
+            if_rotation: if the robot is rotating or not
+            """
+            # Get the control frequency
+            ctrl_freq = 60
+            # Get the current transformation
+            trans = self.spot.sim_obj.transformation
+            # Get the current rigid state
+            rigid_state = habitat_sim.RigidState(
+                mn.Quaternion.from_matrix(trans.rotation()), trans.translation
+            )
+            # Integrate to get target rigid state
+            target_rigid_state = self.base_vel_ctrl.integrate_transform(
+                1 / ctrl_freq, rigid_state
+            )
+            # Get the traget transformation based on the target rigid state
+            target_trans = mn.Matrix4.from_(
+                target_rigid_state.rotation.to_matrix(),
+                target_rigid_state.translation,
+            )
+            # We do sliding only if we allow the robot to do sliding and current
+            # robot is not rotating
+            compute_sliding = self._allow_dyn_slide and not if_rotation
+            # Check if there is a collision
+            did_coll, new_target_trans = self.collision_check(
+                trans, target_trans, target_rigid_state, compute_sliding
+            )
+            # Update the base
+            self.spot.sim_obj.transformation = new_target_trans
+
+            if self.spot._base_type == "leg":
+                # Fix the leg joints
+                self.spot.leg_joint_pos = self.spot.params.leg_init_params
+
+        def step(self, forward, lateral, angular):
+            """
+            provide forward, lateral, and angular velocities as [-1,1].
+            """
+            longitudinal_lin_vel = forward
+            lateral_lin_vel = lateral
+            ang_vel = angular
+            longitudinal_lin_vel = (
+                np.clip(longitudinal_lin_vel, -1, 1) * self._longitudinal_lin_speed
+            )
+            lateral_lin_vel = np.clip(lateral_lin_vel, -1, 1) * self._lateral_lin_speed
+            ang_vel = np.clip(ang_vel, -1, 1) * self._ang_speed
+            if not self._allow_back:
+                longitudinal_lin_vel = np.maximum(longitudinal_lin_vel, 0)
+
+            self.base_vel_ctrl.linear_velocity = mn.Vector3(
+                longitudinal_lin_vel, 0, -lateral_lin_vel
+            )
+            self.base_vel_ctrl.angular_velocity = mn.Vector3(0, ang_vel, 0)
+
+            if longitudinal_lin_vel != 0.0 or lateral_lin_vel != 0.0 or ang_vel != 0.0:
+                self.update_base(ang_vel != 0.0)
+
+    def __init__(self, sim: habitat_sim.Simulator):
+        self.sim = sim
+        self.spot_forward = 0.0
+        self.spot_lateral = 0.0
+        self.spot_angular = 0.0
+        self.load()
+        self.spot_rigid_state = self.spot.sim_obj.rigid_state
+
+    def load(self):
+        # add the robot to the world via the wrapper
+        robot_path = SpotAgent.SPOT_DIR
+        agent_config = SpotAgent.DictConfig({"articulated_agent_urdf": robot_path})
+        self.spot: SpotAgent.SpotRobot = SpotAgent.SpotRobot(
+            agent_config, self.sim, fixed_base=True
+        )
+        self.spot.reconfigure()
+        self.spot.update()
+        self.spot_action: SpotAgent.ExtractedBaseVelNonCylinderAction = (
+            SpotAgent.ExtractedBaseVelNonCylinderAction(self.sim, self.spot)
+        )
+
+    def base_pos(self):
+        return self.spot.base_pos
+
+    def place_on_navmesh(self):
+        if self.sim.pathfinder.is_loaded:
+            largest_island_ix = SpotAgent.get_largest_island_index(
+                pathfinder=self.sim.pathfinder,
+                sim=self.sim,
+                allow_outdoor=False,
+            )
+            print(f"Largest indoor island index = {largest_island_ix}")
+            valid_spot_point = None
+            max_attempts = 1000
+            attempt = 0
+            while valid_spot_point is None and attempt < max_attempts:
+                spot_point = self.sim.pathfinder.get_random_navigable_point(
+                    island_index=largest_island_ix
+                )
+                if self.sim.pathfinder.distance_to_closest_obstacle(spot_point) >= 0.25:
+                    valid_spot_point = spot_point
+                attempt += 1
+            if valid_spot_point is not None:
+                self.spot.base_pos = valid_spot_point
+
+    def move_spot(
+        self,
+        move_fwd: bool,
+        move_back: bool,
+        slide_left: bool,
+        slide_right: bool,
+        turn_left: bool,
+        turn_right: bool,
+    ):
+        inc = 0.02
+        min_val = 0.1
+
+        if move_fwd and not move_back:
+            self.spot_forward = max(min_val, self.spot_forward + inc)
+        elif move_back and not move_fwd:
+            self.spot_forward = min(-min_val, self.spot_forward - inc)
+        else:
+            self.spot_forward *= 0.5
+            if abs(self.spot_forward) < min_val:
+                self.spot_forward = 0
+
+        if slide_left and not slide_right:
+            self.spot_lateral = max(min_val, self.spot_lateral + inc)
+        elif slide_right and not slide_left:
+            self.spot_lateral = min(-min_val, self.spot_lateral - inc)
+        else:
+            self.spot_lateral *= 0.5
+            if abs(self.spot_lateral) < min_val:
+                self.spot_lateral = 0
+
+        if turn_left and not turn_right:
+            self.spot_angular = max(min_val, self.spot_angular + inc)
+        elif turn_right and not turn_left:
+            self.spot_angular = min(-min_val, self.spot_angular - inc)
+        else:
+            self.spot_angular *= 0.5
+            if abs(self.spot_angular) < min_val:
+                self.spot_angular = 0
+
+        self.spot_action.step(
+            forward=self.spot_forward,
+            lateral=self.spot_lateral,
+            angular=self.spot_angular,
+        )
+
+    def save_and_remove(self):
+        """
+        Save spot's current location and remove from scene, for saving scene instance.
+        """
+        aom = self.sim.get_articulated_object_manager()
+        self.spot_rigid_state = self.spot.sim_obj.rigid_state
+        aom.remove_object_by_handle(self.spot.sim_obj.handle)
+
+    def restore_at_previous_loc(self):
+        """
+        Reload spot and restore from saved location.
+        """
+        # rebuild spot
+        self.load()
+        # put em back
+        self.spot.sim_obj.rigid_state = self.spot_rigid_state
+
+    def get_point_in_front(self, disp_in_front: mn.Vector3 = None):
+        if disp_in_front is None:
+            disp_in_front = [1.5, 0.0, 0.0]
+        return self.spot.base_transformation.transform_point(disp_in_front)
