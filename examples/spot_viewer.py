@@ -15,149 +15,16 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
-import habitat.articulated_agents.robots.spot_robot as spot_robot
 import habitat.sims.habitat_simulator.sim_utilities as sutils
 import magnum as mn
-import numpy as np
-from habitat.datasets.rearrange.navmesh_utils import get_largest_island_index
 from magnum import shaders, text
 from magnum.platform.glfw import Application
-from omegaconf import DictConfig
 
 import habitat_sim
 from habitat_sim import ReplayRenderer, ReplayRendererConfiguration
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
-from habitat_sim.utils.sim_utils import ObjectEditor
-
-SPOT_DIR = "data/robots/hab_spot_arm/urdf/hab_spot_arm.urdf"
-if not os.path.isfile(SPOT_DIR):
-    # support other layout
-    SPOT_DIR = "data/scene_datasets/robots/hab_spot_arm/urdf/hab_spot_arm.urdf"
-
-
-class ExtractedBaseVelNonCylinderAction:
-    def __init__(self, sim, spot):
-        self._sim = sim
-        self.spot = spot
-        self.base_vel_ctrl = habitat_sim.physics.VelocityControl()
-        self.base_vel_ctrl.controlling_lin_vel = True
-        self.base_vel_ctrl.lin_vel_is_local = True
-        self.base_vel_ctrl.controlling_ang_vel = True
-        self.base_vel_ctrl.ang_vel_is_local = True
-        self._allow_dyn_slide = True
-        self._allow_back = True
-        self._longitudinal_lin_speed = 10.0
-        self._lateral_lin_speed = 10.0
-        self._ang_speed = 10.0
-        self._navmesh_offset = [[0.0, 0.0], [0.25, 0.0], [-0.25, 0.0]]
-        self._enable_lateral_move = True
-        self._collision_threshold = 1e-5
-
-    def collision_check(self, trans, target_trans, target_rigid_state, compute_sliding):
-        """
-        trans: the transformation of the current location of the robot
-        target_trans: the transformation of the target location of the robot given the center original Navmesh
-        target_rigid_state: the target state of the robot given the center original Navmesh
-        compute_sliding: if we want to compute sliding or not
-        """
-        # Get the offset positions
-        num_check_cylinder = len(self._navmesh_offset)
-        nav_pos_3d = [np.array([xz[0], 0.0, xz[1]]) for xz in self._navmesh_offset]
-        cur_pos = [trans.transform_point(xyz) for xyz in nav_pos_3d]
-        goal_pos = [target_trans.transform_point(xyz) for xyz in nav_pos_3d]
-
-        # For step filter of offset positions
-        end_pos = []
-        for i in range(num_check_cylinder):
-            pos = self._sim.step_filter(cur_pos[i], goal_pos[i])
-            # Sanitize the height
-            pos[1] = 0.0
-            cur_pos[i][1] = 0.0
-            goal_pos[i][1] = 0.0
-            end_pos.append(pos)
-
-        # Planar move distance clamped by NavMesh
-        move = []
-        for i in range(num_check_cylinder):
-            move.append((end_pos[i] - goal_pos[i]).length())
-
-        # For detection of linear or angualr velocities
-        # There is a collision if the difference between the clamped NavMesh position and target position is too great for any point.
-        diff = len([v for v in move if v > self._collision_threshold])
-
-        if diff > 0:
-            # Wrap the move direction if we use sliding
-            # Find the largest diff moving direction, which means that there is a collision in that cylinder
-            if compute_sliding:
-                max_idx = np.argmax(move)
-                move_vec = end_pos[max_idx] - cur_pos[max_idx]
-                new_end_pos = trans.translation + move_vec
-                return True, mn.Matrix4.from_(
-                    target_rigid_state.rotation.to_matrix(), new_end_pos
-                )
-            return True, trans
-        else:
-            return False, target_trans
-
-    def update_base(self, if_rotation):
-        """
-        Update the base of the robot
-        if_rotation: if the robot is rotating or not
-        """
-        # Get the control frequency
-        ctrl_freq = 60
-        # Get the current transformation
-        trans = self.spot.sim_obj.transformation
-        # Get the current rigid state
-        rigid_state = habitat_sim.RigidState(
-            mn.Quaternion.from_matrix(trans.rotation()), trans.translation
-        )
-        # Integrate to get target rigid state
-        target_rigid_state = self.base_vel_ctrl.integrate_transform(
-            1 / ctrl_freq, rigid_state
-        )
-        # Get the traget transformation based on the target rigid state
-        target_trans = mn.Matrix4.from_(
-            target_rigid_state.rotation.to_matrix(),
-            target_rigid_state.translation,
-        )
-        # We do sliding only if we allow the robot to do sliding and current
-        # robot is not rotating
-        compute_sliding = self._allow_dyn_slide and not if_rotation
-        # Check if there is a collision
-        did_coll, new_target_trans = self.collision_check(
-            trans, target_trans, target_rigid_state, compute_sliding
-        )
-        # Update the base
-        self.spot.sim_obj.transformation = new_target_trans
-
-        if self.spot._base_type == "leg":
-            # Fix the leg joints
-            self.spot.leg_joint_pos = self.spot.params.leg_init_params
-
-    def step(self, forward, lateral, angular):
-        """
-        provide forward, lateral, and angular velocities as [-1,1].
-        """
-        longitudinal_lin_vel = forward
-        lateral_lin_vel = lateral
-        ang_vel = angular
-        longitudinal_lin_vel = (
-            np.clip(longitudinal_lin_vel, -1, 1) * self._longitudinal_lin_speed
-        )
-        lateral_lin_vel = np.clip(lateral_lin_vel, -1, 1) * self._lateral_lin_speed
-        ang_vel = np.clip(ang_vel, -1, 1) * self._ang_speed
-        if not self._allow_back:
-            longitudinal_lin_vel = np.maximum(longitudinal_lin_vel, 0)
-
-        self.base_vel_ctrl.linear_velocity = mn.Vector3(
-            longitudinal_lin_vel, 0, -lateral_lin_vel
-        )
-        self.base_vel_ctrl.angular_velocity = mn.Vector3(0, ang_vel, 0)
-
-        if longitudinal_lin_vel != 0.0 or lateral_lin_vel != 0.0 or ang_vel != 0.0:
-            self.update_base(ang_vel != 0.0)
+from habitat_sim.utils.sim_utils import ObjectEditor, SpotAgent
 
 
 def recompute_ao_bbs(ao: habitat_sim.physics.ManagedArticulatedObject) -> None:
@@ -305,11 +172,13 @@ class HabitatSimInteractiveViewer(Application):
         # simulating continuously.
         self.simulate_single_step = False
 
-        self.spot = None
-        self.spot_action = None
-        self.spot_forward = 0
-        self.spot_lateral = 0
-        self.spot_angular = 0
+        # configure our simulator
+        self.cfg: Optional[habitat_sim.simulator.Configuration] = None
+        self.sim: Optional[habitat_sim.simulator.Simulator] = None
+        self.tiled_sims: list[habitat_sim.simulator.Simulator] = None
+        self.replay_renderer_cfg: Optional[ReplayRendererConfiguration] = None
+        self.replay_renderer: Optional[ReplayRenderer] = None
+
         self.camera_distance = 2.0
         self.camera_angles = mn.Vector2()
 
@@ -326,19 +195,16 @@ class HabitatSimInteractiveViewer(Application):
         self.navmesh_dirty = False
         self.removed_objects_debug_frames = []
 
-        # configure our simulator
-        self.cfg: Optional[habitat_sim.simulator.Configuration] = None
-        self.sim: Optional[habitat_sim.simulator.Simulator] = None
-        self.tiled_sims: list[habitat_sim.simulator.Simulator] = None
-        self.replay_renderer_cfg: Optional[ReplayRendererConfiguration] = None
-        self.replay_renderer: Optional[ReplayRenderer] = None
         self.reconfigure_sim()
+
+        # create spot right after reconfigure
+        self.spot_agent = SpotAgent(self.sim)
 
         # compute NavMesh if not already loaded by the scene.
         if self.cfg.sim_cfg.scene_id.lower() != "none":
             self.navmesh_config_and_recompute()
 
-        self.place_spot()
+        self.spot_agent.place_on_navmesh()
 
         self.time_since_last_simulation = 0.0
         LoggingContext.reinitialize_from_env()
@@ -382,27 +248,6 @@ class HabitatSimInteractiveViewer(Application):
 
         # no hits, so outdoors
         return True
-
-    def place_spot(self):
-        if self.sim.pathfinder.is_loaded:
-            largest_island_ix = get_largest_island_index(
-                pathfinder=self.sim.pathfinder,
-                sim=self.sim,
-                allow_outdoor=False,
-            )
-            print(f"Largest indoor island index = {largest_island_ix}")
-            valid_spot_point = None
-            max_attempts = 1000
-            attempt = 0
-            while valid_spot_point is None and attempt < max_attempts:
-                spot_point = self.sim.pathfinder.get_random_navigable_point(
-                    island_index=largest_island_ix
-                )
-                if self.sim.pathfinder.distance_to_closest_obstacle(spot_point) >= 0.25:
-                    valid_spot_point = spot_point
-                attempt += 1
-            if valid_spot_point is not None:
-                self.spot.base_pos = valid_spot_point
 
     def clear_furniture_joint_states(self):
         """
@@ -529,10 +374,11 @@ class HabitatSimInteractiveViewer(Application):
         local_camera_position = y_rot.transform_vector(
             x_rot.transform_vector(local_camera_vec * self.camera_distance)
         )
-        camera_position = local_camera_position + self.spot.base_pos
+        agent_pos = self.spot_agent.base_pos()
+        camera_position = local_camera_position + agent_pos
         self.default_agent.scene_node.transformation = mn.Matrix4.look_at(
             camera_position,
-            self.spot.base_pos,
+            agent_pos,
             mn.Vector3(0, 1, 0),
         )
 
@@ -675,19 +521,8 @@ class HabitatSimInteractiveViewer(Application):
                     joint_val == 0
                 ), "If this fails, there are non-zero joint positions in the scene_instance or default pose. Export with 'i' will clear these."
 
-        self.init_spot()
-
         Timer.start()
         self.step = -1
-
-    def init_spot(self):
-        # add the robot to the world via the wrapper
-        robot_path = SPOT_DIR
-        agent_config = DictConfig({"articulated_agent_urdf": robot_path})
-        self.spot = spot_robot.SpotRobot(agent_config, self.sim, fixed_base=True)
-        self.spot.reconfigure()
-        self.spot.update()
-        self.spot_action = ExtractedBaseVelNonCylinderAction(self.sim, self.spot)
 
     def render_batch(self):
         """
@@ -717,41 +552,13 @@ class HabitatSimInteractiveViewer(Application):
 
         key = Application.KeyEvent.Key
         press: Dict[Application.KeyEvent.Key.key, bool] = self.pressed
-
-        inc = 0.02
-        min_val = 0.1
-
-        if press[key.W] and not press[key.S]:
-            self.spot_forward = max(min_val, self.spot_forward + inc)
-        elif press[key.S] and not press[key.W]:
-            self.spot_forward = min(-min_val, self.spot_forward - inc)
-        else:
-            self.spot_forward /= 2.0
-            if abs(self.spot_forward) < min_val:
-                self.spot_forward = 0
-
-        if press[key.Q] and not press[key.E]:
-            self.spot_lateral = max(min_val, self.spot_lateral + inc)
-        elif press[key.E] and not press[key.Q]:
-            self.spot_lateral = min(-min_val, self.spot_lateral - inc)
-        else:
-            self.spot_lateral /= 2.0
-            if abs(self.spot_lateral) < min_val:
-                self.spot_lateral = 0
-
-        if press[key.A] and not press[key.D]:
-            self.spot_angular = max(min_val, self.spot_angular + inc)
-        elif press[key.D] and not press[key.A]:
-            self.spot_angular = min(-min_val, self.spot_angular - inc)
-        else:
-            self.spot_angular /= 2.0
-            if abs(self.spot_angular) < min_val:
-                self.spot_angular = 0
-
-        self.spot_action.step(
-            forward=self.spot_forward,
-            lateral=self.spot_lateral,
-            angular=self.spot_angular,
+        self.spot_agent.move_spot(
+            move_fwd=press[key.W],
+            move_back=press[key.S],
+            slide_left=press[key.Q],
+            slide_right=press[key.E],
+            turn_left=press[key.A],
+            turn_right=press[key.D],
         )
 
     def invert_gravity(self) -> None:
@@ -873,9 +680,7 @@ class HabitatSimInteractiveViewer(Application):
             # print(f"Writing modified_objects_buffer to 'scene_mod_buffer.json': {self.modified_objects_buffer}")
             # with open("scene_mod_buffer.json", "w") as f:
             #    f.write(json.dumps(self.modified_objects_buffer, indent=2))
-            aom = self.sim.get_articulated_object_manager()
-            spot_loc = self.spot.sim_obj.rigid_state
-            aom.remove_object_by_handle(self.spot.sim_obj.handle)
+            self.spot_agent.save_and_remove()
 
             # clear furniture joint positions before saving
             self.clear_furniture_joint_states()
@@ -892,10 +697,8 @@ class HabitatSimInteractiveViewer(Application):
                 event.accepted = True
                 self.exit_event(Application.ExitEvent)
                 return
-            # rebuild spot
-            self.init_spot()
-            # put em back
-            self.spot.sim_obj.rigid_state = spot_loc
+            # Restore spot at previous location
+            self.spot_agent.restore_at_previous_loc()
 
         elif key == pressed.J:
             if shift_pressed and isinstance(
@@ -918,7 +721,7 @@ class HabitatSimInteractiveViewer(Application):
             # NOTE: (+SHIFT) - re-compute the NavMesh
             if alt_pressed:
                 logger.info("Command: resample agent state from navmesh")
-                self.place_spot()
+                self.spot_agent.place_on_navmesh()
             elif shift_pressed:
                 logger.info("Command: recompute navmesh")
                 self.navmesh_config_and_recompute()
@@ -935,20 +738,6 @@ class HabitatSimInteractiveViewer(Application):
 
         elif key == pressed.U:
             self.obj_editor.undo_edit()
-            # # if an object is selected, restore its last transformation state - UNDO of edits since last selected
-            # print("Undo selected")
-            # if self.selected_object is not None:
-            #     print(
-            #         f"Sel Obj : {self.selected_object.handle} : Current object transformation : \n{self.selected_object.transformation}\n Being replaced by saved transformation : \n{self.selected_object.transformation}"
-            #     )
-            #     orig_mt = self.selected_object.motion_type
-            #     self.selected_object.motion_type = (
-            #         habitat_sim.physics.MotionType.KINEMATIC
-            #     )
-            #     self.selected_object.transformation = (
-            #         self.selected_object_orig_transform
-            #     )
-            #     self.selected_object.motion_type = orig_mt
 
         elif key == pressed.V:
             # inject a new AO by handle substring in front of the agent
@@ -974,8 +763,8 @@ class HabitatSimInteractiveViewer(Application):
             ao = aom.add_articulated_object_by_template_handle(matching_ao_handle)
             if ao is not None:
                 recompute_ao_bbs(ao)
-                in_front_of_spot = self.spot.base_transformation.transform_point(
-                    [1.5, 0.0, 0.0]
+                in_front_of_spot = self.spot_agent.get_point_in_front(
+                    disp_in_front=[1.5, 0.0, 0.0]
                 )
                 ao.translation = in_front_of_spot
             else:
