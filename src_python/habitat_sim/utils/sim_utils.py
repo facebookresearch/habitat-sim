@@ -1009,13 +1009,18 @@ class SpotAgent:
 
     def __init__(self, sim: habitat_sim.Simulator):
         self.sim = sim
+
         self.spot_forward = 0.0
         self.spot_lateral = 0.0
         self.spot_angular = 0.0
-        self.load()
+        self.load_and_init()
+        # angle and azimuth of camera orientation
+        self.camera_angles = mn.Vector2()
+        self.init_spot_cam()
+
         self.spot_rigid_state = self.spot.sim_obj.rigid_state
 
-    def load(self):
+    def load_and_init(self):
         # add the robot to the world via the wrapper
         robot_path = SpotAgent.SPOT_DIR
         agent_config = SpotAgent.DictConfig({"articulated_agent_urdf": robot_path})
@@ -1026,6 +1031,59 @@ class SpotAgent:
         self.spot.update()
         self.spot_action: SpotAgent.ExtractedBaseVelNonCylinderAction = (
             SpotAgent.ExtractedBaseVelNonCylinderAction(self.sim, self.spot)
+        )
+
+    def init_spot_cam(self):
+        # Camera relative to spot
+        self.camera_distance = 2.0
+        # height above spot to target lookat
+        self.lookat_height = 0.0
+
+    def mod_spot_cam(
+        self,
+        scroll_mod_val: float = 0,
+        mse_rel_pos: List = None,
+        shift_pressed: bool = False,
+        alt_pressed: bool = False,
+    ):
+        """
+        Modify the camera agent's orientation, distance and lookat target relative to spot via UI input
+        """
+        # use shift for fine-grained zooming
+        if scroll_mod_val != 0:
+            mod_val = 0.3 if shift_pressed else 0.15
+            scroll_delta = scroll_mod_val * mod_val
+            if alt_pressed:
+                # lookat going up and down
+                self.lookat_height -= scroll_delta
+            else:
+                self.camera_distance -= scroll_delta
+        if mse_rel_pos is not None:
+            self.camera_angles[0] -= mse_rel_pos[1] * 0.01
+            self.camera_angles[1] -= mse_rel_pos[0] * 0.01
+            self.camera_angles[0] = max(-1.55, min(0.5, self.camera_angles[0]))
+            self.camera_angles[1] = np.fmod(self.camera_angles[1], np.pi * 2.0)
+
+    def set_agent_camera_transform(self, agent_node):
+        # set camera agent position relative to spot
+        x_rot = mn.Quaternion.rotation(
+            mn.Rad(self.camera_angles[0]), mn.Vector3(1, 0, 0)
+        )
+        y_rot = mn.Quaternion.rotation(
+            mn.Rad(self.camera_angles[1]), mn.Vector3(0, 1, 0)
+        )
+        local_camera_vec = mn.Vector3(0, 0, 1)
+        local_camera_position = y_rot.transform_vector(
+            x_rot.transform_vector(local_camera_vec * self.camera_distance)
+        )
+        spot_pos = self.base_pos()
+        lookat_disp = mn.Vector3(0, self.lookat_height, 0)
+        lookat_pos = spot_pos + lookat_disp
+        camera_position = local_camera_position + lookat_pos
+        agent_node.transformation = mn.Matrix4.look_at(
+            camera_position,
+            lookat_pos,
+            mn.Vector3(0, 1, 0),
         )
 
     def base_pos(self):
@@ -1110,7 +1168,7 @@ class SpotAgent:
         Reload spot and restore from saved location.
         """
         # rebuild spot
-        self.load()
+        self.load_and_init()
         # put em back
         self.spot.sim_obj.rigid_state = self.spot_rigid_state
 

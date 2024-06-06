@@ -179,9 +179,6 @@ class HabitatSimInteractiveViewer(Application):
         self.replay_renderer_cfg: Optional[ReplayRendererConfiguration] = None
         self.replay_renderer: Optional[ReplayRenderer] = None
 
-        self.camera_distance = 2.0
-        self.camera_angles = mn.Vector2()
-
         # object selection and manipulation interface
         self.selected_object = None
         self.selected_object_orig_transform = mn.Matrix4().identity_init()
@@ -324,26 +321,6 @@ class HabitatSimInteractiveViewer(Application):
             self.obj_editor.draw_selected_object(debug_line_render)
         self.draw_removed_objects_debug_frames()
 
-    def draw_camera(self):
-        # set agent position relative to spot
-        x_rot = mn.Quaternion.rotation(
-            mn.Rad(self.camera_angles[0]), mn.Vector3(1, 0, 0)
-        )
-        y_rot = mn.Quaternion.rotation(
-            mn.Rad(self.camera_angles[1]), mn.Vector3(0, 1, 0)
-        )
-        local_camera_vec = mn.Vector3(0, 0, 1)
-        local_camera_position = y_rot.transform_vector(
-            x_rot.transform_vector(local_camera_vec * self.camera_distance)
-        )
-        agent_pos = self.spot_agent.base_pos()
-        camera_position = local_camera_position + agent_pos
-        self.default_agent.scene_node.transformation = mn.Matrix4.look_at(
-            camera_position,
-            agent_pos,
-            mn.Vector3(0, 1, 0),
-        )
-
     def draw_event(
         self,
         simulation_call: Optional[Callable] = None,
@@ -382,8 +359,8 @@ class HabitatSimInteractiveViewer(Application):
             self.time_since_last_simulation = math.fmod(
                 self.time_since_last_simulation, 1.0 / self.fps
             )
-
-        self.draw_camera()
+        # move agent camera based on input relative to spot
+        self.spot_agent.set_agent_camera_transform(self.default_agent.scene_node)
 
         keys = active_agent_id_and_sensor_name
 
@@ -614,7 +591,9 @@ class HabitatSimInteractiveViewer(Application):
             event.accepted = True
             self.exit_event(Application.ExitEvent)
             return
-
+        elif key == pressed.ZERO:
+            # reset agent camera
+            self.spot_agent.init_spot_cam()
         elif key == pressed.H:
             self.print_help_text()
 
@@ -804,10 +783,15 @@ class HabitatSimInteractiveViewer(Application):
         button = Application.MouseMoveEvent.Buttons
         # if interactive mode -> LOOK MODE
         if event.buttons == button.LEFT:
-            self.camera_angles[0] -= float(event.relative_position[1]) * 0.01
-            self.camera_angles[1] -= float(event.relative_position[0]) * 0.01
-            self.camera_angles[0] = max(-1.55, min(0.5, self.camera_angles[0]))
-            self.camera_angles[1] = math.fmod(self.camera_angles[1], math.pi * 2)
+            shift_pressed = bool(
+                event.modifiers & Application.InputEvent.Modifier.SHIFT
+            )
+            alt_pressed = bool(event.modifiers & Application.InputEvent.Modifier.ALT)
+            self.spot_agent.mod_spot_cam(
+                mse_rel_pos=event.relative_position,
+                shift_pressed=shift_pressed,
+                alt_pressed=alt_pressed,
+            )
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
@@ -874,14 +858,16 @@ class HabitatSimInteractiveViewer(Application):
 
         # use shift to scale action response
         shift_pressed = bool(event.modifiers & Application.InputEvent.Modifier.SHIFT)
-        # alt_pressed = bool(event.modifiers & Application.InputEvent.Modifier.ALT)
+        alt_pressed = bool(event.modifiers & Application.InputEvent.Modifier.ALT)
         # ctrl_pressed = bool(event.modifiers & Application.InputEvent.Modifier.CTRL)
 
         # LOOK MODE
         # use shift for fine-grained zooming
-        mod_val = 0.3 if shift_pressed else 0.15
-        scroll_delta = scroll_mod_val * mod_val
-        self.camera_distance -= scroll_delta
+        self.spot_agent.mod_spot_cam(
+            scroll_mod_val=scroll_mod_val,
+            shift_pressed=shift_pressed,
+            alt_pressed=alt_pressed,
+        )
 
         self.redraw()
         event.accepted = True
@@ -986,12 +972,15 @@ In LOOK mode (default):
         Click and drag to rotate the view around Spot.
     WHEEL:
         Zoom in and out on Spot view.
+        (+ALT): Raise/Lower the camera above Spot.
 
 
 Key Commands:
 -------------
     esc:        Exit the application.
     'h':        Display this help message.
+
+    '0':        Reset the camera around Spot
 
     Spot Controls:
     'wasd':     Move Spot's body forward/backward and rotate left/right.

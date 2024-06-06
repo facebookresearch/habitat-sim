@@ -291,6 +291,7 @@ class HabitatSimInteractiveViewer(Application):
         # mouse raycast visualization
         self.mouse_cast_results = None
         self.mouse_cast_has_hits = False
+
         # last clicked or None for stage
         self.selected_object = None
         self.selected_rec = None
@@ -1941,11 +1942,18 @@ class HabitatSimInteractiveViewer(Application):
         # if interactive mode is False -> LOOK MODE
         if self.mouse_interaction == MouseMode.LOOK:
             # use shift for fine-grained zooming
-            mod_val = 1.01 if shift_pressed else 1.1
-            mod = mod_val if scroll_mod_val > 0 else 1.0 / mod_val
-            cam = self.render_camera
-            cam.zoom(mod)
-            self.redraw()
+            if alt_pressed:
+                # move camera in/out
+                mod_val = 0.3 if shift_pressed else 0.15
+                scroll_delta = scroll_mod_val * mod_val
+                self.camera_distance -= scroll_delta
+            else:
+                mod_val = 1.01 if shift_pressed else 1.1
+                mod = mod_val if scroll_mod_val > 0 else 1.0 / mod_val
+
+                cam = self.render_camera
+                cam.zoom(mod)
+            # self.redraw()
 
         elif self.mouse_interaction == MouseMode.GRAB and self.mouse_grabber:
             # adjust the depth
@@ -2044,10 +2052,28 @@ class HabitatSimInteractiveViewer(Application):
         self.navmesh_settings.agent_height = self.cfg.agents[self.agent_id].height
         self.navmesh_settings.agent_radius = self.cfg.agents[self.agent_id].radius
         self.navmesh_settings.include_static_objects = True
+
+        # first cache AO motion types and set to STATIC for navmesh
+        ao_motion_types = []
+        for ao in (
+            self.sim.get_articulated_object_manager()
+            .get_objects_by_handle_substring()
+            .values()
+        ):
+            # ignore the robot
+            if "hab_spot" not in ao.handle:
+                ao_motion_types.append((ao, ao.motion_type))
+                ao.motion_type = habitat_sim.physics.MotionType.STATIC
+
         self.sim.recompute_navmesh(
             self.sim.pathfinder,
             self.navmesh_settings,
         )
+
+        # reset AO motion types from cache
+        for ao, ao_orig_motion_type in ao_motion_types:
+            ao.motion_type = ao_orig_motion_type
+
         self.largest_island_ix = get_largest_island_index(
             pathfinder=self.sim.pathfinder,
             sim=self.sim,
