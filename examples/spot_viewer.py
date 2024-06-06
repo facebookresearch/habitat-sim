@@ -199,6 +199,8 @@ class HabitatSimInteractiveViewer(Application):
 
         # create spot right after reconfigure
         self.spot_agent = SpotAgent(self.sim)
+        # set for spot's radius
+        self.cfg.agents[self.agent_id].radius = 0.3
 
         # compute NavMesh if not already loaded by the scene.
         if self.cfg.sim_cfg.scene_id.lower() != "none":
@@ -322,6 +324,26 @@ class HabitatSimInteractiveViewer(Application):
             self.obj_editor.draw_selected_object(debug_line_render)
         self.draw_removed_objects_debug_frames()
 
+    def draw_camera(self):
+        # set agent position relative to spot
+        x_rot = mn.Quaternion.rotation(
+            mn.Rad(self.camera_angles[0]), mn.Vector3(1, 0, 0)
+        )
+        y_rot = mn.Quaternion.rotation(
+            mn.Rad(self.camera_angles[1]), mn.Vector3(0, 1, 0)
+        )
+        local_camera_vec = mn.Vector3(0, 0, 1)
+        local_camera_position = y_rot.transform_vector(
+            x_rot.transform_vector(local_camera_vec * self.camera_distance)
+        )
+        agent_pos = self.spot_agent.base_pos()
+        camera_position = local_camera_position + agent_pos
+        self.default_agent.scene_node.transformation = mn.Matrix4.look_at(
+            camera_position,
+            agent_pos,
+            mn.Vector3(0, 1, 0),
+        )
+
     def draw_event(
         self,
         simulation_call: Optional[Callable] = None,
@@ -361,26 +383,9 @@ class HabitatSimInteractiveViewer(Application):
                 self.time_since_last_simulation, 1.0 / self.fps
             )
 
-        keys = active_agent_id_and_sensor_name
+        self.draw_camera()
 
-        # set agent position relative to spot
-        x_rot = mn.Quaternion.rotation(
-            mn.Rad(self.camera_angles[0]), mn.Vector3(1, 0, 0)
-        )
-        y_rot = mn.Quaternion.rotation(
-            mn.Rad(self.camera_angles[1]), mn.Vector3(0, 1, 0)
-        )
-        local_camera_vec = mn.Vector3(0, 0, 1)
-        local_camera_position = y_rot.transform_vector(
-            x_rot.transform_vector(local_camera_vec * self.camera_distance)
-        )
-        agent_pos = self.spot_agent.base_pos()
-        camera_position = local_camera_position + agent_pos
-        self.default_agent.scene_node.transformation = mn.Matrix4.look_at(
-            camera_position,
-            agent_pos,
-            mn.Vector3(0, 1, 0),
-        )
+        keys = active_agent_id_and_sensor_name
 
         if self.enable_batch_renderer:
             self.render_batch()
@@ -905,11 +910,11 @@ class HabitatSimInteractiveViewer(Application):
         self.navmesh_settings = habitat_sim.NavMeshSettings()
         self.navmesh_settings.set_defaults()
         self.navmesh_settings.agent_height = self.cfg.agents[self.agent_id].height
-        self.navmesh_settings.agent_radius = 0.3
+        self.navmesh_settings.agent_radius = self.cfg.agents[self.agent_id].radius
         self.navmesh_settings.include_static_objects = True
 
         # first cache AO motion types and set to STATIC for navmesh
-        ao_motion_types = {}
+        ao_motion_types = []
         for ao in (
             self.sim.get_articulated_object_manager()
             .get_objects_by_handle_substring()
@@ -917,20 +922,14 @@ class HabitatSimInteractiveViewer(Application):
         ):
             # ignore the robot
             if "hab_spot" not in ao.handle:
-                ao_motion_types[ao.handle] = ao.motion_type
+                ao_motion_types.append((ao, ao.motion_type))
                 ao.motion_type = habitat_sim.physics.MotionType.STATIC
 
         self.sim.recompute_navmesh(self.sim.pathfinder, self.navmesh_settings)
 
         # reset AO motion types from cache
-        for ao in (
-            self.sim.get_articulated_object_manager()
-            .get_objects_by_handle_substring()
-            .values()
-        ):
-            # ignore the robot
-            if ao.handle in ao_motion_types:
-                ao.motion_type = ao_motion_types[ao.handle]
+        for ao, ao_orig_motion_type in ao_motion_types:
+            ao.motion_type = ao_orig_motion_type
 
     def exit_event(self, event: Application.ExitEvent):
         """
@@ -1003,14 +1002,14 @@ Key Commands:
     'g' : Change Edit mode to either Move or Rotate the selected object
     'b' (+ SHIFT) : Increment (Decrement) the current edit amounts.
         - With an object selected:
-            When Edit Mode Move Object mode is selected :
-            - 'j'/'l' : move the object along global X axis.
-            - 'i'/'k' : move the object along global Z axis.
-                (+SHIFT): move the object up/down (global Y axis)
-            When Edit Mode Rotate Object mode is selected :
-            - 'j'/'l' : rotate the object around global Y axis.
-            - 'i'/'k' : arrow keys: rotate the object around global Z axis.
-                (+SHIFT): rotate the object around global X axis.
+            When Move Object mode is selected :
+            - LEFT/RIGHT arrow keys: move the object along global X axis.
+            - UP/DOWN arrow keys: move the object along global Z axis.
+                (+ALT): move the object up/down (global Y axis)
+            When Rotate Object mode is selected :
+            - LEFT/RIGHT arrow keys: rotate the object around global Y axis.
+            - UP/DOWN arrow keys: rotate the object around global Z axis.
+                (+ALT): rotate the object around global X axis.
             - BACKSPACE: delete the selected object
             - 'c': delete the selected object and record it as clutter.
     'i': save the current, modified, scene_instance file. Also save removed_clutter.txt containing object names of all removed clutter objects.
