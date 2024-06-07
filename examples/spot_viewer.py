@@ -538,6 +538,8 @@ class HabitatSimInteractiveViewer(Application):
         self.spot_agent.move_spot(
             move_fwd=press[key.W],
             move_back=press[key.S],
+            move_up=press[key.Z],
+            move_down=press[key.X],
             slide_left=press[key.Q],
             slide_right=press[key.E],
             turn_left=press[key.A],
@@ -987,6 +989,7 @@ Key Commands:
     Spot Controls:
     'wasd':     Move Spot's body forward/backward and rotate left/right.
     'qe':       Move Spot's body in strafe left/right.
+    'zx':       Move Spot's body up and down (PROTOTYPE)
 
     '0':        Reset the camera around Spot (after raising/lowering)
     '1' :       Disengage/re-engage the navmesh constraints (no-clip toggle). When toggling back on,

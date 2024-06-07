@@ -1208,6 +1208,8 @@ class SpotAgent:
         self,
         move_fwd: bool,
         move_back: bool,
+        move_up: bool,
+        move_down: bool,
         slide_left: bool,
         slide_right: bool,
         turn_left: bool,
