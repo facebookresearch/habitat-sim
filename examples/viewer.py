@@ -903,7 +903,6 @@ class HabitatSimInteractiveViewer(Application):
                 global_call()
             if self.navmesh_dirty:
                 self.navmesh_config_and_recompute()
-                self.navmesh_dirty = False
             # reset time_since_last_simulation, accounting for potential overflow
             self.time_since_last_simulation = math.fmod(
                 self.time_since_last_simulation, 1.0 / self.fps
@@ -2079,6 +2078,8 @@ class HabitatSimInteractiveViewer(Application):
             sim=self.sim,
             allow_outdoor=False,
         )
+
+        self.navmesh_dirty = False
 
     def exit_event(self, event: Application.ExitEvent):
         """

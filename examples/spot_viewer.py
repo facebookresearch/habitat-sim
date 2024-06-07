@@ -534,6 +534,7 @@ class HabitatSimInteractiveViewer(Application):
 
         key = Application.KeyEvent.Key
         press: Dict[Application.KeyEvent.Key.key, bool] = self.pressed
+        # Set the spot up to move
         self.spot_agent.move_spot(
             move_fwd=press[key.W],
             move_back=press[key.S],
@@ -594,6 +595,9 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.ZERO:
             # reset agent camera
             self.spot_agent.init_spot_cam()
+        elif key == pressed.ONE:
+            # Toggle spot's clipping/restriction to navmesh
+            self.spot_agent.toggle_clip()
         elif key == pressed.H:
             self.print_help_text()
 
@@ -972,7 +976,7 @@ In LOOK mode (default):
         Click and drag to rotate the view around Spot.
     WHEEL:
         Zoom in and out on Spot view.
-        (+ALT): Raise/Lower the camera above Spot.
+        (+ALT): Raise/Lower the camera's target above Spot.
 
 
 Key Commands:
@@ -980,11 +984,15 @@ Key Commands:
     esc:        Exit the application.
     'h':        Display this help message.
 
-    '0':        Reset the camera around Spot
-
     Spot Controls:
     'wasd':     Move Spot's body forward/backward and rotate left/right.
     'qe':       Move Spot's body in strafe left/right.
+
+    '0':        Reset the camera around Spot (after raising/lowering)
+    '1' :       Disengage/re-engage the navmesh constraints (no-clip toggle). When toggling back on,
+                before collision/navmesh is re-engaged, the closest point to the navmesh is searched
+                for. If found, spot is snapped to it, but if not found, spot will stay in no-clip
+                mode and a message will display.
 
     Scene Object Modification UI:
     'SHIFT+right-click': Select an object to modify.

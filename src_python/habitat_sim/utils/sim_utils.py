@@ -7,7 +7,7 @@
 
 import os
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Union
 
 import magnum as mn
 import numpy as np
@@ -899,6 +899,11 @@ class SpotAgent:
             self._navmesh_offset = [[0.0, 0.0], [0.25, 0.0], [-0.25, 0.0]]
             self._enable_lateral_move = True
             self._collision_threshold = 1e-5
+            self._floor_height = 0.0
+            self._noclip = False
+            # If we just changed from noclip to clip - make sure
+            # that if spot is not on the navmesh he gets snapped to it
+            self._transition_to_clip = False
 
         def collision_check(
             self, trans, target_trans, target_rigid_state, compute_sliding
@@ -909,21 +914,59 @@ class SpotAgent:
             target_rigid_state: the target state of the robot given the center original Navmesh
             compute_sliding: if we want to compute sliding or not
             """
+
+            def step_spot(
+                num_check_cylinder: int,
+                floor_height: float,
+                pos_calc: Callable[[np.ndarray, np.ndarray], np.ndarray],
+                cur_pos: List[np.ndarray],
+                goal_pos: List[np.ndarray],
+            ):
+                end_pos = []
+                for i in range(num_check_cylinder):
+                    pos = pos_calc(cur_pos[i], goal_pos[i])
+                    # Sanitize the height
+                    pos[1] = floor_height
+                    cur_pos[i][1] = floor_height
+                    goal_pos[i][1] = floor_height
+                    end_pos.append(pos)
+                return end_pos
+
             # Get the offset positions
             num_check_cylinder = len(self._navmesh_offset)
-            nav_pos_3d = [np.array([xz[0], 0.0, xz[1]]) for xz in self._navmesh_offset]
-            cur_pos = [trans.transform_point(xyz) for xyz in nav_pos_3d]
-            goal_pos = [target_trans.transform_point(xyz) for xyz in nav_pos_3d]
+            nav_pos_3d = [
+                np.array([xz[0], self._floor_height, xz[1]])
+                for xz in self._navmesh_offset
+            ]
+            cur_pos: List[np.ndarray] = [
+                trans.transform_point(xyz) for xyz in nav_pos_3d
+            ]
+            goal_pos: List[np.ndarray] = [
+                target_trans.transform_point(xyz) for xyz in nav_pos_3d
+            ]
 
             # For step filter of offset positions
             end_pos = []
-            for i in range(num_check_cylinder):
-                pos = self._sim.step_filter(cur_pos[i], goal_pos[i])
-                # Sanitize the height
-                pos[1] = 0.0
-                cur_pos[i][1] = 0.0
-                goal_pos[i][1] = 0.0
-                end_pos.append(pos)
+
+            no_filter_step = lambda _, val: val
+            if self._noclip:
+                # ignore navmesh
+                end_pos = step_spot(
+                    num_check_cylinder=num_check_cylinder,
+                    floor_height=self._floor_height,
+                    pos_calc=no_filter_step,
+                    cur_pos=cur_pos,
+                    goal_pos=goal_pos,
+                )
+            else:
+                # constrain to navmesh
+                end_pos = step_spot(
+                    num_check_cylinder=num_check_cylinder,
+                    floor_height=self._floor_height,
+                    pos_calc=self._sim.step_filter,
+                    cur_pos=cur_pos,
+                    goal_pos=goal_pos,
+                )
 
             # Planar move distance clamped by NavMesh
             move = []
@@ -954,7 +997,7 @@ class SpotAgent:
             if_rotation: if the robot is rotating or not
             """
             # Get the control frequency
-            ctrl_freq = 60
+            inv_ctrl_freq = 1.0 / 60.0
             # Get the current transformation
             trans = self.spot.sim_obj.transformation
             # Get the current rigid state
@@ -963,7 +1006,7 @@ class SpotAgent:
             )
             # Integrate to get target rigid state
             target_rigid_state = self.base_vel_ctrl.integrate_transform(
-                1 / ctrl_freq, rigid_state
+                inv_ctrl_freq, rigid_state
             )
             # Get the traget transformation based on the target rigid state
             target_trans = mn.Matrix4.from_(
@@ -983,6 +1026,48 @@ class SpotAgent:
             if self.spot._base_type == "leg":
                 # Fix the leg joints
                 self.spot.leg_joint_pos = self.spot.params.leg_init_params
+
+        def toggle_clip(self, largest_island_ix: int):
+            """
+            Handle transition to/from no clipping/navmesh disengaged.
+            """
+            # Transitioning to clip from no clip
+            self._transition_to_clip = self._noclip
+            self._noclip = not self._noclip
+
+            spot_cur_point = self.spot.sim_obj.translation
+            if self._transition_to_clip and not self._sim.pathfinder.is_navigable(
+                spot_cur_point
+            ):
+                # Find closest point on navmesh to snap spot to
+                print(
+                    f"Trying to find closest navmesh point to spot_cur_point: {spot_cur_point}"
+                )
+                new_point = self._sim.pathfinder.snap_point(
+                    spot_cur_point, largest_island_ix
+                )
+                if not np.any(np.isnan(new_point)):
+                    print(
+                        f"Closest navmesh point to spot_cur_point: {spot_cur_point} is {new_point} on largest island {largest_island_ix}. Snapping to it."
+                    )
+                    # Move spot to this point
+                    self.spot.sim_obj.translation = new_point
+                else:
+                    # try again to any island
+                    new_point = self._sim.pathfinder.snap_point(spot_cur_point)
+                    if not np.any(np.isnan(new_point)):
+                        print(
+                            f"Closest navmesh point to spot_cur_point: {spot_cur_point} is {new_point} not on largest island. Snapping to it."
+                        )
+                        # Move spot to this point
+                        self.spot.sim_obj.translation = new_point
+                    else:
+                        print(
+                            "Unable to leave no-clip mode, too far from navmesh. Try again when closer."
+                        )
+                        self._noclip = True
+                self._transition_to_clip = False
+            return self._noclip
 
         def step(self, forward, lateral, angular):
             """
@@ -1009,7 +1094,8 @@ class SpotAgent:
 
     def __init__(self, sim: habitat_sim.Simulator):
         self.sim = sim
-
+        # changed when spot is put on navmesh
+        self.largest_island_ix = -1
         self.spot_forward = 0.0
         self.spot_lateral = 0.0
         self.spot_angular = 0.0
@@ -1091,24 +1177,32 @@ class SpotAgent:
 
     def place_on_navmesh(self):
         if self.sim.pathfinder.is_loaded:
-            largest_island_ix = SpotAgent.get_largest_island_index(
+            self.largest_island_ix = SpotAgent.get_largest_island_index(
                 pathfinder=self.sim.pathfinder,
                 sim=self.sim,
                 allow_outdoor=False,
             )
-            print(f"Largest indoor island index = {largest_island_ix}")
+            print(f"Largest indoor island index = {self.largest_island_ix}")
             valid_spot_point = None
             max_attempts = 1000
             attempt = 0
             while valid_spot_point is None and attempt < max_attempts:
                 spot_point = self.sim.pathfinder.get_random_navigable_point(
-                    island_index=largest_island_ix
+                    island_index=self.largest_island_ix
                 )
                 if self.sim.pathfinder.distance_to_closest_obstacle(spot_point) >= 0.25:
                     valid_spot_point = spot_point
                 attempt += 1
             if valid_spot_point is not None:
                 self.spot.base_pos = valid_spot_point
+            else:
+                print(
+                    f"Unable to find a valid spot for Spot on the navmesh after {max_attempts} attempts"
+                )
+
+    def toggle_clip(self):
+        # attempt to turn on or off noclip
+        self.spot_action.toggle_clip(self.largest_island_ix)
 
     def move_spot(
         self,
