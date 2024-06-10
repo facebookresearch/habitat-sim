@@ -554,29 +554,6 @@ class HabitatSimInteractiveViewer(Application):
         gravity: mn.Vector3 = self.sim.get_gravity() * -1
         self.sim.set_gravity(gravity)
 
-    def move_object(
-        self,
-        obj,
-        navmesh_dirty,
-        translation: Optional[mn.Vector3] = None,
-        rotation: Optional[mn.Quaternion] = None,
-    ):
-        """
-        Move the selected object with a given modification and save the resulting state to the buffer.
-        """
-        modify_buffer = translation is not None or rotation is not None
-        if obj is not None and modify_buffer:
-            orig_mt = obj.motion_type
-            obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
-            if translation is not None:
-                obj.translation = obj.translation + translation
-            if rotation is not None:
-                obj.rotation = rotation * obj.rotation
-            obj.motion_type = orig_mt
-            self.modified_objects_buffer[obj] = obj.transformation
-            return True
-        return navmesh_dirty
-
     def key_press_event(self, event: Application.KeyEvent) -> None:
         """
         Handles `Application.KeyEvent` on a key press by performing the corresponding functions.
