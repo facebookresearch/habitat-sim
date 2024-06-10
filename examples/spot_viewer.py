@@ -732,13 +732,19 @@ class HabitatSimInteractiveViewer(Application):
             #     print("Failed to load AO.")
 
             # press shift if we want to load if no object selected
-            new_obj = self.obj_editor(shift_pressed=shift_pressed)
+            new_obj, base_translation = self.obj_editor.build_object(
+                shift_pressed=shift_pressed
+            )
             if new_obj is not None:
-                in_front_of_spot = self.spot_agent.get_point_in_front(
-                    disp_in_front=[1.5, 0.0, 0.0]
-                )
-                new_obj.translation = in_front_of_spot
-
+                if base_translation is None:
+                    base_translation = self.spot_agent.get_point_in_front(
+                        disp_in_front=[1.5, 0.0, 0.0]
+                    )
+                else:
+                    base_translation[0] += 0.5
+                new_obj.translation = base_translation
+                self.selected_object = new_obj
+                self.obj_editor.set_sel_obj(new_obj)
             else:
                 print("Failed to add new object.")
 
@@ -815,7 +821,7 @@ class HabitatSimInteractiveViewer(Application):
                         obj_found = True
                 if obj_found:
                     print(
-                        f"Object: {self.selected_object.handle} is {type(self.selected_object)}"
+                        f"Object: {self.selected_object.handle} is {type(self.selected_object)} at {self.selected_object.translation}"
                     )
                 else:
                     print("This is the stage.")

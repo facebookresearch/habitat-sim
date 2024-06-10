@@ -806,9 +806,10 @@ Edit Value: {edit_distance_mode_string}
             link_node = ao.get_link_scene_node(link_ix)
             link_node.compute_cumulative_bb()
 
-    def duplicate_object(self, shift_pressed: bool):
-        # make a copy of the selected item at some distance away
+    def build_object(self, shift_pressed: bool):
+        # make a copy of the selected item or of a named item at some distance away
         build_ao = False
+        base_translation = None
         if self.sel_obj is not None:
             if isinstance(self.sel_obj, physics.ManagedArticulatedObject):
                 # build an ao via template
@@ -819,7 +820,9 @@ Edit Value: {edit_distance_mode_string}
                 # build a rigid via template
                 attr_mgr = self.sim.metadata_mediator.object_template_manager
                 obj_mgr = self.sim.get_rigid_object_manager()
-            obj_handle = self.sel_obj.handle
+            obj_temp_handle = self.sel_obj.creation_attributes.handle
+            base_translation = self.sel_obj.translation
+            base_motion_type = self.sel_obj.motion_type
         elif shift_pressed:
             # get user input if no object selected
             obj_substring = input(
@@ -837,29 +840,34 @@ Edit Value: {edit_distance_mode_string}
                     return None
                 attr_mgr = rotm
                 obj_mgr = self.sim.get_rigid_object_manager()
-                obj_handle = ro_handles[0]
+                obj_temp_handle = ro_handles[0]
+                base_motion_type = habitat_sim.physics.MotionType.DYNAMIC
             else:
                 # AO found
                 attr_mgr = aotm
                 obj_mgr = obj_mgr = self.sim.get_articulated_object_manager()
-                obj_handle = ao_handles[0]
+                obj_temp_handle = ao_handles[0]
                 build_ao = True
-        # Build an object using obj_handle, getting template from attr_mgr and object manager obj_mgr
-        temp = attr_mgr.get_template_by_handle(obj_handle)
+                base_motion_type = habitat_sim.physics.MotionType.STATIC
+        # Build an object using obj_temp_handle, getting template from attr_mgr and object manager obj_mgr
+        temp = attr_mgr.get_template_by_handle(obj_temp_handle)
 
         if build_ao:
             temp.base_type = "FIXED"
             attr_mgr.register_template(temp)
-            new_obj = obj_mgr.add_articulated_object_by_template_handle(obj_handle)
+            new_obj = obj_mgr.add_articulated_object_by_template_handle(obj_temp_handle)
             if new_obj is not None:
                 self.recompute_ao_bbs(new_obj)
             else:
-                print(f"Failed to load/create Articulated Object named {obj_handle}.")
+                print(
+                    f"Failed to load/create Articulated Object named {obj_temp_handle}."
+                )
         else:
-            new_obj = obj_mgr.add_object_by_template_handle(obj_handle)
+            temp.motion_type = base_motion_type
+            new_obj = obj_mgr.add_object_by_template_handle(obj_temp_handle)
             if new_obj is None:
-                print(f"Failed to load/create Rigid Object named {obj_handle}.")
-        return new_obj
+                print(f"Failed to load/create Rigid Object named {obj_temp_handle}.")
+        return new_obj, base_translation
 
     def change_edit_mode(self, toggle: bool):
         # toggle edit mode
