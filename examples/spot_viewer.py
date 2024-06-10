@@ -24,17 +24,7 @@ import habitat_sim
 from habitat_sim import ReplayRenderer, ReplayRendererConfiguration
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
-from habitat_sim.utils.sim_utils import ObjectEditor, SpotAgent
-
-
-def recompute_ao_bbs(ao: habitat_sim.physics.ManagedArticulatedObject) -> None:
-    """
-    Recomputes the link SceneNode bounding boxes for all ao links.
-    NOTE: Gets around an observed loading bug. Call before trying to peek an AO.
-    """
-    for link_ix in range(-1, ao.num_links):
-        link_node = ao.get_link_scene_node(link_ix)
-        link_node.compute_cumulative_bb()
+from habitat_sim.utils.sim_utils import ObjectEditor, SpotAgent, get_obj_from_id
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -160,9 +150,6 @@ class HabitatSimInteractiveViewer(Application):
         # variables that track app data and CPU/GPU usage
         self.num_frames_to_track = 60
 
-        # Editing
-        self.obj_editor = ObjectEditor()
-
         self.previous_mouse_point = None
 
         # toggle physics simulation on/off
@@ -193,6 +180,9 @@ class HabitatSimInteractiveViewer(Application):
         self.removed_objects_debug_frames = []
 
         self.reconfigure_sim()
+
+        # Editing
+        self.obj_editor = ObjectEditor(self.sim)
 
         # create spot right after reconfigure
         self.spot_agent = SpotAgent(self.sim)
@@ -264,7 +254,7 @@ class HabitatSimInteractiveViewer(Application):
                 j_vel = ao.joint_velocities
                 ao.joint_velocities = [0.0 for _ in range(len(j_vel))]
 
-    def draw_contact_debug(self):
+    def draw_contact_debug(self, debug_line_render: Any):
         """
         This method is called to render a debug line overlay displaying active contact points and normals.
         Yellow lines show the contact distance along the normal and red lines show the contact normal at a fixed length.
@@ -272,26 +262,26 @@ class HabitatSimInteractiveViewer(Application):
         yellow = mn.Color4.yellow()
         red = mn.Color4.red()
         cps = self.sim.get_physics_contact_points()
-        self.sim.get_debug_line_render().set_line_width(1.5)
+        debug_line_render.set_line_width(1.5)
         camera_position = self.render_camera.render_camera.node.absolute_translation
         # only showing active contacts
         active_contacts = (x for x in cps if x.is_active)
         for cp in active_contacts:
             # red shows the contact distance
-            self.sim.get_debug_line_render().draw_transformed_line(
+            debug_line_render.draw_transformed_line(
                 cp.position_on_b_in_ws,
                 cp.position_on_b_in_ws
                 + cp.contact_normal_on_b_in_ws * -cp.contact_distance,
                 red,
             )
             # yellow shows the contact normal at a fixed length for visualization
-            self.sim.get_debug_line_render().draw_transformed_line(
+            debug_line_render.draw_transformed_line(
                 cp.position_on_b_in_ws,
                 # + cp.contact_normal_on_b_in_ws * cp.contact_distance,
                 cp.position_on_b_in_ws + cp.contact_normal_on_b_in_ws * 0.1,
                 yellow,
             )
-            self.sim.get_debug_line_render().draw_circle(
+            debug_line_render.draw_circle(
                 translation=cp.position_on_b_in_ws,
                 radius=0.005,
                 color=yellow,
@@ -308,7 +298,7 @@ class HabitatSimInteractiveViewer(Application):
             proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
             self.sim.physics_debug_draw(proj_mat)
         if self.contact_debug_draw:
-            self.draw_contact_debug()
+            self.draw_contact_debug(debug_line_render)
         if self.last_hit_details is not None:
             debug_line_render.draw_circle(
                 translation=self.last_hit_details.point,
@@ -461,6 +451,10 @@ class HabitatSimInteractiveViewer(Application):
                     # we need to force a reset, so change the internal config scene name
                     self.tiled_sims[i].config.sim_cfg.scene_id = "NONE"
                 self.tiled_sims[i].reconfigure(self.cfg)
+
+        # #resave scene instance
+        # self.sim.save_current_scene_config(overwrite=True)
+        # sys. exit()
 
         # post reconfigure
         self.default_agent = self.sim.get_agent(self.agent_id)
@@ -707,35 +701,46 @@ class HabitatSimInteractiveViewer(Application):
             self.obj_editor.undo_edit()
 
         elif key == pressed.V:
-            # inject a new AO by handle substring in front of the agent
+            # # inject a new AO by handle substring in front of the agent
 
-            # get user input
-            ao_substring = input(
-                "Load ArticulatedObject. Enter an AO handle substring, first match will be added:"
-            ).strip()
+            # # get user input
+            # ao_substring = input(
+            #     "Load ArticulatedObject. Enter an AO handle substring, first match will be added:"
+            # ).strip()
 
-            aotm = self.sim.metadata_mediator.ao_template_manager
-            aom = self.sim.get_articulated_object_manager()
-            ao_handles = aotm.get_template_handles(ao_substring)
-            if len(ao_handles) == 0:
-                print(f"No AO found matching substring: '{ao_substring}'")
-                return
-            elif len(ao_handles) > 1:
-                print(f"Multiple AOs found matching substring: '{ao_substring}'.")
-            matching_ao_handle = ao_handles[0]
-            print(f"Adding AO: '{matching_ao_handle}'")
-            aot = aotm.get_template_by_handle(matching_ao_handle)
-            aot.base_type = "FIXED"
-            aotm.register_template(aot)
-            ao = aom.add_articulated_object_by_template_handle(matching_ao_handle)
-            if ao is not None:
-                recompute_ao_bbs(ao)
+            # aotm = self.sim.metadata_mediator.ao_template_manager
+            # aom = self.sim.get_articulated_object_manager()
+            # ao_handles = aotm.get_template_handles(ao_substring)
+            # if len(ao_handles) == 0:
+            #     print(f"No AO found matching substring: '{ao_substring}'")
+            #     return
+            # elif len(ao_handles) > 1:
+            #     print(f"Multiple AOs found matching substring: '{ao_substring}'.")
+            # matching_ao_handle = ao_handles[0]
+            # print(f"Adding AO: '{matching_ao_handle}'")
+            # aot = aotm.get_template_by_handle(matching_ao_handle)
+            # aot.base_type = "FIXED"
+            # aotm.register_template(aot)
+            # ao = aom.add_articulated_object_by_template_handle(matching_ao_handle)
+            # if ao is not None:
+            #     recompute_ao_bbs(ao)
+            #     in_front_of_spot = self.spot_agent.get_point_in_front(
+            #         disp_in_front=[1.5, 0.0, 0.0]
+            #     )
+            #     ao.translation = in_front_of_spot
+            # else:
+            #     print("Failed to load AO.")
+
+            # press shift if we want to load if no object selected
+            new_obj = self.obj_editor(shift_pressed=shift_pressed)
+            if new_obj is not None:
                 in_front_of_spot = self.spot_agent.get_point_in_front(
                     disp_in_front=[1.5, 0.0, 0.0]
                 )
-                ao.translation = in_front_of_spot
+                new_obj.translation = in_front_of_spot
+
             else:
-                print("Failed to load AO.")
+                print("Failed to add new object.")
 
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
@@ -803,7 +808,7 @@ class HabitatSimInteractiveViewer(Application):
                 while hit_idx < len(mouse_cast_results.hits) and not obj_found:
                     self.last_hit_details = mouse_cast_results.hits[hit_idx]
                     hit_obj_id = mouse_cast_results.hits[hit_idx].object_id
-                    self.selected_object = sutils.get_obj_from_id(self.sim, hit_obj_id)
+                    self.selected_object = get_obj_from_id(self.sim, hit_obj_id)
                     if self.selected_object is None:
                         hit_idx += 1
                     else:

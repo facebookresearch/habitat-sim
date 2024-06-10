@@ -650,7 +650,8 @@ class ObjectEditor:
     # 1 radian
     BASE_EDIT_ROT_AMT = np.pi / 180.0
 
-    def __init__(self):
+    def __init__(self, sim: habitat_sim.simulator.Simulator):
+        self.sim = sim
         self.sel_obj = None
         self.sel_obj_orig_transform = mn.Matrix4().identity_init()
         # Edit mode
@@ -794,6 +795,72 @@ Edit Value: {edit_distance_mode_string}
             rotation=mn.Quaternion.rotation(-mn.Rad(self.edit_rotation_amt), rot_axis),
         )
 
+    def recompute_ao_bbs(
+        self, ao: habitat_sim.physics.ManagedArticulatedObject
+    ) -> None:
+        """
+        Recomputes the link SceneNode bounding boxes for all ao links.
+        NOTE: Gets around an observed loading bug. Call before trying to peek an AO.
+        """
+        for link_ix in range(-1, ao.num_links):
+            link_node = ao.get_link_scene_node(link_ix)
+            link_node.compute_cumulative_bb()
+
+    def duplicate_object(self, shift_pressed: bool):
+        # make a copy of the selected item at some distance away
+        build_ao = False
+        if self.sel_obj is not None:
+            if isinstance(self.sel_obj, physics.ManagedArticulatedObject):
+                # build an ao via template
+                build_ao = True
+                attr_mgr = self.sim.metadata_mediator.ao_template_manager
+                obj_mgr = self.sim.get_articulated_object_manager()
+            else:
+                # build a rigid via template
+                attr_mgr = self.sim.metadata_mediator.object_template_manager
+                obj_mgr = self.sim.get_rigid_object_manager()
+            obj_handle = self.sel_obj.handle
+        elif shift_pressed:
+            # get user input if no object selected
+            obj_substring = input(
+                "Load Object or AO. Enter a Rigid Object or AO handle substring, first match will be added:"
+            ).strip()
+            aotm = self.sim.metadata_mediator.ao_template_manager
+            ao_handles = aotm.get_template_handles(obj_substring)
+            rotm = self.sim.metadata_mediator.object_template_manager
+            if len(ao_handles) != 1:
+                ro_handles = rotm.get_template_handles(obj_substring)
+                if len(ro_handles) != 1:
+                    print(
+                        f"No distinct Rigid or Articulated Object handle found matching substring: '{obj_substring}'"
+                    )
+                    return None
+                attr_mgr = rotm
+                obj_mgr = self.sim.get_rigid_object_manager()
+                obj_handle = ro_handles[0]
+            else:
+                # AO found
+                attr_mgr = aotm
+                obj_mgr = obj_mgr = self.sim.get_articulated_object_manager()
+                obj_handle = ao_handles[0]
+                build_ao = True
+        # Build an object using obj_handle, getting template from attr_mgr and object manager obj_mgr
+        temp = attr_mgr.get_template_by_handle(obj_handle)
+
+        if build_ao:
+            temp.base_type = "FIXED"
+            attr_mgr.register_template(temp)
+            new_obj = obj_mgr.add_articulated_object_by_template_handle(obj_handle)
+            if new_obj is not None:
+                self.recompute_ao_bbs(new_obj)
+            else:
+                print(f"Failed to load/create Articulated Object named {obj_handle}.")
+        else:
+            new_obj = obj_mgr.add_object_by_template_handle(obj_handle)
+            if new_obj is None:
+                print(f"Failed to load/create Rigid Object named {obj_handle}.")
+        return new_obj
+
     def change_edit_mode(self, toggle: bool):
         # toggle edit mode
         mod_val = -1 if toggle else 1
@@ -831,6 +898,8 @@ Edit Value: {edit_distance_mode_string}
             obj.motion_type = orig_mt
 
     def draw_selected_object(self, debug_line_render):
+        if self.sel_obj is None:
+            return
         aabb = None
         if isinstance(self.sel_obj, habitat_sim.physics.ManagedBulletRigidObject):
             aabb = self.sel_obj.collision_shape_aabb

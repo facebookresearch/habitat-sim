@@ -310,7 +310,7 @@ class HabitatSimInteractiveViewer(Application):
         self.markersets_util = MarkerSetsInfo(self.sim, task_names_set)
 
         # Editing
-        self.obj_editor = ObjectEditor()
+        self.obj_editor = ObjectEditor(self.sim)
 
         # sys.exit(0)
         # load appropriate filter file for scene
