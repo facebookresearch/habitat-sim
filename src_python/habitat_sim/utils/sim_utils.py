@@ -809,7 +809,7 @@ Edit Value: {edit_distance_mode_string}
     def build_object(self, shift_pressed: bool):
         # make a copy of the selected item or of a named item at some distance away
         build_ao = False
-        base_translation = None
+        base_transformation = None
         if self.sel_obj is not None:
             if isinstance(self.sel_obj, physics.ManagedArticulatedObject):
                 # build an ao via template
@@ -821,7 +821,7 @@ Edit Value: {edit_distance_mode_string}
                 attr_mgr = self.sim.metadata_mediator.object_template_manager
                 obj_mgr = self.sim.get_rigid_object_manager()
             obj_temp_handle = self.sel_obj.creation_attributes.handle
-            base_translation = self.sel_obj.translation
+            base_transformation = self.sel_obj.transformation
             base_motion_type = self.sel_obj.motion_type
         elif shift_pressed:
             # get user input if no object selected
@@ -863,11 +863,11 @@ Edit Value: {edit_distance_mode_string}
                     f"Failed to load/create Articulated Object named {obj_temp_handle}."
                 )
         else:
-            temp.motion_type = base_motion_type
             new_obj = obj_mgr.add_object_by_template_handle(obj_temp_handle)
             if new_obj is None:
                 print(f"Failed to load/create Rigid Object named {obj_temp_handle}.")
-        return new_obj, base_translation
+        new_obj.motion_type = base_motion_type
+        return new_obj, base_transformation
 
     def change_edit_mode(self, toggle: bool):
         # toggle edit mode

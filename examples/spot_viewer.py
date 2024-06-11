@@ -732,17 +732,18 @@ class HabitatSimInteractiveViewer(Application):
             #     print("Failed to load AO.")
 
             # press shift if we want to load if no object selected
-            new_obj, base_translation = self.obj_editor.build_object(
+            new_obj, base_transformation = self.obj_editor.build_object(
                 shift_pressed=shift_pressed
             )
             if new_obj is not None:
-                if base_translation is None:
+                if base_transformation is None:
                     base_translation = self.spot_agent.get_point_in_front(
                         disp_in_front=[1.5, 0.0, 0.0]
                     )
+                    new_obj.translation = base_translation
                 else:
-                    base_translation[0] += 0.5
-                new_obj.translation = base_translation
+                    base_transformation.translation[0] += 0.5
+                    new_obj.transformation = base_transformation
                 self.selected_object = new_obj
                 self.obj_editor.set_sel_obj(new_obj)
             else:
@@ -799,10 +800,10 @@ class HabitatSimInteractiveViewer(Application):
         button = Application.MouseEvent.Button
         physics_enabled = self.sim.get_physics_simulation_library()
         mod = Application.InputEvent.Modifier
-        shift_pressed = bool(event.modifiers & mod.SHIFT)
+        bool(event.modifiers & mod.SHIFT)
 
-        # select an object with Shift+RIGHT-click
-        if physics_enabled and event.button == button.RIGHT and shift_pressed:
+        # select an object with RIGHT-click
+        if physics_enabled and event.button == button.RIGHT:
             self.selected_object = None
             render_camera = self.render_camera.render_camera
             ray = render_camera.unproject(self.get_mouse_position(event.position))
@@ -964,6 +965,8 @@ Mouse Functions
 In LOOK mode (default):
     LEFT:
         Click and drag to rotate the view around Spot.
+    RIGHT:
+        Select an object to modify.
     WHEEL:
         Zoom in and out on Spot view.
         (+ALT): Raise/Lower the camera's target above Spot.
@@ -986,7 +989,6 @@ Key Commands:
                 mode and a message will display.
 
     Scene Object Modification UI:
-    'SHIFT+right-click': Select an object to modify.
     'g' : Change Edit mode to either Move or Rotate the selected object
     'b' (+ SHIFT) : Increment (Decrement) the current edit amounts.
         - With an object selected:
