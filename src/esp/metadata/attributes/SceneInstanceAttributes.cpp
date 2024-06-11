@@ -50,10 +50,12 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
   set("shader_type", getShaderTypeName(baseObjAttribs->getShaderType()));
   // set to match attributes setting
   set("is_instance_visible", (baseObjAttribs->getIsVisible() ? 1 : 0));
+
   // set nonuniform scale to match attributes scale
   setNonUniformScale(baseObjAttribs->getScale());
   // Prepopulate user config to match baseObjAttribs' user config.
-  overwriteWithConfig(baseObjAttribs->getUserConfiguration());
+  editUserConfiguration()->overwriteWithConfig(
+      baseObjAttribs->getUserConfiguration());
 }
 
 std::string SceneObjectInstanceAttributes::getObjectInfoHeaderInternal() const {
@@ -197,10 +199,10 @@ SceneAOInstanceAttributes::SceneAOInstanceAttributes(
   setLinkOrder(getAOLinkOrderName(aObjAttribs->getLinkOrder()));
   // Set render mode to use aObjAttribs value
   setRenderMode(getAORenderModeName(aObjAttribs->getRenderMode()));
-  // set appropriate values to match values in aObjAttribs
-  setMassScale(aObjAttribs->getMassScale());
+
   // Prepopulate user config to match attribs' user config.
-  overwriteWithConfig(aObjAttribs->getUserConfiguration());
+  editUserConfiguration()->overwriteWithConfig(
+      aObjAttribs->getUserConfiguration());
   editSubconfig<Configuration>("initial_joint_pose");
   editSubconfig<Configuration>("initial_joint_velocities");
 }
