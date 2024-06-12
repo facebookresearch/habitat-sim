@@ -1592,10 +1592,21 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
   // Set transformations. Objects that are not part of the hierarchy are
   // ignored, nodes that have no transformation entry retain an identity
   // transformation.
-  for (const Cr::Containers::Pair<unsigned, Mn::Matrix4>& transformation :
+  for (Cr::Containers::Pair<unsigned, Mn::Matrix4>& transformation :
        scene->transformations3DAsArray()) {
     if (Cr::Containers::Optional<esp::assets::MeshTransformNode>& node =
             nodes[transformation.first()]) {
+      if (transformation.second().scaling().product() == 0) {
+        ESP_ERROR() << "0 value in scaling vector for mesh transform. "
+                       "Indicates an issue with source asset. Overriding to "
+                       "small nonzero and continuing.";
+        ESP_ERROR() << transformation.second();
+        for (auto ix = 0; ix < 3; ++ix) {
+          if (transformation.second()[ix][ix] == 0) {
+            transformation.second()[ix][ix] = 1e-7;
+          }
+        }
+      }
       node->transformFromLocalToParent = transformation.second();
     }
   }
