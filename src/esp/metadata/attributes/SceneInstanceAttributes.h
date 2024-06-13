@@ -225,6 +225,24 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   void writeValuesToJson(io::JsonGenericValue& jsonObj,
                          io::JsonAllocator& allocator) const override;
 
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object.
+   */
+  std::string getObjectInfoHeader() const override {
+    return Cr::Utility::formatString("Template Name, ID, {}",
+                                     getObjectInfoHeaderInternal());
+  }
+
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   */
+  std::string getObjectInfo() const override {
+    return Cr::Utility::formatString(
+        "{},{},{}", getHandle(), getAsString("__ID"), getObjectInfoInternal());
+  }
+
  protected:
   friend class esp::metadata::managers::SceneInstanceAttributesManager;
   /**

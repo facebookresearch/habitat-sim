@@ -202,10 +202,14 @@ int PhysicsManager::addObjectAndSaveAttributes(
   }
 
   if (objInstAttributes == nullptr) {
-    // Create objInstAttributes and populate with start values from
-    objInstAttributes = resourceManager_.getSceneInstanceAttributesManager()
-                            ->createEmptyInstanceAttributes(
-                                objAttributes->getHandle(), objAttributes);
+    // Create objInstAttributes and populate with start values from config
+    // attributes.
+    // Use simplified handle to reference attributes
+    // TODO : probably need something more specific eventually
+    objInstAttributes =
+        resourceManager_.getSceneInstanceAttributesManager()
+            ->createEmptyInstanceAttributes(
+                objAttributes->getSimplifiedHandle(), objAttributes);
   }
 
   // create and add object using provided object attributes
@@ -528,10 +532,14 @@ int PhysicsManager::addArticulatedObjectAndSaveAttributes(
     return ID_UNDEFINED;
   }
   if (aObjInstAttributes == nullptr) {
+    // Create aObjInstAttributes and populate with start values from config
+    // attributes.
+    // Use simplified handle to reference attributes
+    // TODO : probably need something more specific eventually
     aObjInstAttributes =
         resourceManager_.getSceneInstanceAttributesManager()
-            ->createEmptyAOInstanceAttributes(artObjAttributes->getHandle(),
-                                              artObjAttributes);
+            ->createEmptyAOInstanceAttributes(
+                artObjAttributes->getSimplifiedHandle(), artObjAttributes);
     // TODO do we need to save this to curSceneInstanceAttributes responsible
     // for this scene?
   }
