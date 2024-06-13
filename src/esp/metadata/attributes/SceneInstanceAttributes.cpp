@@ -116,10 +116,11 @@ esp::physics::MotionType SceneObjectInstanceAttributes::getMotionType() const {
 void SceneObjectInstanceAttributes::writeValuesToJson(
     io::JsonGenericValue& jsonObj,
     io::JsonAllocator& allocator) const {
-  // map "handle" to "template_name" key in json  // This constructor is for
-  // internally generated SceneAOInstanceAttributes, to correspond to an object
-  // that is being created programmatically and saved to a scene instance.
-
+  // map "handle" to "template_name" key in json
+  writeValueToJson("handle", "template_name", jsonObj, allocator);
+  if (getTranslation() != Mn::Vector3()) {
+    writeValueToJson("translation", jsonObj, allocator);
+  }
   if (getTranslationOrigin() != SceneInstanceTranslationOrigin::Unknown) {
     writeValueToJson("translation_origin", jsonObj, allocator);
   }
