@@ -725,6 +725,7 @@ Edit Value: {edit_distance_mode_string}
             obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
             if translation is not None:
                 obj.translation = obj.translation + translation
+                print(f"Object: {obj.handle} is {type(obj)} moved to {obj.translation}")
             if rotation is not None:
                 obj.rotation = rotation * obj.rotation
             obj.motion_type = orig_mt
