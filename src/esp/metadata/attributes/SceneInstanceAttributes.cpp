@@ -45,15 +45,23 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
     const std::string& handle,
     const std::shared_ptr<AbstractObjectAttributes>& baseObjAttribs)
     : SceneObjectInstanceAttributes(handle) {
+  // This constructor is for internally generated SceneObjectInstanceAttributes,
+  // to correspond to an object that is being created programmatically and saved
+  // to a scene instance.
+  // Handle is set via init in base class, which would not be written out to
+  // file if we did not explicitly set it.
+  setHandle(handle);
   // set appropriate fields from abstract object attributes
   // Not initialize, since these are not default values
   set("shader_type", getShaderTypeName(baseObjAttribs->getShaderType()));
   // set to match attributes setting
   set("is_instance_visible", (baseObjAttribs->getIsVisible() ? 1 : 0));
+
   // set nonuniform scale to match attributes scale
   setNonUniformScale(baseObjAttribs->getScale());
   // Prepopulate user config to match baseObjAttribs' user config.
-  overwriteWithConfig(baseObjAttribs->getUserConfiguration());
+  editUserConfiguration()->overwriteWithConfig(
+      baseObjAttribs->getUserConfiguration());
 }
 
 std::string SceneObjectInstanceAttributes::getObjectInfoHeaderInternal() const {
@@ -180,9 +188,13 @@ SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
 SceneAOInstanceAttributes::SceneAOInstanceAttributes(
     const std::string& handle,
     const std::shared_ptr<ArticulatedObjectAttributes>& aObjAttribs)
-    : SceneObjectInstanceAttributes(handle, "SceneAOInstanceAttributes") {
-  // initialize default auto clamp values (only used for articulated object)
-  init("auto_clamp_joint_limits", false);
+    : SceneAOInstanceAttributes(handle) {
+  // This constructor is for internally generated SceneAOInstanceAttributes, to
+  // correspond to an object that is being created programmatically and saved to
+  // a scene instance.
+  // Handle is set via init in base class, which would not be written out to
+  // file if we did not explicitly set it.
+  setHandle(handle);
 
   // Should not initialize these values but set them, since these are not
   // default values, but from an existing AO attributes.
@@ -197,10 +209,10 @@ SceneAOInstanceAttributes::SceneAOInstanceAttributes(
   setLinkOrder(getAOLinkOrderName(aObjAttribs->getLinkOrder()));
   // Set render mode to use aObjAttribs value
   setRenderMode(getAORenderModeName(aObjAttribs->getRenderMode()));
-  // set appropriate values to match values in aObjAttribs
-  setMassScale(aObjAttribs->getMassScale());
+
   // Prepopulate user config to match attribs' user config.
-  overwriteWithConfig(aObjAttribs->getUserConfiguration());
+  editUserConfiguration()->overwriteWithConfig(
+      aObjAttribs->getUserConfiguration());
   editSubconfig<Configuration>("initial_joint_pose");
   editSubconfig<Configuration>("initial_joint_velocities");
 }
