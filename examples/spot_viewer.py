@@ -1009,14 +1009,14 @@ Key Commands:
 
     Utilities:
     'r':        Reset the simulator with the most recently loaded scene.
-    'n':        Show/hide NavMesh wireframe.
-                (+SHIFT) Recompute NavMesh with Spot settings (already done).
-                (+ALT) Re-sample Spot's position from the NavMesh.
     ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep).
     'c':        Toggle the contact point debug render overlay on/off. If toggled to true,
                 then run a discrete collision detection pass and render a debug wireframe overlay
                 showing active contact points and normals (yellow=fixed length normals, red=collision distances).
     'k'         Toggle Semantic visualization bounds (currently only Semantic Region annotations)
+    'n':        Show/hide NavMesh wireframe.
+                (+SHIFT) Recompute NavMesh with Spot settings (already done).
+                (+ALT) Re-sample Spot's position from the NavMesh.
 
 
     Object Interactions:
