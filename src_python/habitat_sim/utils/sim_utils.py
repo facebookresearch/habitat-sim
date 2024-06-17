@@ -838,7 +838,7 @@ Edit Value: {edit_distance_mode_string}
                     print(
                         f"No distinct Rigid or Articulated Object handle found matching substring: '{obj_substring}'"
                     )
-                    return None
+                    return None, None
                 attr_mgr = rotm
                 obj_mgr = self.sim.get_rigid_object_manager()
                 obj_temp_handle = ro_handles[0]
@@ -850,6 +850,12 @@ Edit Value: {edit_distance_mode_string}
                 obj_temp_handle = ao_handles[0]
                 build_ao = True
                 base_motion_type = habitat_sim.physics.MotionType.STATIC
+        else:
+            # no object selected and no name input
+            print(
+                "No object was selected to copy and shift was not pressed so no known object handle was input. Aborting"
+            )
+            return None, None
         # Build an object using obj_temp_handle, getting template from attr_mgr and object manager obj_mgr
         temp = attr_mgr.get_template_by_handle(obj_temp_handle)
 
@@ -1353,3 +1359,59 @@ class SpotAgent:
         if disp_in_front is None:
             disp_in_front = [1.5, 0.0, 0.0]
         return self.spot.base_transformation.transform_point(disp_in_front)
+
+
+# Class to manage semantic interaction and display
+class SemanticManager:
+    def __init__(self, sim: habitat_sim.simulator.Simulator):
+        self.sim = sim
+        # Descriptive strings for semantic region debug draw possible choices
+        self.semantic_region_debug_draw_choices = ["None", "Kitchen Only", "All"]
+        # draw semantic region debug visualizations if present : should be [0 : len(semantic_region_debug_draw_choices)-1]
+        self.semantic_region_debug_draw_state = 0
+        # Colors to use for each region's semantic rendering.
+        self.debug_semantic_colors: Dict[str, mn.Color4] = {}
+
+    def cycle_semantic_region_draw(self):
+        new_state_idx = (self.semantic_region_debug_draw_state + 1) % len(
+            self.semantic_region_debug_draw_choices
+        )
+        info_str = f"Change Region Draw from {self.semantic_region_debug_draw_choices[self.semantic_region_debug_draw_state]} to {self.semantic_region_debug_draw_choices[new_state_idx]}"
+
+        # Increment visualize semantic bboxes. Currently only regions supported
+        self.semantic_region_debug_draw_state = new_state_idx
+        return info_str
+
+    def draw_region_debug(self, debug_line_render: Any) -> None:
+        """
+        Draw the semantic region wireframes.
+        """
+        if self.semantic_region_debug_draw_state == 0:
+            return
+        if len(self.debug_semantic_colors) != len(self.sim.semantic_scene.regions):
+            self.debug_semantic_colors = {}
+            for region in self.sim.semantic_scene.regions:
+                self.debug_semantic_colors[region.id] = mn.Color4(
+                    mn.Vector3(np.random.random(3))
+                )
+        if self.semantic_region_debug_draw_state == 1:
+            for region in self.sim.semantic_scene.regions:
+                if "kitchen" not in region.id.lower():
+                    continue
+                color = self.debug_semantic_colors.get(region.id, mn.Color4.magenta())
+                for edge in region.volume_edges:
+                    debug_line_render.draw_transformed_line(
+                        edge[0],
+                        edge[1],
+                        color,
+                    )
+        else:
+            # Draw all
+            for region in self.sim.semantic_scene.regions:
+                color = self.debug_semantic_colors.get(region.id, mn.Color4.magenta())
+                for edge in region.volume_edges:
+                    debug_line_render.draw_transformed_line(
+                        edge[0],
+                        edge[1],
+                        color,
+                    )

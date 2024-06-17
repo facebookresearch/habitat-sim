@@ -24,7 +24,12 @@ import habitat_sim
 from habitat_sim import ReplayRenderer, ReplayRendererConfiguration
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
-from habitat_sim.utils.sim_utils import ObjectEditor, SpotAgent, get_obj_from_id
+from habitat_sim.utils.sim_utils import (
+    ObjectEditor,
+    SemanticManager,
+    SpotAgent,
+    get_obj_from_id,
+)
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -184,6 +189,9 @@ class HabitatSimInteractiveViewer(Application):
         # Editing
         self.obj_editor = ObjectEditor(self.sim)
 
+        # Semantics
+        self.dbg_semantics = SemanticManager(self.sim)
+
         # create spot right after reconfigure
         self.spot_agent = SpotAgent(self.sim)
         # set for spot's radius
@@ -299,6 +307,9 @@ class HabitatSimInteractiveViewer(Application):
             self.sim.physics_debug_draw(proj_mat)
         if self.contact_debug_draw:
             self.draw_contact_debug(debug_line_render)
+        # draw semantic information
+        self.dbg_semantics.draw_region_debug(debug_line_render=debug_line_render)
+
         if self.last_hit_details is not None:
             debug_line_render.draw_circle(
                 translation=self.last_hit_details.point,
@@ -611,9 +622,9 @@ class HabitatSimInteractiveViewer(Application):
                 self.navmesh_dirty, toggle=alt_pressed
             )
 
-        elif key == pressed.BACKSPACE or key == pressed.C:
+        elif key == pressed.BACKSPACE or key == pressed.Y:
             if self.selected_object is not None:
-                if key == pressed.C:
+                if key == pressed.Y:
                     obj_name = self.selected_object.handle.split("/")[-1].split("_:")[0]
                     self.removed_clutter.append(obj_name)
                 print(f"Removed {self.selected_object.handle}")
@@ -631,9 +642,22 @@ class HabitatSimInteractiveViewer(Application):
                 self.obj_editor.set_sel_obj(self.selected_object)
                 self.navmesh_config_and_recompute()
         elif key == pressed.B:
+            # Cycle through available edit amount values
             self.obj_editor.change_edit_vals(toggle=shift_pressed)
 
+        elif key == pressed.C:
+            # Display contacts
+            self.contact_debug_draw = not self.contact_debug_draw
+            log_str = f"Command: toggle contact debug draw: {self.contact_debug_draw}"
+            if self.contact_debug_draw:
+                # perform a discrete collision detection pass and enable contact debug drawing to visualize the results
+                # TODO: add a nice log message with concise contact pair naming.
+                log_str = f"{log_str}: performing discrete collision detection and visualize active contacts."
+                self.sim.perform_discrete_collision_detection()
+            logger.info(log_str)
+
         elif key == pressed.G:
+            # cycle through edit modes
             self.obj_editor.change_edit_mode(toggle=shift_pressed)
 
         elif key == pressed.I:
@@ -676,6 +700,11 @@ class HabitatSimInteractiveViewer(Application):
                 self.clear_furniture_joint_states()
                 self.navmesh_config_and_recompute()
 
+        elif key == pressed.K:
+            # Cyle through semantics display
+            info_str = self.dbg_semantics.cycle_semantic_region_draw()
+            logger.info(info_str)
+
         elif key == pressed.N:
             # (default) - toggle navmesh visualization
             # NOTE: (+ALT) - re-sample the agent position on the NavMesh
@@ -701,35 +730,8 @@ class HabitatSimInteractiveViewer(Application):
             self.obj_editor.undo_edit()
 
         elif key == pressed.V:
-            # # inject a new AO by handle substring in front of the agent
-
-            # # get user input
-            # ao_substring = input(
-            #     "Load ArticulatedObject. Enter an AO handle substring, first match will be added:"
-            # ).strip()
-
-            # aotm = self.sim.metadata_mediator.ao_template_manager
-            # aom = self.sim.get_articulated_object_manager()
-            # ao_handles = aotm.get_template_handles(ao_substring)
-            # if len(ao_handles) == 0:
-            #     print(f"No AO found matching substring: '{ao_substring}'")
-            #     return
-            # elif len(ao_handles) > 1:
-            #     print(f"Multiple AOs found matching substring: '{ao_substring}'.")
-            # matching_ao_handle = ao_handles[0]
-            # print(f"Adding AO: '{matching_ao_handle}'")
-            # aot = aotm.get_template_by_handle(matching_ao_handle)
-            # aot.base_type = "FIXED"
-            # aotm.register_template(aot)
-            # ao = aom.add_articulated_object_by_template_handle(matching_ao_handle)
-            # if ao is not None:
-            #     recompute_ao_bbs(ao)
-            #     in_front_of_spot = self.spot_agent.get_point_in_front(
-            #         disp_in_front=[1.5, 0.0, 0.0]
-            #     )
-            #     ao.translation = in_front_of_spot
-            # else:
-            #     print("Failed to load AO.")
+            # inject a new object by handle substring in front of the agent
+            # or else using the currently selected object
 
             # press shift if we want to load if no object selected
             new_obj, base_transformation = self.obj_editor.build_object(
@@ -991,17 +993,17 @@ Key Commands:
     Scene Object Modification UI:
     'g' : Change Edit mode to either Move or Rotate the selected object
     'b' (+ SHIFT) : Increment (Decrement) the current edit amounts.
-        - With an object selected:
-            When Move Object mode is selected :
-            - LEFT/RIGHT arrow keys: move the object along global X axis.
-            - UP/DOWN arrow keys: move the object along global Z axis.
-                (+ALT): move the object up/down (global Y axis)
-            When Rotate Object mode is selected :
-            - LEFT/RIGHT arrow keys: rotate the object around global Y axis.
-            - UP/DOWN arrow keys: rotate the object around global Z axis.
-                (+ALT): rotate the object around global X axis.
-            - BACKSPACE: delete the selected object
-            - 'c': delete the selected object and record it as clutter.
+    - With an object selected:
+        When Move Object Edit mode is selected :
+        - LEFT/RIGHT arrow keys: move the object along global X axis.
+        - UP/DOWN arrow keys: move the object along global Z axis.
+            (+ALT): move the object up/down (global Y axis)
+        When Rotate Object Edit mode is selected :
+        - LEFT/RIGHT arrow keys: rotate the object around global Y axis.
+        - UP/DOWN arrow keys: rotate the object around global Z axis.
+            (+ALT): rotate the object around global X axis.
+      - BACKSPACE: delete the selected object
+      - 'y': delete the selected object and record it as clutter.
     'i': save the current, modified, scene_instance file. Also save removed_clutter.txt containing object names of all removed clutter objects.
          - With Shift : also close the viewer.
 
@@ -1011,6 +1013,11 @@ Key Commands:
                 (+SHIFT) Recompute NavMesh with Spot settings (already done).
                 (+ALT) Re-sample Spot's position from the NavMesh.
     ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep).
+    'c':        Toggle the contact point debug render overlay on/off. If toggled to true,
+                then run a discrete collision detection pass and render a debug wireframe overlay
+                showing active contact points and normals (yellow=fixed length normals, red=collision distances).
+    'k'         Toggle Semantic visualization bounds (currently only Semantic Region annotations)
+
 
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
