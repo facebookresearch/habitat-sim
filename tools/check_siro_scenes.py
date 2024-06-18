@@ -282,7 +282,12 @@ def check_rec_accessibility(
     for o_ix, (obj, _) in enumerate(new_objs):
         obj.translation = obj_positions[o_ix]
         snap_point = unoccluded_navmesh_snap(
-            obj.translation, 1.3, sim.pathfinder, sim, obj.object_id, island_index
+            pos=obj.translation,
+            height=1.3,
+            pathfinder=sim.pathfinder,
+            sim=sim,
+            target_object_ids=[obj.object_id],
+            island_id=island_index,
         )
         # self.dbv.look_at(look_at=obj.translation, look_from=snap_point)
         # self.dbv.get_observation().show()
@@ -445,6 +450,9 @@ def run_rec_filter_analysis(
     # get the largest indoor island
     largest_island = get_largest_island_index(sim.pathfinder, sim, allow_outdoor=False)
 
+    # dbv = DebugVisualizer(sim)
+    # breakpoint()
+
     # keep manually filtered receptacles
     ignore_existing_status = []
     if keep_manual_filters:
@@ -558,6 +566,14 @@ if __name__ == "__main__":
         help="A set of strings indicating check actions to be performed on the dataset.",
         default=None,
     )
+    parser.add_argument(
+        "--scenes",
+        nargs="+",
+        type=str,
+        help="A subset of scene names to process. Limits the iteration to less than the full set of scenes.",
+        default=None,
+    )
+
     args = parser.parse_args()
 
     available_check_actions = [
@@ -600,10 +616,13 @@ if __name__ == "__main__":
     # count all region category names in all scenes
     region_counts: Dict[str, int] = defaultdict(lambda: 0)
 
-    num_scenes = len(mm.get_scene_handles())
+    target_scenes = mm.get_scene_handles()
+    if args.scenes is not None:
+        target_scenes = args.scenes
+    num_scenes = len(target_scenes)
 
     # for each scene, initialize a fresh simulator and run tests
-    for s_ix, scene_handle in enumerate(mm.get_scene_handles()):
+    for s_ix, scene_handle in enumerate(target_scenes):
         print("=================================================================")
         print(
             f"Setting up scene for {scene_handle} ({s_ix}|{num_scenes} = {s_ix/float(num_scenes)*100}%)"

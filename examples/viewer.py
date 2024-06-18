@@ -739,7 +739,10 @@ class HabitatSimInteractiveViewer(Application):
                 ) and self.rec_color_mode == RecColorMode.FILTERING:
                     # blue indicates no filter data for the receptacle, it may be newer than the filter file.
                     rec_color = mn.Color4.blue()
-                    if rec_unique_name in self.rec_filter_data["cook_surface"]:
+                    if (
+                        "cook_surface" in self.rec_filter_data
+                        and rec_unique_name in self.rec_filter_data["cook_surface"]
+                    ):
                         rec_color = mn.Color4(1.0, 0.66, 0.0, 1.0)  # orange again
                     elif rec_unique_name in self.rec_filter_data["active"]:
                         rec_color = mn.Color4.green()
@@ -1790,6 +1793,12 @@ class HabitatSimInteractiveViewer(Application):
                     link_id = obj.link_object_ids[hit_id]
                 self.selected_object = obj
                 print(f"Object: {obj.handle}")
+                if isinstance(obj, physics.ManagedArticulatedObject):
+                    print("links = ")
+                    for obj_id, link_id in obj.link_object_ids.items():
+                        print(f" {link_id} : {obj_id} : {obj.get_link_name(link_id)}")
+                        if hit_id == obj_id:
+                            print("     !^!")
                 if self.receptacles is not None:
                     for rec in self.receptacles:
                         if rec.parent_object_handle == obj.handle:
