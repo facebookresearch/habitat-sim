@@ -909,6 +909,19 @@ def test_articulated_object_add_remove():
         assert robot.is_alive
         assert robot.object_id == habitat_sim.stage_id + 1  # first robot added
 
+        # test object id to link mapping
+        link_ids = robot.get_link_ids()
+        obj_ids_to_link_ids = robot.link_object_ids
+        link_ids_to_object_ids = robot.link_ids_to_object_ids
+        assert len(obj_ids_to_link_ids) == len(link_ids_to_object_ids)
+        assert len(link_ids_to_object_ids) == robot.num_links
+        for link_id, obj_id in link_ids_to_object_ids.items():
+            assert obj_ids_to_link_ids[obj_id] == link_id
+        for obj_id, link_id in obj_ids_to_link_ids.items():
+            assert link_ids_to_object_ids[link_id] == obj_id
+        for link_id in link_ids:
+            assert link_id in link_ids_to_object_ids
+
         # add a second robot
         robot2 = art_obj_mgr.add_articulated_object_from_urdf(
             filepath=robot_file, global_scale=2.0

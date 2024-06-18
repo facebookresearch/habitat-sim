@@ -168,6 +168,7 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
        ++linkIx) {
     int linkObjectId = allocateObjectID();
     articulatedObject->objectIdToLinkId_[linkObjectId] = linkIx;
+    articulatedObject->linkIdToObjectId_[linkIx] = linkObjectId;
     collisionObjToObjIds_->emplace(
         articulatedObject->btMultiBody_->getLinkCollider(linkIx), linkObjectId);
     ArticulatedLink& linkObject = articulatedObject->getLink(linkIx);

@@ -104,6 +104,13 @@ class ManagedArticulatedObject
     return {};
   }
 
+  std::unordered_map<int, int> getLinkIdsToObjectIds() const {
+    if (auto sp = getObjectReference()) {
+      return sp->getLinkIdsToObjectIds();
+    }
+    return {};
+  }
+
   void setRootLinearVelocity(const Mn::Vector3& linVel) {
     if (auto sp = getObjectReference()) {
       sp->setRootLinearVelocity(linVel);
