@@ -471,6 +471,15 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   }
 
   /**
+   * @brief Get a map of link ids to object ids.
+   *
+   * @return A a map of link ids to Habitat object ids for this AO's links.
+   */
+  std::unordered_map<int, int> getLinkIdsToObjectIds() const {
+    return linkIdToObjectId_;
+  }
+
+  /**
    * @brief Given the list of passed points in this object's local space, return
    * those points transformed to world space.
    * @param points vector of points in object local space
@@ -934,6 +943,8 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
 
   //! map PhysicsManager objectId to local multibody linkId
   std::unordered_map<int, int> objectIdToLinkId_;
+  //! map local multibody linkId to PhysicsManager objectId
+  std::unordered_map<int, int> linkIdToObjectId_;
 
   /**
    * @brief Returns the @ref
