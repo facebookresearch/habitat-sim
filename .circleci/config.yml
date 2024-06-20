@@ -44,6 +44,7 @@ commands:
                   ninja-build \
                   xorg-dev \
                   freeglut3-dev \
+                  packaging \
                   pkg-config \
                   wget \
                   zip \
@@ -315,7 +316,7 @@ jobs:
             export PATH=$HOME/miniconda/bin:$PATH
             source ~/.bash_profile
             conda activate
-            conda install -y anaconda-client ccache cmake git ninja conda-build pip
+            conda install -y anaconda-client ccache cmake git ninja conda-build packaging pip
             echo $(which -a python)
             pip install gitpython
             cd habitat-sim
