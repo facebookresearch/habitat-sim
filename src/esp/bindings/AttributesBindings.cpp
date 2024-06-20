@@ -12,6 +12,7 @@
 #include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/metadata/attributes/LightLayoutAttributes.h"
 #include "esp/metadata/attributes/MarkerSets.h"
+#include "esp/metadata/attributes/MaterialAttributes.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
 #include "esp/metadata/attributes/PbrShaderAttributes.h"
 #include "esp/metadata/attributes/PhysicsManagerAttributes.h"
