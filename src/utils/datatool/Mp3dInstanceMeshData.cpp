@@ -25,6 +25,8 @@
 namespace esp {
 namespace assets {
 
+namespace Mn = Magnum;
+
 bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
   std::ifstream ifs(plyFile);
   if (!ifs.good()) {
@@ -84,10 +86,10 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
   perFaceIdxs_.reserve(nFace);
 
   for (int i = 0; i < nVertex; ++i) {
-    vec3f position;
-    vec3f normal;
-    vec2f texCoords;
-    vec3uc rgb;
+    Mn::Vector3 position;
+    Mn::Vector3 normal;
+    Mn::Vector2 texCoords;
+    Mn::Vector3ub rgb;
 
     ifs.read(reinterpret_cast<char*>(position.data()), 3 * sizeof(float));
     ifs.read(reinterpret_cast<char*>(normal.data()), 3 * sizeof(float));
@@ -99,7 +101,7 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
 
   for (int i = 0; i < nFace; ++i) {
     uint8_t nIndices = 0;
-    vec3ui indices;
+    Mn::Vector3ui indices;
     int32_t materialId = 0;
     int32_t segmentId = 0;
     int32_t categoryId = 0;
@@ -141,15 +143,15 @@ bool Mp3dInstanceMeshData::saveSemMeshPLY(
   f << "end_header" << std::endl;
 
   for (int iVertex = 0; iVertex < nVertex; ++iVertex) {
-    const vec3f& xyz = cpu_vbo_[iVertex].head<3>();
-    const vec3uc& rgb = cpu_cbo_[iVertex];
+    const Mn::Vector3& xyz = cpu_vbo_[iVertex];
+    const Mn::Vector3ub& rgb = cpu_cbo_[iVertex];
     f.write(reinterpret_cast<const char*>(xyz.data()), 3 * sizeof(float));
     f.write(reinterpret_cast<const char*>(rgb.data()), 3 * sizeof(uint8_t));
   }
 
   for (int iFace = 0; iFace < perFaceIdxs_.size(); ++iFace) {
     const uint8_t nIndices = 3;
-    const vec3ui& indices = perFaceIdxs_[iFace];
+    const Mn::Vector3ui& indices = perFaceIdxs_[iFace];
     // The materialId corresponds to the segmentId from the .house file
     const int32_t segmentId = materialIds_[iFace];
     int32_t objectId = ID_UNDEFINED;

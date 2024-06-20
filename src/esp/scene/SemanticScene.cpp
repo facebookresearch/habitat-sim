@@ -23,8 +23,11 @@
 namespace esp {
 namespace scene {
 
-bool SemanticScene::
-    loadSemanticSceneDescriptor(const std::shared_ptr<metadata::attributes::SemanticAttributes>& semanticAttr, SemanticScene& scene, const quatf& rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY) */) {
+bool SemanticScene::loadSemanticSceneDescriptor(
+    const std::shared_ptr<metadata::attributes::SemanticAttributes>&
+        semanticAttr,
+    SemanticScene& scene,
+    const Mn::Quaternion& rotation) {
   const std::string ssdFileName =
       semanticAttr != nullptr ? semanticAttr->getSemanticDescriptorFullPath()
                               : "";
@@ -231,7 +234,7 @@ bool SemanticRegion::contains(const Mn::Vector3& pt) const {
     return false;
   }
   // Next check bbox
-  if (!bbox_.contains(Mn::EigenIntegration::cast<vec3f>(pt))) {
+  if (!bbox_.contains(pt)) {
     return false;
   }
   // Lastly, count casts across edges.
@@ -257,8 +260,7 @@ bool SemanticRegion::contains(const Mn::Vector3& pt) const {
 }  // SemanticRegion::contains
 
 void SemanticRegion::setBBox(const Mn::Vector3& min, const Mn::Vector3& max) {
-  bbox_ = box3f(Mn::EigenIntegration::cast<vec3f>(min),
-                Mn::EigenIntegration::cast<vec3f>(max));
+  bbox_ = {min, max};
 }  // SemanticRegion::setBBox
 
 namespace {
@@ -292,8 +294,7 @@ CCSemanticObject::ptr buildCCSemanticObjForSetOfVerts(
   auto obj =
       std::make_shared<CCSemanticObject>(CCSemanticObject(colorInt, setOfIDXs));
   // set obj's bounding box
-  obj->setObb(Mn::EigenIntegration::cast<esp::vec3f>(center),
-              Mn::EigenIntegration::cast<esp::vec3f>(dims), quatf::Identity());
+  obj->setObb(center, dims, Mn::Quaternion(Mn::Math::IdentityInit));
   return obj;
 }  // buildCCSemanticObjForSetOfVerts
 
@@ -590,8 +591,7 @@ std::vector<uint32_t> SemanticScene::buildSemanticOBBs(
           ssdObj.id(), vertCounts[semanticID], center.x(), center.y(),
           center.z(), dims.x(), dims.y(), dims.z());
     }
-    ssdObj.setObb(Mn::EigenIntegration::cast<esp::vec3f>(center),
-                  Mn::EigenIntegration::cast<esp::vec3f>(dims));
+    ssdObj.setObb(center, dims);
   }
   // return listing of semantic object idxs that have no presence in the mesh
   return unMappedObjectIDXs;

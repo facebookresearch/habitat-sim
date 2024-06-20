@@ -8,7 +8,6 @@
 #include <Corrade/Utility/Algorithms.h>
 #include <Corrade/Utility/Path.h>
 #include <Magnum/DebugTools/CompareImage.h>
-#include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/PixelFormat.h>
@@ -64,6 +63,12 @@ const std::string physicsConfigFile =
     Cr::Utility::Path::join(TEST_ASSETS, "testing.physics_config.json");
 const std::string screenshotDir =
     Cr::Utility::Path::join(TEST_ASSETS, "screenshots/");
+const std::string nestedBoxPath =
+    Cr::Utility::Path::join(TEST_ASSETS, "objects/nested_box");
+
+const std::string nestedBoxConfigPath =
+    Cr::Utility::Path::join(TEST_ASSETS,
+                            "objects/nested_box.object_config.json");
 
 struct SimTest : Cr::TestSuite::Tester {
   explicit SimTest();
@@ -89,8 +94,7 @@ struct SimTest : Cr::TestSuite::Tester {
 
     auto sim = Simulator::create_unique(simConfig);
     auto objAttrMgr = sim->getObjectAttributesManager();
-    objAttrMgr->loadAllJSONConfigsFromPath(
-        Cr::Utility::Path::join(TEST_ASSETS, "objects/nested_box"), true);
+    objAttrMgr->loadAllJSONConfigsFromPath(nestedBoxPath, true);
 
     sim->setLightSetup(self.lightSetup1, "custom_lighting_1");
     sim->setLightSetup(self.lightSetup2, "custom_lighting_2");
@@ -119,8 +123,7 @@ struct SimTest : Cr::TestSuite::Tester {
     MetadataMediator::ptr MM = MetadataMediator::create(simConfig);
     auto sim = Simulator::create_unique(simConfig, MM);
     auto objAttrMgr = sim->getObjectAttributesManager();
-    objAttrMgr->loadAllJSONConfigsFromPath(
-        Cr::Utility::Path::join(TEST_ASSETS, "objects/nested_box"), true);
+    objAttrMgr->loadAllJSONConfigsFromPath(nestedBoxPath, true);
 
     sim->setLightSetup(self.lightSetup1, "custom_lighting_1");
     sim->setLightSetup(self.lightSetup2, "custom_lighting_2");
@@ -472,7 +475,7 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
   simulator->recomputeNavMesh(*simulator->getPathFinder().get(),
                               navMeshSettings);
 
-  esp::vec3f randomNavPoint =
+  Mn::Vector3 randomNavPoint =
       simulator->getPathFinder()->getRandomNavigablePoint();
   while (simulator->getPathFinder()->distanceToClosestObstacle(randomNavPoint) <
              1.0 ||
@@ -511,7 +514,7 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
   obj->setTranslation(Magnum::Vector3{randomNavPoint});
   obj->setTranslation(obj->getTranslation() + Magnum::Vector3{0, 0.5, 0});
   obj->setMotionType(esp::physics::MotionType::STATIC);
-  esp::vec3f offset(0.75, 0, 0);
+  Mn::Vector3 offset(0.75, 0, 0);
   CORRADE_VERIFY(simulator->getPathFinder()->isNavigable(randomNavPoint, 0.1));
   CORRADE_VERIFY(
       simulator->getPathFinder()->isNavigable(randomNavPoint + offset, 0.2));
@@ -655,8 +658,7 @@ void SimTest::addObjectByHandle() {
   CORRADE_COMPARE(obj, nullptr);
 
   // pass valid object_config.json filepath as handle to addObjectByHandle
-  const auto validHandle = Cr::Utility::Path::join(
-      TEST_ASSETS, "objects/nested_box.object_config.json");
+  const auto validHandle = nestedBoxConfigPath;
   obj = rigidObjMgr->addObjectByHandle(validHandle);
   CORRADE_VERIFY(obj->isAlive());
   CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
@@ -705,8 +707,7 @@ void SimTest::addObjectInvertedScale() {
   agent->setInitialState(AgentState{});
 
   // Add 2 objects and take initial non-negative scaled observation
-  const auto objHandle = Cr::Utility::Path::join(
-      TEST_ASSETS, "objects/nested_box.object_config.json");
+  const auto objHandle = nestedBoxConfigPath;
 
   Observation expectedObservation;
   addObjectsAndMakeObservation(*simulator, *pinholeCameraSpec, objHandle,
@@ -816,7 +817,7 @@ void SimTest::addSensorToObject() {
   CORRADE_VERIFY(cameraSensor.getObservation(*simulator, observation));
   CORRADE_VERIFY(cameraSensor.getObservationSpace(obsSpace));
 
-  esp::vec2i defaultResolution = {128, 128};
+  Mn::Vector2i defaultResolution = {128, 128};
   std::vector<size_t> expectedShape{{static_cast<size_t>(defaultResolution[0]),
                                      static_cast<size_t>(defaultResolution[1]),
                                      4}};
@@ -1003,15 +1004,15 @@ void SimTest::testArticulatedObjectSkinned() {
   const auto linkIds = ao->getLinkIdsWithBase();
 
   auto linkA = ao->getLink(linkIds[0]);
-  CORRADE_VERIFY(linkA->linkName == "A");
+  CORRADE_COMPARE(linkA->linkName, "A");
   auto linkB = ao->getLink(linkIds[1]);
-  CORRADE_VERIFY(linkB->linkName == "B");
+  CORRADE_COMPARE(linkB->linkName, "B");
   auto linkC = ao->getLink(linkIds[2]);
-  CORRADE_VERIFY(linkC->linkName == "C");
+  CORRADE_COMPARE(linkC->linkName, "C");
   auto linkD = ao->getLink(linkIds[3]);
-  CORRADE_VERIFY(linkD->linkName == "D");
+  CORRADE_COMPARE(linkD->linkName, "D");
   auto linkE = ao->getLink(linkIds[4]);
-  CORRADE_VERIFY(linkE->linkName == "E");
+  CORRADE_COMPARE(linkE->linkName, "E");
 
   ao->setTranslation({1.f, -3.f, -6.f});
 

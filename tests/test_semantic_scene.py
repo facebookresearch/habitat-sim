@@ -164,7 +164,7 @@ def test_semantic_scene(scene, make_cfg_settings):
     scene = sim.semantic_scene
     for obj in scene.objects:
         obj.aabb
-        obj.aabb.sizes
+        obj.aabb.size
         obj.aabb.center
         obj.id
         obj.obb.rotation
