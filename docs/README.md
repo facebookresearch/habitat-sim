@@ -1,20 +1,27 @@
 ## Building Docs Locally
 ### First Time Setup:
-Install required packages:
-```
-conda install -c conda-forge doxygen==1.8.16
-conda install jinja2 pygments docutils
+Create a new conda environment:
+
+```bash
+# We require python>=3.9 and cmake>=3.10
+conda create -n habitat python=3.9 cmake=3.14.0
+conda activate habitat
 ```
 
-To build the docs, you will also need to install the following
-packages on Linux :
+Install required packages:
 ```
-sudo apt install --allow-change-held-packages \
-                  texlive-base \
-                  texlive-latex-extra \
-                  texlive-fonts-extra \
-                  texlive-fonts-recommended
+cd habitat-sim
+pip install -r requirements.txt --progress-bar off
+pip install imageio imageio-ffmpeg
+conda install -y -c conda-forge doxygen=1.9.5
+conda install -y  jinja2 pygments docutils
 ```
+
+To build the docs, you will also need to install textlive on Fedora Linux :
+```
+sudo dnf install texlive-scheme-full
+```
+
 or on OSX :
 ```
 brew install --cask mactex
@@ -27,10 +34,14 @@ export PATH=$PATH:/Library/TeX/Distributions/.DefaultTeX/Contents/Programs/texbi
 
 ### Building Docs:
 ```bash
-python setup.py build_ext --inplace
 cd docs
 git submodule update --init
-./build.sh # or ./build-public.sh when deploying to aihabitat.org
+
+cd habitat-sim
+./build.sh
+
+cd docs
+./build.sh
 ```
 
 If you're having trouble with doxygen, check your version with
