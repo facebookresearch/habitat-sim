@@ -1,6 +1,6 @@
 ## Building Docs Locally
 ### First Time Setup:
-Create a new conda environment:
+If a conda environment for habitat does not already exist, create a new conda environment:
 
 ```bash
 # We require python>=3.9 and cmake>=3.10
