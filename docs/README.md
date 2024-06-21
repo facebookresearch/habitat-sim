@@ -17,7 +17,17 @@ conda install -y -c conda-forge doxygen=1.9.5
 conda install -y  jinja2 pygments docutils
 ```
 
-To build the docs, you will also need to install textlive on Fedora Linux :
+To build the docs, you will also need to install textlive. 
+On Ubuntu:
+```
+sudo apt install --allow-change-held-packages \
+                  texlive-base \
+                  texlive-latex-extra \
+                  texlive-fonts-extra \
+                  texlive-fonts-recommended
+```
+
+On Fedora Linux :
 ```
 sudo dnf install texlive-scheme-full
 ```
@@ -33,6 +43,15 @@ export PATH=$PATH:/Library/TeX/Distributions/.DefaultTeX/Contents/Programs/texbi
 ```
 
 ### Building Docs:
+For Ubuntu:
+```bash
+python setup.py build_ext --inplace
+cd docs
+git submodule update --init
+./build.sh # or ./build-public.sh when deploying to aihabitat.org
+```
+
+For Fedora:
 ```bash
 cd docs
 git submodule update --init
