@@ -7,5 +7,6 @@ numba
 numpy==1.26.4
 numpy-quaternion
 pillow
+pybind11-stubgen
 scipy>=1.10.1
 tqdm
