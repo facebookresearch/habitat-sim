@@ -674,9 +674,10 @@ class HabitatSimInteractiveViewer(Application):
             print("Saved modified scene instance JSON to original location.")
             # de-duplicate and save clutter list
             self.removed_clutter = list(dict.fromkeys(self.removed_clutter))
-            with open("removed_clutter.txt", "a") as f:
-                for obj_name in self.removed_clutter:
-                    f.write(obj_name + "\n")
+            if len(self.removed_clutter) > 0:
+                with open("removed_clutter.txt", "a") as f:
+                    for obj_name in self.removed_clutter:
+                        f.write(obj_name + "\n")
             # only exit if shift pressed
             if shift_pressed:
                 event.accepted = True
