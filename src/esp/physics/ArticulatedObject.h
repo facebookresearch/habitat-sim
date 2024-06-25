@@ -263,6 +263,9 @@ class ArticulatedLink : public RigidBase {
   std::string linkName = "";
   std::string linkJointName = "";
 
+  /** @brief Return whether or not this object is articulated. */
+  bool isArticulated() const override { return true; }
+
  private:
   /**
    * @brief Finalize the initialization of this link.
@@ -956,7 +959,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   std::shared_ptr<const metadata::attributes::SceneAOInstanceAttributes>
   getInitObjectInstanceAttr() const {
     return PhysicsObjectBase::getInitObjectInstanceAttrInternal<
-        const metadata::attributes::SceneAOInstanceAttributes>();
+        metadata::attributes::SceneAOInstanceAttributes>();
   }
 
   /**
@@ -991,7 +994,10 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   getInitializationAttributes() const {
     return PhysicsObjectBase::getInitializationAttributes<
         metadata::attributes::ArticulatedObjectAttributes>();
-  };
+  }
+
+  /** @brief Return whether or not this object is articulated. */
+  bool isArticulated() const override { return true; }
 
  protected:
   /**

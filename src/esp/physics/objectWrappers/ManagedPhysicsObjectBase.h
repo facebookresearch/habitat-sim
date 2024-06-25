@@ -346,6 +346,14 @@ class AbstractManagedPhysicsObject
            getPhyObjInfoHeaderInternal();
   }
 
+  /** @brief Return whether or not this object is articulated. */
+  bool isArticulated() const {
+    if (auto sp = this->getObjectReference()) {
+      return sp->isArticulated();
+    }
+    return false;
+  }
+
   /**
    * @brief Retrieve a comma-separated informational string about the contents
    * of this managed object.
