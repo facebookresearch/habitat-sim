@@ -734,18 +734,15 @@ class HabitatSimInteractiveViewer(Application):
             # or else using the currently selected object
 
             # press shift if we want to load if no object selected
-            new_obj, base_transformation = self.obj_editor.build_object(
-                shift_pressed=shift_pressed
+            new_obj, self.navmesh_dirty = self.obj_editor.build_object(
+                self.navmesh_dirty,
+                shift_pressed=shift_pressed,
+                build_loc=self.spot_agent.get_point_in_front(
+                    disp_in_front=[1.5, 0.0, 0.0]
+                ),
             )
             if new_obj is not None:
-                if base_transformation is None:
-                    base_translation = self.spot_agent.get_point_in_front(
-                        disp_in_front=[1.5, 0.0, 0.0]
-                    )
-                    new_obj.translation = base_translation
-                else:
-                    base_transformation.translation[0] += 0.5
-                    new_obj.transformation = base_transformation
+                print(f"New object translation : {new_obj.translation}")
                 self.selected_object = new_obj
                 self.obj_editor.set_sel_obj(new_obj)
             else:

@@ -807,11 +807,14 @@ Edit Value: {edit_distance_mode_string}
             link_node = ao.get_link_scene_node(link_ix)
             link_node.compute_cumulative_bb()
 
-    def build_object(self, shift_pressed: bool):
+    def build_object(
+        self, navmesh_dirty: bool, shift_pressed: bool, build_loc: mn.Vector3
+    ):
         # make a copy of the selected item or of a named item at some distance away
         build_ao = False
-        base_transformation = None
+        base_translation = build_loc
         if self.sel_obj is not None:
+            # if selected, build object at location of new
             if isinstance(self.sel_obj, physics.ManagedArticulatedObject):
                 # build an ao via template
                 build_ao = True
@@ -822,7 +825,8 @@ Edit Value: {edit_distance_mode_string}
                 attr_mgr = self.sim.metadata_mediator.object_template_manager
                 obj_mgr = self.sim.get_rigid_object_manager()
             obj_temp_handle = self.sel_obj.creation_attributes.handle
-            base_transformation = self.sel_obj.transformation
+            # set new object location to be above location of selected object
+            base_translation = self.sel_obj.translation + mn.Vector3(0.0, 1.0, 0.0)
             base_motion_type = self.sel_obj.motion_type
         elif shift_pressed:
             # get user input if no object selected
@@ -838,7 +842,7 @@ Edit Value: {edit_distance_mode_string}
                     print(
                         f"No distinct Rigid or Articulated Object handle found matching substring: '{obj_substring}'"
                     )
-                    return None, None
+                    return None, navmesh_dirty
                 attr_mgr = rotm
                 obj_mgr = self.sim.get_rigid_object_manager()
                 obj_temp_handle = ro_handles[0]
@@ -855,7 +859,7 @@ Edit Value: {edit_distance_mode_string}
             print(
                 "No object was selected to copy and shift was not pressed so no known object handle was input. Aborting"
             )
-            return None, None
+            return None, navmesh_dirty
         # Build an object using obj_temp_handle, getting template from attr_mgr and object manager obj_mgr
         temp = attr_mgr.get_template_by_handle(obj_temp_handle)
 
@@ -874,7 +878,12 @@ Edit Value: {edit_distance_mode_string}
             if new_obj is None:
                 print(f"Failed to load/create Rigid Object named {obj_temp_handle}.")
         new_obj.motion_type = base_motion_type
-        return new_obj, base_transformation
+        self.set_sel_obj(new_obj)
+        # move new object to location
+        navmesh_dirty = self.move_object(
+            navmesh_dirty=navmesh_dirty, translation=base_translation
+        )
+        return new_obj, navmesh_dirty
 
     def change_edit_mode(self, toggle: bool):
         # toggle edit mode
