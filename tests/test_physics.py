@@ -60,6 +60,8 @@ def test_kinematics():
         # get handle for object 0, used to test
         obj_handle_list = obj_template_mgr.get_template_handles("cheezit")
         cheezit_box = rigid_obj_mgr.add_object_by_template_handle(obj_handle_list[0])
+        # Verify is not articulated
+        assert not cheezit_box.is_articulated
         assert rigid_obj_mgr.get_num_objects() > 0
         assert (
             len(rigid_obj_mgr.get_object_handles()) == rigid_obj_mgr.get_num_objects()
@@ -174,6 +176,8 @@ def test_kinematics_no_physics():
         # get handle for object 0, used to test
         obj_handle_list = obj_template_mgr.get_template_handles("cheezit")
         cheezit_box = rigid_obj_mgr.add_object_by_template_handle(obj_handle_list[0])
+        # Verify is not articulated
+        assert not cheezit_box.is_articulated
         assert rigid_obj_mgr.get_num_objects() > 0
         assert (
             len(rigid_obj_mgr.get_object_handles()) == rigid_obj_mgr.get_num_objects()
@@ -296,8 +300,11 @@ def test_dynamics():
         # test adding an object to the world
         obj_handle_list = obj_template_mgr.get_template_handles("cheezit")
         cheezit_box1 = rigid_obj_mgr.add_object_by_template_handle(obj_handle_list[0])
+        # Verify is not articulated
+        assert not cheezit_box1.is_articulated
         cheezit_box2 = rigid_obj_mgr.add_object_by_template_handle(obj_handle_list[0])
-
+        # Verify is not articulated
+        assert not cheezit_box2.is_articulated
         assert rigid_obj_mgr.get_num_objects() > 0
         assert (
             len(rigid_obj_mgr.get_object_handles()) == rigid_obj_mgr.get_num_objects()
@@ -438,6 +445,8 @@ def test_velocity_control():
             sim.reset()
 
             box_object = rigid_obj_mgr.add_object_by_template_handle(obj_handle)
+            # Verify is not articulated
+            assert not box_object.is_articulated
             vel_control = box_object.velocity_control
 
             if iteration == 0:
@@ -549,6 +558,9 @@ def test_raycast():
             # add a primitive object to the world and test a ray away from the origin
             cube_prim_handle = obj_template_mgr.get_template_handles("cube")[0]
             cube_obj = rigid_obj_mgr.add_object_by_template_handle(cube_prim_handle)
+            # Verify is not articulated
+            assert not cube_obj.is_articulated
+
             cube_obj.translation = [2.0, 0.0, 2.0]
 
             test_ray_1.origin = np.array([0.0, 0, 2.0])
@@ -648,7 +660,11 @@ def test_collision_groups():
 
             cube_prim_handle = obj_template_mgr.get_template_handles("cube")[0]
             cube_obj1 = rigid_obj_mgr.add_object_by_template_handle(cube_prim_handle)
+            # Verify is not articulated
+            assert not cube_obj1.is_articulated
             cube_obj2 = rigid_obj_mgr.add_object_by_template_handle(cube_prim_handle)
+            # Verify is not articulated
+            assert not cube_obj2.is_articulated
             # add a DYNAMIC cube in a contact free state
             cube_obj1.translation = [1.0, 0.0, 4.5]
             assert not cube_obj1.contact_test()
@@ -665,7 +681,8 @@ def test_collision_groups():
             ao = ao_mgr.add_articulated_object_from_urdf(
                 filepath="data/test_assets/urdf/amass_male.urdf"
             )
-
+            # Verify is articulated
+            assert ao.is_articulated
             ao.translation = [1.3, 0.0, 4.6]
             assert ao.contact_test()
             assert cube_obj2.contact_test()
@@ -703,6 +720,8 @@ def test_collision_groups():
             ao2 = ao_mgr.add_articulated_object_from_urdf(
                 filepath="data/test_assets/urdf/amass_male.urdf"
             )
+            # Verify is articulated
+            assert ao2.is_articulated
             ao2.translation = new_translation
             ao2.awake = False
             ao.awake = False
@@ -907,6 +926,8 @@ def test_articulated_object_add_remove():
         robot = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
         assert robot
         assert robot.is_alive
+        # Verify is articulated
+        assert robot.is_articulated
         assert robot.object_id == habitat_sim.stage_id + 1  # first robot added
 
         # test object id to link mapping
@@ -927,6 +948,8 @@ def test_articulated_object_add_remove():
             filepath=robot_file, global_scale=2.0
         )
         assert robot2
+        # Verify is articulated
+        assert robot2.is_articulated
         assert art_obj_mgr.get_num_objects() == 2
         assert robot2.global_scale == 2.0
 
@@ -938,7 +961,9 @@ def test_articulated_object_add_remove():
 
         # add some more
         for _i in range(5):
-            art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+            tmp_ao = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+            # Verify is articulated
+            assert tmp_ao.is_articulated
         assert art_obj_mgr.get_num_objects() == 6
 
         # remove another
@@ -973,6 +998,8 @@ def test_articulated_object_maintain_link_order():
             filepath=amass_file, maintain_link_order=True
         )
         assert ao
+        # Verify is articulated
+        assert ao.is_articulated
         assert ao.is_alive
 
         amass_urdf_link_order = [
@@ -1030,6 +1057,8 @@ def test_articulated_object_kinematics(test_asset):
 
         # parse URDF and add an ArticulatedObject to the world
         robot = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        # Verify is articulated
+        assert robot.is_articulated
         assert robot.is_alive
 
         # NOTE: basic transform properties refer to the root state
@@ -1182,6 +1211,8 @@ def test_articulated_object_dynamics(test_asset):
 
         # parse URDF and add an ArticulatedObject to the world
         robot = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        # Verify is articulated
+        assert robot.is_articulated
         assert robot.is_alive
 
         # object should be initialized with dynamics
@@ -1244,6 +1275,8 @@ def test_articulated_object_dynamics(test_asset):
         robot = art_obj_mgr.add_articulated_object_from_urdf(
             filepath=robot_file, fixed_base=True
         )
+        # Verify is articulated
+        assert robot.is_articulated
         assert robot.translation == mn.Vector3(0)
         assert robot.motion_type == habitat_sim.physics.MotionType.DYNAMIC
         # perturb the system dynamically
@@ -1259,6 +1292,8 @@ def test_articulated_object_dynamics(test_asset):
         # instance fresh robot with free base
         art_obj_mgr.remove_object_by_id(robot.object_id)
         robot = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        # Verify is articulated
+        assert robot.is_articulated
         # put object to sleep
         assert robot.can_sleep
         assert robot.awake
@@ -1270,6 +1305,8 @@ def test_articulated_object_dynamics(test_asset):
 
         # add a new object to drop onto the first, waking it up
         robot2 = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        # Verify is articulated
+        assert robot2.is_articulated
         sim.step_physics(0.5)
         assert robot.awake
         assert robot2.awake
@@ -1298,6 +1335,8 @@ def test_articulated_object_fixed_base_proxy():
         robot = art_obj_mgr.add_articulated_object_from_urdf(
             filepath=robot_file, fixed_base=True
         )
+        # Verify is articulated
+        assert robot.is_articulated
         assert robot.is_alive
 
         # add a test object to the world
@@ -1339,6 +1378,8 @@ def test_articulated_object_damping_joint_motors():
         art_obj_mgr = sim.get_articulated_object_manager()
         # parse URDF and add an ArticulatedObject to the world
         robot = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        # Verify is articulated
+        assert robot.is_articulated
         assert robot.is_alive
         # When URDF joint damping is defined, we generate a set of motors automatically
         # get a map of joint motor ids to starting DoF indices
@@ -1415,6 +1456,8 @@ def test_articulated_object_joint_motors(test_asset):
         robot = art_obj_mgr.add_articulated_object_from_urdf(
             filepath=robot_file, fixed_base=True
         )
+        # Verify is articulated
+        assert robot.is_articulated
         assert robot.is_alive
 
         # remove any automatically created motors
@@ -1796,6 +1839,8 @@ def test_rigid_constraints():
         robot = art_obj_mgr.add_articulated_object_from_urdf(
             filepath=robot_file, fixed_base=False
         )
+        # Verify is articulated
+        assert robot.is_articulated
         assert robot.is_alive
         # need motors to stabalize the humanoid
         joint_motor_settings = habitat_sim.physics.JointMotorSettings()
@@ -1945,6 +1990,8 @@ def test_rigid_constraints():
         robot2 = art_obj_mgr.add_articulated_object_from_urdf(
             filepath=robot_file, fixed_base=True
         )
+        # Verify is articulated
+        assert robot2.is_articulated
         robot2.translation = [-0.775, 0.0, 0.0]
         robot2.create_all_motors(joint_motor_settings)
 
@@ -2029,6 +2076,7 @@ def test_bullet_collision_helper():
         cube_prim_handle = obj_template_mgr.get_template_handles("cube")[0]
         rigid_obj_mgr = sim.get_rigid_object_manager()
         cube_obj = rigid_obj_mgr.add_object_by_template_handle(cube_prim_handle)
+        assert not cube_obj.is_articulated
         cube_obj.translation = [2.5, 1.5, 2.5]
 
         sim.step_physics(0.01)
@@ -2065,6 +2113,8 @@ def test_bullet_collision_helper():
 
         # parse URDF and add an ArticulatedObject to the world
         robot = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        # Verify is articulated
+        assert robot.is_articulated
         assert robot.is_alive
 
         robot.translation = mn.Vector3(2.5, 4.0, 2.5)
