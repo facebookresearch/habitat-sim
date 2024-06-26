@@ -6,6 +6,7 @@
 
 
 import os
+from collections import defaultdict
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Set, Union
 
@@ -13,17 +14,140 @@ import magnum as mn
 import numpy as np
 
 import habitat_sim
-from habitat_sim import physics
+from habitat_sim import physics as HSim_Phys
+from habitat_sim.physics import MotionType as HSim_MT
+
+
+def get_link_normalized_joint_position(
+    object_a: HSim_Phys.ManagedArticulatedObject, link_ix: int
+) -> float:
+    """
+    Normalize the joint limit range [min, max] -> [0,1] and return the current joint state in this range.
+
+    :param object_a: The parent ArticulatedObject of the link.
+    :param link_ix: The index of the link within the parent object. Not the link's object_id.
+
+    :return: normalized joint position [0,1]
+    """
+
+    assert object_a.get_link_joint_type(link_ix) in [
+        HSim_Phys.JointType.Revolute,
+        HSim_Phys.JointType.Prismatic,
+    ], f"Invalid joint type '{object_a.get_link_joint_type(link_ix)}'. Open/closed not a valid check for multi-dimensional or fixed joints."
+
+    joint_pos_ix = object_a.get_link_joint_pos_offset(link_ix)
+    joint_pos = object_a.joint_positions[joint_pos_ix]
+    limits = object_a.joint_position_limits
+
+    # compute the normalized position [0,1]
+    n_pos = (joint_pos - limits[0][joint_pos_ix]) / (
+        limits[1][joint_pos_ix] - limits[0][joint_pos_ix]
+    )
+    return n_pos
+
+
+def set_link_normalized_joint_position(
+    object_a: HSim_Phys.ManagedArticulatedObject,
+    link_ix: int,
+    normalized_pos: float,
+) -> None:
+    """
+    Set the joint's state within its limits from a normalized range [0,1] -> [min, max]
+
+    Assumes the joint has valid joint limits.
+
+    :param object_a: The parent ArticulatedObject of the link.
+    :param link_ix: The index of the link within the parent object. Not the link's object_id.
+    :param normalized_pos: The normalized position [0,1] to set.
+    """
+
+    assert object_a.get_link_joint_type(link_ix) in [
+        HSim_Phys.JointType.Revolute,
+        HSim_Phys.JointType.Prismatic,
+    ], f"Invalid joint type '{object_a.get_link_joint_type(link_ix)}'. Open/closed not a valid check for multi-dimensional or fixed joints."
+
+    assert (
+        normalized_pos <= 1.0 and normalized_pos >= 0
+    ), "values outside the range [0,1] are by definition beyond the joint limits."
+
+    joint_pos_ix = object_a.get_link_joint_pos_offset(link_ix)
+    limits = object_a.joint_position_limits
+    joint_positions = object_a.joint_positions
+    joint_positions[joint_pos_ix] = limits[0][joint_pos_ix] + (
+        normalized_pos * (limits[1][joint_pos_ix] - limits[0][joint_pos_ix])
+    )
+    object_a.joint_positions = joint_positions
+
+
+def link_is_open(
+    object_a: HSim_Phys.ManagedArticulatedObject,
+    link_ix: int,
+    threshold: float = 0.4,
+) -> bool:
+    """
+    Check whether a particular AO link is in the "open" state.
+    We assume that joint limits define the closed state (min) and open state (max).
+
+    :param object_a: The parent ArticulatedObject of the link to check.
+    :param link_ix: The index of the link within the parent object. Not the link's object_id.
+    :param threshold: The normalized threshold ratio of joint ranges which are considered "open". E.g. 0.8 = 80%
+
+    :return: Whether or not the link is considered "open".
+    """
+
+    return get_link_normalized_joint_position(object_a, link_ix) >= threshold
+
+
+def link_is_closed(
+    object_a: HSim_Phys.ManagedArticulatedObject,
+    link_ix: int,
+    threshold: float = 0.1,
+) -> bool:
+    """
+    Check whether a particular AO link is in the "closed" state.
+    We assume that joint limits define the closed state (min) and open state (max).
+
+    :param object_a: The parent ArticulatedObject of the link to check.
+    :param link_ix: The index of the link within the parent object. Not the link's object_id.
+    :param threshold: The normalized threshold ratio of joint ranges which are considered "closed". E.g. 0.1 = 10%
+
+    :return: Whether or not the link is considered "closed".
+    """
+
+    return get_link_normalized_joint_position(object_a, link_ix) <= threshold
+
+
+def close_link(object_a: HSim_Phys.ManagedArticulatedObject, link_ix: int) -> None:
+    """
+    Set a link to the "closed" state. Sets the joint position to the minimum joint limit.
+
+    TODO: does not do any collision checking to validate the state or move any other objects which may be contained in or supported by this link.
+
+    :param object_a: The parent ArticulatedObject of the link to check.
+    :param link_ix: The index of the link within the parent object. Not the link's object_id.
+    """
+
+    set_link_normalized_joint_position(object_a, link_ix, 0)
+
+
+def open_link(object_a: HSim_Phys.ManagedArticulatedObject, link_ix: int) -> None:
+    """
+    Set a link to the "open" state. Sets the joint position to the maximum joint limit.
+
+    TODO: does not do any collision checking to validate the state or move any other objects which may be contained in or supported by this link.
+
+    :param object_a: The parent ArticulatedObject of the link to check.
+    :param link_ix: The index of the link within the parent object. Not the link's object_id.
+    """
+
+    set_link_normalized_joint_position(object_a, link_ix, 1.0)
 
 
 def get_obj_from_id(
     sim: habitat_sim.Simulator,
     obj_id: int,
     ao_link_map: Optional[Dict[int, int]] = None,
-) -> Union[
-    habitat_sim.physics.ManagedRigidObject,
-    habitat_sim.physics.ManagedArticulatedObject,
-]:
+) -> Union[HSim_Phys.ManagedRigidObject, HSim_Phys.ManagedArticulatedObject,]:
     """
     Get a ManagedRigidObject or ManagedArticulatedObject from an object_id.
 
@@ -76,10 +200,7 @@ def get_ao_link_id_map(sim: habitat_sim.Simulator) -> Dict[int, int]:
 
 def get_obj_from_handle(
     sim: habitat_sim.Simulator, obj_handle: str
-) -> Union[
-    habitat_sim.physics.ManagedRigidObject,
-    habitat_sim.physics.ManagedArticulatedObject,
-]:
+) -> Union[HSim_Phys.ManagedRigidObject, HSim_Phys.ManagedArticulatedObject,]:
     """
     Get a ManagedRigidObject or ManagedArticulatedObject from its instance handle.
 
@@ -101,7 +222,7 @@ def get_obj_from_handle(
 
 def get_all_ao_objects(
     sim: habitat_sim.Simulator,
-) -> List[habitat_sim.physics.ManagedArticulatedObject]:
+) -> List[HSim_Phys.ManagedArticulatedObject]:
     """
     Get a list of all ManagedArticulatedObjects in the scene.
 
@@ -116,7 +237,7 @@ def get_all_ao_objects(
 
 def get_all_rigid_objects(
     sim: habitat_sim.Simulator,
-) -> List[habitat_sim.physics.ManagedArticulatedObject]:
+) -> List[HSim_Phys.ManagedArticulatedObject]:
     """
     Get a list of all ManagedRigidObjects in the scene.
 
@@ -129,12 +250,7 @@ def get_all_rigid_objects(
 
 def get_all_objects(
     sim: habitat_sim.Simulator,
-) -> List[
-    Union[
-        habitat_sim.physics.ManagedRigidObject,
-        habitat_sim.physics.ManagedArticulatedObject,
-    ]
-]:
+) -> List[Union[HSim_Phys.ManagedRigidObject, HSim_Phys.ManagedArticulatedObject,]]:
     """
     Get a list of all ManagedRigidObjects and ManagedArticulatedObjects in the scene.
 
@@ -170,7 +286,7 @@ def get_bb_corners(range3d: mn.Range3D) -> List[mn.Vector3]:
 
 
 def get_ao_root_bb(
-    ao: habitat_sim.physics.ManagedArticulatedObject,
+    ao: HSim_Phys.ManagedArticulatedObject,
 ) -> mn.Range3D:
     """
     Get the local bounding box of all links of an articulated object in the root frame.
@@ -291,7 +407,7 @@ class MarkerSetsInfo:
             # get a reference to the object/ao 's markerSets
             obj_marker_sets = obj.marker_sets
             obj_handle = obj.handle
-            if isinstance(obj, physics.ManagedArticulatedObject):
+            if obj.is_articulated:
                 obj_type = "articulated object"
                 # this is an ArticulatedLink, so we can add markers'
                 link_ix = obj.link_object_ids[hit_info.object_id]
@@ -436,7 +552,7 @@ class MarkerSetsInfo:
         # get the name of the attrs used to initialize the object
         obj_init_attr_handle = obj.creation_attributes.handle
 
-        if isinstance(obj, physics.ManagedArticulatedObject):
+        if obj.is_articulated:
             # save AO config
             attrMgr = self.sim.metadata_mediator.ao_template_manager
         else:
@@ -652,16 +768,23 @@ class ObjectEditor:
 
     def __init__(self, sim: habitat_sim.simulator.Simulator):
         self.sim = sim
-        self.sel_obj = None
-        self.sel_obj_orig_transform = mn.Matrix4().identity_init()
+        # Dict to hold currently selected objects
+        self.sel_objs: Dict[int, Any] = {}
+        # Complete list of transformations, for undo chaining,
+        # keyed by object id, value is before and after transform
+        self.obj_transform_edits: Dict[
+            int, List[tuple[mn.Matrix4, mn.Matrix4, bool]]
+        ] = defaultdict(list)
+
+        # Cache removed objects in dictionary
+        # These objects should be hidden/moved out of vieew until the scene is
+        # saved, when they should be actually removed (to allow for undo).
+        # First key is whether they are articulated or not, value is dict with key == object id, value is object,
+        self._removed_objs: Dict[bool, Dict[int, Any]] = defaultdict(dict)
         # Edit mode
         self.curr_edit_mode = ObjectEditor.EditMode.MOVE
         # Edit distance/amount
         self.curr_edit_multiplier = ObjectEditor.DistanceMode.VERY_SMALL
-        # cache modified states of any objects moved by the interface.
-        self.modified_objects_buffer: Dict[
-            habitat_sim.physics.ManagedRigidObject, mn.Matrix4
-        ] = {}
         # Set initial values
         self.set_edit_vals()
 
@@ -693,55 +816,159 @@ class ObjectEditor:
 
         disp_str = f"""Edit Mode: {edit_mode_string}
 Edit Value: {edit_distance_mode_string}
+Num Sel Objs: {len(self.sel_objs)}
           """
         return disp_str
 
     def set_sel_obj(self, obj):
         """
-        Set the selected object and cache its original transformation
+        Set the selected objects to just be the passed obj
         """
-        self.sel_obj = obj
-        if self.sel_obj is not None:
-            self.sel_obj_orig_transform = self.sel_obj.transformation
-        else:
-            self.sel_obj_orig_transform = mn.Matrix4().identity_init()
+        self.sel_objs = {}
+        if obj is not None:
+            self.sel_objs[obj.id] = obj
 
-    def move_object(
-        self,
-        navmesh_dirty,
-        translation: Optional[mn.Vector3] = None,
-        rotation: Optional[mn.Quaternion] = None,
+    def modify_sel_objs(self, obj):
+        """
+        Add the passed object to the selected objects and cache its original transformation
+        """
+        if obj.id in self.sel_objs:
+            # Remove object from obj selected dict
+            self.sel_objs.pop(obj.id, None)
+
+        else:
+            # add object to selected dict
+            self.sel_objs[obj.id] = obj
+
+    def set_ao_joint_states(
+        self, do_open: bool, selected: bool, agent_name: str = "hab_spot"
     ):
         """
-        Move the selected object with a given modification and save the resulting state to the buffer.
+        Set either the selected articulated object states to either fully open or fully closed, or all the articulated object states (except for any robots)
+        """
+        if selected:
+            # Only selected objs if they are articulated
+            ao_objs = [ao for ao in self.sel_objs.values() if ao.is_articulated]
+        else:
+            # all articulated bjs that do not contain agent's name
+            ao_objs = (
+                self.sim.get_articulated_object_manager()
+                .get_objects_by_handle_substring(search_str=agent_name, contains=False)
+                .values()
+            )
+
+        if do_open:
+            # Open AOs
+            for ao in ao_objs:
+                # open the selected receptacle
+                for link_ix in ao.get_link_ids():
+                    if ao.get_link_joint_type(link_ix) in [
+                        HSim_Phys.JointType.Prismatic,
+                        HSim_Phys.JointType.Revolute,
+                    ]:
+                        open_link(ao, link_ix)
+        else:
+            # Close AOs
+            for ao in ao_objs:
+                j_pos = ao.joint_positions
+                ao.joint_positions = [0.0 for _ in range(len(j_pos))]
+                j_vel = ao.joint_velocities
+                ao.joint_velocities = [0.0 for _ in range(len(j_vel))]
+
+    def _move_one_object(
+        self,
+        obj,
+        navmesh_dirty: bool,
+        translation: Optional[mn.Vector3] = None,
+        rotation: Optional[mn.Quaternion] = None,
+        removal: bool = False,
+    ) -> bool:
+        """
+        Internal. Move a single object with a given modification and save the resulting state to the buffer.
         Returns whether the navmesh should be rebuilt due to an object changing position, or previous edits.
         """
-        if self.sel_obj is None:
+        if obj is None:
             print("No object is selected so ignoring move request")
             return navmesh_dirty
         if translation is not None or rotation is not None:
-            obj = self.sel_obj
+            orig_transform = obj.transformation
             orig_mt = obj.motion_type
-            obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+            obj.motion_type = HSim_MT.KINEMATIC
+            action_str = ""
             if translation is not None:
                 obj.translation = obj.translation + translation
-                print(f"Object: {obj.handle} is {type(obj)} moved to {obj.translation}")
+                action_str = f"translated to {obj.translation};"
             if rotation is not None:
                 obj.rotation = rotation * obj.rotation
+                action_str = f"{action_str}rotated to {obj.rotation};"
+            print(action_str)
             obj.motion_type = orig_mt
-            self.modified_objects_buffer[obj] = obj.transformation
+            trans_tuple = (orig_transform, obj.transformation, removal)
+            self.obj_transform_edits[obj.id].append(trans_tuple)
             return True
         return navmesh_dirty
 
+    def move_sel_objects(
+        self,
+        navmesh_dirty: bool,
+        translation: Optional[mn.Vector3] = None,
+        rotation: Optional[mn.Quaternion] = None,
+        removal: bool = False,
+    ) -> bool:
+        """
+        Move all selected objects with a given modification and save the resulting state to the buffer.
+        Returns whether the navmesh should be rebuilt due to an object's transformation changing, or previous edits.
+        """
+        for obj in self.sel_objs.values():
+            new_navmesh_dirty = self._move_one_object(
+                obj,
+                navmesh_dirty,
+                translation=translation,
+                rotation=rotation,
+                removal=removal,
+            )
+            navmesh_dirty = new_navmesh_dirty or navmesh_dirty
+        return navmesh_dirty
+
+    def remove_sel_objects(self):
+        """
+        'Removes' all selected objects from the scene by hiding them and putting them in queue to be deleted on
+        scene save update. Returns list of the handles of all the objects removed if successful
+
+        Note : removal is not permanent unless scene is saved.
+        """
+        removed_obj_handles = []
+        for obj in self.sel_objs.values():
+            if obj is None:
+                continue
+            # move selected object outside of render area
+            translation = obj.translation + mn.Vector3(0.0, 1000.0, 0.0)
+            # ignore navmesh result; removal always recomputes
+            self._move_one_object(obj, True, translation=translation, removal=True)
+            # record removed object for eventual deletion upon scene save
+            self._removed_objs[obj.is_articulated][obj.id] = obj
+            # record handle of removed objects, for return
+            removed_obj_handles.append(obj.handle)
+            print(
+                f"Moved {obj.handle} out of view and marked for removal. Removal becomes permanent when scene is saved."
+            )
+        # unselect all objects, since they were all 'removed'
+        self.sel_objs = {}
+        # retain all object selected transformations.
+        return removed_obj_handles
+
     def edit_left(self, navmesh_dirty: bool):
+        """
+        Edit selected objects for left key input
+        """
         # if movement mode
         if self.curr_edit_mode == ObjectEditor.EditMode.MOVE:
-            return self.move_object(
+            return self.move_sel_objects(
                 navmesh_dirty=navmesh_dirty,
                 translation=mn.Vector3.x_axis() * self.edit_translation_dist,
             )
         # if rotation mode : rotate around y axis
-        return self.move_object(
+        return self.move_sel_objects(
             navmesh_dirty=navmesh_dirty,
             rotation=mn.Quaternion.rotation(
                 mn.Rad(self.edit_rotation_amt), mn.Vector3.y_axis()
@@ -749,14 +976,17 @@ Edit Value: {edit_distance_mode_string}
         )
 
     def edit_right(self, navmesh_dirty: bool):
+        """
+        Edit selected objects for right key input
+        """
         # if movement mode
         if self.curr_edit_mode == ObjectEditor.EditMode.MOVE:
-            return self.move_object(
+            return self.move_sel_objects(
                 navmesh_dirty=navmesh_dirty,
                 translation=-mn.Vector3.x_axis() * self.edit_translation_dist,
             )
         # if rotation mode : rotate around y axis
-        return self.move_object(
+        return self.move_sel_objects(
             navmesh_dirty=navmesh_dirty,
             rotation=mn.Quaternion.rotation(
                 -mn.Rad(self.edit_rotation_amt), mn.Vector3.y_axis()
@@ -765,40 +995,101 @@ Edit Value: {edit_distance_mode_string}
         return navmesh_dirty
 
     def edit_up(self, navmesh_dirty: bool, toggle: bool):
+        """
+        Edit selected objects for up key input
+        """
         # if movement mode
         if self.curr_edit_mode == ObjectEditor.EditMode.MOVE:
             trans_axis = mn.Vector3.y_axis() if toggle else mn.Vector3.z_axis()
-            return self.move_object(
+            return self.move_sel_objects(
                 navmesh_dirty=navmesh_dirty,
                 translation=trans_axis * self.edit_translation_dist,
             )
 
         # if rotation mode : rotate around x or z axis
         rot_axis = mn.Vector3.x_axis() if toggle else mn.Vector3.z_axis()
-        return self.move_object(
+        return self.move_sel_objects(
             navmesh_dirty=navmesh_dirty,
             rotation=mn.Quaternion.rotation(mn.Rad(self.edit_rotation_amt), rot_axis),
         )
 
     def edit_down(self, navmesh_dirty: bool, toggle: bool):
+        """
+        Edit selected objects for down key input
+        """
         # if movement mode
         if self.curr_edit_mode == ObjectEditor.EditMode.MOVE:
             trans_axis = -mn.Vector3.y_axis() if toggle else -mn.Vector3.z_axis()
 
-            return self.move_object(
+            return self.move_sel_objects(
                 navmesh_dirty=navmesh_dirty,
                 translation=trans_axis * self.edit_translation_dist,
             )
         # if rotation mode : rotate around x or z axis
         rot_axis = mn.Vector3.x_axis() if toggle else mn.Vector3.z_axis()
-        return self.move_object(
+        return self.move_sel_objects(
             navmesh_dirty=navmesh_dirty,
             rotation=mn.Quaternion.rotation(-mn.Rad(self.edit_rotation_amt), rot_axis),
         )
 
-    def recompute_ao_bbs(
-        self, ao: habitat_sim.physics.ManagedArticulatedObject
-    ) -> None:
+    def _undo_obj_edit(self, obj, transform_tuple):
+        """
+        Changes the object's current transformation to the passed, previous transformation (in idx 0)
+        """
+        old_transform = transform_tuple[0]
+        print(
+            f"Sel Obj : {obj.handle} : Current object transformation : \n{obj.transformation}\n Being replaced by saved transformation : \n{old_transform}"
+        )
+        orig_mt = obj.motion_type
+        obj.motion_type = HSim_MT.KINEMATIC
+        obj.transformation = old_transform
+        obj.motion_type = orig_mt
+
+    def undo_sel_edits(self):
+        """
+        Undo the edits that have been performed on all the currently selected objects one step, including removal marks
+        """
+        if len(self.sel_objs) == 0:
+            return
+        # For every object in selected object
+        for obj_id, obj in self.sel_objs.items():
+            # Verify there are transforms to undo for this object
+            if len(self.obj_transform_edits[obj_id]) > 0:
+                # Last edit state is last element in transforms list
+                # In tuple idxs : 0 : previous transform, 1 : current transform, 2 : whether was a removal op
+                # Retrieve and remove last edit
+                transform_tuple = self.obj_transform_edits[obj_id].pop()
+                self._undo_obj_edit(obj, transform_tuple)
+                # If this was a removal, remove object from removal queue
+                if transform_tuple[2]:
+                    # Remove object from removal queue if there - undo removal
+                    self._removed_objs[obj.is_articulated].pop(obj_id, None)
+
+    def save_current_scene(self):
+        # update scene with removals before saving
+        ao_removed_objs = self._removed_objs[True]
+        if len(ao_removed_objs) > 0:
+            ao_mgr = self.sim.get_articulated_object_manager()
+            for obj_id in ao_removed_objs:
+                ao_mgr.remove_object_by_id(obj_id)
+                # Get rid of all recorded transforms of specified object
+                self.obj_transform_edits.pop(obj_id, None)
+        ro_removed_objs = self._removed_objs[False]
+        if len(ro_removed_objs) > 0:
+            ro_mgr = self.sim.get_rigid_object_manager()
+            for obj_id in ro_removed_objs:
+                ro_mgr.remove_object_by_id(obj_id)
+                # Get rid of all recorded transforms of specified object
+                self.obj_transform_edits.pop(obj_id, None)
+
+        # clear out cache of removed objects by resetting dictionary
+        self._removed_objs = defaultdict(dict)
+        # Reset all AOs to be 0
+        self.set_ao_joint_states(do_open=False, selected=False)
+        # Save current scene
+        self.sim.save_current_scene_config(overwrite=True)
+
+    def recompute_ao_bbs(self, ao: HSim_Phys.ManagedArticulatedObject) -> None:
         """
         Recomputes the link SceneNode bounding boxes for all ao links.
         NOTE: Gets around an observed loading bug. Call before trying to peek an AO.
@@ -807,83 +1098,127 @@ Edit Value: {edit_distance_mode_string}
             link_node = ao.get_link_scene_node(link_ix)
             link_node.compute_cumulative_bb()
 
-    def build_object(
-        self, navmesh_dirty: bool, shift_pressed: bool, build_loc: mn.Vector3
+    def _build_object_from_handle(
+        self, obj_temp_handle: str, build_ao: bool, attr_mgr, obj_mgr
     ):
-        # make a copy of the selected item or of a named item at some distance away
-        build_ao = False
-        base_translation = build_loc
-        if self.sel_obj is not None:
-            # if selected, build object at location of new
-            if isinstance(self.sel_obj, physics.ManagedArticulatedObject):
-                # build an ao via template
-                build_ao = True
-                attr_mgr = self.sim.metadata_mediator.ao_template_manager
-                obj_mgr = self.sim.get_articulated_object_manager()
-            else:
-                # build a rigid via template
-                attr_mgr = self.sim.metadata_mediator.object_template_manager
-                obj_mgr = self.sim.get_rigid_object_manager()
-            obj_temp_handle = self.sel_obj.creation_attributes.handle
-            # set new object location to be above location of selected object
-            base_translation = self.sel_obj.translation + mn.Vector3(0.0, 1.0, 0.0)
-            base_motion_type = self.sel_obj.motion_type
-        elif shift_pressed:
-            # get user input if no object selected
-            obj_substring = input(
-                "Load Object or AO. Enter a Rigid Object or AO handle substring, first match will be added:"
-            ).strip()
-            aotm = self.sim.metadata_mediator.ao_template_manager
-            ao_handles = aotm.get_template_handles(obj_substring)
-            rotm = self.sim.metadata_mediator.object_template_manager
-            if len(ao_handles) != 1:
-                ro_handles = rotm.get_template_handles(obj_substring)
-                if len(ro_handles) != 1:
-                    print(
-                        f"No distinct Rigid or Articulated Object handle found matching substring: '{obj_substring}'"
-                    )
-                    return None, navmesh_dirty
-                attr_mgr = rotm
-                obj_mgr = self.sim.get_rigid_object_manager()
-                obj_temp_handle = ro_handles[0]
-                base_motion_type = habitat_sim.physics.MotionType.DYNAMIC
-            else:
-                # AO found
-                attr_mgr = aotm
-                obj_mgr = obj_mgr = self.sim.get_articulated_object_manager()
-                obj_temp_handle = ao_handles[0]
-                build_ao = True
-                base_motion_type = habitat_sim.physics.MotionType.STATIC
-        else:
-            # no object selected and no name input
-            print(
-                "No object was selected to copy and shift was not pressed so no known object handle was input. Aborting"
-            )
-            return None, navmesh_dirty
+        """
+        Given a specific handle and location, build a new rigid or articulated object
+        """
         # Build an object using obj_temp_handle, getting template from attr_mgr and object manager obj_mgr
         temp = attr_mgr.get_template_by_handle(obj_temp_handle)
 
         if build_ao:
+            obj_type = "Articulated"
             temp.base_type = "FIXED"
             attr_mgr.register_template(temp)
             new_obj = obj_mgr.add_articulated_object_by_template_handle(obj_temp_handle)
             if new_obj is not None:
                 self.recompute_ao_bbs(new_obj)
-            else:
-                print(
-                    f"Failed to load/create Articulated Object named {obj_temp_handle}."
-                )
         else:
+            # If any changes to template, put them here and re-register template
+            # attr_mgr.register_template(temp)
+            obj_type = "Rigid"
             new_obj = obj_mgr.add_object_by_template_handle(obj_temp_handle)
-            if new_obj is None:
-                print(f"Failed to load/create Rigid Object named {obj_temp_handle}.")
-        new_obj.motion_type = base_motion_type
-        self.set_sel_obj(new_obj)
-        # move new object to location
-        navmesh_dirty = self.move_object(
-            navmesh_dirty=navmesh_dirty, translation=base_translation
+        if new_obj is None:
+            print(
+                f"Failed to load/create {obj_type} Object from template named {obj_temp_handle}."
+            )
+        return new_obj
+
+    def build_objects(
+        self, navmesh_dirty: bool, load_by_name: bool, build_loc: mn.Vector3
+    ):
+        """
+        Make a copy of the selected object(s), or load a named item at some distance away
+        """
+        sim = self.sim
+        mm = sim.metadata_mediator
+        if len(self.sel_objs) > 0:
+            # Copy all selected objects
+            res_objs = []
+            for obj in self.sel_objs.values():
+                # if selected, build object at location of new
+                obj_temp_handle = obj.creation_attributes.handle
+                if obj.is_articulated:
+                    # build an ao via template
+                    attr_mgr = mm.ao_template_manager
+                    obj_mgr = sim.get_articulated_object_manager()
+                else:
+                    # build a rigid via template
+                    attr_mgr = mm.object_template_manager
+                    obj_mgr = sim.get_rigid_object_manager()
+                new_obj = self._build_object_from_handle(
+                    obj_temp_handle, obj.is_articulated, attr_mgr, obj_mgr
+                )
+                if new_obj is not None:
+                    # set new object location to be above location of selected object
+                    new_obj_translation = obj.translation + mn.Vector3(0.0, 1.0, 0.0)
+                    new_obj.motion_type = obj.motion_type
+                    # move new object to appropriate location
+                    new_navmesh_dirty = self._move_one_object(
+                        obj, navmesh_dirty, new_obj_translation, obj.rotation
+                    )
+                    navmesh_dirty = new_navmesh_dirty or navmesh_dirty
+                    res_objs.append(new_obj)
+            # duplicated all currently selected objects
+            # clear currently set selected objects
+            self.sel_objs = {}
+            # Select all new objects
+            for new_obj in res_objs:
+                # add object to selected objects
+                self.modify_sel_objs(new_obj)
+            return res_objs, navmesh_dirty
+
+        elif load_by_name:
+            # get user input to load a single object
+            obj_substring = input(
+                "Load Object or AO. Enter a Rigid Object or AO handle substring, first match will be added:"
+            ).strip()
+
+            if len(obj_substring) == 0:
+                print("No valid name given. Aborting")
+                return [], navmesh_dirty
+
+            template_mgr = mm.ao_template_manager
+            template_handles = template_mgr.get_template_handles(obj_substring)
+            if len(template_handles) == 1:
+                # Specific AO template found
+                obj_mgr = sim.get_articulated_object_manager()
+                base_motion_type = HSim_MT.DYNAMIC
+            else:
+                template_mgr = mm.object_template_manager
+                template_handles = template_mgr.get_template_handles(obj_substring)
+                if len(template_handles) != 1:
+                    print(
+                        f"No distinct Rigid or Articulated Object handle found matching substring: '{obj_substring}'. Aborting"
+                    )
+                    return [], navmesh_dirty
+                # Specific Rigid template found
+                obj_mgr = sim.get_rigid_object_manager()
+                base_motion_type = HSim_MT.STATIC
+
+            new_obj = self._build_object_from_handle(
+                template_handles[0], False, template_mgr, obj_mgr
+            )
+            if new_obj is not None:
+                # set new object location to be above location of selected object
+                new_obj.motion_type = base_motion_type
+                self.set_sel_obj(new_obj)
+                # move new object to appropriate location
+                new_navmesh_dirty = self._move_one_object(
+                    new_obj, navmesh_dirty, translation=build_loc
+                )
+                navmesh_dirty = new_navmesh_dirty or navmesh_dirty
+            else:
+                # creation failing would have its own message
+                return [], navmesh_dirty
+            return [new_obj], navmesh_dirty
+
+        # no object selected and no name input
+        print(
+            "No object was selected to copy and load_by_name was not specifieed so no known object handle was input. Aborting"
         )
-        return new_obj, navmesh_dirty
+        return [], navmesh_dirty
 
     def change_edit_mode(self, toggle: bool):
         # toggle edit mode
@@ -907,33 +1242,16 @@ Edit Value: {edit_distance_mode_string}
         # update the edit values
         self.set_edit_vals()
 
-    def undo_edit(self):
+    def _draw_selected_obj(self, obj, debug_line_render):
         """
-        Undo the edits that have been performed on the selected object
+        Draw a selection box around and axis frame at the origin of a single object
         """
-        if self.sel_obj is not None:
-            obj = self.sel_obj
-            print(
-                f"Sel Obj : {obj.handle} : Current object transformation : \n{obj.transformation}\n Being replaced by saved transformation : \n{obj.transformation}"
-            )
-            orig_mt = obj.motion_type
-            obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
-            obj.transformation = self.sel_obj_orig_transform
-            obj.motion_type = orig_mt
-
-    def draw_selected_object(self, debug_line_render):
-        if self.sel_obj is None:
-            return
-        aabb = None
-        if isinstance(self.sel_obj, habitat_sim.physics.ManagedBulletRigidObject):
-            aabb = self.sel_obj.collision_shape_aabb
-        else:
-            aabb = get_ao_root_bb(self.sel_obj)
-        debug_line_render.push_transform(self.sel_obj.transformation)
+        aabb = get_ao_root_bb(obj) if obj.is_articulated else obj.collision_shape_aabb
+        debug_line_render.push_transform(obj.transformation)
         debug_line_render.draw_box(aabb.min, aabb.max, mn.Color4.magenta())
         debug_line_render.pop_transform()
 
-        ot = self.sel_obj.translation
+        ot = obj.translation
         # draw global coordinate axis
         debug_line_render.draw_transformed_line(
             ot - mn.Vector3.x_axis(), ot + mn.Vector3.x_axis(), mn.Color4.red()
@@ -963,6 +1281,12 @@ Edit Value: {edit_distance_mode_string}
             normal=mn.Vector3.z_axis(),
         )
 
+    def draw_selected_objects(self, debug_line_render):
+        if len(self.sel_objs) == 0:
+            return
+        for obj in self.sel_objs.values():
+            self._draw_selected_obj(obj, debug_line_render=debug_line_render)
+
 
 # Class to instantiate and maneuver spot from a viewer
 class SpotAgent:
@@ -979,7 +1303,7 @@ class SpotAgent:
         def __init__(self, sim, spot):
             self._sim = sim
             self.spot = spot
-            self.base_vel_ctrl = habitat_sim.physics.VelocityControl()
+            self.base_vel_ctrl = HSim_Phys.VelocityControl()
             self.base_vel_ctrl.controlling_lin_vel = True
             self.base_vel_ctrl.lin_vel_is_local = True
             self.base_vel_ctrl.controlling_ang_vel = True
@@ -1122,14 +1446,16 @@ class SpotAgent:
             """
             Handle transition to/from no clipping/navmesh disengaged.
             """
-            # Transitioning to clip from no clip
+            # Transitioning to clip from no clip or vice versa
             self._transition_to_clip = self._noclip
             self._noclip = not self._noclip
 
             spot_cur_point = self.spot.base_pos
+            # Find reasonable location to return to navmesh
             if self._transition_to_clip and not self._sim.pathfinder.is_navigable(
                 spot_cur_point
             ):
+                # Clear transition flag - only transition once
                 self._transition_to_clip = False
                 # Find closest point on navmesh to snap spot to
                 print(
@@ -1297,7 +1623,7 @@ class SpotAgent:
         clipstate = self.spot_action.toggle_clip(self.largest_island_ix)
 
         # Turn off dynamics if spot is being moved kinematically
-        # self.spot.sim_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC if clipstate else self.spot_motion_type
+        # self.spot.sim_obj.motion_type = HSim_MT.KINEMATIC if clipstate else self.spot_motion_type
         print(f"After toggle, clipstate is {clipstate}")
 
     def move_spot(
@@ -1353,7 +1679,7 @@ class SpotAgent:
         """
         aom = self.sim.get_articulated_object_manager()
         self.spot_rigid_state = self.spot.sim_obj.rigid_state
-        aom.remove_object_by_handle(self.spot.sim_obj.handle)
+        aom.remove_object_by_id(self.spot.sim_obj.id)
 
     def restore_at_previous_loc(self):
         """

@@ -15,7 +15,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
-import habitat.sims.habitat_simulator.sim_utilities as sutils
 import magnum as mn
 from magnum import shaders, text
 from magnum.platform.glfw import Application
@@ -171,9 +170,6 @@ class HabitatSimInteractiveViewer(Application):
         self.replay_renderer_cfg: Optional[ReplayRendererConfiguration] = None
         self.replay_renderer: Optional[ReplayRenderer] = None
 
-        # object selection and manipulation interface
-        self.selected_object = None
-        self.selected_object_orig_transform = mn.Matrix4().identity_init()
         self.last_hit_details = None
         # cache modified states of any objects moved by the interface.
         self.modified_objects_buffer: Dict[
@@ -318,8 +314,9 @@ class HabitatSimInteractiveViewer(Application):
                 color=mn.Color4.yellow(),
                 num_segments=12,
             )
-        if self.selected_object is not None:
-            self.obj_editor.draw_selected_object(debug_line_render)
+        # draw selected object frames if any objects are selected
+        self.obj_editor.draw_selected_objects(debug_line_render)
+
         self.draw_removed_objects_debug_frames()
 
     def draw_event(
@@ -585,9 +582,6 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.H:
             self.print_help_text()
 
-        elif key == pressed.TAB:
-            pass
-
         elif key == pressed.SPACE:
             if not self.sim.config.sim_cfg.enable_physics:
                 logger.warn("Warning: physics was not enabled during setup")
@@ -607,40 +601,36 @@ class HabitatSimInteractiveViewer(Application):
             logger.info(f"Command: toggle Bullet debug draw: {self.debug_bullet_draw}")
 
         elif key == pressed.LEFT:
+            # Move or rotate selected object(s) left
             self.navmesh_dirty = self.obj_editor.edit_left(self.navmesh_dirty)
 
         elif key == pressed.RIGHT:
+            # Move or rotate selected object(s) right
             self.navmesh_dirty = self.obj_editor.edit_right(self.navmesh_dirty)
 
         elif key == pressed.UP:
+            # Move or rotate selected object(s) up
             self.navmesh_dirty = self.obj_editor.edit_up(
                 self.navmesh_dirty, toggle=alt_pressed
             )
 
         elif key == pressed.DOWN:
+            # Move or rotate selected object(s) down
             self.navmesh_dirty = self.obj_editor.edit_down(
                 self.navmesh_dirty, toggle=alt_pressed
             )
 
         elif key == pressed.BACKSPACE or key == pressed.Y:
-            if self.selected_object is not None:
-                if key == pressed.Y:
-                    obj_name = self.selected_object.handle.split("/")[-1].split("_:")[0]
+            # 'Remove' all selected objects by moving them out of view.
+            # Removal only becomes permanent when scene is saved
+            removed_obj_handles = self.obj_editor.remove_sel_objects()
+            if key == pressed.Y:
+                for handle in removed_obj_handles:
+                    # Mark removed clutter
+                    obj_name = handle.split("/")[-1].split("_:")[0]
                     self.removed_clutter.append(obj_name)
-                print(f"Removed {self.selected_object.handle}")
-                if isinstance(
-                    self.selected_object, habitat_sim.physics.ManagedBulletRigidObject
-                ):
-                    self.sim.get_rigid_object_manager().remove_object_by_handle(
-                        self.selected_object.handle
-                    )
-                else:
-                    self.sim.get_articulated_object_manager().remove_object_by_handle(
-                        self.selected_object.handle
-                    )
-                self.selected_object = None
-                self.obj_editor.set_sel_obj(self.selected_object)
-                self.navmesh_config_and_recompute()
+            self.navmesh_config_and_recompute()
+
         elif key == pressed.B:
             # Cycle through available edit amount values
             self.obj_editor.change_edit_vals(toggle=shift_pressed)
@@ -667,10 +657,9 @@ class HabitatSimInteractiveViewer(Application):
             #    f.write(json.dumps(self.modified_objects_buffer, indent=2))
             self.spot_agent.save_and_remove()
 
-            # clear furniture joint positions before saving
-            self.clear_furniture_joint_states()
+            # Save scene
+            self.obj_editor.save_current_scene()
 
-            self.sim.save_current_scene_config(overwrite=True)
             print("Saved modified scene instance JSON to original location.")
             # de-duplicate and save clutter list
             self.removed_clutter = list(dict.fromkeys(self.removed_clutter))
@@ -687,18 +676,13 @@ class HabitatSimInteractiveViewer(Application):
             self.spot_agent.restore_at_previous_loc()
 
         elif key == pressed.J:
-            if shift_pressed and isinstance(
-                self.selected_object, habitat_sim.physics.ManagedArticulatedObject
-            ):
-                # open the selected receptacle
-                for link_ix in self.selected_object.get_link_ids():
-                    if self.selected_object.get_link_joint_type(link_ix) in [
-                        habitat_sim.physics.JointType.Prismatic,
-                        habitat_sim.physics.JointType.Revolute,
-                    ]:
-                        sutils.open_link(self.selected_object, link_ix)
-            else:
-                self.clear_furniture_joint_states()
+            # If shift pressed then open, otherwise close
+            # If alt pressed then selected, otherwise all
+            self.obj_editor.set_ao_joint_states(
+                do_open=shift_pressed, selected=alt_pressed
+            )
+            if not shift_pressed:
+                # if closing then redo navmesh
                 self.navmesh_config_and_recompute()
 
         elif key == pressed.K:
@@ -728,26 +712,26 @@ class HabitatSimInteractiveViewer(Application):
             pass
 
         elif key == pressed.U:
-            self.obj_editor.undo_edit()
+            # Undo all edits on selected objects 1 step
+            self.obj_editor.undo_sel_edits()
 
         elif key == pressed.V:
             # inject a new object by handle substring in front of the agent
             # or else using the currently selected object
 
             # press shift if we want to load if no object selected
-            new_obj, self.navmesh_dirty = self.obj_editor.build_object(
+            new_obj_list, self.navmesh_dirty = self.obj_editor.build_objects(
                 self.navmesh_dirty,
-                shift_pressed=shift_pressed,
+                load_by_name=shift_pressed,
                 build_loc=self.spot_agent.get_point_in_front(
                     disp_in_front=[1.5, 0.0, 0.0]
                 ),
             )
-            if new_obj is not None:
-                print(f"New object translation : {new_obj.translation}")
-                self.selected_object = new_obj
-                self.obj_editor.set_sel_obj(new_obj)
+            if len(new_obj_list) > 0:
+                for new_obj in new_obj_list:
+                    print(f"New object translation : {new_obj.translation}")
             else:
-                print("Failed to add new object.")
+                print("Failed to add any new objects.")
 
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
@@ -800,38 +784,39 @@ class HabitatSimInteractiveViewer(Application):
         button = Application.MouseEvent.Button
         physics_enabled = self.sim.get_physics_simulation_library()
         mod = Application.InputEvent.Modifier
-        bool(event.modifiers & mod.SHIFT)
+        shift_pressed = bool(event.modifiers & mod.SHIFT)
 
         # select an object with RIGHT-click
         if physics_enabled and event.button == button.RIGHT:
-            self.selected_object = None
+            obj_found = False
             render_camera = self.render_camera.render_camera
             ray = render_camera.unproject(self.get_mouse_position(event.position))
             mouse_cast_results = self.sim.cast_ray(ray=ray)
+            obj = None
             if mouse_cast_results.has_hits():
                 # find first non-stage object
                 hit_idx = 0
-                obj_found = False
                 while hit_idx < len(mouse_cast_results.hits) and not obj_found:
                     self.last_hit_details = mouse_cast_results.hits[hit_idx]
                     hit_obj_id = mouse_cast_results.hits[hit_idx].object_id
-                    self.selected_object = get_obj_from_id(self.sim, hit_obj_id)
-                    if self.selected_object is None:
+                    obj = get_obj_from_id(self.sim, hit_obj_id)
+                    if obj is None:
                         hit_idx += 1
                     else:
                         obj_found = True
                 if obj_found:
                     print(
-                        f"Object: {self.selected_object.handle} is {type(self.selected_object)} at {self.selected_object.translation}"
+                        f"Object: {obj.handle} is {'Articlated' if obj.is_articulated else 'Rigid'} Object at {obj.translation}"
                     )
                 else:
                     print("This is the stage.")
-            self.obj_editor.set_sel_obj(self.selected_object)
-            # # record current selected object's transformation, to restore if undo is pressed
-            # if self.selected_object is not None:
-            #     self.selected_object_orig_transform = (
-            #         self.selected_object.transformation
-            #     )
+
+            if not shift_pressed:
+                # clear all selected objects and set to found obj
+                self.obj_editor.set_sel_obj(obj)
+            elif obj_found:
+                # add/remove object from selected objects
+                self.obj_editor.modify_sel_objs(obj)
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
@@ -966,7 +951,8 @@ In LOOK mode (default):
     LEFT:
         Click and drag to rotate the view around Spot.
     RIGHT:
-        Select an object to modify.
+        Select an object(s) to modify. If multiple objects selected all will be modified equally
+        (+SHIFT) add/remove object from selected set
     WHEEL:
         Zoom in and out on Spot view.
         (+ALT): Raise/Lower the camera's target above Spot.
@@ -1004,6 +990,15 @@ Key Commands:
       - 'y': delete the selected object and record it as clutter.
     'i': save the current, modified, scene_instance file. Also save removed_clutter.txt containing object names of all removed clutter objects.
          - With Shift : also close the viewer.
+
+    'j': Modify AO link states :
+         (+SHIFT) : Open Selected/All AOs
+         (-SHIFT) : Close Selected/All AOs
+         (+ALT) : Modify Selected AOs
+         (-ALT) : Modify All AOs
+
+    'u': Undo a single modification step for all selected objects
+        (+SHIFT) : redo (TODO)
 
     Utilities:
     'r':        Reset the simulator with the most recently loaded scene.
