@@ -198,6 +198,92 @@ def get_ao_link_id_map(sim: habitat_sim.Simulator) -> Dict[int, int]:
     return ao_link_map
 
 
+def get_global_keypoints_from_bb(
+    aabb: mn.Range3D, local_to_global: mn.Matrix4
+) -> List[mn.Vector3]:
+    """
+    Get a list of bounding box keypoints in global space.
+    0th point is the bounding box center, others are bounding box corners.
+
+    :param aabb: The local bounding box.
+    :param local_to_global: The local to global transformation matrix.
+
+    :return: A set of global 3D keypoints for the bounding box.
+    """
+    local_keypoints = [aabb.center()]
+    local_keypoints.extend(get_bb_corners(aabb))
+    global_keypoints = [
+        local_to_global.transform_point(key_point) for key_point in local_keypoints
+    ]
+    return global_keypoints
+
+
+def get_articulated_link_global_keypoints(
+    object_a: habitat_sim.physics.ManagedArticulatedObject, link_index: int
+) -> List[mn.Vector3]:
+    """
+    Get global bb keypoints for an ArticulatedLink.
+
+    :param object_a: The parent ManagedArticulatedObject for the link.
+    :param link_index: The local index of the link within the parent ArticulatedObject. Not the object_id of the link.
+
+    :return: A set of global 3D keypoints for the link.
+    """
+    link_node = object_a.get_link_scene_node(link_index)
+
+    return get_global_keypoints_from_bb(
+        link_node.cumulative_bb, link_node.absolute_transformation()
+    )
+
+
+def get_ao_default_link(
+    ao: habitat_sim.physics.ManagedArticulatedObject,
+    compute_if_not_found: bool = False,
+) -> Optional[int]:
+    """
+    Get the "default" link index for a ManagedArticulatedObject.
+    The "default" link is the one link which should be used if only one joint can be actuated. For example, the largest or most accessible drawer or door.
+    The default link is determined by:
+        - must be "prismatic" or "revolute" joint type
+        - first look in the metadata Configuration for an annotated link.
+        - (if compute_if_not_found) - if not annotated, it is programmatically computed from a heuristic.
+
+    Default link heuristic: the link with the lowest Y value in the bounding box with appropriate joint type.
+
+    :param compute_if_not_found: If true, try to compute the default link if it isn't found.
+
+    :return: The default link index or None if not found. Cannot be base link (-1).
+    """
+
+    # first look in metadata
+    default_link = ao.user_attributes.get("default_link")
+
+    if default_link is None and compute_if_not_found:
+        valid_joint_types = [
+            habitat_sim.physics.JointType.Revolute,
+            habitat_sim.physics.JointType.Prismatic,
+        ]
+        lowest_link = None
+        lowest_y: int = None
+        # compute the default link
+        for link_id in ao.get_link_ids():
+            if ao.get_link_joint_type(link_id) in valid_joint_types:
+                # use minimum global keypoint Y value
+                link_lowest_y = min(
+                    get_articulated_link_global_keypoints(ao, link_id),
+                    key=lambda x: x[1],
+                )[1]
+                if lowest_y is None or link_lowest_y < lowest_y:
+                    lowest_y = link_lowest_y
+                    lowest_link = link_id
+        if lowest_link is not None:
+            default_link = lowest_link
+            # if found, set in metadata for next time
+            ao.user_attributes.set("default_link", default_link)
+
+    return default_link
+
+
 def get_obj_from_handle(
     sim: habitat_sim.Simulator, obj_handle: str
 ) -> Union[HSim_Phys.ManagedRigidObject, HSim_Phys.ManagedArticulatedObject,]:
@@ -768,11 +854,28 @@ class ObjectEditor:
 
     def __init__(self, sim: habitat_sim.simulator.Simulator):
         self.sim = sim
+        # Set up object and edit collections/caches
+        self._init_obj_caches()
+        # Edit mode
+        self.curr_edit_mode = ObjectEditor.EditMode.MOVE
+        # Edit distance/amount
+        self.curr_edit_multiplier = ObjectEditor.DistanceMode.VERY_SMALL
+        # Set initial values
+        self.set_edit_vals()
+
+    def _init_obj_caches(self):
         # Dict to hold currently selected objects
         self.sel_objs: Dict[int, Any] = {}
-        # Complete list of transformations, for undo chaining,
+        # Complete list of per-objec transformation edits, for undo chaining,
         # keyed by object id, value is before and after transform
         self.obj_transform_edits: Dict[
+            int, List[tuple[mn.Matrix4, mn.Matrix4, bool]]
+        ] = defaultdict(list)
+        # Complete list of undone transformation edits, for redo chaining,
+        # keyed by object id, value is before and after transform.
+        # Cleared when any future edits are performed.
+        # TODO
+        self.obj_transform_undone_edits: Dict[
             int, List[tuple[mn.Matrix4, mn.Matrix4, bool]]
         ] = defaultdict(list)
 
@@ -781,12 +884,6 @@ class ObjectEditor:
         # saved, when they should be actually removed (to allow for undo).
         # First key is whether they are articulated or not, value is dict with key == object id, value is object,
         self._removed_objs: Dict[bool, Dict[int, Any]] = defaultdict(dict)
-        # Edit mode
-        self.curr_edit_mode = ObjectEditor.EditMode.MOVE
-        # Edit distance/amount
-        self.curr_edit_multiplier = ObjectEditor.DistanceMode.VERY_SMALL
-        # Set initial values
-        self.set_edit_vals()
 
     def set_edit_vals(self):
         # Set current scene object edit values for translation and rotation
@@ -824,21 +921,21 @@ Num Sel Objs: {len(self.sel_objs)}
         """
         Set the selected objects to just be the passed obj
         """
-        self.sel_objs = {}
+        self.sel_objs.clear()
         if obj is not None:
-            self.sel_objs[obj.id] = obj
+            self.sel_objs[obj.object_id] = obj
 
     def modify_sel_objs(self, obj):
         """
         Add the passed object to the selected objects and cache its original transformation
         """
-        if obj.id in self.sel_objs:
+        if obj.object_id in self.sel_objs:
             # Remove object from obj selected dict
-            self.sel_objs.pop(obj.id, None)
+            self.sel_objs.pop(obj.object_id, None)
 
         else:
             # add object to selected dict
-            self.sel_objs[obj.id] = obj
+            self.sel_objs[obj.object_id] = obj
 
     def set_ao_joint_states(
         self, do_open: bool, selected: bool, agent_name: str = "hab_spot"
@@ -894,17 +991,19 @@ Num Sel Objs: {len(self.sel_objs)}
             orig_transform = obj.transformation
             orig_mt = obj.motion_type
             obj.motion_type = HSim_MT.KINEMATIC
-            action_str = ""
+            action_str = f"{'Articulated' if obj.is_articulated else 'Rigid'} Object {obj.handle}"
             if translation is not None:
                 obj.translation = obj.translation + translation
-                action_str = f"translated to {obj.translation};"
+                action_str = f"{action_str} translated to {obj.translation};"
             if rotation is not None:
                 obj.rotation = rotation * obj.rotation
-                action_str = f"{action_str}rotated to {obj.rotation};"
+                action_str = f"{action_str} rotated to {obj.rotation};"
             print(action_str)
             obj.motion_type = orig_mt
             trans_tuple = (orig_transform, obj.transformation, removal)
-            self.obj_transform_edits[obj.id].append(trans_tuple)
+            self.obj_transform_edits[obj.object_id].append(trans_tuple)
+            # Clear entries for redo since we have a new edit
+            self.obj_transform_undone_edits[obj.object_id] = []
             return True
         return navmesh_dirty
 
@@ -946,14 +1045,14 @@ Num Sel Objs: {len(self.sel_objs)}
             # ignore navmesh result; removal always recomputes
             self._move_one_object(obj, True, translation=translation, removal=True)
             # record removed object for eventual deletion upon scene save
-            self._removed_objs[obj.is_articulated][obj.id] = obj
+            self._removed_objs[obj.is_articulated][obj.object_id] = obj
             # record handle of removed objects, for return
             removed_obj_handles.append(obj.handle)
             print(
                 f"Moved {obj.handle} out of view and marked for removal. Removal becomes permanent when scene is saved."
             )
         # unselect all objects, since they were all 'removed'
-        self.sel_objs = {}
+        self.sel_objs.clear()
         # retain all object selected transformations.
         return removed_obj_handles
 
@@ -1060,6 +1159,9 @@ Num Sel Objs: {len(self.sel_objs)}
                 # Retrieve and remove last edit
                 transform_tuple = self.obj_transform_edits[obj_id].pop()
                 self._undo_obj_edit(obj, transform_tuple)
+                # Save transformation tuple for redoing
+                # TODO process redos
+                self.obj_transform_undone_edits[obj_id].append(transform_tuple)
                 # If this was a removal, remove object from removal queue
                 if transform_tuple[2]:
                     # Remove object from removal queue if there - undo removal
@@ -1162,7 +1264,7 @@ Num Sel Objs: {len(self.sel_objs)}
                     res_objs.append(new_obj)
             # duplicated all currently selected objects
             # clear currently set selected objects
-            self.sel_objs = {}
+            self.sel_objs.clear()
             # Select all new objects
             for new_obj in res_objs:
                 # add object to selected objects
@@ -1679,7 +1781,7 @@ class SpotAgent:
         """
         aom = self.sim.get_articulated_object_manager()
         self.spot_rigid_state = self.spot.sim_obj.rigid_state
-        aom.remove_object_by_id(self.spot.sim_obj.id)
+        aom.remove_object_by_id(self.spot.sim_obj.object_id)
 
     def restore_at_previous_loc(self):
         """

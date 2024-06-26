@@ -18,7 +18,6 @@ flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
 import habitat.datasets.rearrange.samplers.receptacle as hab_receptacle
-import habitat.sims.habitat_simulator.sim_utilities as sutils
 import magnum as mn
 import numpy as np
 from habitat.datasets.rearrange.navmesh_utils import (
@@ -31,19 +30,11 @@ from magnum import shaders, text
 from magnum.platform.glfw import Application
 
 import habitat_sim
+import habitat_sim.utils.sim_utils as sim_utils
 from habitat_sim import ReplayRenderer, ReplayRendererConfiguration, physics
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
-from habitat_sim.utils.sim_utils import (
-    MarkerSetsInfo,
-    ObjectEditor,
-    SemanticManager,
-    get_all_ao_objects,
-    get_bb_corners,
-    get_obj_from_handle,
-    get_obj_from_id,
-)
 
 # add tools directory so I can import things to try them in the viewer
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../tools"))
@@ -288,7 +279,6 @@ class HabitatSimInteractiveViewer(Application):
         self.mouse_cast_has_hits = False
 
         # last clicked or None for stage
-        self.selected_object = None
         self.selected_rec = None
         self.ao_link_map = None
         self.navmesh_dirty = False
@@ -302,13 +292,13 @@ class HabitatSimInteractiveViewer(Application):
         # load markersets for every object and ao into a cache
         task_names_set = set()
         task_names_set.add("faucets")
-        self.markersets_util = MarkerSetsInfo(self.sim, task_names_set)
+        self.markersets_util = sim_utils.MarkerSetsInfo(self.sim, task_names_set)
 
         # Editing
-        self.obj_editor = ObjectEditor(self.sim)
+        self.obj_editor = sim_utils.ObjectEditor(self.sim)
 
         # Semantics
-        self.dbg_semantics = SemanticManager(self.sim)
+        self.dbg_semantics = sim_utils.SemanticManager(self.sim)
 
         # sys.exit(0)
         # load appropriate filter file for scene
@@ -427,44 +417,43 @@ class HabitatSimInteractiveViewer(Application):
             return None
         closest_rec = None
         closest_rec_dist = max_dist
-        recs = (
-            self.receptacles
-            if (
-                self.selected_object is None
-                or self.selected_object.handle not in self.poh_to_rec
+        for obj in self.obj_editor.sel_objs.values():
+            # find for all currently selected objects
+            recs = (
+                self.receptacles
+                if (obj is None or obj.handle not in self.poh_to_rec)
+                else self.poh_to_rec[obj.handle]
             )
-            else self.poh_to_rec[self.selected_object.handle]
-        )
-        for receptacle in recs:
-            g_trans = receptacle.get_global_transform(self.sim)
-            # transform the query point once instead of all verts
-            local_point = g_trans.inverted().transform_point(pos)
-            if (g_trans.translation - pos).length() < max_dist:
-                # receptacles object transform should be close to the point
-                if isinstance(receptacle, hab_receptacle.TriangleMeshReceptacle):
-                    for vert in receptacle.mesh_data.attribute(
-                        mn.trade.MeshAttribute.POSITION
-                    ):
-                        v_dist = (local_point - vert).length()
-                        if v_dist < closest_rec_dist:
-                            closest_rec_dist = v_dist
-                            closest_rec = receptacle
-                else:
-                    global_keypoints = None
-                    if isinstance(receptacle, hab_receptacle.AABBReceptacle):
-                        global_keypoints = sutils.get_global_keypoints_from_bb(
-                            receptacle.bounds, g_trans
-                        )
-                    elif isinstance(receptacle, hab_receptacle.AnyObjectReceptacle):
-                        global_keypoints = get_bb_corners(
-                            receptacle._get_global_bb(self.sim)
-                        )
+            for receptacle in recs:
+                g_trans = receptacle.get_global_transform(self.sim)
+                # transform the query point once instead of all verts
+                local_point = g_trans.inverted().transform_point(pos)
+                if (g_trans.translation - pos).length() < max_dist:
+                    # receptacles object transform should be close to the point
+                    if isinstance(receptacle, hab_receptacle.TriangleMeshReceptacle):
+                        for vert in receptacle.mesh_data.attribute(
+                            mn.trade.MeshAttribute.POSITION
+                        ):
+                            v_dist = (local_point - vert).length()
+                            if v_dist < closest_rec_dist:
+                                closest_rec_dist = v_dist
+                                closest_rec = receptacle
+                    else:
+                        global_keypoints = None
+                        if isinstance(receptacle, hab_receptacle.AABBReceptacle):
+                            global_keypoints = sim_utils.get_global_keypoints_from_bb(
+                                receptacle.bounds, g_trans
+                            )
+                        elif isinstance(receptacle, hab_receptacle.AnyObjectReceptacle):
+                            global_keypoints = sim_utils.get_bb_corners(
+                                receptacle._get_global_bb(self.sim)
+                            )
 
-                    for g_point in global_keypoints:
-                        v_dist = (pos - g_point).length()
-                        if v_dist < closest_rec_dist:
-                            closest_rec_dist = v_dist
-                            closest_rec = receptacle
+                        for g_point in global_keypoints:
+                            v_dist = (pos - g_point).length()
+                            if v_dist < closest_rec_dist:
+                                closest_rec_dist = v_dist
+                                closest_rec = receptacle
 
         return closest_rec
 
@@ -581,7 +570,7 @@ class HabitatSimInteractiveViewer(Application):
         ]
         for receptacle in self.receptacles:
             if receptacle not in self.rec_to_poh:
-                po_handle = get_obj_from_handle(
+                po_handle = sim_utils.get_obj_from_handle(
                     self.sim, receptacle.parent_object_handle
                 ).creation_attributes.handle
                 self.rec_to_poh[receptacle] = po_handle
@@ -649,7 +638,7 @@ class HabitatSimInteractiveViewer(Application):
                 normal=camera_position - cp.position_on_b_in_ws,
             )
 
-    def draw_receptacles(self, debug_line_render):
+    def _draw_receptacle_per_obj(self, obj, debug_line_render):
         if self.rec_filter_data is None and self.cpo_initialized:
             self.compute_rec_filter_state(
                 access_threshold=self.rec_access_filter_threshold
@@ -679,8 +668,8 @@ class HabitatSimInteractiveViewer(Application):
             if (
                 rec_dat is not None
                 and self.display_selected_stability_samples
-                and self.selected_object is not None
-                and self.selected_object.handle == receptacle.parent_object_handle
+                and obj is not None
+                and obj.handle == receptacle.parent_object_handle
             ):
                 # display colored circles for stability samples on the selected object
                 point_metric_dat = rec_dat["shape_id_results"]["gt"]["access_results"][
@@ -711,9 +700,13 @@ class HabitatSimInteractiveViewer(Application):
                         num_segments=12,
                     )
 
-            rec_obj = get_obj_from_handle(self.sim, receptacle.parent_object_handle)
+            rec_obj = sim_utils.get_obj_from_handle(
+                self.sim, receptacle.parent_object_handle
+            )
             key_points = [r_trans.translation]
-            key_points.extend(get_bb_corners(rec_obj.root_scene_node.cumulative_bb))
+            key_points.extend(
+                sim_utils.get_bb_corners(rec_obj.root_scene_node.cumulative_bb)
+            )
 
             in_view = False
             for ix, key_point in enumerate(key_points):
@@ -792,6 +785,10 @@ class HabitatSimInteractiveViewer(Application):
                     )
                     debug_line_render.pop_transform()
 
+    def draw_receptacles(self, debug_line_render):
+        for obj in self.obj_editor.sel_objs.values():
+            self._draw_receptacle_per_obj(obj, debug_line_render=debug_line_render)
+
     def debug_draw(self):
         """
         Additional draw commands to be called during draw_event.
@@ -816,8 +813,8 @@ class HabitatSimInteractiveViewer(Application):
             )
         if self.receptacles is not None and self.display_receptacles:
             self.draw_receptacles(debug_line_render)
-        if self.selected_object is not None:
-            self.obj_editor.draw_selected_object(debug_line_render)
+
+        self.obj_editor.draw_selected_object(debug_line_render)
         # mouse raycast circle
         if self.mouse_cast_has_hits:
             debug_line_render.draw_circle(
@@ -1033,7 +1030,7 @@ class HabitatSimInteractiveViewer(Application):
                 for composite_file in sim_settings["composite_files"]:
                     self.replay_renderer.preload_file(composite_file)
 
-        self.ao_link_map = sutils.get_ao_link_id_map(self.sim)
+        self.ao_link_map = sim_utils.get_ao_link_id_map(self.sim)
         self.dbv = DebugVisualizer(self.sim)
 
         Timer.start()
@@ -1113,20 +1110,6 @@ class HabitatSimInteractiveViewer(Application):
         self.reconfigure_sim()
         logger.info(f"Reconfigured simulator for scene: {self.sim_settings['scene']}")
 
-    def clear_furniture_joint_states(self):
-        """
-        Clear all furniture object joint states.
-        """
-        for ao in (
-            self.sim.get_articulated_object_manager()
-            .get_objects_by_handle_substring()
-            .values()
-        ):
-            j_pos = ao.joint_positions
-            ao.joint_positions = [0.0 for _ in range(len(j_pos))]
-            j_vel = ao.joint_velocities
-            ao.joint_velocities = [0.0 for _ in range(len(j_vel))]
-
     def check_rec_accessibility(
         self, rec: hab_receptacle.Receptacle, max_height: float = 1.2, clean_up=True
     ) -> Tuple[bool, str]:
@@ -1136,7 +1119,7 @@ class HabitatSimInteractiveViewer(Application):
         print(f"Checking Receptacle accessibility for {rec.unique_name}")
 
         # first check if the receptacle is close enough to the navmesh
-        rec_global_keypoints = sutils.get_global_keypoints_from_bb(
+        rec_global_keypoints = sim_utils.get_global_keypoints_from_bb(
             rec.bounds, rec.get_global_transform(self.sim)
         )
         floor_point = None
@@ -1251,6 +1234,73 @@ class HabitatSimInteractiveViewer(Application):
                 self.rec_filter_data[filter_type].remove(filtered_rec_name)
         self.rec_filter_data[filter_status].append(filtered_rec_name)
 
+    def add_objects_to_receptacles(self, alt_pressed: bool, shift_pressed: bool):
+        rom = self.sim.get_rigid_object_manager()
+        # add objects to the selected receptacle or remove all objects
+        if shift_pressed:
+            # remove all
+            print(f"Removing {len(self.clutter_object_instances)} clutter objects.")
+            for obj in self.clutter_object_instances:
+                rom.remove_object_by_handle(obj.handle)
+            self.clutter_object_initial_states.clear()
+            self.clutter_object_instances.clear()
+        else:
+            # try to sample an object from the selected object receptacles
+            rec_set = None
+            if alt_pressed:
+                # use all active filter recs
+                rec_set = [
+                    rec
+                    for rec in self.receptacles
+                    if rec.unique_name in self.rec_filter_data["active"]
+                ]
+            elif self.selected_rec is not None:
+                rec_set = [self.selected_rec]
+            elif len(self.obj_editor.sel_objs) != 0:
+                rec_set = []
+                for obj in self.obj_editor.sel_objs.values():
+                    tmp_list = [
+                        rec
+                        for rec in self.receptacles
+                        if obj.handle == rec.parent_object_handle
+                    ]
+                    rec_set.extend(tmp_list)
+            if rec_set is not None:
+                if len(self.clutter_object_handles) == 0:
+                    for obj_name in self.clutter_object_set:
+                        matching_handles = self.sim.metadata_mediator.object_template_manager.get_template_handles(
+                            obj_name
+                        )
+                        assert (
+                            len(matching_handles) > 0
+                        ), f"No matching template for '{obj_name}' in the dataset."
+                        self.clutter_object_handles.append(matching_handles[0])
+
+                rec_set_unique_names = [rec.unique_name for rec in rec_set]
+                obj_samp = ObjectSampler(
+                    self.clutter_object_handles,
+                    ["rec set"],
+                    orientation_sample="up",
+                    num_objects=(1, 10),
+                )
+                obj_samp.receptacle_instances = self.receptacles
+                rec_set_obj = hab_receptacle.ReceptacleSet(
+                    "rec set", [""], [], rec_set_unique_names, []
+                )
+                recep_tracker = hab_receptacle.ReceptacleTracker(
+                    {},
+                    {"rec set": rec_set_obj},
+                )
+                new_objs = obj_samp.sample(self.sim, recep_tracker, [], snap_down=True)
+                for obj, rec in new_objs:
+                    self.clutter_object_instances.append(obj)
+                    self.clutter_object_initial_states.append(
+                        (obj.translation, obj.rotation)
+                    )
+                    print(f"Sampled '{obj.handle}' in '{rec.unique_name}'")
+            else:
+                print("No object selected, cannot sample clutter.")
+
     def key_press_event(self, event: Application.KeyEvent) -> None:
         """
         Handles `Application.KeyEvent` on a key press by performing the corresponding functions.
@@ -1271,10 +1321,7 @@ class HabitatSimInteractiveViewer(Application):
             return
         elif key == pressed.ONE:
             # save scene instance
-            # clear furniture joint positions before saving
-            self.clear_furniture_joint_states()
-            # save scene instance to original file location
-            self.sim.save_current_scene_config(overwrite=True)
+            self.obj_editor.save_current_scene()
             print("Saved modified scene instance JSON to original location.")
         elif key == pressed.TWO:
             # Undo any edits
@@ -1449,73 +1496,19 @@ class HabitatSimInteractiveViewer(Application):
                             obj.translation = obj.translation - mn.Vector3(200, 0, 0)
 
         elif key == pressed.P:
-            self.clear_furniture_joint_states()
+            # If shift pressed then open, otherwise close
+            # If alt pressed then selected, otherwise all
+            self.obj_editor.set_ao_joint_states(
+                do_open=shift_pressed, selected=alt_pressed
+            )
+            if not shift_pressed:
+                # if closing then redo navmesh
+                self.navmesh_config_and_recompute()
 
         elif key == pressed.Q:
-            rom = self.sim.get_rigid_object_manager()
-            # add objects to the selected receptacle or remove al objects
-            if shift_pressed:
-                # remove all
-                print(f"Removing {len(self.clutter_object_instances)} clutter objects.")
-                for obj in self.clutter_object_instances:
-                    rom.remove_object_by_handle(obj.handle)
-                self.clutter_object_initial_states.clear()
-                self.clutter_object_instances.clear()
-            else:
-                # try to sample an object from the selected object receptacles
-                rec_set = None
-                if alt_pressed:
-                    # use all active filter recs
-                    rec_set = [
-                        rec
-                        for rec in self.receptacles
-                        if rec.unique_name in self.rec_filter_data["active"]
-                    ]
-                elif self.selected_rec is not None:
-                    rec_set = [self.selected_rec]
-                elif self.selected_object is not None:
-                    rec_set = [
-                        rec
-                        for rec in self.receptacles
-                        if self.selected_object.handle == rec.parent_object_handle
-                    ]
-                if rec_set is not None:
-                    if len(self.clutter_object_handles) == 0:
-                        for obj_name in self.clutter_object_set:
-                            matching_handles = self.sim.metadata_mediator.object_template_manager.get_template_handles(
-                                obj_name
-                            )
-                            assert (
-                                len(matching_handles) > 0
-                            ), f"No matching template for '{obj_name}' in the dataset."
-                            self.clutter_object_handles.append(matching_handles[0])
-
-                    rec_set_unique_names = [rec.unique_name for rec in rec_set]
-                    obj_samp = ObjectSampler(
-                        self.clutter_object_handles,
-                        ["rec set"],
-                        orientation_sample="up",
-                        num_objects=(1, 10),
-                    )
-                    obj_samp.receptacle_instances = self.receptacles
-                    rec_set_obj = hab_receptacle.ReceptacleSet(
-                        "rec set", [""], [], rec_set_unique_names, []
-                    )
-                    recep_tracker = hab_receptacle.ReceptacleTracker(
-                        {},
-                        {"rec set": rec_set_obj},
-                    )
-                    new_objs = obj_samp.sample(
-                        self.sim, recep_tracker, [], snap_down=True
-                    )
-                    for obj, rec in new_objs:
-                        self.clutter_object_instances.append(obj)
-                        self.clutter_object_initial_states.append(
-                            (obj.translation, obj.rotation)
-                        )
-                        print(f"Sampled '{obj.handle}' in '{rec.unique_name}'")
-                else:
-                    print("No object selected, cannot sample clutter.")
+            self.add_objects_to_receptacles(
+                alt_pressed=alt_pressed, shift_pressed=shift_pressed
+            )
 
         elif key == pressed.R:
             # Reload current scene
@@ -1524,10 +1517,10 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.T:
             if shift_pressed:
                 # open all the AO default links
-                aos = get_all_ao_objects(self.sim)
+                aos = sim_utils.get_all_ao_objects(self.sim)
                 for ao in aos:
-                    default_link = sutils.get_ao_default_link(ao, True)
-                    sutils.open_link(ao, default_link)
+                    default_link = sim_utils.get_ao_default_link(ao, True)
+                    sim_utils.open_link(ao, default_link)
                 # compute and set the receptacle filters
                 for rix, rec in enumerate(self.receptacles):
                     rec_accessible, filter_type = self.check_rec_accessibility(rec)
@@ -1588,22 +1581,11 @@ class HabitatSimInteractiveViewer(Application):
 
         elif key == pressed.U:
             # Remove object
-            if self.selected_object is not None:
-                print(f"Removing {self.selected_object.handle}")
-                if isinstance(
-                    self.selected_object, habitat_sim.physics.ManagedBulletRigidObject
-                ):
-                    self.sim.get_rigid_object_manager().remove_object_by_handle(
-                        self.selected_object.handle
-                    )
-                else:
-                    self.sim.get_articulated_object_manager().remove_object_by_handle(
-                        self.selected_object.handle
-                    )
-                self.selected_object = None
-                # clear out selected object in editor
-                self.obj_editor.set_sel_obj(None)
-                self.navmesh_config_and_recompute()
+            # 'Remove' all selected objects by moving them out of view.
+            # Removal only becomes permanent when scene is saved
+            self.obj_editor.remove_sel_objects()
+
+            self.navmesh_config_and_recompute()
 
         elif key == pressed.V:
             # load receptacles and toggle visibilty or color mode (+SHIFT)
@@ -1668,7 +1650,9 @@ class HabitatSimInteractiveViewer(Application):
         hit_info = self.mouse_cast_results.hits[0]
 
         if hit_info.object_id > habitat_sim.stage_id:
-            obj = get_obj_from_id(self.sim, hit_info.object_id, self.ao_link_map)
+            obj = sim_utils.get_obj_from_id(
+                self.sim, hit_info.object_id, self.ao_link_map
+            )
 
             if obj is None:
                 raise AssertionError(
@@ -1778,7 +1762,7 @@ class HabitatSimInteractiveViewer(Application):
             and self.mouse_cast_has_hits
             and event.button == button.RIGHT
         ):
-            self.selected_object = None
+            sel_obj = None
             self.selected_rec = None
             hit_info = self.mouse_cast_results.hits[0]
             hit_id = hit_info.object_id
@@ -1786,12 +1770,12 @@ class HabitatSimInteractiveViewer(Application):
             if hit_id == habitat_sim.stage_id:
                 print("This is the stage.")
             else:
-                obj = get_obj_from_id(self.sim, hit_id)
+                obj = sim_utils.get_obj_from_id(self.sim, hit_id)
                 link_id = None
                 if obj.object_id != hit_id:
                     # this is a link
                     link_id = obj.link_object_ids[hit_id]
-                self.selected_object = obj
+                sel_obj = obj
                 print(f"Object: {obj.handle}")
                 if isinstance(obj, physics.ManagedArticulatedObject):
                     print("links = ")
@@ -1859,33 +1843,28 @@ class HabitatSimInteractiveViewer(Application):
                             self.rec_filter_data["manually_filtered"].append(
                                 filtered_rec_name
                             )
-                elif isinstance(obj, habitat_sim.physics.ManagedArticulatedObject):
+                elif obj.is_articulated:
                     # get the default link
-                    default_link = sutils.get_ao_default_link(obj, True)
+                    default_link = sim_utils.get_ao_default_link(obj, True)
                     if default_link is None:
                         print("Selected AO has no default link.")
                     else:
-                        if sutils.link_is_open(obj, default_link, 0.05):
-                            sutils.close_link(obj, default_link)
+                        if sim_utils.link_is_open(obj, default_link, 0.05):
+                            sim_utils.close_link(obj, default_link)
                         else:
-                            sutils.open_link(obj, default_link)
+                            sim_utils.open_link(obj, default_link)
         elif (
             self.mouse_interaction == MouseMode.MARKER
             and physics_enabled
             and self.mouse_cast_has_hits
         ):
             # hit_info = self.mouse_cast_results.hits[0]
-            self.selected_object = self.markersets_util.place_marker_at_hit_location(
+            sel_obj = self.markersets_util.place_marker_at_hit_location(
                 self.mouse_cast_results.hits[0],
                 self.ao_link_map,
                 event.button == button.LEFT,
             )
-        self.obj_editor.set_sel_obj(self.selected_object)
-        # # record current selected object's transformation, to restore if undo is pressed
-        # if self.selected_object is not None:
-        #     self.selected_object_orig_transform = (
-        #         self.selected_object.transformation
-        #     )
+        self.obj_editor.set_sel_obj(sel_obj)
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
@@ -2173,7 +2152,11 @@ Key Commands:
     'c':        Toggle the contact point debug render overlay on/off. If toggled to true,
                 then run a discrete collision detection pass and render a debug wireframe overlay
                 showing active contact points and normals (yellow=fixed length normals, red=collision distances).
-    'p'         Clear the joint states of all articulated objects.
+    'p'         Modify AO link states :
+         (+SHIFT) : Open Selected/All AOs
+         (-SHIFT) : Close Selected/All AOs
+         (+ALT) : Modify Selected AOs
+         (-ALT) : Modify All AOs
     'e'         Toggle Semantic visualization bounds (currently only Semantic Region annotations)
 
     Object Interactions:

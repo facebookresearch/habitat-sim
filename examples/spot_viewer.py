@@ -242,22 +242,6 @@ class HabitatSimInteractiveViewer(Application):
         # no hits, so outdoors
         return True
 
-    def clear_furniture_joint_states(self):
-        """
-        Clear all furniture object joint states.
-        """
-        for ao in (
-            self.sim.get_articulated_object_manager()
-            .get_objects_by_handle_substring()
-            .values()
-        ):
-            # ignore the robot
-            if "hab_spot" not in ao.handle:
-                j_pos = ao.joint_positions
-                ao.joint_positions = [0.0 for _ in range(len(j_pos))]
-                j_vel = ao.joint_velocities
-                ao.joint_velocities = [0.0 for _ in range(len(j_vel))]
-
     def draw_contact_debug(self, debug_line_render: Any):
         """
         This method is called to render a debug line overlay displaying active contact points and normals.
@@ -788,6 +772,7 @@ class HabitatSimInteractiveViewer(Application):
 
         # select an object with RIGHT-click
         if physics_enabled and event.button == button.RIGHT:
+            # Find object being clicked
             obj_found = False
             render_camera = self.render_camera.render_camera
             ray = render_camera.unproject(self.get_mouse_position(event.position))
