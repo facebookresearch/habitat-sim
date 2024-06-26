@@ -1258,7 +1258,7 @@ Num Sel Objs: {len(self.sel_objs)}
                     new_obj.motion_type = obj.motion_type
                     # move new object to appropriate location
                     new_navmesh_dirty = self._move_one_object(
-                        obj, navmesh_dirty, new_obj_translation, obj.rotation
+                        new_obj, navmesh_dirty, new_obj_translation, obj.rotation
                     )
                     navmesh_dirty = new_navmesh_dirty or navmesh_dirty
                     res_objs.append(new_obj)
