@@ -711,10 +711,7 @@ class HabitatSimInteractiveViewer(Application):
                     disp_in_front=[1.5, 0.0, 0.0]
                 ),
             )
-            if len(new_obj_list) > 0:
-                for new_obj in new_obj_list:
-                    print(f"New object translation : {new_obj.translation}")
-            else:
+            if len(new_obj_list) == 0:
                 print("Failed to add any new objects.")
 
         # update map of moving/looking keys which are currently pressed
