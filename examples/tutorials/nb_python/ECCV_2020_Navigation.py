@@ -648,7 +648,7 @@ else:
     # @markdown 3. Display trajectory (if found) on a topdown map of ground floor
     if found_path:
         meters_per_pixel = 0.025
-        scene_bb = sim.get_active_scene_graph().get_root_node().cumulative_bb
+        scene_bb = sim.scene_bb
         height = scene_bb.y().min
         if display:
             top_down_map = maps.get_topdown_map(
