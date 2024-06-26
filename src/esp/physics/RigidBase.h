@@ -284,7 +284,7 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   std::shared_ptr<const metadata::attributes::SceneObjectInstanceAttributes>
   getInitObjectInstanceAttr() const {
     return PhysicsObjectBase::getInitObjectInstanceAttrInternal<
-        const metadata::attributes::SceneObjectInstanceAttributes>();
+        metadata::attributes::SceneObjectInstanceAttributes>();
   }
 
   /**

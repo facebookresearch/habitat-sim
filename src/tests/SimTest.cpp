@@ -993,6 +993,8 @@ void SimTest::testArticulatedObjectSkinned() {
 
   CORRADE_COMPARE(aoManager->getNumObjects(), 0);
   auto ao = aoManager->addArticulatedObjectFromURDF(urdfFile);
+  // Verify is an articulated object
+  CORRADE_VERIFY(ao->isArticulated());
   CORRADE_COMPARE(aoManager->getNumObjects(), 1);
 
   CORRADE_COMPARE(ao->getSceneNode()->getSemanticId(), 100);
@@ -1003,14 +1005,19 @@ void SimTest::testArticulatedObjectSkinned() {
   const auto linkIds = ao->getLinkIdsWithBase();
 
   auto linkA = ao->getLink(linkIds[0]);
+  CORRADE_VERIFY(linkA->isArticulated());
   CORRADE_VERIFY(linkA->linkName == "A");
   auto linkB = ao->getLink(linkIds[1]);
+  CORRADE_VERIFY(linkB->isArticulated());
   CORRADE_VERIFY(linkB->linkName == "B");
   auto linkC = ao->getLink(linkIds[2]);
+  CORRADE_VERIFY(linkC->isArticulated());
   CORRADE_VERIFY(linkC->linkName == "C");
   auto linkD = ao->getLink(linkIds[3]);
+  CORRADE_VERIFY(linkD->isArticulated());
   CORRADE_VERIFY(linkD->linkName == "D");
   auto linkE = ao->getLink(linkIds[4]);
+  CORRADE_VERIFY(linkE->isArticulated());
   CORRADE_VERIFY(linkE->linkName == "E");
 
   ao->setTranslation({1.f, -3.f, -6.f});

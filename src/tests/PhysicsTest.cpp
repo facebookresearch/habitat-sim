@@ -230,6 +230,8 @@ void PhysicsTest::testJoinCompound() {
       int num_objects = 7;
       for (int o = 0; o < num_objects; ++o) {
         auto objWrapper = rigidObjectManager_->addObjectByHandle(objectFile);
+        // Verify is not an articulated object or part of one
+        CORRADE_VERIFY(!objWrapper->isArticulated());
 
         esp::scene::SceneNode* node = objWrapper->getSceneNode();
 
@@ -364,8 +366,11 @@ void PhysicsTest::testDiscreteContactTest() {
 
     // generate two centered boxes with dimension 2x2x2
     auto objWrapper0 = rigidObjectManager_->addObjectByHandle(objectFile);
+    // Verify is not an articulated object or part of one
+    CORRADE_VERIFY(!objWrapper0->isArticulated());
     auto objWrapper1 = rigidObjectManager_->addObjectByHandle(objectFile);
-
+    // Verify is not an articulated object or part of one
+    CORRADE_VERIFY(!objWrapper1->isArticulated());
     // place them in collision free location (0.1 about ground plane and 0.2
     // apart)
     objWrapper0->setTranslation(Magnum::Vector3{0, 1.1, 0});

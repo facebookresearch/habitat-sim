@@ -100,7 +100,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     if (!initializationAttributes_) {
       return nullptr;
     }
-    return T::create(*(static_cast<T*>(initializationAttributes_.get())));
+    return T::create(*(static_cast<const T*>(initializationAttributes_.get())));
   }
 
   /**
@@ -598,6 +598,10 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   virtual Magnum::Vector3 getScale() const { return _creationScale; }
 
+  /** @brief Return whether or not this object is articulated. Override in
+   * ArticulatedObject */
+  virtual bool isArticulated() const { return false; }
+
  protected:
   /** @brief Accessed internally. Get an appropriately cast copy of the @ref
    * metadata::attributes::SceneObjectInstanceAttributes used to place the
@@ -610,7 +614,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     if (!_initObjInstanceAttrs) {
       return nullptr;
     }
-    return T::create(*(static_cast<T*>(_initObjInstanceAttrs.get())));
+    return T::create(*(static_cast<const T*>(_initObjInstanceAttrs.get())));
   }
 
   /**
@@ -700,11 +704,15 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   metadata::attributes::MarkerSets::ptr markerSets_ = nullptr;
 
   /**
-   * @brief Saved attributes when the object was initialized.
+   * @brief Saved template attributes when the object was initialized.
    */
-  metadata::attributes::AbstractAttributes::ptr initializationAttributes_ =
+  metadata::attributes::AbstractAttributes::cptr initializationAttributes_ =
       nullptr;
 
+  /**
+   * @brief Saved reference to this object's instantiating template manager
+   */
+  // metadata::managers::AttributesManager::ptr templateManager_ = nullptr;
   /**
    * @brief Set the object's creation scale
    */
