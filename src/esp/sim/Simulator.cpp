@@ -634,20 +634,10 @@ bool Simulator::instanceObjectsForSceneAttributes(
             "due to object instance configuration not being found. Aborting",
             config_.activeSceneName));
 
-    const std::string objAttrFullHandle =
-        metadataMediator_->getObjAttrFullHandle(objInst->getHandle());
-    // make sure full handle is not empty
-    ESP_CHECK(!objAttrFullHandle.empty(),
-              Cr::Utility::formatString(
-                  "Simulator::instanceObjectsForSceneAttributes() : Attempt to "
-                  "load object instance specified in current scene instance "
-                  ":{} failed due to object instance configuration handle '{}' "
-                  "being empty or unknown. Aborting",
-                  config_.activeSceneName, objInst->getHandle()));
     // objID =
-    physicsManager_->addObjectInstance(
-        objInst, objAttrFullHandle, defaultCOMCorrection, &getDrawableGroup(),
-        attachmentNode, config_.sceneLightSetupKey);
+    physicsManager_->addObjectInstance(objInst, defaultCOMCorrection,
+                                       &getDrawableGroup(), attachmentNode,
+                                       config_.sceneLightSetupKey);
   }  // for each object attributes
   return true;
 }  // Simulator::instanceObjectsForSceneAttributes()
@@ -672,26 +662,10 @@ bool Simulator::instanceArticulatedObjectsForSceneAttributes(
                   "AO instance configuration not being found. Aborting",
                   config_.activeSceneName));
 
-    // get model file name
-    const std::string artObjAttrHandle =
-        metadataMediator_->getArticulatedObjModelFullHandle(
-            artObjInst->getHandle());
-
-    // make sure full handle is not empty
-    ESP_CHECK(
-        !artObjAttrHandle.empty(),
-        Cr::Utility::formatString(
-            "Simulator::instanceArticulatedObjectsForSceneAttributes() : "
-            "Attempt to load articulated object instance specified in "
-            "current scene instance :{} failed due to AO instance "
-            "configuration file handle '{}' being empty or unknown. Aborting",
-            config_.activeSceneName, artObjInst->getHandle()));
-
     // create articulated object
     // aoID =
-    physicsManager_->addArticulatedObjectInstance(artObjInst, artObjAttrHandle,
-                                                  &getDrawableGroup(),
-                                                  config_.sceneLightSetupKey);
+    physicsManager_->addArticulatedObjectInstance(
+        artObjInst, &getDrawableGroup(), config_.sceneLightSetupKey);
   }  // for each articulated object instance
   return true;
 }  // Simulator::instanceArticulatedObjectsForSceneAttributes

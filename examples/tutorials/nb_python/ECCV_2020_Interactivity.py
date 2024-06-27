@@ -320,7 +320,7 @@ def sample_object_state(
             )
 
         # test for penetration with the environment
-        if not sim.contact_test(obj.object_id):
+        if not obj.contact_test():
             valid_placement = True
 
     if not valid_placement:

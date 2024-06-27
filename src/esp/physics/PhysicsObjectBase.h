@@ -600,9 +600,11 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /** @brief Return whether or not this object is articulated. Override in
    * ArticulatedObject */
-  virtual bool isArticulated() const { return false; }
+  bool isArticulated() const { return _isArticulated; }
 
  protected:
+  void setIsArticulated(bool isArticulated) { _isArticulated = isArticulated; }
+
   /** @brief Accessed internally. Get an appropriately cast copy of the @ref
    * metadata::attributes::SceneObjectInstanceAttributes used to place the
    * object within the scene.
@@ -710,10 +712,6 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
       nullptr;
 
   /**
-   * @brief Saved reference to this object's instantiating template manager
-   */
-  // metadata::managers::AttributesManager::ptr templateManager_ = nullptr;
-  /**
    * @brief Set the object's creation scale
    */
   void setScale(const Magnum::Vector3& creationScale) {
@@ -732,6 +730,12 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * @brief The scale applied to this object on creation
    */
   Mn::Vector3 _creationScale{1.0f, 1.0f, 1.0f};
+
+  /**
+   * @brief Whether or not this is an articulated object. Set to true in
+   * articulated object constructors.
+   */
+  bool _isArticulated = false;
 
  public:
   ESP_SMART_POINTERS(PhysicsObjectBase)

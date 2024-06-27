@@ -199,6 +199,37 @@ class ArticulatedObjectManager
     return objPtr;
   }
 
+  /**
+   * @brief Duplicate an existing @ref ArticulatedObject referenced by the
+   * given @p aObjectID .
+   *
+   * @param aObjectID The ID of the @ref ArticulatedObject to duplicate
+   * @return A shared pointer to the instanced @ref ArticulatedObject 's wrapper .
+   */
+  std::shared_ptr<ManagedArticulatedObject> copyArticulatedObjectByID(
+      int aObjectID);
+
+  /**
+   * @brief Cast to BulletArticulatedObject version.
+   * Duplicate an existing @ref ArticulatedObject referenced by the
+   * given @p aObjectID .
+   *
+   * @param aObjectID The ID of the @ref ArticulatedObject to duplicate
+   * @return A shared pointer to the instanced @ref ArticulatedObject .
+   */
+  std::shared_ptr<ManagedArticulatedObject> copyBulletArticulatedObjectByID(
+      int aObjectID) {
+    std::shared_ptr<ManagedArticulatedObject> aObjPtr =
+        copyArticulatedObjectByID(aObjectID);
+
+    if (std::shared_ptr<ManagedBulletArticulatedObject> castObjPtr =
+            std::dynamic_pointer_cast<ManagedBulletArticulatedObject>(
+                aObjPtr)) {
+      return castObjPtr;
+    }
+    return aObjPtr;
+  }
+
  protected:
   /**
    * @brief This method will remove articulated objects from physics manager.
