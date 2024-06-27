@@ -163,6 +163,7 @@ class RigidObject : public RigidBase {
   void setIsCOMCorrected(bool _isCOMCorrected) {
     isCOMCorrected_ = _isCOMCorrected;
   }
+  bool getIsCOMCorreected() const { return isCOMCorrected_; }
 
   /**
    * @brief Reverses the COM correction transformation for objects that require

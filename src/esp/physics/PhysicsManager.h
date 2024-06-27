@@ -296,8 +296,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * esp::metadata::attributes::SceneObjectInstanceAttributes file.
    * @param objInstAttributes The attributes that describe the desired state to
    * set this object.
-   * @param attributesHandle The handle of the object attributes used as the key
-   * to query @ref esp::metadata::managers::ObjectAttributesManager.
    * @param defaultCOMCorrection The default value of whether COM-based
    * translation correction needs to occur.
    * @param drawables Reference to the scene graph drawables group to enable
@@ -313,11 +311,21 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   int addObjectInstance(
       const esp::metadata::attributes::SceneObjectInstanceAttributes::cptr&
           objInstAttributes,
-      const std::string& attributesHandle,
       bool defaultCOMCorrection = false,
       DrawableGroup* drawables = nullptr,
       scene::SceneNode* attachmentNode = nullptr,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
+
+  /**
+   * @brief Duplicate an existing rigid using its @ref
+   * esp::metadata::attributes::SceneObjectInstanceAttributes template.
+   * @param objectID The ID of the existing @ref RigidObject we wish to duplicate.
+   * @return The instanced @ref RigidObject 's ID, mapping to the rigid
+   * object in @ref PhysicsManager::existingObjects_ if successful, or
+   * @ref esp::ID_UNDEFINED. These values come from the same pool used
+   * by articulated objects.
+   */
+  int cloneExistingObject(int objectID);
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::metadata::managers::ObjectAttributesManager.  This method
@@ -405,12 +413,9 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /**
    * @brief Instance and place an @ref ArticulatedObject from a @ref
-   * esp::metadata::attributes::SceneAOInstanceAttributes file.
+   * esp::metadata::attributes::SceneAOInstanceAttributes template.
    * @param aObjInstAttributes The attributes that describe the desired initial
    * state to set for this articulated object.
-   * @param attributesHandle The handle of the @ref ArticulatedObject attributes
-   * used as the key to query @ref esp::metadata::managers::AOAttributesManager
-   * for the attributes.
    * @param drawables Reference to the scene graph drawables group to enable
    * rendering of the newly initialized object. If nullptr, will attempt to
    * query Simulator to retrieve a group.
@@ -424,9 +429,19 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       const std::shared_ptr<
           const esp::metadata::attributes::SceneAOInstanceAttributes>&
           aObjInstAttributes,
-      const std::string& attributesHandle,
       DrawableGroup* drawables = nullptr,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
+
+  /**
+   * @brief Duplicate an existing @ref ArticulatedObject using its @ref
+   * esp::metadata::attributes::SceneAOInstanceAttributes template.
+   * @param aObjectID The ID of the existing @ref ArticulatedObject we wish to duplicate.
+   * @return The instanced @ref ArticulatedObject 's ID, mapping to the articulated
+   * object in @ref PhysicsManager::existingObjects_ if successful, or
+   * @ref esp::ID_UNDEFINED. These values come from the same pool used
+   * by rigid objects.
+   */
+  int cloneExistingArticulatedObject(int aObjectID);
 
   /**
    * @brief Instance an @ref ArticulatedObject from an
