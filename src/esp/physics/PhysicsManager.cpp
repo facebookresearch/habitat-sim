@@ -214,7 +214,7 @@ int PhysicsManager::cloneExistingObject(int objectID) {
   esp::metadata::attributes::SceneObjectInstanceAttributes::cptr objInstAttrs =
       objPtr->getInitObjectInstanceAttr();
   // Create object instance
-  int newObjID = addObjectInstance(objInstAttrs, objPtr->getIsCOMCorreected(),
+  int newObjID = addObjectInstance(objInstAttrs, objPtr->isCOMCorrected(),
                                    &simulator_->getDrawableGroup(), nullptr,
                                    simulator_->getCurrentLightSetupKey());
 
