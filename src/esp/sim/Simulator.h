@@ -309,21 +309,6 @@ class Simulator {
   }
 
   /**
-   * @brief Discrete collision check for contact between an object and the
-   * collision world.
-   * @param objectId The object ID and key identifying the object in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @return Whether or not the object is in contact with any other collision
-   * enabled objects.
-   */
-  bool contactTest(int objectID) {
-    if (sceneHasPhysics()) {
-      return physicsManager_->contactTest(objectID);
-    }
-    return false;
-  }
-
-  /**
    * @brief Perform discrete collision detection for the scene.
    */
   void performDiscreteCollisionDetection() {

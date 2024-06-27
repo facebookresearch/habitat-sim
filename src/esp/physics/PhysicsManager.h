@@ -679,31 +679,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       CORRADE_UNUSED const Magnum::Matrix4& projTrans) const {}
 
   /**
-   * @brief Check whether an object is in contact with any other objects or the
-   * scene.
-   *
-   * @param physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return Whether or not the object is in contact with any other collision
-   * enabled objects.
-   */
-  virtual bool contactTest(const int physObjectID) {
-    const auto existingObjsIter = existingObjects_.find(physObjectID);
-    bool existingObjFound = (existingObjsIter != existingObjects_.end());
-    const auto existingArtObjsIter =
-        existingArticulatedObjects_.find(physObjectID);
-    CORRADE_INTERNAL_ASSERT(
-        existingObjFound ||
-        (existingArtObjsIter != existingArticulatedObjects_.end()));
-    if (existingObjFound) {
-      return existingObjsIter->second->contactTest();
-    } else {
-      return existingArtObjsIter->second->contactTest();
-    }
-    return false;
-  }
-
-  /**
    * @brief Perform discrete collision detection for the scene with the derived
    * PhysicsManager implementation. Not implemented for default @ref
    * PhysicsManager. See @ref BulletPhysicsManager.
