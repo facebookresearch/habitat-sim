@@ -234,6 +234,16 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
           Optionally attach the object to an existing SceneNode and assign its initial
           LightSetup key. Returns a reference to the created object.)")
       .def(
+          "duplicate_object_by_id",
+#ifdef ESP_BUILD_WITH_BULLET
+          &RigidObjectManager::copyBulletObjectByID,
+#else
+          &RigidObjectManager::copyObjectByID,
+#endif
+          "object_id"_a,
+          R"(Duplicate an existing rigid object referenced by its ID and add it into the scene.
+          Returns a reference to the created object.)")
+      .def(
           "add_object_by_template_handle",
 #ifdef ESP_BUILD_WITH_BULLET
           &RigidObjectManager::addBulletObjectByHandle,
@@ -300,7 +310,16 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
           R"(Instance an articulated object into the scene via a template referenced by its ID.
           Optionally force the articulated object's model to be reloaded from disk and assign its initial
           LightSetup key. Returns a reference to the created object.)")
-
+      .def(
+          "duplicate_articulated_object_by_id",
+#ifdef ESP_BUILD_WITH_BULLET
+          &ArticulatedObjectManager::copyBulletArticulatedObjectByID,
+#else
+          &ArticulatedObjectManager::copyArticulatedObjectByID,
+#endif
+          "ao_object_id"_a,
+          R"(Duplicate an existing articulated object referenced by its ID and add it into the scene.
+          Returns a reference to the created object.)")
       .def(
           "add_articulated_object_from_urdf",
 #ifdef ESP_BUILD_WITH_BULLET

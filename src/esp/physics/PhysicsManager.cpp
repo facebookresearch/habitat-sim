@@ -123,11 +123,27 @@ int PhysicsManager::addObject(int attributesID,
 int PhysicsManager::addObjectInstance(
     const esp::metadata::attributes::SceneObjectInstanceAttributes::cptr&
         objInstAttributes,
-    const std::string& attributesHandle,
     bool defaultCOMCorrection,
     DrawableGroup* drawables,
     scene::SceneNode* attachmentNode,
     const std::string& lightSetup) {
+  // Template attributes handle from instance
+  const std::string objAttrHandle = objInstAttributes->getHandle();
+  // Get full object template attributes handle
+  const std::string attributesHandle =
+      resourceManager_.getObjectAttributesManager()->getFullAttrNameFromStr(
+          objAttrHandle);
+
+  // make sure full handle is not empty, meaning template is not found in
+  // manager
+  ESP_CHECK(!attributesHandle.empty(),
+            Cr::Utility::formatString(
+                "PhysicsManager::addObjectInstance() : Attempt to "
+                "load object instance specified in current scene instance "
+                ":{} failed due to object instance configuration handle '{}' "
+                "being empty or unknown. Aborting",
+                simulator_->getActiveSceneDatasetName(), objAttrHandle));
+
   // Get ObjectAttributes
   auto objAttributes =
       resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
@@ -136,8 +152,7 @@ int PhysicsManager::addObjectInstance(
   if (!objAttributes) {
     ESP_ERROR(Mn::Debug::Flag::NoSpace)
         << "Missing/improperly configured ObjectAttributes '"
-        << attributesHandle << "', whose handle contains '"
-        << objInstAttributes->getHandle()
+        << attributesHandle << "', whose handle contains '" << objAttrHandle
         << "' as specified in object instance attributes, so addObjectInstance "
            "aborted.";
     return ID_UNDEFINED;
@@ -183,6 +198,32 @@ int PhysicsManager::addObjectInstance(
                                     objInstAttributes);
 
 }  // PhysicsManager::addObjectInstance
+
+int PhysicsManager::cloneExistingObject(int objectID) {
+  // Retrieve object by ID
+  const auto existingObjIter = existingObjects_.find(objectID);
+  // Verify object id exists and is a rigid object
+  if (existingObjIter == existingObjects_.end()) {
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "Object cloning failed due to unknown existing object ID `"
+        << objectID << "`. Aborting";
+    return ID_UNDEFINED;
+  }
+  auto objPtr = existingObjIter->second;
+  // Get object instance attributes copy
+  esp::metadata::attributes::SceneObjectInstanceAttributes::cptr objInstAttrs =
+      objPtr->getInitObjectInstanceAttr();
+  // Create object instance
+  int newObjID = addObjectInstance(objInstAttrs, objPtr->isCOMCorrected(),
+                                   &simulator_->getDrawableGroup(), nullptr,
+                                   simulator_->getCurrentLightSetupKey());
+
+  // Update new object's values if necessary
+  // auto newObject = existingObjects_.find(newObjID);
+
+  return newObjID;
+
+}  // PhysicsManager::cloneExistingObject
 
 int PhysicsManager::addObjectAndSaveAttributes(
     const esp::metadata::attributes::ObjectAttributes::ptr& objAttributes,
@@ -434,9 +475,26 @@ int PhysicsManager::addArticulatedObjectInstance(
     const std::shared_ptr<
         const esp::metadata::attributes::SceneAOInstanceAttributes>&
         aObjInstAttributes,
-    const std::string& artObjAttrHandle,
     DrawableGroup* drawables,
     const std::string& lightSetup) {
+  // AO template attributes handle from articulated object instance
+  const std::string artObjHandle = aObjInstAttributes->getHandle();
+
+  // Get model file name from handle
+  const std::string artObjAttrHandle =
+      resourceManager_.getAOAttributesManager()->getFullAttrNameFromStr(
+          artObjHandle);
+
+  // make sure full handle is not empty
+  ESP_CHECK(
+      !artObjAttrHandle.empty(),
+      Cr::Utility::formatString(
+          "PhysicsManager::addArticulatedObjectInstance() : "
+          "Attempt to load articulated object instance specified in "
+          "current scene instance :{} failed due to AO instance "
+          "configuration file handle '{}' being empty or unknown. Aborting",
+          simulator_->getActiveSceneDatasetName(), artObjHandle));
+
   // Get ArticulatedObjectAttributes
   auto artObjAttributes =
       resourceManager_.getAOAttributesManager()->getObjectCopyByHandle(
@@ -509,6 +567,33 @@ int PhysicsManager::addArticulatedObjectInstance(
       artObjAttributes, drawables, false, lightSetup, aObjInstAttributes);
 
 }  // PhysicsManager::addArticulatedObjectInstance
+
+int PhysicsManager::cloneExistingArticulatedObject(int aObjectID) {
+  // Retrieve object by ID
+  const auto existingAOIter = existingArticulatedObjects_.find(aObjectID);
+  // Verify object id exists and is a rigid object
+  if (existingAOIter == existingArticulatedObjects_.end()) {
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "Articulated Object cloning failed due to unknown existing "
+           "articulated object ID `"
+        << aObjectID << "`. Aborting";
+    return ID_UNDEFINED;
+  }
+  auto aObjPtr = existingAOIter->second;
+  // Get object instance attributes copy
+  esp::metadata::attributes::SceneAOInstanceAttributes::cptr artObjInstAttrs =
+      aObjPtr->getInitObjectInstanceAttr();
+  // Create object instance
+  int newArtObjID = addArticulatedObjectInstance(
+      artObjInstAttrs, &simulator_->getDrawableGroup(),
+      simulator_->getCurrentLightSetupKey());
+
+  // Update new object's values if necessary
+  // auto newArtObj = existingArticulatedObjects_.find(newArtObjID);
+
+  return newArtObjID;
+
+}  // PhysicsManager::cloneExistingArticulatedObject
 
 int PhysicsManager::addArticulatedObjectAndSaveAttributes(
     const esp::metadata::attributes::ArticulatedObjectAttributes::ptr&

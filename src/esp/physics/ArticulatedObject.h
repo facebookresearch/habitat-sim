@@ -146,7 +146,9 @@ class ArticulatedLink : public RigidBase {
                   0,  // TODO: pass an actual object ID. This is currently
                       // assigned AFTER creation.
                   resMgr),
-        mbIndex_(index) {}
+        mbIndex_(index) {
+    setIsArticulated(true);
+  }
 
   ~ArticulatedLink() override = default;
 
@@ -263,9 +265,6 @@ class ArticulatedLink : public RigidBase {
   std::string linkName = "";
   std::string linkJointName = "";
 
-  /** @brief Return whether or not this object is articulated. */
-  bool isArticulated() const override { return true; }
-
  private:
   /**
    * @brief Finalize the initialization of this link.
@@ -301,7 +300,9 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   ArticulatedObject(scene::SceneNode* rootNode,
                     assets::ResourceManager& resMgr,
                     int objectId)
-      : PhysicsObjectBase(rootNode, objectId, resMgr){};
+      : PhysicsObjectBase(rootNode, objectId, resMgr) {
+    setIsArticulated(true);
+  }
 
   ~ArticulatedObject() override {
     // clear links and delete their SceneNodes
@@ -995,9 +996,6 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     return PhysicsObjectBase::getInitializationAttributes<
         metadata::attributes::ArticulatedObjectAttributes>();
   }
-
-  /** @brief Return whether or not this object is articulated. */
-  bool isArticulated() const override { return true; }
 
  protected:
   /**

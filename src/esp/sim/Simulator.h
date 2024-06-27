@@ -711,6 +711,13 @@ class Simulator {
   }
 
   /**
+   * @brief retrieve Current lightsetup key
+   */
+  std::string getCurrentLightSetupKey() const {
+    return config_.sceneLightSetupKey;
+  }
+
+  /**
    * @brief Register a @ref gfx::LightSetup with a key name.
    *
    * If this name already exists, the @ref gfx::LightSetup is updated and all
