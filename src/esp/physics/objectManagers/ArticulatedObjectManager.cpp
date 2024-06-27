@@ -74,5 +74,14 @@ ArticulatedObjectManager::addArticulatedObjectByID(
   return nullptr;
 }
 
+std::shared_ptr<ManagedArticulatedObject>
+ArticulatedObjectManager::copyArticulatedObjectByID(int aObjectID) {
+  if (auto physMgr = this->getPhysicsManager()) {
+    int newAObjID = physMgr->cloneExistingArticulatedObject(aObjectID);
+    return this->getObjectCopyByID(newAObjID);
+  }
+  return nullptr;
+}  // ArticulatedObjectManager::copyArticulatedObjectByID
+
 }  // namespace physics
 }  // namespace esp

@@ -51,6 +51,16 @@ std::shared_ptr<ManagedRigidObject> RigidObjectManager::addObjectByID(
   }
 }  // RigidObjectManager::addObject
 
+std::shared_ptr<ManagedRigidObject> RigidObjectManager::copyObjectByID(
+    int objectID) {
+  if (auto physMgr = this->getPhysicsManager()) {
+    int newObjID = physMgr->cloneExistingObject(objectID);
+    return this->getObjectCopyByID(newObjID);
+  } else {
+    return nullptr;
+  }
+}  // RigidObjectManager::copyObjectByID
+
 std::shared_ptr<ManagedRigidObject> RigidObjectManager::removePhysObjectByID(
     int objectID,
     bool deleteObjectNode,
