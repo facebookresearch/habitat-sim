@@ -1191,15 +1191,6 @@ Num Sel Objs: {len(self.sel_objs)}
         # Save current scene
         self.sim.save_current_scene_config(overwrite=True)
 
-    def recompute_ao_bbs(self, ao: HSim_Phys.ManagedArticulatedObject) -> None:
-        """
-        Recomputes the link SceneNode bounding boxes for all ao links.
-        NOTE: Gets around an observed loading bug. Call before trying to peek an AO.
-        """
-        for link_ix in range(-1, ao.num_links):
-            link_node = ao.get_link_scene_node(link_ix)
-            link_node.compute_cumulative_bb()
-
     def build_objects(self, navmesh_dirty: bool, build_loc: mn.Vector3):
         """
         Make a copy of the selected object(s), or load a named item at some distance away
@@ -1282,8 +1273,6 @@ Num Sel Objs: {len(self.sel_objs)}
                 new_obj = obj_mgr.add_articulated_object_by_template_handle(
                     obj_temp_handle
                 )
-                if new_obj is not None:
-                    self.recompute_ao_bbs(new_obj)
             else:
                 # If any changes to template, put them here and re-register template
                 # template_mgr.register_template(temp)
