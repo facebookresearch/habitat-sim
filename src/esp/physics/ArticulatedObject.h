@@ -997,6 +997,16 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
         metadata::attributes::ArticulatedObjectAttributes>();
   }
 
+  /**
+   * @brief Compute the cumulative bbox for this AO
+   */
+  void computeAOCumulativeBB() {
+    baseLink_->node().computeCumulativeBB();
+    for (const auto& link : links_) {
+      link.second->node().computeCumulativeBB();
+    }
+  }
+
  protected:
   /**
    * @brief Used to synchronize simulator's notion of the object state
