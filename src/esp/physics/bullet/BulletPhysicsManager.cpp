@@ -200,10 +200,12 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
             "BulletPhysicsManager::addArticulatedObject(): Failed to "
             "instance render asset (attachGeometry) for link"
                 << urdfLinkIx << ".");
-        linkObject.node().computeCumulativeBB();
       }
     }
   }
+
+  // Compute the cumulative bbox for the links in the ao.
+  articulatedObject->computeAOCumulativeBB();
 
   // clear the cache
   u2b->cache = nullptr;
