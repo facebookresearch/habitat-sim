@@ -1200,36 +1200,7 @@ Num Sel Objs: {len(self.sel_objs)}
             link_node = ao.get_link_scene_node(link_ix)
             link_node.compute_cumulative_bb()
 
-    def _build_object_from_handle(
-        self, obj_temp_handle: str, build_ao: bool, attr_mgr, obj_mgr
-    ):
-        """
-        Given a specific handle and location, build a new rigid or articulated object
-        """
-        # Build an object using obj_temp_handle, getting template from attr_mgr and object manager obj_mgr
-        temp = attr_mgr.get_template_by_handle(obj_temp_handle)
-
-        if build_ao:
-            obj_type = "Articulated"
-            temp.base_type = "FIXED"
-            attr_mgr.register_template(temp)
-            new_obj = obj_mgr.add_articulated_object_by_template_handle(obj_temp_handle)
-            if new_obj is not None:
-                self.recompute_ao_bbs(new_obj)
-        else:
-            # If any changes to template, put them here and re-register template
-            # attr_mgr.register_template(temp)
-            obj_type = "Rigid"
-            new_obj = obj_mgr.add_object_by_template_handle(obj_temp_handle)
-        if new_obj is None:
-            print(
-                f"Failed to load/create {obj_type} Object from template named {obj_temp_handle}."
-            )
-        return new_obj
-
-    def build_objects(
-        self, navmesh_dirty: bool, load_by_name: bool, build_loc: mn.Vector3
-    ):
+    def build_objects(self, navmesh_dirty: bool, build_loc: mn.Vector3):
         """
         Make a copy of the selected object(s), or load a named item at some distance away
         """
@@ -1239,26 +1210,25 @@ Num Sel Objs: {len(self.sel_objs)}
             # Copy all selected objects
             res_objs = []
             for obj in self.sel_objs.values():
-                # if selected, build object at location of new
-                obj_temp_handle = obj.creation_attributes.handle
+                # Duplicate object via object ID
                 if obj.is_articulated:
-                    # build an ao via template
-                    attr_mgr = mm.ao_template_manager
-                    obj_mgr = sim.get_articulated_object_manager()
+                    # duplicate articulated object
+                    new_obj = sim.get_articulated_object_manager().duplicate_articulated_object_by_id(
+                        obj.object_id
+                    )
                 else:
-                    # build a rigid via template
-                    attr_mgr = mm.object_template_manager
-                    obj_mgr = sim.get_rigid_object_manager()
-                new_obj = self._build_object_from_handle(
-                    obj_temp_handle, obj.is_articulated, attr_mgr, obj_mgr
-                )
+                    # duplicate rigid object
+                    new_obj = sim.get_rigid_object_manager().duplicate_object_by_id(
+                        obj.object_id
+                    )
+
                 if new_obj is not None:
-                    # set new object location to be above location of selected object
-                    new_obj_translation = obj.translation + mn.Vector3(0.0, 1.0, 0.0)
+                    # set new object location to be above location of copied object
+                    new_obj_translation = mn.Vector3(0.0, 1.0, 0.0)
                     new_obj.motion_type = obj.motion_type
                     # move new object to appropriate location
                     new_navmesh_dirty = self._move_one_object(
-                        new_obj, navmesh_dirty, new_obj_translation, obj.rotation
+                        new_obj, navmesh_dirty, new_obj_translation
                     )
                     navmesh_dirty = new_navmesh_dirty or navmesh_dirty
                     res_objs.append(new_obj)
@@ -1271,8 +1241,8 @@ Num Sel Objs: {len(self.sel_objs)}
                 self.modify_sel_objs(new_obj)
             return res_objs, navmesh_dirty
 
-        elif load_by_name:
-            # get user input to load a single object
+        else:
+            # No objects selected, get user input to load a single object
             obj_substring = input(
                 "Load Object or AO. Enter a Rigid Object or AO handle substring, first match will be added:"
             ).strip()
@@ -1283,10 +1253,12 @@ Num Sel Objs: {len(self.sel_objs)}
 
             template_mgr = mm.ao_template_manager
             template_handles = template_mgr.get_template_handles(obj_substring)
+            build_ao = False
             if len(template_handles) == 1:
                 # Specific AO template found
                 obj_mgr = sim.get_articulated_object_manager()
                 base_motion_type = HSim_MT.DYNAMIC
+                build_ao = True
             else:
                 template_mgr = mm.object_template_manager
                 template_handles = template_mgr.get_template_handles(obj_substring)
@@ -1299,9 +1271,25 @@ Num Sel Objs: {len(self.sel_objs)}
                 obj_mgr = sim.get_rigid_object_manager()
                 base_motion_type = HSim_MT.STATIC
 
-            new_obj = self._build_object_from_handle(
-                template_handles[0], False, template_mgr, obj_mgr
-            )
+            obj_temp_handle = template_handles[0]
+            # Build an object using obj_temp_handle, getting template from attr_mgr and object manager obj_mgr
+            temp = template_mgr.get_template_by_handle(obj_temp_handle)
+
+            if build_ao:
+                obj_type = "Articulated"
+                temp.base_type = "FIXED"
+                template_mgr.register_template(temp)
+                new_obj = obj_mgr.add_articulated_object_by_template_handle(
+                    obj_temp_handle
+                )
+                if new_obj is not None:
+                    self.recompute_ao_bbs(new_obj)
+            else:
+                # If any changes to template, put them here and re-register template
+                # template_mgr.register_template(temp)
+                obj_type = "Rigid"
+                new_obj = obj_mgr.add_object_by_template_handle(obj_temp_handle)
+
             if new_obj is not None:
                 # set new object location to be above location of selected object
                 new_obj.motion_type = base_motion_type
@@ -1312,15 +1300,12 @@ Num Sel Objs: {len(self.sel_objs)}
                 )
                 navmesh_dirty = new_navmesh_dirty or navmesh_dirty
             else:
+                print(
+                    f"Failed to load/create {obj_type} Object from template named {obj_temp_handle}."
+                )
                 # creation failing would have its own message
                 return [], navmesh_dirty
             return [new_obj], navmesh_dirty
-
-        # no object selected and no name input
-        print(
-            "No object was selected to copy and load_by_name was not specifieed so no known object handle was input. Aborting"
-        )
-        return [], navmesh_dirty
 
     def change_edit_mode(self, toggle: bool):
         # toggle edit mode

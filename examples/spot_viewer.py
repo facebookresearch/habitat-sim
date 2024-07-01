@@ -700,19 +700,20 @@ class HabitatSimInteractiveViewer(Application):
             self.obj_editor.undo_sel_edits()
 
         elif key == pressed.V:
-            # inject a new object by handle substring in front of the agent
-            # or else using the currently selected object
+            # Duplicate all the selected objects and place them in the scene
+            # or inject a new object by queried handle substring in front of
+            # the agent if no objects selected
 
-            # press shift if we want to load if no object selected
             new_obj_list, self.navmesh_dirty = self.obj_editor.build_objects(
                 self.navmesh_dirty,
-                load_by_name=shift_pressed,
                 build_loc=self.spot_agent.get_point_in_front(
                     disp_in_front=[1.5, 0.0, 0.0]
                 ),
             )
             if len(new_obj_list) == 0:
                 print("Failed to add any new objects.")
+            else:
+                print(f"Finished adding {len(new_obj_list)} object(s).")
 
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
