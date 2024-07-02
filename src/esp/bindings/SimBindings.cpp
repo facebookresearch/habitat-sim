@@ -149,6 +149,12 @@ void initSimBindings(py::module& m) {
           "curr_scene_name", &Simulator::getCurSceneInstanceName,
           R"(The simplified, but unique, name of the currently loaded scene.)")
       .def_property_readonly(
+          "scene_aabb",
+          [](Simulator& self) {
+            return self.getActiveSceneGraph().getRootNode().getCumulativeBB();
+          },
+          R"(Get the axis-aligned bounding box (AABB) of the scene in global space.)")
+      .def_property_readonly(
           "semantic_color_map", &Simulator::getSemanticSceneColormap,
           R"(The list of semantic colors being used for semantic rendering. The index
             in the list corresponds to the semantic ID.)")

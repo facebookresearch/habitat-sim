@@ -439,13 +439,6 @@ class Simulator(SimulatorBackend):
         # TODO Deprecate and remove
         return self.__sensors[self._default_agent_id]
 
-    @property
-    def scene_bb(self) -> mn.Range3D:
-        """
-        The bounding box of the currently instantiated scene.
-        """
-        return self.get_active_scene_graph().get_root_node().cumulative_bb
-
     def last_state(self, agent_id: Optional[int] = None) -> AgentState:
         if agent_id is None:
             agent_id = self._default_agent_id
