@@ -309,6 +309,14 @@ class Simulator {
   }
 
   /**
+   * @brief Get the axis-aligned bounding box (AABB) of the scene in global
+   * space.
+   */
+  const Mn::Range3D getSceneAabb() {
+    return getActiveSceneGraph().getRootNode().getCumulativeBB();
+  }
+
+  /**
    * @brief Perform discrete collision detection for the scene.
    */
   void performDiscreteCollisionDetection() {

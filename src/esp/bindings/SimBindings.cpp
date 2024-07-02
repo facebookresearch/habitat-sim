@@ -149,10 +149,7 @@ void initSimBindings(py::module& m) {
           "curr_scene_name", &Simulator::getCurSceneInstanceName,
           R"(The simplified, but unique, name of the currently loaded scene.)")
       .def_property_readonly(
-          "scene_aabb",
-          [](Simulator& self) {
-            return self.getActiveSceneGraph().getRootNode().getCumulativeBB();
-          },
+          "scene_aabb", &Simulator::getSceneAabb,
           R"(Get the axis-aligned bounding box (AABB) of the scene in global space.)")
       .def_property_readonly(
           "semantic_color_map", &Simulator::getSemanticSceneColormap,
