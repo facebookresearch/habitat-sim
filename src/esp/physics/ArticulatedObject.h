@@ -1008,16 +1008,6 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     }
   }
 
-  /**
-   * @brief Compute the cumulative bbox for this AO
-   */
-  void computeAOCumulativeBB() {
-    baseLink_->node().computeCumulativeBB();
-    for (const auto& link : links_) {
-      link.second->node().computeCumulativeBB();
-    }
-  }
-
   /** @brief Accumulate the collective AABBs of all child links to compute a
    * cumulative AABB for the object in root local space.*/
   void recomputeAabb() {
