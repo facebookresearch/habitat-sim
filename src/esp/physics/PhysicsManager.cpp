@@ -945,14 +945,11 @@ void PhysicsManager::setObjectBBDraw(int physObjectID,
     objIter->second->BBNode_ = nullptr;
   } else if (drawBB && objIter->second->visualNode_) {
     // add a new BBNode
-    Magnum::Vector3 scale =
-        objIter->second->visualNode_->getCumulativeBB().size() / 2.0;
+    Magnum::Vector3 scale = objIter->second->getAabb().size() / 2.0;
     objIter->second->BBNode_ = &objIter->second->visualNode_->createChild();
     objIter->second->BBNode_->MagnumObject::setScaling(scale);
     objIter->second->BBNode_->MagnumObject::setTranslation(
-        existingObjects_[physObjectID]
-            ->visualNode_->getCumulativeBB()
-            .center());
+        objIter->second->getAabb().center());
     resourceManager_.addPrimitiveToDrawables(0, *objIter->second->BBNode_,
                                              drawables);
   }

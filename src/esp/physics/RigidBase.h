@@ -422,9 +422,7 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * @brief Shift the object's local origin to be coincident with the center of
    * it's bounding box, @ref cumulativeBB_. See @ref shiftOrigin.
    */
-  void shiftOriginToBBCenter() {
-    shiftOrigin(-node().getCumulativeBB().center());
-  }
+  void shiftOriginToBBCenter() { shiftOrigin(-getAabb().center()); }
 
   /** @brief Flag sepcifying whether or not the object has an active collision
    * shape.
