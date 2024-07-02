@@ -239,9 +239,6 @@ void initSimBindings(py::module& m) {
            "collidable"_a,
            R"(Set whether or not the static stage is collidable.)")
       .def(
-          "contact_test", &Simulator::contactTest, "object_id"_a,
-          R"(DEPRECATED AND WILL BE REMOVED IN HABITAT-SIM 2.0. Run collision detection and return a binary indicator of penetration between the specified object and any other collision object. Physics must be enabled.)")
-      .def(
           "get_physics_num_active_contact_points",
           &Simulator::getPhysicsNumActiveContactPoints,
           R"(The number of contact points that were active during the last step. An object resting on another object will involve several active contact points. Once both objects are asleep, the contact points are inactive. This count is a proxy for complexity/cost of collision-handling in the current scene.)")
