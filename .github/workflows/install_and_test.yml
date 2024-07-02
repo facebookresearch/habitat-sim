@@ -1,0 +1,73 @@
+name: Install and test
+on:
+  pull_request: {}
+  push:
+    branches:
+    - main
+
+jobs:
+  python_lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4.1.1
+    - name: Setup python
+      uses: actions/setup-python@v5.0.0
+      with:
+        python-version: '3.9.16'
+    - name: setup
+      run: |-
+        pip install -U pip
+        pip install -U --prefer-binary \
+          black==23.1.0 \
+          flake8 \
+          flake8-bugbear==22.6.22 \
+          flake8-builtins \
+          flake8-comprehensions \
+          flake8-return \
+          flake8-simplify \
+          hypothesis==6.29.3 \
+          isort==5.12.0 \
+          mypy \
+          numpy \
+          pytest \
+          sphinx \
+          tqdm
+        pip install --prefer-binary -r requirements.txt torch --progress-bar off
+    - name: run black
+      run: |-
+        black --version
+        black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(notebooks|nb_python)'  src_python/habitat_sim/. examples/. tests/. setup.py --diff
+        black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(notebooks|nb_python)'  src_python/habitat_sim/. examples/. tests/. setup.py --check
+    - name: run isort
+      run: |-
+        isort --version
+        isort src_python/habitat_sim/. examples/. tests/. setup.py --diff
+        isort src_python/habitat_sim/. examples/. tests/. setup.py --check-only
+    - name: run flake8
+      run: |-
+        flake8 --version
+        flake8 src_python/habitat_sim/. examples/. tests/. setup.py
+    - name: run mypy
+      run: mypy
+
+  install_and_test_ubuntu:
+    runs-on: 4-core-ubuntu-gpu-t4
+    env:
+      FPS_THRESHOLD: 900
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+    - uses: actions/checkout@v4.1.1
+      with:
+        path: "./habitat-sim"
+    - name: CPU info
+      run: cat /proc/cpuinfo
+    - uses: "./habitat-sim/.github/actions/install_ubuntu_deps"
+    - name: Build, install habitat-sim
+      run: |-
+        cd habitat-sim
+        pip install -r requirements.txt --progress-bar off
+        pip install imageio imageio-ffmpeg
+        git submodule update --init --recursive --jobs 8
+        python -u setup.py install --build-type "Release" --lto --headless --bullet
