@@ -440,7 +440,7 @@ class Simulator(SimulatorBackend):
         return self.__sensors[self._default_agent_id]
 
     @property
-    def scene_bb(self) -> mn.Range3d:
+    def scene_bb(self) -> mn.Range3D:
         """
         The bounding box of the currently instantiated scene.
         """

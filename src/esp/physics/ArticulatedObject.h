@@ -13,6 +13,7 @@
 
 #include "RigidBase.h"
 #include "esp/core/Esp.h"
+#include "esp/geo/Geo.h"
 #include "esp/metadata/URDFParser.h"
 #include "esp/metadata/attributes/ArticulatedObjectAttributes.h"
 #include "esp/scene/SceneNode.h"
@@ -999,6 +1000,51 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   /** @brief Return whether or not this object is articulated. */
   bool isArticulated() const override { return true; }
 
+  /**
+   * @brief Compute the cumulative bbox for this AO
+   */
+  void computeAOCumulativeBB() {
+    baseLink_->node().computeCumulativeBB();
+    for (const auto& link : links_) {
+      link.second->node().computeCumulativeBB();
+    }
+  }
+
+  /** @brief Accumulate the collective AABBs of all child links to compute a
+   * cumulative AABB for the object in root local space.*/
+  void recomputeAabb() {
+    // initialize the range to the base link, the only link node child of the
+    // root AO node
+    Mn::Range3D rootAabb = geo::getTransformedBB(
+        baseLink_->getAabb(), baseLink_->getTransformation());
+    // for each link (not in the subtree)
+    for (const auto& link : links_) {
+      // get the local aabb in link space
+      auto& linkAabb = link.second->getAabb();
+      // get the transformation matrix from link space to root space
+      auto xform =
+          getTransformation().inverted() * link.second->getTransformation();
+      // transform the link space AABB to root space
+      auto rootSpaceLinkAabb = geo::getTransformedBB(linkAabb, xform);
+      // for subsequent links, expand the range
+      rootAabb = Mn::Math::join(rootAabb, rootSpaceLinkAabb);
+    }
+
+    // set the resulting aabb into the member variable
+    aabb_ = rootAabb;
+  }
+
+  /** @brief Return the root local axis-aligned bounding box (aabb) of the this
+   * articulated object. Will recompute the aabb when the object's kinematic
+   * state has been changed between queries.*/
+  const Mn::Range3D& getAabb() override {
+    // dirty check with recompute for efficiency
+    if (dirtyAabb_) {
+      recomputeAabb();
+    }
+    return aabb_;
+  }
+
  protected:
   /**
    * @brief Used to synchronize simulator's notion of the object state
@@ -1006,7 +1052,11 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * kinematic updates.  For ArticulatedObjects, the transformation of the root
    * node is used to transform the root physical constructs.
    */
-  void syncPose() override { this->setRootState(node().transformation()); }
+  void syncPose() override {
+    this->setRootState(node().transformation());
+    // queue an update on the aabb at the next query
+    dirtyAabb_ = true;
+  }
 
   /**
    * @brief Called internally from syncPose()  Used to update physics
@@ -1033,6 +1083,13 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
 
   //! Cache the global scaling from the source model. Set during import.
   float globalScale_ = 1.0;
+
+  //! Cache the cumulative bounding box of the AO heirarchy in root local space.
+  //! This is necessary because the child links are not children of the root
+  //! SceneNode, so the standard cumulative AABB is not correct here.
+  Mn::Range3D aabb_;
+  //! Track when the aabb is outdated so it can be re-computed at the next query
+  bool dirtyAabb_ = false;
 
  public:
   ESP_SMART_POINTERS(ArticulatedObject)
