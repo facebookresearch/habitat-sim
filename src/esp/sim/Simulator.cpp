@@ -679,8 +679,7 @@ void Simulator::reset() {
   for (auto& agent : agents_) {
     agent->reset();
   }
-  const Magnum::Range3D& sceneBB =
-      getActiveSceneGraph().getRootNode().computeCumulativeBB();
+  getActiveSceneGraph().getRootNode().computeCumulativeBB();
   resourceManager_->setLightSetup(gfx::getDefaultLights());
 }  // Simulator::reset()
 

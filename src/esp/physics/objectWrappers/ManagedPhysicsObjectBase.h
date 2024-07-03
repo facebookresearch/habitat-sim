@@ -354,6 +354,16 @@ class AbstractManagedPhysicsObject
     return false;
   }
 
+  /** @brief Return the local axis-aligned bounding box of the this object.
+   * Articulated objects Will recompute the aabb when the kinematic state has
+   * been changed between queries.*/
+  Mn::Range3D getAabb() {
+    if (auto sp = this->getObjectReference()) {
+      return sp->getAabb();
+    }
+    return Mn::Range3D();
+  }
+
   /**
    * @brief Retrieve a comma-separated informational string about the contents
    * of this managed object.
