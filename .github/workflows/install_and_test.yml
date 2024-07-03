@@ -66,6 +66,7 @@ jobs:
     - uses: "./habitat-sim/.github/actions/install_ubuntu_deps"
     - name: Build, install habitat-sim
       run: |-
+        sudo chmod -R 777 /
         export PATH=$HOME/miniconda/bin:$PATH
         conda init
         source ~/.bashrc
@@ -73,6 +74,6 @@ jobs:
         cd habitat-sim
         pip install -r requirements.txt --progress-bar off
         git submodule update --init --recursive --jobs 8
-        sudo ~/miniconda3/envs/habitat/bin/python -u setup.py install --build-type "Release" --lto --headless --bullet
+        ~/miniconda3/envs/habitat/bin/python -u setup.py install --build-type "Release" --lto --headless --bullet
     - name: Debugging with tmate
       uses: mxschmitt/action-tmate@v3.18
