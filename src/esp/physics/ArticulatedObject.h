@@ -1018,7 +1018,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     // for each link (not in the subtree)
     for (const auto& link : links_) {
       // get the local aabb in link space
-      auto& linkAabb = link.second->getAabb();
+      const auto& linkAabb = link.second->getAabb();
       // get the transformation matrix from link space to root space
       auto xform =
           getTransformation().inverted() * link.second->getTransformation();
