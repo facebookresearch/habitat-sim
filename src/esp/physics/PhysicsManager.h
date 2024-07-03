@@ -1250,6 +1250,10 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   std::map<int, ArticulatedObject::ptr> existingArticulatedObjects_;
 
+  /** @brief Maps object IDs to all existing ArticulatedLinks for quick query.
+   */
+  std::map<int, ArticulatedLink::ptr> existingArticulatedLinks_;
+
   /** @brief A counter of unique object ID's allocated thus far. Used to
    * allocate new IDs when  @ref recycledObjectIDs_ is empty without needing
    * to check @ref existingObjects_ explicitly.*/

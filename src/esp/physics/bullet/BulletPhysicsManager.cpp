@@ -173,6 +173,7 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
         articulatedObject->btMultiBody_->getLinkCollider(linkIx), linkObjectId);
     ArticulatedLink& linkObject = articulatedObject->getLink(linkIx);
     linkObject.node().setBaseObjectId(linkObjectId);
+    existingArticulatedLinks_.emplace(linkObjectId, &linkObject);
   }
 
   // render visual shapes if either no skinned mesh is present or if the config
