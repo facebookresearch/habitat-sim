@@ -21,7 +21,25 @@ runs:
     run: |-
       echo "Install dependencies"
       sudo apt-get update || true
-      #TODO: apt-get steps
+      sudo apt-get install -y --no-install-recommends \
+        build-essential \
+        git \
+        curl \
+        vim \
+        ca-certificates \
+        libjpeg-dev \
+        libglm-dev \
+        libegl1-mesa-dev \
+        ninja-build \
+        xorg-dev \
+        freeglut3-dev \
+        pkg-config \
+        wget \
+        zip \
+        lcov\
+        libhdf5-dev \
+        libomp-dev \
+        unzip || true
     shell: bash
   - name: Install cuda
     run: |-

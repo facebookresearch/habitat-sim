@@ -70,6 +70,5 @@ jobs:
       run: |-
         cd habitat-sim
         pip install -r requirements.txt --progress-bar off
-        pip install imageio imageio-ffmpeg
         git submodule update --init --recursive --jobs 8
-        sudo python -u setup.py install --build-type "Release" --lto --headless --bullet
+        sudo ~/miniconda3/envs/habitat/bin/python -u setup.py install --build-type "Release" --lto --headless --bullet
