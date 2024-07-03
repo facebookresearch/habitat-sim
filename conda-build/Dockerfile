@@ -1,4 +1,4 @@
-FROM nvidia/cudagl:10.0-devel-centos7
+FROM nvidia/cudagl:10.1-devel-centos8
 
 ENV LC_ALL en_US.UTF-8
 ENV LANG en_US.UTF-8
