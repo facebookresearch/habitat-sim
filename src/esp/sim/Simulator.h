@@ -312,7 +312,7 @@ class Simulator {
    * @brief Get the axis-aligned bounding box (AABB) of the scene in global
    * space.
    */
-  const Mn::Range3D getSceneAabb() {
+  const Mn::Range3D& getSceneAabb() {
     return getActiveSceneGraph().getRootNode().getCumulativeBB();
   }
 
