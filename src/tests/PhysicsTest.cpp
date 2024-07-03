@@ -814,8 +814,7 @@ void PhysicsTest::testConfigurableScaling() {
 
     objectIDs.push_back(objectWrapper->getID());
 
-    const Magnum::Range3D& visualBounds =
-        objectWrapper->getSceneNode()->getCumulativeBB();
+    const Magnum::Range3D& visualBounds = objectWrapper->getAabb();
 
     CORRADE_COMPARE(visualBounds, boundsGroundTruth);
 

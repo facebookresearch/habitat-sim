@@ -780,7 +780,7 @@ if os.path.exists(object_to_view_path) and os.path.isfile(object_to_view_path):
     obj = rigid_obj_mgr.add_object_by_template_id(obj_temp_id)
     # place object in center - must be done before setting to static
     # get bb of object
-    obj_bbox = obj.root_scene_node.compute_cumulative_bb()
+    obj_bbox = obj.aabb
     # find center of bb and move to scene origin - this centers object
     obj.translation = -obj_bbox.center()
     # get max dim to use as scale for sensor placement

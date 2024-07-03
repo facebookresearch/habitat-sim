@@ -883,7 +883,7 @@ void SimTest::createMagnumRenderingOff() {
 
   auto testBoundingBox = [&]() {
     // check that we can still compute bounding box of the object
-    Magnum::Range3D meshbb = objectNode->getCumulativeBB();
+    Magnum::Range3D meshbb = obj->getAabb();
     float eps = 0.001;
     CORRADE_COMPARE_WITH(meshbb.left(), -0.1,
                          Cr::TestSuite::Compare::around(eps));
