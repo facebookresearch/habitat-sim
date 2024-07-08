@@ -563,6 +563,20 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.ONE:
             # Toggle spot's clipping/restriction to navmesh
             self.spot_agent.toggle_clip()
+
+        elif key == pressed.TWO:
+            # Match target object's x dim
+            self.navmesh_dirty = self.obj_editor.match_x_dim(self.navmesh_dirty)
+        elif key == pressed.THREE:
+            # Match target object's y dim
+            self.navmesh_dirty = self.obj_editor.match_y_dim(self.navmesh_dirty)
+        elif key == pressed.FOUR:
+            # Match target object's z dim
+            self.navmesh_dirty = self.obj_editor.match_z_dim(self.navmesh_dirty)
+        elif key == pressed.FIVE:
+            # Select all items matching selected item. Shift to include all currently selected items
+            self.obj_editor.select_all_matching_objects(only_matches=not shift_pressed)
+
         elif key == pressed.H:
             self.print_help_text()
 
@@ -798,8 +812,8 @@ class HabitatSimInteractiveViewer(Application):
                 # clear all selected objects and set to found obj
                 self.obj_editor.set_sel_obj(obj)
             elif obj_found:
-                # add/remove object from selected objects
-                self.obj_editor.modify_sel_objs(obj)
+                # add or remove object from selected objects, depending on whether it is already selected or not
+                self.obj_editor.toggle_sel_obj(obj)
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
@@ -971,6 +985,11 @@ Key Commands:
             (+ALT): rotate the object around global X axis.
       - BACKSPACE: delete the selected object
       - 'y': delete the selected object and record it as clutter.
+    - Matching target selected object (rendered with yellow box) specified dimension :
+      - '2': all selected objects match selected 'target''s x value
+      - '3': all selected objects match selected 'target''s y value
+      - '4': all selected objects match selected 'target''s z value
+
     'i': save the current, modified, scene_instance file. Also save removed_clutter.txt containing object names of all removed clutter objects.
          - With Shift : also close the viewer.
 

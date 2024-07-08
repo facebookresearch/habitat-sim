@@ -864,8 +864,10 @@ class ObjectEditor:
         self.set_edit_vals()
 
     def _init_obj_caches(self):
-        # Dict to hold currently selected objects
-        self.sel_objs: Dict[int, Any] = {}
+        # Internal: Dict of currently selected object ids to index in
+        self._sel_obj_ids: Dict[int, int] = {}
+        # list of current objects selected. Last object in list is "target" object
+        self.sel_objs: List[Any] = []
         # Complete list of per-objec transformation edits, for undo chaining,
         # keyed by object id, value is before and after transform
         self.obj_transform_edits: Dict[
@@ -917,25 +919,52 @@ Num Sel Objs: {len(self.sel_objs)}
           """
         return disp_str
 
+    def _clear_sel_objs(self):
+        """
+        Internal: clear object selection structure(s)
+        """
+        self._sel_obj_ids.clear()
+        self.sel_objs.clear()
+
+    def _add_obj_to_sel(self, obj):
+        """
+        Internal : add object to selection structure(s)
+        """
+        self._sel_obj_ids[obj.object_id] = len(self.sel_objs)
+        # Add most recently selected object to list of selected objects
+        self.sel_objs.append(obj)
+
+    def _remove_obj_from_sel(self, obj):
+        """
+        Internal : remove object from selection structure(s)
+        """
+        new_objs: List[Any] = []
+        # Rebuild selected object structures without the removed object
+        self._sel_obj_ids.clear()
+        for old_obj in self.sel_objs:
+            if old_obj.object_id != obj.object_id:
+                self._sel_obj_ids[old_obj.object_id] = len(new_objs)
+                new_objs.append(old_obj)
+        self.sel_objs = new_objs
+
     def set_sel_obj(self, obj):
         """
         Set the selected objects to just be the passed obj
         """
-        self.sel_objs.clear()
+        self._clear_sel_objs()
         if obj is not None:
-            self.sel_objs[obj.object_id] = obj
+            self._add_obj_to_sel(obj)
 
-    def modify_sel_objs(self, obj):
+    def toggle_sel_obj(self, obj):
         """
-        Add the passed object to the selected objects and cache its original transformation
+        Remove or add the passed object to the selected objects dict, depending on whether it is present, or not.
         """
-        if obj.object_id in self.sel_objs:
+        if obj.object_id in self._sel_obj_ids:
             # Remove object from obj selected dict
-            self.sel_objs.pop(obj.object_id, None)
-
+            self._remove_obj_from_sel(obj)
         else:
-            # add object to selected dict
-            self.sel_objs[obj.object_id] = obj
+            # Add object to selected dict
+            self._add_obj_to_sel(obj)
 
     def set_ao_joint_states(
         self, do_open: bool, selected: bool, agent_name: str = "hab_spot"
@@ -945,9 +974,9 @@ Num Sel Objs: {len(self.sel_objs)}
         """
         if selected:
             # Only selected objs if they are articulated
-            ao_objs = [ao for ao in self.sel_objs.values() if ao.is_articulated]
+            ao_objs = [ao for ao in self.sel_objs if ao.is_articulated]
         else:
-            # all articulated bjs that do not contain agent's name
+            # all articulated objs that do not contain agent's name
             ao_objs = (
                 self.sim.get_articulated_object_manager()
                 .get_objects_by_handle_substring(search_str=agent_name, contains=False)
@@ -957,7 +986,7 @@ Num Sel Objs: {len(self.sel_objs)}
         if do_open:
             # Open AOs
             for ao in ao_objs:
-                # open the selected receptacle
+                # open the selected receptacle(s)
                 for link_ix in ao.get_link_ids():
                     if ao.get_link_joint_type(link_ix) in [
                         HSim_Phys.JointType.Prismatic,
@@ -1018,7 +1047,7 @@ Num Sel Objs: {len(self.sel_objs)}
         Move all selected objects with a given modification and save the resulting state to the buffer.
         Returns whether the navmesh should be rebuilt due to an object's transformation changing, or previous edits.
         """
-        for obj in self.sel_objs.values():
+        for obj in self.sel_objs:
             new_navmesh_dirty = self._move_one_object(
                 obj,
                 navmesh_dirty,
@@ -1037,11 +1066,11 @@ Num Sel Objs: {len(self.sel_objs)}
         Note : removal is not permanent unless scene is saved.
         """
         removed_obj_handles = []
-        for obj in self.sel_objs.values():
+        for obj in self.sel_objs:
             if obj is None:
                 continue
-            # move selected object outside of render area
-            translation = obj.translation + mn.Vector3(0.0, 1000.0, 0.0)
+            # move selected object outside of direct render area
+            translation = mn.Vector3(0.0, -20.0, 0.0)
             # ignore navmesh result; removal always recomputes
             self._move_one_object(obj, True, translation=translation, removal=True)
             # record removed object for eventual deletion upon scene save
@@ -1052,11 +1081,83 @@ Num Sel Objs: {len(self.sel_objs)}
                 f"Moved {obj.handle} out of view and marked for removal. Removal becomes permanent when scene is saved."
             )
         # unselect all objects, since they were all 'removed'
-        self.sel_objs.clear()
+        self._clear_sel_objs()
         # retain all object selected transformations.
         return removed_obj_handles
 
-    def edit_left(self, navmesh_dirty: bool):
+    def select_all_matching_objects(self, only_matches: bool):
+        """
+        Selects all objects matching currently selected object (or first object selected)
+        only_matches : only select objects that match type of first selected object (deselects all others)
+        """
+        if len(self.sel_objs) == 0:
+            return
+        match_obj = self.sel_objs[-1]
+        obj_is_articulated = match_obj.is_articulated
+        if only_matches:
+            # clear out existing objects
+            self._clear_sel_objs()
+
+        attr_mgr = (
+            self.sim.get_articulated_object_manager()
+            if obj_is_articulated
+            else self.sim.get_rigid_object_manager()
+        )
+        match_obj_handle = match_obj.handle.split("_:")[0]
+        new_sel_objs_dict = attr_mgr.get_objects_by_handle_substring(
+            search_str=match_obj_handle, contains=True
+        )
+        for obj in new_sel_objs_dict.values():
+            self._add_obj_to_sel(obj)
+        # reset match_obj as selected object by first deleting and then re-adding
+        self.toggle_sel_obj(match_obj)
+        self.toggle_sel_obj(match_obj)
+
+    def match_dim_sel_objects(
+        self,
+        navmesh_dirty: bool,
+        new_val: float,
+        axis: mn.Vector3,
+    ) -> bool:
+        """
+        Set all selected objects to have the same specified translation dim value.
+        new_val : new value to set the location of the object
+        axis : the axis to match the value of
+        """
+        trans_vec = new_val * axis
+        for obj in self.sel_objs:
+            obj_mod_vec = obj.translation.projected(axis)
+            new_navmesh_dirty = self._move_one_object(
+                obj,
+                navmesh_dirty,
+                translation=trans_vec - obj_mod_vec,
+                removal=False,
+            )
+            navmesh_dirty = new_navmesh_dirty or navmesh_dirty
+        return navmesh_dirty
+
+    def match_x_dim(self, navmesh_dirty: bool) -> bool:
+        """
+        All selected objects should match specified target object's x value
+        """
+        match_val = self.sel_objs[-1].translation.x
+        return self.match_dim_sel_objects(navmesh_dirty, match_val, mn.Vector3.x_axis())
+
+    def match_y_dim(self, navmesh_dirty: bool) -> bool:
+        """
+        All selected objects should match specified target object's y value
+        """
+        match_val = self.sel_objs[-1].translation.y
+        return self.match_dim_sel_objects(navmesh_dirty, match_val, mn.Vector3.y_axis())
+
+    def match_z_dim(self, navmesh_dirty: bool) -> bool:
+        """
+        All selected objects should match specified target object's z value
+        """
+        match_val = self.sel_objs[-1].translation.z
+        return self.match_dim_sel_objects(navmesh_dirty, match_val, mn.Vector3.z_axis())
+
+    def edit_left(self, navmesh_dirty: bool) -> bool:
         """
         Edit selected objects for left key input
         """
@@ -1151,7 +1252,8 @@ Num Sel Objs: {len(self.sel_objs)}
         if len(self.sel_objs) == 0:
             return
         # For every object in selected object
-        for obj_id, obj in self.sel_objs.items():
+        for obj in self.sel_objs:
+            obj_id = obj.object_id
             # Verify there are transforms to undo for this object
             if len(self.obj_transform_edits[obj_id]) > 0:
                 # Last edit state is last element in transforms list
@@ -1200,7 +1302,7 @@ Num Sel Objs: {len(self.sel_objs)}
         if len(self.sel_objs) > 0:
             # Copy all selected objects
             res_objs = []
-            for obj in self.sel_objs.values():
+            for obj in self.sel_objs:
                 # Duplicate object via object ID
                 if obj.is_articulated:
                     # duplicate articulated object
@@ -1225,11 +1327,11 @@ Num Sel Objs: {len(self.sel_objs)}
                     res_objs.append(new_obj)
             # duplicated all currently selected objects
             # clear currently set selected objects
-            self.sel_objs.clear()
+            self._clear_sel_objs()
             # Select all new objects
             for new_obj in res_objs:
                 # add object to selected objects
-                self.modify_sel_objs(new_obj)
+                self._add_obj_to_sel(new_obj)
             return res_objs, navmesh_dirty
 
         else:
@@ -1318,13 +1420,13 @@ Num Sel Objs: {len(self.sel_objs)}
         # update the edit values
         self.set_edit_vals()
 
-    def _draw_selected_obj(self, obj, debug_line_render):
+    def _draw_selected_obj(self, obj, debug_line_render, box_color):
         """
         Draw a selection box around and axis frame at the origin of a single object
         """
         aabb = get_ao_root_bb(obj) if obj.is_articulated else obj.collision_shape_aabb
         debug_line_render.push_transform(obj.transformation)
-        debug_line_render.draw_box(aabb.min, aabb.max, mn.Color4.magenta())
+        debug_line_render.draw_box(aabb.min, aabb.max, box_color)
         debug_line_render.pop_transform()
 
         ot = obj.translation
@@ -1360,8 +1462,18 @@ Num Sel Objs: {len(self.sel_objs)}
     def draw_selected_objects(self, debug_line_render):
         if len(self.sel_objs) == 0:
             return
-        for obj in self.sel_objs.values():
-            self._draw_selected_obj(obj, debug_line_render=debug_line_render)
+        # Last object selected is target object
+        self._draw_selected_obj(
+            self.sel_objs[-1],
+            debug_line_render=debug_line_render,
+            box_color=mn.Color4.yellow(),
+        )
+        obj_list = self.sel_objs
+        mag_color = mn.Color4.magenta()
+        for i in range(len(obj_list) - 1):
+            self._draw_selected_obj(
+                obj_list[i], debug_line_render=debug_line_render, box_color=mag_color
+            )
 
 
 # Class to instantiate and maneuver spot from a viewer
