@@ -72,7 +72,8 @@ class OBB {
   Mn::Vector3 center_;
   Mn::Vector3 halfExtents_;
   Mn::Quaternion rotation_;
-  Mn::Matrix4 localToWorld_, worldToLocal_;
+  Mn::Matrix4 localToWorld_;
+  Mn::Matrix4 worldToLocal_;
   ESP_SMART_POINTERS(OBB)
 };
 
