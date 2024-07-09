@@ -692,7 +692,7 @@ esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
     const Mn::Vector3& up,
     const Mn::Vector3& front,
     const Mn::Vector3& origin) {
-  if (abs(Mn::Math::dot(up, front)) > Mn::Math::TypeTraits<float>::epsilon()) {
+  if (abs(Mn::Math::dot(up, front)) < Mn::Math::TypeTraits<float>::epsilon()) {
     esp::geo::CoordinateFrame frame{up, front, origin};
     return frame;
   }
