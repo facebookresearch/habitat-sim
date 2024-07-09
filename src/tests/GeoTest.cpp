@@ -128,7 +128,7 @@ void GeoTest::obbConstruction() {
   const Mn::Vector3 center(0, 0, 0);
   const Mn::Vector3 dimensions(20, 2, 10);
   const auto rot1 =
-      core::quatRotFromTwoVectors(Mn::Vector3::yAxis(), Mn::Vector3::zAxis());
+      Mn::Quaternion::rotation(Mn::Vector3::yAxis(), Mn::Vector3::zAxis());
   OBB obb2(center, dimensions, rot1);
 
   CORRADE_COMPARE(obb2.center(), center);
@@ -146,7 +146,7 @@ void GeoTest::obbFunctions() {
   const Mn::Vector3 center(0, 0, 0);
   const Mn::Vector3 dimensions(20, 2, 10);
   const auto rot1 =
-      core::quatRotFromTwoVectors(Mn::Vector3::yAxis(), Mn::Vector3::zAxis());
+      Mn::Quaternion::rotation(Mn::Vector3::yAxis(), Mn::Vector3::zAxis());
   OBB obb2(center, dimensions, rot1);
   CORRADE_VERIFY(obb2.contains(Mn::Vector3(0, 0, 0)));
   CORRADE_VERIFY(obb2.contains(Mn::Vector3(-5, -2, 0.5)));
@@ -177,8 +177,8 @@ void GeoTest::coordinateFrame() {
   const Mn::Vector3 origin(1, -2, 3);
   const Mn::Vector3 up(0, 0, 1);
   const Mn::Vector3 front(-1, 0, 0);
-  auto rotation = core::quatRotFromTwoVectors(ESP_UP, up) *
-                  core::quatRotFromTwoVectors(ESP_FRONT, front);
+  auto rotation = Mn::Quaternion::rotation(ESP_UP, up) *
+                  Mn::Quaternion::rotation(ESP_FRONT, front);
   Mn::Matrix4 xform = Mn::Matrix4::from(rotation.toMatrix(), origin);
 
   CoordinateFrame c1(up, front, origin);

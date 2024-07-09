@@ -82,8 +82,8 @@ MeshData SceneLoader::load(const AssetInfo& info) {
 
     scene = Importer.ReadFile(info.filepath.c_str(), assimpFlags);
 
-    const Mn::Quaternion alignSceneToEspGravity = core::quatRotFromTwoVectors(
-        info.frame.gravity(), esp::geo::ESP_GRAVITY);
+    const Mn::Quaternion alignSceneToEspGravity =
+        Mn::Quaternion::rotation(info.frame.gravity(), esp::geo::ESP_GRAVITY);
 
     // Iterate through all meshes in the file and extract the vertex components
     for (uint32_t m = 0, indexBase = 0; m < scene->mNumMeshes; ++m) {

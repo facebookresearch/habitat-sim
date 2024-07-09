@@ -112,7 +112,7 @@ class SemanticScene {
           semanticAttr,
       SemanticScene& scene,
       const Magnum::Quaternion& rotation =
-          core::quatRotFromTwoVectors(geo::ESP_FRONT, geo::ESP_GRAVITY));
+          Mn::Quaternion::rotation(geo::ESP_FRONT, geo::ESP_GRAVITY));
 
   /**
    * @brief Attempt to load SemanticScene from a Gibson dataset house format
@@ -123,11 +123,11 @@ class SemanticScene {
    * @param rotation rotation to apply to semantic scene upon load.
    * @return successfully loaded
    */
-  static bool loadGibsonHouse(
-      const std::string& filename,
-      SemanticScene& scene,
-      const Magnum::Quaternion& rotation =
-          core::quatRotFromTwoVectors(geo::ESP_FRONT, geo::ESP_GRAVITY));
+  static bool loadGibsonHouse(const std::string& filename,
+                              SemanticScene& scene,
+                              const Magnum::Quaternion& rotation =
+                                  Mn::Quaternion::rotation(geo::ESP_FRONT,
+                                                           geo::ESP_GRAVITY));
 
   /**
    * @brief Attempt to load SemanticScene from a HM3D dataset house
@@ -142,8 +142,8 @@ class SemanticScene {
   static bool loadHM3DHouse(const std::string& filename,
                             SemanticScene& scene,
                             CORRADE_UNUSED const Magnum::Quaternion& rotation =
-                                core::quatRotFromTwoVectors(geo::ESP_FRONT,
-                                                            geo::ESP_GRAVITY));
+                                Mn::Quaternion::rotation(geo::ESP_FRONT,
+                                                         geo::ESP_GRAVITY));
 
   /**
    * @brief Attempt to load SemanticScene from a Matterport3D dataset house
@@ -157,8 +157,8 @@ class SemanticScene {
   static bool loadMp3dHouse(const std::string& filename,
                             SemanticScene& scene,
                             const Magnum::Quaternion& rotation =
-                                core::quatRotFromTwoVectors(geo::ESP_FRONT,
-                                                            geo::ESP_GRAVITY));
+                                Mn::Quaternion::rotation(geo::ESP_FRONT,
+                                                         geo::ESP_GRAVITY));
 
   /**
    * @brief Attempt to load SemanticScene from a Replica dataset house format
@@ -169,11 +169,11 @@ class SemanticScene {
    * @param rotation rotation to apply to semantic scene upon load.
    * @return successfully loaded
    */
-  static bool loadReplicaHouse(
-      const std::string& filename,
-      SemanticScene& scene,
-      const Magnum::Quaternion& rotation =
-          core::quatRotFromTwoVectors(geo::ESP_FRONT, geo::ESP_GRAVITY));
+  static bool loadReplicaHouse(const std::string& filename,
+                               SemanticScene& scene,
+                               const Magnum::Quaternion& rotation =
+                                   Mn::Quaternion::rotation(geo::ESP_FRONT,
+                                                            geo::ESP_GRAVITY));
 
   /**
    * @brief Builds a mapping of connected component-driven bounding boxes (via
@@ -349,8 +349,8 @@ class SemanticScene {
   static bool buildHM3DHouse(std::ifstream& ifs,
                              SemanticScene& scene,
                              CORRADE_UNUSED const Magnum::Quaternion& rotation =
-                                 core::quatRotFromTwoVectors(geo::ESP_FRONT,
-                                                             geo::ESP_GRAVITY));
+                                 Mn::Quaternion::rotation(geo::ESP_FRONT,
+                                                          geo::ESP_GRAVITY));
   /**
    * @brief Build the mp3 semantic data from the passed file stream. File being
    * streamed is expected to be appropriate format.
@@ -363,8 +363,8 @@ class SemanticScene {
   static bool buildMp3dHouse(std::ifstream& ifs,
                              SemanticScene& scene,
                              const Magnum::Quaternion& rotation =
-                                 core::quatRotFromTwoVectors(geo::ESP_FRONT,
-                                                             geo::ESP_GRAVITY));
+                                 Mn::Quaternion::rotation(geo::ESP_FRONT,
+                                                          geo::ESP_GRAVITY));
 
   /**
    * @brief Build SemanticScene from a Gibson dataset house JSON. JSON is
@@ -375,11 +375,11 @@ class SemanticScene {
    * @return successfully built. Currently only returns true, but retaining
    * return value for future support.
    */
-  static bool buildGibsonHouse(
-      const io::JsonDocument& jsonDoc,
-      SemanticScene& scene,
-      const Magnum::Quaternion& rotation =
-          core::quatRotFromTwoVectors(geo::ESP_FRONT, geo::ESP_GRAVITY));
+  static bool buildGibsonHouse(const io::JsonDocument& jsonDoc,
+                               SemanticScene& scene,
+                               const Magnum::Quaternion& rotation =
+                                   Mn::Quaternion::rotation(geo::ESP_FRONT,
+                                                            geo::ESP_GRAVITY));
 
   /**
    * @brief Build SemanticScene from a Replica dataset house JSON. JSON is
@@ -392,12 +392,12 @@ class SemanticScene {
    * @return successfully built. Currently only returns true, but retaining
    * return value for future support.
    */
-  static bool buildReplicaHouse(
-      const io::JsonDocument& jsonDoc,
-      SemanticScene& scene,
-      bool objectsExist,
-      const Magnum::Quaternion& rotation =
-          core::quatRotFromTwoVectors(geo::ESP_FRONT, geo::ESP_GRAVITY));
+  static bool buildReplicaHouse(const io::JsonDocument& jsonDoc,
+                                SemanticScene& scene,
+                                bool objectsExist,
+                                const Magnum::Quaternion& rotation =
+                                    Mn::Quaternion::rotation(geo::ESP_FRONT,
+                                                             geo::ESP_GRAVITY));
 
   // Currently only supported by HM3D semantic files.
   bool hasVertColors_ = false;
