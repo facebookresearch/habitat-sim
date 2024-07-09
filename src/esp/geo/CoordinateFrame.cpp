@@ -31,8 +31,8 @@ CoordinateFrame::CoordinateFrame(
 
 Mn::Quaternion CoordinateFrame::rotationWorldToFrame() const {
   const Mn::Quaternion R_frameUp_worldUp =
-      esp::core::quatRotFromTwoVectors(ESP_UP, up_);
-  return (esp::core::quatRotFromTwoVectors(
+      Mn::Quaternion::rotation(ESP_UP, up_);
+  return (Mn::Quaternion::rotation(
               R_frameUp_worldUp.transformVectorNormalized(ESP_FRONT), front_) *
           R_frameUp_worldUp)
       .normalized();
