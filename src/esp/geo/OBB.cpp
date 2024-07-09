@@ -57,12 +57,13 @@ void OBB::recomputeTransforms() {
   localToWorld_ = Mn::Matrix4::from(localToWorldRot, center_);
 
   // World-to-local transform. Points within OBB are in [0,1]^3
-  Mn::Matrix3 worldToLocalRot;
+  Mn::Matrix3 worldToLocalRotTranspose;
   for (int i = 0; i < 3; ++i) {
-    worldToLocalRot.row(i) = R[i] * (1.0f / halfExtents_[i]);
+    worldToLocalRotTranspose[i] = R[i] * (1.0f / halfExtents_[i]);
   }
   worldToLocal_ =
-      Mn::Matrix4::from(worldToLocalRot, -worldToLocalRot * center_);
+      Mn::Matrix4::from(worldToLocalRotTranspose.transposed(),
+                        (-worldToLocalRotTranspose.transposed() * center_));
 }
 
 bool OBB::contains(const Mn::Vector3& p, float eps /* = 1e-6f */) const {
@@ -105,7 +106,7 @@ OBB& OBB::rotate(const Mn::Quaternion& q) {
 OBB computeGravityAlignedMOBB(const Mn::Vector3& gravity,
                               const std::vector<Mn::Vector3>& points) {
   const auto align_gravity =
-      core::quatRotFromTwoVectors(gravity, -Mn::Vector3::zAxis());
+      Mn::Quaternion::rotation(gravity, -Mn::Vector3::zAxis());
 
   static auto ortho = [](const Mn::Vector2& v) {
     return Mn::Vector2(v[1], -v[0]);
@@ -240,7 +241,7 @@ OBB computeGravityAlignedMOBB(const Mn::Vector3& gravity,
       best_area = area;
     }
   }
-  const auto T_w2b = core::quatRotFromTwoVectors(
+  const auto T_w2b = Mn::Quaternion::rotation(
                          Mn::Vector3(best_bottom_dir[0], best_bottom_dir[1], 0),
                          Mn::Vector3::xAxis()) *
                      align_gravity;
