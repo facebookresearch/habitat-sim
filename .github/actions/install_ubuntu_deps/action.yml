@@ -1,4 +1,4 @@
-name: install_all_ubuntu_deps
+name: install_ubuntu_deps
 runs:
   using: composite
   steps:
@@ -21,7 +21,7 @@ runs:
       ls -la /usr/local/bin/cmake
       ls -la /usr/local/bin/
       ls -la /opt
-      cmake --version
+      #cmake --version
     shell: bash
   - name: Install dependencies
     run: |-
