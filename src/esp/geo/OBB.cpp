@@ -64,14 +64,6 @@ void OBB::recomputeTransforms() {
   worldToLocal_ =
       Mn::Matrix4::from(worldToLocalRotTranspose.transposed(),
                         (-worldToLocalRotTranspose.transposed() * center_));
-
-  ESP_ERROR() << "RecomputeTransform :\nRotation : \t" << rotation_
-              << "\nRotation Mat : \n\t" << R << "\nHalf extents : \t"
-              << halfExtents_ << "\nLocal to World Rotation : \n\t"
-              << localToWorldRot << "\nTranslation : \t" << center_
-              << "\nworldToLocalRotTranspose Transposed: \n\t"
-              << worldToLocalRotTranspose.transposed()
-              << "\nWorld to Local: \n\t" << worldToLocal_;
 }
 
 bool OBB::contains(const Mn::Vector3& p, float eps /* = 1e-6f */) const {
