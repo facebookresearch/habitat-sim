@@ -64,12 +64,10 @@ jobs:
     - name: CPU info
       run: cat /proc/cpuinfo
     - uses: "./habitat-sim/.github/actions/install_ubuntu_deps"
-    - name: Debugging with tmate
-      uses: mxschmitt/action-tmate@v3.18
     - name: Build, install habitat-sim
       run: |-
         #give cmake ownership to the runner for installation
-        sudo chown runner /opt/cmake312/bin/cmake
+        sudo chown runner -R /opt/cmake312/
         #activate conda env
         export PATH=$HOME/miniconda/bin:$PATH
         conda init
@@ -95,3 +93,5 @@ jobs:
         git lfs install
         python src_python/habitat_sim/utils/datasets_download.py --uids ci_test_assets ycb rearrange_dataset_v2 --replace --data-path data/ --no-prune
         ls -la data/scene_datasets/habitat-test-scenes/
+    - name: Debugging with tmate
+      uses: mxschmitt/action-tmate@v3.18
