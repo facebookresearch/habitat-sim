@@ -64,6 +64,8 @@ jobs:
     - name: CPU info
       run: cat /proc/cpuinfo
     - uses: "./habitat-sim/.github/actions/install_ubuntu_deps"
+    - name: Debugging with tmate
+      uses: mxschmitt/action-tmate@v3.18
     - name: Build, install habitat-sim
       run: |-
         sudo chmod -R 777 /
@@ -75,5 +77,3 @@ jobs:
         pip install -r requirements.txt --progress-bar off
         git submodule update --init --recursive --jobs 8
         ~/miniconda3/envs/habitat/bin/python -u setup.py install --build-type "Release" --lto --headless --bullet
-    - name: Debugging with tmate
-      uses: mxschmitt/action-tmate@v3.18
