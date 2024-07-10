@@ -9,6 +9,7 @@
 #include <Corrade/Containers/StridedArrayView.h>
 #include <Corrade/Containers/StringStl.h>
 #include <Corrade/Containers/StringView.h>
+#include <array>
 
 namespace {
 bool isSupportedRenderAsset(const Corrade::Containers::StringView& filepath) {
