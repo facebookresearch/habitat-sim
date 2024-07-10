@@ -47,9 +47,9 @@ Mn::Range3D OBB::toAABB() const {
 }
 
 void OBB::recomputeTransforms() {
-  const Mn::Matrix3 R = rotation_.toMatrix();
+  const Mn::Matrix3x3 R = rotation_.toMatrix();
   // Local-to-world transform
-  Mn::Matrix3 localToWorldRot;
+  Mn::Matrix3x3 localToWorldRot;
   for (int i = 0; i < 3; ++i) {
     localToWorldRot[i] = R[i] * halfExtents_[i];
   }
@@ -57,13 +57,21 @@ void OBB::recomputeTransforms() {
   localToWorld_ = Mn::Matrix4::from(localToWorldRot, center_);
 
   // World-to-local transform. Points within OBB are in [0,1]^3
-  Mn::Matrix3 worldToLocalRotTranspose;
+  Mn::Matrix3x3 worldToLocalRotTranspose;
   for (int i = 0; i < 3; ++i) {
     worldToLocalRotTranspose[i] = R[i] * (1.0f / halfExtents_[i]);
   }
   worldToLocal_ =
       Mn::Matrix4::from(worldToLocalRotTranspose.transposed(),
                         (-worldToLocalRotTranspose.transposed() * center_));
+
+  ESP_ERROR() << "RecomputeTransform :\nRotation : \t" << rotation_
+              << "\nRotation Mat : \n\t" << R << "\nHalf extents : \t"
+              << halfExtents_ << "\nLocal to World Rotation : \n\t"
+              << localToWorldRot << "\nTranslation : \t" << center_
+              << "\nworldToLocalRotTranspose Transposed: \n\t"
+              << worldToLocalRotTranspose.transposed()
+              << "\nWorld to Local: \n\t" << worldToLocal_;
 }
 
 bool OBB::contains(const Mn::Vector3& p, float eps /* = 1e-6f */) const {
