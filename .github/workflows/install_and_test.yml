@@ -69,7 +69,7 @@ jobs:
         #give cmake ownership to the runner for installation
         sudo chown runner -R /opt/cmake312/
         #activate conda env
-        export PATH=$HOME/miniconda/bin:$PATH
+        export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
         conda init
         source ~/.bashrc
         conda activate habitat
@@ -87,7 +87,9 @@ jobs:
         git --version
         git-lfs --version
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-        . activate habitat
+        conda init
+        source ~/.bashrc
+        conda activate habitat
         conda install -y gitpython git-lfs
         cd habitat-sim
         git lfs install
