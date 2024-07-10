@@ -16,12 +16,6 @@ runs:
       sudo sh ./cmake-3.12.4-Linux-x86_64.sh --prefix=/opt/cmake312 --skip-license
       sudo sh ./cmake-3.20.1-linux-x86_64.sh --prefix=/opt/cmake320 --skip-license
       sudo ln -s /opt/cmake312/bin/cmake /usr/local/bin/cmake
-      sudo chmod -R a+rwX /usr/
-      . ~/.bashrc
-      ls -la /usr/local/bin/cmake
-      ls -la /usr/local/bin/
-      ls -la /opt
-      #cmake --version
     shell: bash
   - name: Install dependencies
     run: |-
