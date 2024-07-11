@@ -47,9 +47,9 @@ Mn::Range3D OBB::toAABB() const {
 }
 
 void OBB::recomputeTransforms() {
-  const Mn::Matrix3x3 R = rotation_.toMatrix();
+  const Mn::Matrix3 R = rotation_.toMatrix();
   // Local-to-world transform
-  Mn::Matrix3x3 localToWorldRot;
+  Mn::Matrix3 localToWorldRot;
   for (int i = 0; i < 3; ++i) {
     localToWorldRot[i] = R[i] * halfExtents_[i];
   }
@@ -57,7 +57,7 @@ void OBB::recomputeTransforms() {
   localToWorld_ = Mn::Matrix4::from(localToWorldRot, center_);
 
   // World-to-local transform. Points within OBB are in [0,1]^3
-  Mn::Matrix3x3 worldToLocalRotTranspose;
+  Mn::Matrix3 worldToLocalRotTranspose;
   for (int i = 0; i < 3; ++i) {
     worldToLocalRotTranspose[i] = R[i] * (1.0f / halfExtents_[i]);
   }
