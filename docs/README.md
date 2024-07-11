@@ -86,3 +86,78 @@ browser again.
 The `theme.css` should then get synced with the `habitat-lab` and
 `habitat-website` repositories so it's always possible to play with the colors
 in context of one repository and sync it to the others.
+
+### Docstring Formatting
+
+** Technical details: **
+HTMLs are rendered when m.css parses doctrings.
+Habitat-lab points to the habitat-sim repo, in habitat-sim/build/docs, where style options and .css files are rendered through m.css. The HTML configuration options are in conf.py file.  The option "M_SPHINX_PARSE_DOCSTRINGS=True" parses python docstrings.
+
+Docstrings have the following general hierarchy:
+
+
+```
+First paragraph of module detailed docs."""
+
+class Foo:
+    """Class summary"""
+
+    def bar(self):
+        """Function summary"""
+```
+
+
+Doctrings follow reStructuredText from docutils library.
+
+
+- Skip line for paragraph break
+
+- Indent to indent
+
+- "-" for unordered lists
+
+- ">>>" lines of code
+
+- For boldfont, surround text with "**"  "\*\*\<TEXT>\*\*", 
+
+
+```
+Heading 1
+#########
+
+Heading 2
+=========
+
+Heading 3
+---------
+```
+
+**Directive options:**
+
+NOTE, Be aware of spaces, and backtick should be used, not single quote
+
+- :param \<VARIABLE NAME>:\<VARIABLE NAME DESCRIPTION>
+  - Should be used for parameter descriptions
+
+- :data \<VARIABLE NAME>: \<VARIABLE NAME VALUE>
+  - Should be used for class parameters, ENUMS
+
+- :return: \<DESCRIPTION OF FUNCTION OUTPUT>
+  - Used at function level
+
+- :py: \`\<PYTHON CODE VARIBLE>\`
+  - Reformat string into Python code format
+
+- :ref: \<MODDULE>.\<MODULE>.[...]\<CLASS>
+  - Make a hyperlink that references to other parts of documentation
+
+- :math: \`\$\<LATEX MATH FUNCTION>\$`
+  - This if meant to display math functions inline using LaTeX notation. NOTE:  use double slash \\\\ instead of \\ for special LaTeX functions.
+
+- :property \<NAME OF PROPERTY>:  \<DESCRIPTION OF PROPERTY>
+	- Between a class function and a class method. Usually for publically accessible setters and getters
+	
+References to more syntax examples and options:
+
+https://mcss.mosra.cz/documentation/python/
+https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html#quick-syntax-overview
