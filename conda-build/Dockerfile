@@ -6,20 +6,14 @@ ENV LANGUAGE en_US.UTF-8
 ARG AIHABITAT_CONDA_CHN
 ARG AIHABITAT_CONDA_CHN_PWD
 
-RUN yum-config-manager --enable rhel-server-rhscl-8-rpms
-RUN yum -y --nogpgcheck update
 RUN sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo
 RUN sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo
 RUN sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo
-RUN yum -y --nogpgcheck update
+RUN yum -y --nogpgcheck update --nobest
 
+RUN yum install -y yum-utils
 RUN yum install -y wget curl perl cmake util-linux xz bzip2 git patch which unzip python3
-RUN yum install -y yum-utils centos-release-scl
-RUN yum install -y devtoolset-8-gcc devtoolset-8-gcc-c++ devtoolset-8-gcc-gfortran devtoolset-8-binutils
-ENV PATH=/opt/rh/devtoolset-8/root/usr/bin:$PATH
-ENV LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:$LD_LIBRARY_PATH
-
-RUN yum install -y autoconf aclocal automake make
+RUN yum install -y autoconf automake make
 RUN yum install -y mesa-libEGL-devel mesa-libGL-devel
 
 # Install patchelf
