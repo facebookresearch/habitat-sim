@@ -1,4 +1,4 @@
-FROM nvidia/cudagl:10.0-devel-centos7
+FROM nvidia/cudagl:10.1-devel-centos8
 
 ENV LC_ALL en_US.UTF-8
 ENV LANG en_US.UTF-8
@@ -6,17 +6,18 @@ ENV LANGUAGE en_US.UTF-8
 ARG AIHABITAT_CONDA_CHN
 ARG AIHABITAT_CONDA_CHN_PWD
 
-RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-* && \
-    sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-* && \
-    yum -y update && yum clean all && \
-    yum -y install ...
+RUN yum-config-manager --enable rhel-server-rhscl-8-rpms
+RUN yum -y --nogpgcheck update
+RUN sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo
+RUN sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo
+RUN sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo
+RUN yum -y --nogpgcheck update
 
 RUN yum install -y wget curl perl cmake util-linux xz bzip2 git patch which unzip python3
 RUN yum install -y yum-utils centos-release-scl
-RUN yum-config-manager --enable rhel-server-rhscl-7-rpms
-RUN yum install -y devtoolset-7-gcc devtoolset-7-gcc-c++ devtoolset-7-gcc-gfortran devtoolset-7-binutils
-ENV PATH=/opt/rh/devtoolset-7/root/usr/bin:$PATH
-ENV LD_LIBRARY_PATH=/opt/rh/devtoolset-7/root/usr/lib64:/opt/rh/devtoolset-7/root/usr/lib:$LD_LIBRARY_PATH
+RUN yum install -y devtoolset-8-gcc devtoolset-8-gcc-c++ devtoolset-8-gcc-gfortran devtoolset-8-binutils
+ENV PATH=/opt/rh/devtoolset-8/root/usr/bin:$PATH
+ENV LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:$LD_LIBRARY_PATH
 
 RUN yum install -y autoconf aclocal automake make
 RUN yum install -y mesa-libEGL-devel mesa-libGL-devel
