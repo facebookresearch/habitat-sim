@@ -602,6 +602,9 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * ArticulatedObject */
   bool isArticulated() const { return _isArticulated; }
 
+  /** @brief Return the local axis-aligned bounding box of the this object.*/
+  virtual const Mn::Range3D& getAabb() { return node().getCumulativeBB(); }
+
  protected:
   void setIsArticulated(bool isArticulated) { _isArticulated = isArticulated; }
 

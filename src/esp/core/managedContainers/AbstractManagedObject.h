@@ -16,7 +16,7 @@ namespace managedContainers {
  * esp::core::managedContainers::ManagedContainer class template
  * specializations. Any class that inherits from this class properly can be
  * managed by a @ref esp::core::managedContainers::ManagedContainer
- * specilization.
+ * specialization.
  */
 class AbstractManagedObject {
  public:

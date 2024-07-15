@@ -188,15 +188,11 @@ def test_scene_bounding_boxes():
     test_list = [hab_cfg, hab_cfg_mm]
     for ctor_arg in test_list:
         with habitat_sim.Simulator(ctor_arg) as sim:
-            scene_graph = sim.get_active_scene_graph()
-            root_node = scene_graph.get_root_node()
-            root_node.compute_cumulative_bb()
-            scene_bb = root_node.cumulative_bb
             ground_truth = mn.Range3D.from_size(
                 mn.Vector3(-0.775869, -0.0233012, -1.6706),
                 mn.Vector3(6.76937, 3.86304, 3.5359),
             )
-            assert ground_truth == scene_bb
+            assert ground_truth == sim.scene_aabb
 
 
 def test_object_template_editing():

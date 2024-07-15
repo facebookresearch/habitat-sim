@@ -205,7 +205,7 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
     }
   }
 
-  // Compute the cumulative bbox for the links in the ao.
+  // compute the visual bounding boxes for all nodes
   articulatedObject->computeAOCumulativeBB();
 
   // clear the cache
