@@ -24,6 +24,10 @@ class ManagedArticulatedObject
       : AbstractManagedPhysicsObject<esp::physics::ArticulatedObject>(
             classKey) {}
 
+  // allow the ArticulatedLinkWrapper to access the soft pointer validator and
+  // other internal functions as an API
+  friend class ArticulatedLinkWrapper;
+
   /**
    * @brief Get a copy of the template attributes describing the initial state
    * of this articulated object. These attributes have the combination of date

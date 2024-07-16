@@ -8,7 +8,7 @@
 /** @file
  * @brief Abstract Class @ref esp::core::managedContainers::ManagedContainerBase
  * : type-independent container functionality consumed by @ref
- * esp::core::managedContainers::ManagedContainer to cut down on code bload.
+ * esp::core::managedContainers::ManagedContainer to cut down on code bloat.
  */
 
 #include <deque>
