@@ -784,10 +784,26 @@ void initAttributesBindings(py::module& m) {
   py::class_<LightLayoutAttributes, AbstractAttributes,
              LightLayoutAttributes::ptr>(
       m, "LightLayoutAttributes",
-      R"(A metadata template for a collection of light configurations, each defined by a LightInstanceAttributes. Supports point and directional lights.
-      Is imported from .lighting_config.json files.)")
+      R"(A metadata template for a collection of light configurations, each defined by a
+      LightInstanceAttributes. Supports point and directional lights. Is imported from
+      .lighting_config.json files.)")
       .def(py::init(&LightLayoutAttributes::create<>))
-      .def(py::init(&LightLayoutAttributes::create<const std::string&>));
+      .def(py::init(&LightLayoutAttributes::create<const std::string&>))
+      .def_property_readonly(
+          "num_lights", &LightLayoutAttributes::getNumLightInstances,
+          R"(The number of individual lights defined in this LightLayout)")
+      .def_property(
+          "positive_intensity_scale",
+          &LightLayoutAttributes::getPositiveIntensityScale,
+          &LightLayoutAttributes::setPositiveIntensityScale,
+          R"(The scale value applied to all positive intensities within this LightLayout.
+        This is to make simple, sweeping adjustments to scene lighting in habitat.)")
+      .def_property(
+          "negative_intensity_scale",
+          &LightLayoutAttributes::getNegativeIntensityScale,
+          &LightLayoutAttributes::setNegativeIntensityScale,
+          R"(The scale value applied to all negative intensities within this LightLayout.
+        This is to make simple, sweeping adjustments to scene lighting in habitat.)");
 
   // ==== PbrShaderAttributes ====
   py::class_<PbrShaderAttributes, AbstractAttributes, PbrShaderAttributes::ptr>(
