@@ -219,8 +219,8 @@ void initConfigBindings(py::module& m) {
   // Setter bindings
   declareSetter(pyConfiguration, "string");  // char *
   declareSetter<std::string&>(pyConfiguration, "string");
-  declareSetter<int>(pyConfiguration, "integer");
   declareSetter<bool>(pyConfiguration, "boolean");
+  declareSetter<int>(pyConfiguration, "integer");
   declareSetter<double>(pyConfiguration, "floating-point");
   declareSetter<Magnum::Vector2&>(pyConfiguration, "Magnum::Vector2");
   declareSetter<Magnum::Vector3&>(pyConfiguration, "Magnum::Vector3");
@@ -235,8 +235,8 @@ void initConfigBindings(py::module& m) {
   // automatically saved to file unless it is changed.
   declareInitializer(pyConfiguration, "string");  // char *
   declareInitializer<std::string&>(pyConfiguration, "string");
-  declareInitializer<int>(pyConfiguration, "integer");
   declareInitializer<bool>(pyConfiguration, "boolean");
+  declareInitializer<int>(pyConfiguration, "integer");
   declareInitializer<double>(pyConfiguration, "floating-point");
   declareInitializer<Magnum::Vector2&>(pyConfiguration, "Magnum::Vector2");
   declareInitializer<Magnum::Vector3&>(pyConfiguration, "Magnum::Vector3");

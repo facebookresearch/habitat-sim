@@ -132,7 +132,7 @@ class SemanticVolumeAttributes : public AbstractAttributes {
  */
 class SemanticAttributes : public AbstractAttributes {
  public:
-  explicit SemanticAttributes(const std::string& handle);
+  explicit SemanticAttributes(const std::string& handle = "");
 
   SemanticAttributes(const SemanticAttributes& otr);
   SemanticAttributes(SemanticAttributes&& otr) noexcept;
@@ -356,16 +356,16 @@ class SemanticAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Set whether or not the semantic asset for this stage supports
-   * texture semantics.
+   * @brief Set whether or not the semantic asset described by this attributes
+   * supports texture semantics.
    */
   void setHasSemanticTextures(bool hasSemanticTextures) {
     set("has_semantic_textures", hasSemanticTextures);
   }
 
   /**
-   * @brief Get whether or not the semantic asset for this stage supports
-   * texture semantics.
+   * @brief Get whether or not the semantic asset described by this attributes
+   * supports texture semantics.
    */
   bool getHasSemanticTextures() const {
     return get<bool>("has_semantic_textures");

@@ -17,6 +17,7 @@
 #include "esp/metadata/attributes/PhysicsManagerAttributes.h"
 #include "esp/metadata/attributes/PrimitiveAssetAttributes.h"
 #include "esp/metadata/attributes/SceneInstanceAttributes.h"
+#include "esp/metadata/attributes/SemanticAttributes.h"
 #include "esp/metadata/attributes/StageAttributes.h"
 
 namespace py = pybind11;
@@ -40,6 +41,7 @@ using Attrs::MarkerSets;
 using Attrs::ObjectAttributes;
 using Attrs::PbrShaderAttributes;
 using Attrs::PhysicsManagerAttributes;
+using Attrs::SemanticAttributes;
 using Attrs::StageAttributes;
 using Attrs::TaskSet;
 using Attrs::UVSpherePrimitiveAttributes;
@@ -669,66 +671,6 @@ void initAttributesBindings(py::module& m) {
           &ObjectAttributes::setSemanticId,
           R"(The semantic ID for objects constructed from this template.)");
 
-  // ==== StageAttributes ====
-  py::class_<StageAttributes, AbstractObjectAttributes, StageAttributes::ptr>(
-      m, "StageAttributes",
-      R"(A metadata template for stages pre-instantiation. Defines asset paths,
-      collision properties, gravity direction, shader type overrides, semantic
-      asset information, and user defined metadata. Consumed to instantiate the
-      static background of a scene (e.g. the building architecture).
-      Is imported from .stage_config.json files.)")
-      .def(py::init(&StageAttributes::create<>))
-      .def(py::init(&StageAttributes::create<const std::string&>))
-      .def_property(
-          "gravity", &StageAttributes::getGravity, &StageAttributes::setGravity,
-          R"(The 3-vector representation of gravity to use for physically-based
-          simulations on stages built from this template.)")
-      .def_property(
-          "origin", &StageAttributes::getOrigin, &StageAttributes::setOrigin,
-          R"(The desired location of the origin of stages built from this
-          template.)")
-      .def_property(
-          "semantic_orient_up", &StageAttributes::getSemanticOrientUp,
-          &StageAttributes::setSemanticOrientUp,
-          R"(Up direction for semantic stage meshes built from this template.)")
-      .def_property(
-          "semantic_orient_front", &StageAttributes::getSemanticOrientFront,
-          &StageAttributes::setSemanticOrientFront,
-          R"(Forward direction for semantic stage meshes built from this template.)")
-      .def_property(
-          "semantic_asset_handle", &StageAttributes::getSemanticAssetHandle,
-          &StageAttributes::setSemanticAssetHandle,
-          R"(Handle of the asset used for semantic segmentation of stages
-          built from this template.)")
-      .def_property_readonly(
-          "semantic_asset_fullpath", &StageAttributes::getSemanticAssetFullPath,
-          R"(Fully qualified filepath of the asset used for semantic segmentation of stages
-          built from this template. This filepath will only be available/accurate after
-          the owning attributes is registered)")
-      .def_property_readonly(
-          "semantic_asset_type", &StageAttributes::getSemanticAssetType,
-          R"(Type of asset used for collision calculations for constructions
-          built from this template.)")
-      .def_property(
-          "navmesh_asset_handle", &StageAttributes::getNavmeshAssetHandle,
-          &StageAttributes::setNavmeshAssetHandle,
-          R"(Handle of the navmesh asset used for constructions built from
-          this template.)")
-      .def_property(
-          "house_filename", &StageAttributes::getSemanticDescriptorFilename,
-          &StageAttributes::setSemanticDescriptorFilename,
-          R"(Handle for file containing semantic type maps and hierarchy for
-          constructions built from this template.)")
-      .def_property_readonly(
-          "house_fq_filename", &StageAttributes::getSemanticDescriptorFullPath,
-          R"(Fully qualified path of file containing semantic type maps and hierarchy for
-          constructions built from this template. This filepath will only be available/accurate
-          after the owning attributes is registered)")
-      .def_property(
-          "frustum_culling", &StageAttributes::getFrustumCulling,
-          &StageAttributes::setFrustumCulling,
-          R"(Whether frustum culling should be enabled for constructions built by this template.)");
-
   // ==== LightInstanceAttributes ====
   py::class_<LightInstanceAttributes, AbstractAttributes,
              LightInstanceAttributes::ptr>(
@@ -983,6 +925,111 @@ void initAttributesBindings(py::module& m) {
           &PhysicsManagerAttributes::setRestitutionCoefficient,
           R"(Default restitution coefficient for contact modeling.  Can be overridden by
           stage and object values.)");
+
+  // ==== SemanticAttributes ====
+  py::class_<SemanticAttributes, AbstractAttributes, SemanticAttributes::ptr>(
+      m, "SemanticAttributes",
+      R"(A metadata template for SemanticAttributes, which describe the various semantic assignments for a scene.)")
+      .def(py::init(&SemanticAttributes::create<>))
+      .def(py::init(&SemanticAttributes::create<const std::string&>))
+      .def_property_readonly(
+          "semantic_orient_up", &SemanticAttributes::getSemanticOrientUp,
+          R"(Up direction for semantic meshes built from this template.)")
+      .def_property_readonly(
+          "semantic_orient_front", &SemanticAttributes::getSemanticOrientFront,
+          R"(Forward direction for semantic meshes built from this template.)")
+      .def_property_readonly(
+          "semantic_asset_handle", &SemanticAttributes::getSemanticAssetHandle,
+          R"(Handle of the asset used for semantic segmentations built from this template.)")
+      .def_property_readonly(
+          "semantic_asset_fullpath",
+          &SemanticAttributes::getSemanticAssetFullPath,
+          R"(Fully qualified filepath of the asset used for semantic segmentation
+          built from this template. This filepath will only be available/accurate after
+          the owning attributes is registered)")
+      .def_property_readonly(
+          "semantic_asset_type", &SemanticAttributes::getSemanticAssetType,
+          R"(Type of asset used for semantic segmentations built from this template.)")
+      .def_property_readonly(
+          "semantic_filename",
+          &SemanticAttributes::getSemanticDescriptorFilename,
+          R"(Handle for file containing semantic type maps and hierarchy for
+          constructions built from this template.)")
+      .def_property_readonly(
+          "semantic_fq_filename",
+          &SemanticAttributes::getSemanticDescriptorFullPath,
+          R"(Fully qualified path of file containing semantic type maps and hierarchy for
+          constructions built from this template. This filepath will only be available/accurate
+          after the owning attributes is registered)")
+      .def_property_readonly(
+          "has_textures", &SemanticAttributes::getHasSemanticTextures,
+          R"(Whether or not the asset described by this attributes supports texture-based semantics)")
+      .def_property_readonly(
+          "num_regions", &SemanticAttributes::getNumRegionInstances,
+          R"(The nmumber of semantic regions defined by this Semantic Attributes.)");
+
+  // ==== StageAttributes ====
+  py::class_<StageAttributes, AbstractObjectAttributes, StageAttributes::ptr>(
+      m, "StageAttributes",
+      R"(A metadata template for stages pre-instantiation. Defines asset paths,
+      collision properties, gravity direction, shader type overrides, semantic
+      asset information, and user defined metadata. Consumed to instantiate the
+      static background of a scene (e.g. the building architecture).
+      Is imported from .stage_config.json files.)")
+      .def(py::init(&StageAttributes::create<>))
+      .def(py::init(&StageAttributes::create<const std::string&>))
+      .def_property(
+          "gravity", &StageAttributes::getGravity, &StageAttributes::setGravity,
+          R"(The 3-vector representation of gravity to use for physically-based
+          simulations on stages built from this template.)")
+      .def_property(
+          "origin", &StageAttributes::getOrigin, &StageAttributes::setOrigin,
+          R"(The desired location of the origin of stages built from this
+          template.)")
+      .def_property(
+          "semantic_orient_up", &StageAttributes::getSemanticOrientUp,
+          &StageAttributes::setSemanticOrientUp,
+          R"(Up direction for semantic stage meshes built from this template.)")
+      .def_property(
+          "semantic_orient_front", &StageAttributes::getSemanticOrientFront,
+          &StageAttributes::setSemanticOrientFront,
+          R"(Forward direction for semantic stage meshes built from this template.)")
+      .def_property(
+          "semantic_asset_handle", &StageAttributes::getSemanticAssetHandle,
+          &StageAttributes::setSemanticAssetHandle,
+          R"(Handle of the asset used for semantic segmentation of stages
+          built from this template.)")
+      .def_property_readonly(
+          "semantic_asset_fullpath", &StageAttributes::getSemanticAssetFullPath,
+          R"(Fully qualified filepath of the asset used for semantic segmentation of stages
+          built from this template. This filepath will only be available/accurate after
+          the owning attributes is registered)")
+      .def_property_readonly(
+          "semantic_asset_type", &StageAttributes::getSemanticAssetType,
+          R"(Type of asset used for semantic segmentations of stages
+          built from this template.)")
+      .def_property_readonly(
+          "has_textures", &StageAttributes::getHasSemanticTextures,
+          R"(Whether or not the asset described by this attributes supports texture-based semantics)")
+      .def_property(
+          "navmesh_asset_handle", &StageAttributes::getNavmeshAssetHandle,
+          &StageAttributes::setNavmeshAssetHandle,
+          R"(Handle of the navmesh asset used for constructions built from
+          this template.)")
+      .def_property(
+          "house_filename", &StageAttributes::getSemanticDescriptorFilename,
+          &StageAttributes::setSemanticDescriptorFilename,
+          R"(Handle for file containing semantic type maps and hierarchy for
+          constructions built from this template.)")
+      .def_property_readonly(
+          "house_fq_filename", &StageAttributes::getSemanticDescriptorFullPath,
+          R"(Fully qualified path of file containing semantic type maps and hierarchy for
+          constructions built from this template. This filepath will only be available/accurate
+          after the owning attributes is registered)")
+      .def_property(
+          "frustum_culling", &StageAttributes::getFrustumCulling,
+          &StageAttributes::setFrustumCulling,
+          R"(Whether frustum culling should be enabled for constructions built by this template.)");
 
   // ==== AbstractPrimitiveAttributes ====
   py::class_<AbstractPrimitiveAttributes, AbstractAttributes,
