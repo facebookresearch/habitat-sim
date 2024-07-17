@@ -11,6 +11,15 @@
 namespace py = pybind11;
 using py::literals::operator""_a;
 
+namespace AttrMgrs = esp::metadata::managers;
+
+using AttrMgrs::AOAttributesManager;
+using AttrMgrs::AssetAttributesManager;
+using AttrMgrs::LightLayoutAttributesManager;
+using AttrMgrs::ObjectAttributesManager;
+using AttrMgrs::PhysicsAttributesManager;
+using AttrMgrs::StageAttributesManager;
+
 namespace esp {
 namespace metadata {
 
