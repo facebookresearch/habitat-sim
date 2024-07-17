@@ -11,6 +11,7 @@
 #include "esp/metadata/attributes/AbstractObjectAttributes.h"
 #include "esp/metadata/attributes/LightLayoutAttributes.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
+#include "esp/metadata/attributes/SemanticAttributes.h"
 #include "esp/metadata/attributes/StageAttributes.h"
 
 #include "esp/metadata/managers/AOAttributesManager.h"
@@ -416,8 +417,8 @@ void initAttributesManagersBindings(py::module& m) {
 
   // ==== Light Layout Attributes Template manager ====
   declareBaseAttributesManager<LightLayoutAttributes,
-                               ManagedObjectAccess::Copy>(m, "LightLayout",
-                                                          "BaseLightLayout");
+                               ManagedObjectAccess::Copy>(
+      m, "LightLayoutAttributes", "BaseLightLayout");
   // NOLINTNEXTLINE(bugprone-unused-raii)
   py::class_<
       LightLayoutAttributesManager,

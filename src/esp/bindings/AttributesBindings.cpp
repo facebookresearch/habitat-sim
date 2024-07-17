@@ -780,7 +780,14 @@ void initAttributesBindings(py::module& m) {
           R"(The outter cone angle to use for the dispersion of spot lights.
                     Ignored for other types of lights.)");
 
-  // TODO : LightLayoutAttributes
+  // ==== LightLayoutAttributes ====
+  py::class_<LightLayoutAttributes, AbstractAttributes,
+             LightLayoutAttributes::ptr>(
+      m, "LightLayoutAttributes",
+      R"(A metadata template for a collection of light configurations, each defined by a LightInstanceAttributes. Supports point and directional lights.
+      Is imported from .lighting_config.json files.)")
+      .def(py::init(&LightLayoutAttributes::create<>))
+      .def(py::init(&LightLayoutAttributes::create<const std::string&>));
 
   // ==== PbrShaderAttributes ====
   py::class_<PbrShaderAttributes, AbstractAttributes, PbrShaderAttributes::ptr>(
