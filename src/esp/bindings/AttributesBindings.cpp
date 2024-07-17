@@ -49,6 +49,56 @@ using esp::core::managedContainers::AbstractManagedObject;
 namespace esp {
 namespace metadata {
 
+template <class T>
+void declareSetterMask(
+    pybind11::class_<
+        esp::metadata::attributes::AbstractAttributes,
+        esp::core::managedContainers::AbstractFileBasedManagedObject,
+        esp::core::config::Configuration,
+        esp::metadata::attributes::AbstractAttributes::ptr>& pyAbsAttr,
+    const std::string& typeName) {
+  // Attributes should only use named properties or subconfigurations to set
+  // string values, to guarantee essential value type integrity.)
+  const std::string errMsg = Cr::Utility::formatString(
+      "Attributes should only use named properties or subconfigurations to set "
+      "{} values, to guarantee essential value type integrity.",
+      typeName);
+  pyAbsAttr.def(
+      "set",
+      [errMsg](CORRADE_UNUSED AbstractAttributes& self,
+               CORRADE_UNUSED const std::string& key,
+               CORRADE_UNUSED const T val) { ESP_CHECK(false, errMsg); },
+      R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead to set or change values for this object.)",
+      "key"_a, "value"_a);
+}  // declareSetterMask
+
+template <class T>
+void declareInitializerMask(
+    pybind11::class_<
+        esp::metadata::attributes::AbstractAttributes,
+        esp::core::managedContainers::AbstractFileBasedManagedObject,
+        esp::core::config::Configuration,
+        esp::metadata::attributes::AbstractAttributes::ptr>& pyAbsAttr,
+    const std::string& typeName) {
+  // Attributes should only use named properties or subconfigurations to set
+  // string values, to guarantee essential value type integrity.)
+  const std::string errMsg = Cr::Utility::formatString(
+      "Attributes should only use named properties or subconfigurations to "
+      "initialize {} values, to guarantee essential value type integrity.",
+      typeName);
+  pyAbsAttr.def(
+      "init",
+      [errMsg](CORRADE_UNUSED AbstractAttributes& self,
+               CORRADE_UNUSED const std::string& key,
+               CORRADE_UNUSED const T val) { ESP_CHECK(false, errMsg); },
+      R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the expected type of a required variable. Use the provided Attributes
+          instead to initialize values for this object.)",
+      "key"_a, "value"_a);
+}  // declareInitializerMask
+
 void initAttributesBindings(py::module& m) {
   // ==== AbstractManagedObject ====
   // NOLINTNEXTLINE(bugprone-unused-raii)
@@ -61,9 +111,11 @@ void initAttributesBindings(py::module& m) {
       m, "AbstractFileBasedManagedObject");
 
   // ==== AbstractAttributes ====
-  py::class_<AbstractAttributes, AbstractFileBasedManagedObject,
-             esp::core::config::Configuration, AbstractAttributes::ptr>(
-      m, "AbstractAttributes")
+  auto pyAbsAttributes =
+      py::class_<AbstractAttributes, AbstractFileBasedManagedObject,
+                 esp::core::config::Configuration, AbstractAttributes::ptr>(
+          m, "AbstractAttributes");
+  pyAbsAttributes
       .def(py::init(
           &AbstractAttributes::create<const std::string&, const std::string&>))
       .def_property("handle", &AbstractAttributes::getHandle,
@@ -96,108 +148,42 @@ void initAttributesBindings(py::module& m) {
                              R"(Class name of Attributes template.)")
       .def_property_readonly(
           "csv_info", &AbstractAttributes::getObjectInfo,
-          R"(Comma-separated informational string describing this Attributes template)")
+          R"(Comma-separated informational string describing this Attributes template)");
 
-      // Attributes should only use named properties or subconfigurations to set
-      // string values, to guarantee essential value type integrity.)
-      .def(
-          "set",
-          [](CORRADE_UNUSED AbstractAttributes& self,
-             CORRADE_UNUSED const std::string& key,
-             CORRADE_UNUSED const std::string& val) {
-            ESP_CHECK(false,
-                      "Attributes should only use named properties or "
-                      "subconfigurations to set string values, to "
-                      "guarantee essential value type integrity.");
-          },
-          R"(This method is inherited from Configuration, but should not be used with Attributes due
-          to the possibility of changing the type of a required variable. Use the provided Attributes
-          instead, to change values for this object.)",
-          "key"_a, "value"_a)
-      .def(
-          "set",
-          [](CORRADE_UNUSED AbstractAttributes& self,
-             CORRADE_UNUSED const std::string& key,
-             CORRADE_UNUSED const char* val) {
-            ESP_CHECK(false,
-                      "Attributes should only use named properties or "
-                      "subconfigurations to set string values, to "
-                      "guarantee essential value type integrity.");
-          },
-          R"(This method is inherited from Configuration, but should not be used with Attributes due
-          to the possibility of changing the type of a required variable. Use the provided Attributes
-          instead, to change values for this object.)",
-          "key"_a, "value"_a)
-      .def(
-          "set",
-          [](CORRADE_UNUSED AbstractAttributes& self,
-             CORRADE_UNUSED const std::string& key,
-             CORRADE_UNUSED const int val) {
-            ESP_CHECK(false,
-                      "Attributes should only use named properties or "
-                      "subconfigurations to set integer values, to "
-                      "guarantee essential value type integrity.");
-          },
-          R"(This method is inherited from Configuration, but should not be used with Attributes due
-          to the possibility of changing the type of a required variable. Use the provided Attributes
-          instead, to change values for this object.)",
-          "key"_a, "value"_a)
-      .def(
-          "set",
-          [](CORRADE_UNUSED AbstractAttributes& self,
-             CORRADE_UNUSED const std::string& key,
-             CORRADE_UNUSED const double val) {
-            ESP_CHECK(false,
-                      "Attributes should only use named properties or "
-                      "subconfigurations to set floating-point values, to "
-                      "guarantee essential value type integrity.");
-          },
-          R"(This method is inherited from Configuration, but should not be used with Attributes due
-          to the possibility of changing the type of a required variable. Use the provided Attributes
-          instead, to change values for this object.)",
-          "key"_a, "value"_a)
-      .def(
-          "set",
-          [](CORRADE_UNUSED AbstractAttributes& self,
-             CORRADE_UNUSED const std::string& key,
-             CORRADE_UNUSED const bool val) {
-            ESP_CHECK(false,
-                      "Attributes should only use named properties or "
-                      "subconfigurations to set boolean values, to "
-                      "guarantee essential value type integrity.");
-          },
-          R"(This method is inherited from Configuration, but should not be used with Attributes due
-          to the possibility of changing the type of a required variable. Use the provided Attributes
-          instead, to change values for this object.)",
-          "key"_a, "value"_a)
-      .def(
-          "set",
-          [](CORRADE_UNUSED AbstractAttributes& self,
-             CORRADE_UNUSED const std::string& key,
-             CORRADE_UNUSED const Magnum::Quaternion& val) {
-            ESP_CHECK(false,
-                      "Attributes should only use named properties or "
-                      "subconfigurations to set Nagnum::Quaternion values, to "
-                      "guarantee essential value type integrity.");
-          },
-          R"(This method is inherited from Configuration, but should not be used with Attributes due
-          to the possibility of changing the type of a required variable. Use the provided Attributes
-          instead, to change values for this object.)",
-          "key"_a, "value"_a)
-      .def(
-          "set",
-          [](CORRADE_UNUSED AbstractAttributes& self,
-             CORRADE_UNUSED const std::string& key,
-             CORRADE_UNUSED const Magnum::Vector3& val) {
-            ESP_CHECK(false,
-                      "Attributes should only use named properties or "
-                      "subconfigurations to set Magnum::Vector3 values, to "
-                      "guarantee essential value type integrity.");
-          },
-          R"(This method is inherited from Configuration, but should not be used with Attributes due
-          to the possibility of changing the type of a required variable. Use the provided Attributes
-          instead, to change values for this object.)",
-          "key"_a, "value"_a);
+  // Attributes should only use named properties or subconfigurations to set
+  // specific values, to guarantee essential value type integrity. This will
+  // mask the underlying Configuration's raw setters
+  declareSetterMask<std::string&>(pyAbsAttributes, "string");
+  declareSetterMask<char*>(pyAbsAttributes, "string");
+  declareSetterMask<int>(pyAbsAttributes, "integer");
+  declareSetterMask<bool>(pyAbsAttributes, "boolean");
+  declareSetterMask<double>(pyAbsAttributes, "floating-point");
+  declareSetterMask<Magnum::Vector2&>(pyAbsAttributes, "Magnum::Vector2");
+  declareSetterMask<Magnum::Vector3&>(pyAbsAttributes, "Magnum::Vector3");
+  declareSetterMask<Magnum::Vector4&>(pyAbsAttributes, "Magnum::Vector4");
+  declareSetterMask<Magnum::Color4&>(pyAbsAttributes, "Magnum::Color4");
+  declareSetterMask<Magnum::Quaternion&>(pyAbsAttributes, "Magnum::Quaternion");
+  declareSetterMask<Magnum::Matrix3&>(pyAbsAttributes, "Magnum::Matrix3");
+  declareSetterMask<Magnum::Matrix4&>(pyAbsAttributes, "Magnum::Matrix4");
+  declareSetterMask<Magnum::Rad&>(pyAbsAttributes, "Magnum::Rad");
+
+  // Attributes should only use named properties or subconfigurations to
+  // initialize specific values, to guarantee essential value type integrity.
+  // This will mask the underlying Configuration's raw initializers
+  declareInitializerMask<std::string&>(pyAbsAttributes, "string");
+  declareInitializerMask<char*>(pyAbsAttributes, "string");
+  declareInitializerMask<int>(pyAbsAttributes, "integer");
+  declareInitializerMask<bool>(pyAbsAttributes, "boolean");
+  declareInitializerMask<double>(pyAbsAttributes, "floating-point");
+  declareInitializerMask<Magnum::Vector2&>(pyAbsAttributes, "Magnum::Vector2");
+  declareInitializerMask<Magnum::Vector3&>(pyAbsAttributes, "Magnum::Vector3");
+  declareInitializerMask<Magnum::Vector4&>(pyAbsAttributes, "Magnum::Vector4");
+  declareInitializerMask<Magnum::Color4&>(pyAbsAttributes, "Magnum::Color4");
+  declareInitializerMask<Magnum::Quaternion&>(pyAbsAttributes,
+                                              "Magnum::Quaternion");
+  declareInitializerMask<Magnum::Matrix3&>(pyAbsAttributes, "Magnum::Matrix3");
+  declareInitializerMask<Magnum::Matrix4&>(pyAbsAttributes, "Magnum::Matrix4");
+  declareInitializerMask<Magnum::Rad&>(pyAbsAttributes, "Magnum::Rad");
   // ======== Enums ================
 
   // ==== ArticulatedObjectBaseType enum ====
