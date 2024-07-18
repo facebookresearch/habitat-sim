@@ -70,9 +70,11 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   esp::gfx::replay::initGfxReplayBindings(m);
   esp::sensor::initSensorBindings(m);
   esp::nav::initShortestPathBindings(m);
+  esp::sim::initSimConfigBindings(m);
   esp::metadata::initAttributesBindings(m);
   esp::metadata::initMetadataMediatorBindings(m);
   esp::metadata::managers::initAttributesManagersBindings(m);
+  esp::metadata::initMetadataMediatorBindings(m);
   // These depend on SceneNode bindings
   esp::physics::initPhysicsBindings(m);
   esp::physics::initPhysicsObjectBindings(m);

@@ -116,10 +116,14 @@ void initSensorBindings(pybind11::module& m);
 
 namespace sim {
 /**
- * @brief Specify bindings for @ref esp::sim::SimulatorConfiguration , @ref esp::sim::Simulator ,
- * @ref esp::sim::ReplayRendererConfiguration , @ref esp::sim::AbstractReplayRenderer ,
+ * @brief Specify bindings for @ref esp::sim::Simulator and @ref esp::sim::AbstractReplayRenderer ,
  */
 void initSimBindings(pybind11::module& m);
+/**
+ * @brief Specify bindings for @ref esp::sim::SimulatorConfiguration and
+ * @ref esp::sim::ReplayRendererConfiguration
+ */
+void initSimConfigBindings(pybind11::module& m);
 }  // namespace sim
 
 }  // namespace esp
