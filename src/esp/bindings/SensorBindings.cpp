@@ -163,12 +163,6 @@ void initSensorBindings(py::module& m) {
       .def_readwrite("alpha", &FisheyeSensorDoubleSphereSpec::alpha)
       .def_readwrite("xi", &FisheyeSensorDoubleSphereSpec::xi);
 
-  // ==== SensorFactory ====
-  py::class_<SensorFactory>(m, "SensorFactory")
-      .def("create_sensors", &SensorFactory::createSensors)
-      .def("delete_sensor", &SensorFactory::deleteSensor)
-      .def("delete_subtree_sensor", &SensorFactory::deleteSubtreeSensor);
-
   // ==== Sensor ====
   py::class_<Sensor, Magnum::SceneGraph::PyFeature<Sensor>,
              Magnum::SceneGraph::AbstractFeature3D,
@@ -196,6 +190,12 @@ void initSensorBindings(py::module& m) {
       .def_property_readonly("node", nodeGetter<Sensor>,
                              "Node this object is attached to")
       .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node");
+
+  // ==== SensorFactory ====
+  py::class_<SensorFactory>(m, "SensorFactory")
+      .def("create_sensors", &SensorFactory::createSensors)
+      .def("delete_sensor", &SensorFactory::deleteSensor)
+      .def("delete_subtree_sensor", &SensorFactory::deleteSubtreeSensor);
 
   // ==== VisualSensor ====
   py::class_<VisualSensor, Magnum::SceneGraph::PyFeature<VisualSensor>, Sensor,

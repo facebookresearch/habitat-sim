@@ -65,10 +65,11 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   esp::core::config::initConfigBindings(m);
   esp::core::initCoreBindings(m);
   esp::geo::initGeoBindings(m);
-  esp::scene::initSceneBindings(m);
+  auto pySceneNode = esp::scene::createSceneNodeBind(m);
+  esp::sensor::initSensorBindings(m);
   esp::gfx::initGfxBindings(m);
   esp::gfx::replay::initGfxReplayBindings(m);
-  esp::sensor::initSensorBindings(m);
+  esp::scene::initSceneBindings(m, pySceneNode);
   esp::nav::initShortestPathBindings(m);
   esp::sim::initSimConfigBindings(m);
   esp::metadata::initAttributesBindings(m);

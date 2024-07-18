@@ -5,6 +5,7 @@
 #ifndef ESP_BINDINGS_BINDINGS_H_
 #define ESP_BINDINGS_BINDINGS_H_
 
+#include <Magnum/SceneGraph/PythonBindings.h>
 #include <pybind11/pybind11.h>
 #include "esp/bindings/OpaqueTypes.h"
 
@@ -96,6 +97,16 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m);
 }  // namespace physics
 
 namespace scene {
+
+pybind11::class_<
+    esp::scene::SceneNode,
+    Magnum::SceneGraph::PyObject<esp::scene::SceneNode>,
+    Magnum::SceneGraph::Object<
+        Magnum::SceneGraph::BasicTranslationRotationScalingTransformation3D<
+            float>>,
+    Magnum::SceneGraph::PyObjectHolder<esp::scene::SceneNode>>
+createSceneNodeBind(pybind11::module& m);
+
 /**
  * @brief Specify bindings for @ref esp::scene::SceneNode , @ref esp::scene::SceneGraph ,
  * @ref esp::scene::SceneManager , @ref esp::scene::SemanticCategory ,
@@ -105,14 +116,15 @@ namespace scene {
  * @ref esp::scene::ObjectControls
  */
 void initSceneBindings(
-    pybind11::module& m
-    // ,
-    // pybind11::class_<SceneNode,
-    //                  Magnum::SceneGraph::PyObject<SceneNode>,
-    //                  MagnumObject,
-    //                  Magnum::SceneGraph::PyObjectHolder<SceneNode>>&
-    //     pySceneNode
-);
+    pybind11::module& m,
+    pybind11::class_<
+        esp::scene::SceneNode,
+        Magnum::SceneGraph::PyObject<esp::scene::SceneNode>,
+        Magnum::SceneGraph::Object<
+            Magnum::SceneGraph::BasicTranslationRotationScalingTransformation3D<
+                float>>,
+        Magnum::SceneGraph::PyObjectHolder<esp::scene::SceneNode>>&
+        pySceneNode);
 }  // namespace scene
 
 namespace sensor {
