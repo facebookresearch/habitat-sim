@@ -10,6 +10,7 @@
 #include "esp/metadata/attributes/AbstractObjectAttributes.h"
 #include "esp/metadata/attributes/ArticulatedObjectAttributes.h"
 #include "esp/metadata/attributes/AttributesBase.h"
+#include "esp/metadata/attributes/AttributesEnumMaps.h"
 #include "esp/metadata/attributes/LightLayoutAttributes.h"
 #include "esp/metadata/attributes/MarkerSets.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
@@ -102,90 +103,6 @@ void declareInitializerMask(
 }  // declareInitializerMask
 
 void initAttributesBindings(py::module& m) {
-  // ==== AbstractManagedObject ====
-  // NOLINTNEXTLINE(bugprone-unused-raii)
-  py::class_<AbstractManagedObject, AbstractManagedObject::ptr>(
-      m, "AbstractManagedObject");
-  // ==== AbstractFileBasedManagedObject ====
-  // NOLINTNEXTLINE(bugprone-unused-raii)
-  py::class_<AbstractFileBasedManagedObject, AbstractManagedObject,
-             AbstractFileBasedManagedObject::ptr>(
-      m, "AbstractFileBasedManagedObject");
-
-  // ==== AbstractAttributes ====
-  auto pyAbsAttributes =
-      py::class_<AbstractAttributes, AbstractFileBasedManagedObject,
-                 esp::core::config::Configuration, AbstractAttributes::ptr>(
-          m, "AbstractAttributes");
-  pyAbsAttributes
-      .def(py::init(
-          &AbstractAttributes::create<const std::string&, const std::string&>))
-      .def_property("handle", &AbstractAttributes::getHandle,
-                    &AbstractAttributes::setHandle,
-                    R"(Name of attributes template. )")
-      .def_property_readonly(
-          "file_directory", &AbstractAttributes::getFileDirectory,
-          R"(Directory where file-based templates were loaded from.)")
-      .def_property_readonly(
-          "template_id", &AbstractAttributes::getID,
-          R"(System-generated ID for template.  Will be unique among templates
-          of same type.)")
-      .def(
-          "get_user_config", &AbstractAttributes::editUserConfiguration,
-          py::return_value_policy::reference_internal,
-          R"(Returns a reference to the User Config object for this attributes, so that it can be
-          viewed or modified. Any changes to the user_config will require the owning
-          attributes to be re-registered.)")
-      .def_property_readonly(
-          "num_user_configs",
-          &AbstractAttributes::getNumUserDefinedConfigurations,
-          R"(The number of currently specified user-defined configuration values and
-          subconfigs (does not recurse subordinate subconfigs).)")
-      .def_property_readonly(
-          "total_num_user_configs",
-          &AbstractAttributes::getTotalNumUserDefinedConfigurations,
-          R"(The total number of currently specified user-defined configuration values
-          and subconfigs found by also recursing all subordinate subconfigs.)")
-      .def_property_readonly("template_class", &AbstractAttributes::getClassKey,
-                             R"(Class name of Attributes template.)")
-      .def_property_readonly(
-          "csv_info", &AbstractAttributes::getObjectInfo,
-          R"(Comma-separated informational string describing this Attributes template)");
-
-  // Attributes should only use named properties or subconfigurations to set
-  // specific values, to guarantee essential value type integrity. This will
-  // mask the underlying Configuration's raw setters
-  declareSetterMask<std::string&>(pyAbsAttributes, "string");
-  declareSetterMask<char*>(pyAbsAttributes, "string");
-  declareSetterMask<int>(pyAbsAttributes, "integer");
-  declareSetterMask<bool>(pyAbsAttributes, "boolean");
-  declareSetterMask<double>(pyAbsAttributes, "floating-point");
-  declareSetterMask<Magnum::Vector2&>(pyAbsAttributes, "Magnum::Vector2");
-  declareSetterMask<Magnum::Vector3&>(pyAbsAttributes, "Magnum::Vector3");
-  declareSetterMask<Magnum::Vector4&>(pyAbsAttributes, "Magnum::Vector4");
-  declareSetterMask<Magnum::Color4&>(pyAbsAttributes, "Magnum::Color4");
-  declareSetterMask<Magnum::Quaternion&>(pyAbsAttributes, "Magnum::Quaternion");
-  declareSetterMask<Magnum::Matrix3&>(pyAbsAttributes, "Magnum::Matrix3");
-  declareSetterMask<Magnum::Matrix4&>(pyAbsAttributes, "Magnum::Matrix4");
-  declareSetterMask<Magnum::Rad&>(pyAbsAttributes, "Magnum::Rad");
-
-  // Attributes should only use named properties or subconfigurations to
-  // initialize specific values, to guarantee essential value type integrity.
-  // This will mask the underlying Configuration's raw initializers
-  declareInitializerMask<std::string&>(pyAbsAttributes, "string");
-  declareInitializerMask<char*>(pyAbsAttributes, "string");
-  declareInitializerMask<int>(pyAbsAttributes, "integer");
-  declareInitializerMask<bool>(pyAbsAttributes, "boolean");
-  declareInitializerMask<double>(pyAbsAttributes, "floating-point");
-  declareInitializerMask<Magnum::Vector2&>(pyAbsAttributes, "Magnum::Vector2");
-  declareInitializerMask<Magnum::Vector3&>(pyAbsAttributes, "Magnum::Vector3");
-  declareInitializerMask<Magnum::Vector4&>(pyAbsAttributes, "Magnum::Vector4");
-  declareInitializerMask<Magnum::Color4&>(pyAbsAttributes, "Magnum::Color4");
-  declareInitializerMask<Magnum::Quaternion&>(pyAbsAttributes,
-                                              "Magnum::Quaternion");
-  declareInitializerMask<Magnum::Matrix3&>(pyAbsAttributes, "Magnum::Matrix3");
-  declareInitializerMask<Magnum::Matrix4&>(pyAbsAttributes, "Magnum::Matrix4");
-  declareInitializerMask<Magnum::Rad&>(pyAbsAttributes, "Magnum::Rad");
   // ======== Enums ================
 
   // ==== ArticulatedObjectBaseType enum ====
@@ -194,9 +111,16 @@ void initAttributesBindings(py::module& m) {
   py::enum_<metadata::attributes::ArticulatedObjectBaseType>(
       m, "ArticulatedObjectBaseType")
       .value("UNSPECIFIED",
-             metadata::attributes::ArticulatedObjectBaseType::Unspecified)
-      .value("FREE", metadata::attributes::ArticulatedObjectBaseType::Free)
-      .value("FIXED", metadata::attributes::ArticulatedObjectBaseType::Fixed);
+             metadata::attributes::ArticulatedObjectBaseType::Unspecified,
+             "Represents the user not specifying the type of base/root joint. "
+             "Resorts to any previously known/set value.")
+      .value("FREE", metadata::attributes::ArticulatedObjectBaseType::Free,
+             "The Articulated Object is joined to the world with a free joint "
+             "and is free to move around in the world.")
+      .value("FIXED", metadata::attributes::ArticulatedObjectBaseType::Fixed,
+             "The Articulated Object is connected to the world with a fixed "
+             "joint at a specific location in the world and is unable to move "
+             "within the world.");
 
   // ==== ArticulatedObjectInertiaSource enum ====
   // Describes the source of the inertia values to use for the Articulated
@@ -204,11 +128,16 @@ void initAttributesBindings(py::module& m) {
   py::enum_<metadata::attributes::ArticulatedObjectInertiaSource>(
       m, "ArticulatedObjectInertiaSource")
       .value("UNSPECIFIED",
-             metadata::attributes::ArticulatedObjectInertiaSource::Unspecified)
+             metadata::attributes::ArticulatedObjectInertiaSource::Unspecified,
+             "Represents the user not specifying the source of the inertia "
+             "values to use. Resorts to any previously known/set value.")
       .value("COMPUTED",
-             metadata::attributes::ArticulatedObjectInertiaSource::Computed)
-      .value("URDF",
-             metadata::attributes::ArticulatedObjectInertiaSource::URDF);
+             metadata::attributes::ArticulatedObjectInertiaSource::Computed,
+             "Use inertia values computed from the collision shapes when the "
+             "model is loaded. This is usually more stable and is the default "
+             "value.")
+      .value("URDF", metadata::attributes::ArticulatedObjectInertiaSource::URDF,
+             "Use the inertia values specified in the URDF file.");
 
   //
   // ==== ArticulatedObjectLinkOrder enum ====
@@ -216,12 +145,68 @@ void initAttributesBindings(py::module& m) {
   py::enum_<metadata::attributes::ArticulatedObjectLinkOrder>(
       m, "ArticulatedObjectLinkOrder")
       .value("UNSPECIFIED",
-             metadata::attributes::ArticulatedObjectLinkOrder::Unspecified)
+             metadata::attributes::ArticulatedObjectLinkOrder::Unspecified,
+             "Represents the user not specifying which link ordering to use. "
+             "Resorts to any previously known/set value")
       .value("URDF_ORDER",
-             metadata::attributes::ArticulatedObjectLinkOrder::URDFOrder)
+             metadata::attributes::ArticulatedObjectLinkOrder::URDFOrder,
+             "Use the link order derived from a tree traversal of the "
+             "Articulated Object.")
       .value("TREE_TRAVERSAL",
-             metadata::attributes::ArticulatedObjectLinkOrder::TreeTraversal);
+             metadata::attributes::ArticulatedObjectLinkOrder::TreeTraversal,
+             "End cap value - no Articulated Object link order enums should be "
+             "defined at or past this enum.");
 
+  //
+  // ==== ArticulatedObjectRenderMode enum ====
+  // Defines the possible options for what will be rendered for a particular
+  // Articulated Object.
+  py::enum_<metadata::attributes::ArticulatedObjectRenderMode>(
+      m, "ArticulatedObjectRenderMode")
+      .value("UNSPECIFIED",
+             metadata::attributes::ArticulatedObjectRenderMode::Unspecified,
+             "Represents the user not specifying which rendering mode to use. "
+             "Resorts to any previously known/set value")
+      .value(
+          "DEFAULT", metadata::attributes::ArticulatedObjectRenderMode::Default,
+          "Render the Articulated Object using its skin if it has one, "
+          "otherwise render it using the urdf-defined link meshes/primitives.")
+      .value("SKIN", metadata::attributes::ArticulatedObjectRenderMode::Skin,
+             "Render the Articulated Object using its skin.")
+      .value("LINK_VISUALS",
+             metadata::attributes::ArticulatedObjectRenderMode::LinkVisuals,
+             "Render the Articulated Object using urdf-defined "
+             "meshes/primitives to respresent each link.")
+      .value("NONE", metadata::attributes::ArticulatedObjectRenderMode::None,
+             "Do not render the Articulated Object.")
+      .value("BOTH", metadata::attributes::ArticulatedObjectRenderMode::Both,
+             "Render the Articulated Object using both the skin and the "
+             "urdf-defined link meshes/primitives.");
+
+  //
+  // ==== ObjectInstanceShaderType enum ====
+  // Defines the possible shader options for rendering instances of objects or
+  // stages in Habitat-sim.
+  py::enum_<metadata::attributes::ObjectInstanceShaderType>(
+      m, "ObjectInstanceShaderType")
+      .value(
+          "UNSPECIFIED",
+          metadata::attributes::ObjectInstanceShaderType::Unspecified,
+          "Represents the user not specifying which shader type choice to use. "
+          "Resorts to any previously known/set value")
+      .value("MATERIAL",
+             metadata::attributes::ObjectInstanceShaderType::Material,
+             "Override any config-specified or default shader-type values to "
+             "use the material-specified shader")
+      .value("FLAT", metadata::attributes::ObjectInstanceShaderType::Flat,
+             "Flat shading is pure color and no lighting. This is often used "
+             "for textured objects")
+      .value("PHONG", metadata::attributes::ObjectInstanceShaderType::Phong,
+             "Phong shading with diffuse, ambient and specular color "
+             "specifications.")
+      .value("PBR", metadata::attributes::ObjectInstanceShaderType::PBR,
+             "Physically-based rendering models the physical properties of the "
+             "object for rendering.");
   //
   // ==== AssetType ====
   // Describes the type of asset used for rendering, collsions, or semantics
@@ -237,7 +222,8 @@ void initAttributesBindings(py::module& m) {
   // ==== Markersets and subordinate classes ===
 
   py::class_<MarkerSet, esp::core::config::Configuration, MarkerSet::ptr>(
-      m, "MarkerSet")
+      m, "MarkerSet",
+      R"(A hierarchical structure to manage an object's markers.)")
       .def(py::init(&MarkerSet::create<>))
       .def_property_readonly(
           "num_points", &MarkerSet::getNumPoints,
@@ -418,6 +404,89 @@ void initAttributesBindings(py::module& m) {
           of dicts of dicts. The format is a dictionary keyed by TaskSet name, of dictionaries,
           keyed by LinkSet name, of dictionaries, each keyed by MarkerSet name referencing a list
           of that MarkerSet's marker points)");
+
+  // ==== AbstractManagedObject ====
+  // NOLINTNEXTLINE(bugprone-unused-raii)
+  py::class_<AbstractManagedObject, AbstractManagedObject::ptr>(
+      m, "AbstractManagedObject");
+  // ==== AbstractFileBasedManagedObject ====
+  // NOLINTNEXTLINE(bugprone-unused-raii)
+  py::class_<AbstractFileBasedManagedObject, AbstractManagedObject,
+             AbstractFileBasedManagedObject::ptr>(
+      m, "AbstractFileBasedManagedObject");
+
+  // ==== AbstractAttributes ====
+  auto pyAbsAttributes =
+      py::class_<AbstractAttributes, AbstractFileBasedManagedObject,
+                 esp::core::config::Configuration, AbstractAttributes::ptr>(
+          m, "AbstractAttributes");
+  pyAbsAttributes
+      .def(py::init(
+          &AbstractAttributes::create<const std::string&, const std::string&>))
+      .def_property("handle", &AbstractAttributes::getHandle,
+                    &AbstractAttributes::setHandle,
+                    R"(Name of attributes template. )")
+      .def_property_readonly(
+          "file_directory", &AbstractAttributes::getFileDirectory,
+          R"(Directory where file-based templates were loaded from.)")
+      .def_property_readonly(
+          "template_id", &AbstractAttributes::getID,
+          R"(System-generated ID for template.  Will be unique among templates
+          of same type.)")
+      .def(
+          "get_user_config", &AbstractAttributes::editUserConfiguration,
+          py::return_value_policy::reference_internal,
+          R"(Returns a reference to the User Config object for this attributes, so that it can be
+          viewed or modified. Any changes to the user_config will require the owning
+          attributes to be re-registered.)")
+      .def_property_readonly(
+          "num_user_configs",
+          &AbstractAttributes::getNumUserDefinedConfigurations,
+          R"(The number of currently specified user-defined configuration values and
+          subconfigs (does not recurse subordinate subconfigs).)")
+      .def_property_readonly(
+          "total_num_user_configs",
+          &AbstractAttributes::getTotalNumUserDefinedConfigurations,
+          R"(The total number of currently specified user-defined configuration values
+          and subconfigs found by also recursing all subordinate subconfigs.)")
+      .def_property_readonly("template_class", &AbstractAttributes::getClassKey,
+                             R"(Class name of Attributes template.)")
+      .def_property_readonly(
+          "csv_info", &AbstractAttributes::getObjectInfo,
+          R"(Comma-separated informational string describing this Attributes template)");
+
+  // Attributes should only use named properties or subconfigurations to set
+  // specific values, to guarantee essential value type integrity. This will
+  // mask the underlying Configuration's raw setters
+  declareSetterMask<std::string&>(pyAbsAttributes, "string");
+  declareSetterMask<int>(pyAbsAttributes, "integer");
+  declareSetterMask<bool>(pyAbsAttributes, "boolean");
+  declareSetterMask<double>(pyAbsAttributes, "floating-point");
+  declareSetterMask<Magnum::Vector2&>(pyAbsAttributes, "Magnum::Vector2");
+  declareSetterMask<Magnum::Vector3&>(pyAbsAttributes, "Magnum::Vector3");
+  declareSetterMask<Magnum::Vector4&>(pyAbsAttributes, "Magnum::Vector4");
+  declareSetterMask<Magnum::Color4&>(pyAbsAttributes, "Magnum::Color4");
+  declareSetterMask<Magnum::Quaternion&>(pyAbsAttributes, "Magnum::Quaternion");
+  declareSetterMask<Magnum::Matrix3&>(pyAbsAttributes, "Magnum::Matrix3");
+  declareSetterMask<Magnum::Matrix4&>(pyAbsAttributes, "Magnum::Matrix4");
+  declareSetterMask<Magnum::Radd&>(pyAbsAttributes, "Magnum::Rad");
+
+  // Attributes should only use named properties or subconfigurations to
+  // initialize specific values, to guarantee essential value type integrity.
+  // This will mask the underlying Configuration's raw initializers
+  declareInitializerMask<std::string&>(pyAbsAttributes, "string");
+  declareInitializerMask<int>(pyAbsAttributes, "integer");
+  declareInitializerMask<bool>(pyAbsAttributes, "boolean");
+  declareInitializerMask<double>(pyAbsAttributes, "floating-point");
+  declareInitializerMask<Magnum::Vector2&>(pyAbsAttributes, "Magnum::Vector2");
+  declareInitializerMask<Magnum::Vector3&>(pyAbsAttributes, "Magnum::Vector3");
+  declareInitializerMask<Magnum::Vector4&>(pyAbsAttributes, "Magnum::Vector4");
+  declareInitializerMask<Magnum::Color4&>(pyAbsAttributes, "Magnum::Color4");
+  declareInitializerMask<Magnum::Quaternion&>(pyAbsAttributes,
+                                              "Magnum::Quaternion");
+  declareInitializerMask<Magnum::Matrix3&>(pyAbsAttributes, "Magnum::Matrix3");
+  declareInitializerMask<Magnum::Matrix4&>(pyAbsAttributes, "Magnum::Matrix4");
+  declareInitializerMask<Magnum::Radd&>(pyAbsAttributes, "Magnum::Rad");
 
   // ==== ArticulatedObjectAttributes ====
   py::class_<ArticulatedObjectAttributes, AbstractAttributes,
@@ -698,13 +767,23 @@ void initAttributesBindings(py::module& m) {
                     &LightInstanceAttributes::setType,
                     R"(The type of the light.)")
       .def_property(
-          "spot_inner_cone_angle", &LightInstanceAttributes::getInnerConeAngle,
-          &LightInstanceAttributes::setInnerConeAngle,
+          "spot_inner_cone_angle",
+          [](LightInstanceAttributes& self) {
+            return static_cast<Mn::Radd>(self.getInnerConeAngle());
+          },
+          [](LightInstanceAttributes& self, Mn::Radd rads) {
+            self.setInnerConeAngle(static_cast<Mn::Rad>(rads));
+          },
           R"(The inner cone angle to use for the dispersion of spot lights.
                     Ignored for other types of lights.)")
       .def_property(
-          "spot_outer_cone_angle", &LightInstanceAttributes::getOuterConeAngle,
-          &LightInstanceAttributes::setOuterConeAngle,
+          "spot_outer_cone_angle",
+          [](LightInstanceAttributes& self) {
+            return static_cast<Mn::Radd>(self.getOuterConeAngle());
+          },
+          [](LightInstanceAttributes& self, Mn::Radd rads) {
+            self.setOuterConeAngle(static_cast<Mn::Rad>(rads));
+          },
           R"(The outter cone angle to use for the dispersion of spot lights.
                     Ignored for other types of lights.)");
 
