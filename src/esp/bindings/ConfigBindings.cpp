@@ -37,7 +37,7 @@ py::object getObjectForConfigValue(const ConfigValue& value) {
     case ConfigValType::MagnumQuat:
       return py::cast(value.get<Mn::Quaternion>());
     case ConfigValType::MagnumRad:
-      return py::cast(value.get<Mn::Rad>());
+      return py::cast(static_cast<Mn::Radd>(value.get<Mn::Rad>()));
   }
   return py::cast(nullptr);
 }
@@ -53,22 +53,7 @@ void declareSetter(
         self.set(key, val);
       },
       ("Set the value specified by given string key to be specified " +
-       typeName + " value")
-          .c_str(),
-      "key"_a, "value"_a);
-}  // declareSetter
-
-void declareSetter(
-    pybind11::class_<esp::core::config::Configuration,
-                     esp::core::config::Configuration::ptr>& pyAbsAttr,
-    const std::string& typeName) {
-  pyAbsAttr.def(
-      "set",
-      [](Configuration& self, const std::string& key, const char* val) {
-        self.set(key, val);
-      },
-      ("Set the value specified by given string key to be specified " +
-       typeName + " value")
+       typeName + " value.")
           .c_str(),
       "key"_a, "value"_a);
 }  // declareSetter
@@ -79,27 +64,12 @@ void declareInitializer(
                      esp::core::config::Configuration::ptr>& pyAbsAttr,
     const std::string& typeName) {
   pyAbsAttr.def(
-      "set",
+      "init",
       [](Configuration& self, const std::string& key, const T val) {
         self.init(key, val);
       },
       ("Initialize the value specified by given string key to be specified " +
-       typeName + " value")
-          .c_str(),
-      "key"_a, "value"_a);
-}  // declareInitializer
-
-void declareInitializer(
-    pybind11::class_<esp::core::config::Configuration,
-                     esp::core::config::Configuration::ptr>& pyAbsAttr,
-    const std::string& typeName) {
-  pyAbsAttr.def(
-      "set",
-      [](Configuration& self, const std::string& key, const char* val) {
-        self.init(key, val);
-      },
-      ("Initialize the value specified by given string key to be specified " +
-       typeName + " value")
+       typeName + " value.")
           .c_str(),
       "key"_a, "value"_a);
 }  // declareInitializer
@@ -114,9 +84,9 @@ void initConfigBindings(py::module& m) {
       .value("MagnumVec2", ConfigValType::MagnumVec2)
       .value("MagnumVec3", ConfigValType::MagnumVec3)
       .value("MagnumVec4", ConfigValType::MagnumVec4)
+      .value("MagnumQuat", ConfigValType::MagnumQuat)
       .value("MagnumMat3", ConfigValType::MagnumMat3)
       .value("MagnumMat4", ConfigValType::MagnumMat4)
-      .value("MagnumQuat", ConfigValType::MagnumQuat)
       .value("MagnumRad", ConfigValType::MagnumRad);
 
   auto pyConfiguration =
@@ -217,7 +187,6 @@ void initConfigBindings(py::module& m) {
           "remove_subconfig", &Configuration::removeSubconfig,
           R"(Removes and returns subconfiguration corresponding to passed key, if found. Gives warning otherwise.)");
   // Setter bindings
-  declareSetter(pyConfiguration, "string");  // char *
   declareSetter<std::string&>(pyConfiguration, "string");
   declareSetter<bool>(pyConfiguration, "boolean");
   declareSetter<int>(pyConfiguration, "integer");
@@ -229,11 +198,19 @@ void initConfigBindings(py::module& m) {
   declareSetter<Magnum::Quaternion&>(pyConfiguration, "Magnum::Quaternion");
   declareSetter<Magnum::Matrix3&>(pyConfiguration, "Magnum::Matrix3");
   declareSetter<Magnum::Matrix4&>(pyConfiguration, "Magnum::Matrix4");
-  declareSetter<Magnum::Rad&>(pyConfiguration, "Magnum::Rad");
+  // Use Radd version for bindings
+  pyConfiguration.def(
+      "set",
+      [](Configuration& self, const std::string& key, const Mn::Radd val) {
+        self.set(key, static_cast<Mn::Rad>(val));
+      },
+      "Set the value specified by given string key to be specified Magnum::Rad "
+      "value.",
+      "key"_a, "value"_a);
+
   // Initializer bindings
   // Initializers are like setters but the value specified will not be
   // automatically saved to file unless it is changed.
-  declareInitializer(pyConfiguration, "string");  // char *
   declareInitializer<std::string&>(pyConfiguration, "string");
   declareInitializer<bool>(pyConfiguration, "boolean");
   declareInitializer<int>(pyConfiguration, "integer");
@@ -246,7 +223,16 @@ void initConfigBindings(py::module& m) {
                                           "Magnum::Quaternion");
   declareInitializer<Magnum::Matrix3&>(pyConfiguration, "Magnum::Matrix3");
   declareInitializer<Magnum::Matrix4&>(pyConfiguration, "Magnum::Matrix4");
-  declareInitializer<Magnum::Rad&>(pyConfiguration, "Magnum::Rad");
+  // Use Radd version for bindings
+  pyConfiguration.def(
+      "init",
+      [](Configuration& self, const std::string& key, const Mn::Radd val) {
+        self.init(key, static_cast<Mn::Rad>(val));
+      },
+      "Initialize the value specified by given string key to be specified "
+      "Magnum::Rad value.",
+      "key"_a, "value"_a);
+
 }  // initConfigBindings
 
 }  // namespace config

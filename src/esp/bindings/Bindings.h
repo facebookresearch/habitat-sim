@@ -104,7 +104,15 @@ namespace scene {
  * @ref esp::scene::SemanticLevel , @ref esp::scene::SemanticScene , and
  * @ref esp::scene::ObjectControls
  */
-void initSceneBindings(pybind11::module& m);
+void initSceneBindings(
+    pybind11::module& m
+    // ,
+    // pybind11::class_<SceneNode,
+    //                  Magnum::SceneGraph::PyObject<SceneNode>,
+    //                  MagnumObject,
+    //                  Magnum::SceneGraph::PyObjectHolder<SceneNode>>&
+    //     pySceneNode
+);
 }  // namespace scene
 
 namespace sensor {

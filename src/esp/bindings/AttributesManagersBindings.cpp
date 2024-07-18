@@ -498,17 +498,6 @@ void initAttributesManagersBindings(py::module& m) {
            R"(Returns the handle for a random synthesized(primitive asset)-based
           template chosen from the existing ObjectAttributes templates being managed.)");
 
-  // ==== Stage Attributes Template manager ====
-  declareBaseAttributesManager<StageAttributes, ManagedObjectAccess::Copy>(
-      m, "StageAttributes", "BaseStage");
-  // NOLINTNEXTLINE(bugprone-unused-raii)
-  py::class_<StageAttributesManager,
-             AttributesManager<StageAttributes, ManagedObjectAccess::Copy>,
-             StageAttributesManager::ptr>(
-      m, "StageAttributesManager",
-      R"(Manages StageAttributes which define metadata for stages (i.e. static background mesh such
-      as architectural elements) pre-instantiation. Can import .stage_config.json files.)");
-
   // ==== Physics World/Manager Template manager ====
 
   declareBaseAttributesManager<PhysicsManagerAttributes,
@@ -544,6 +533,17 @@ void initAttributesManagersBindings(py::module& m) {
       m, "SemanticAttributesManager",
       R"(Manages SemanticAttributes which define semantic mappings and files applicable to a scene instance,
       such as semantic screen descriptor files and semantic regions. Can import .semantic_config.json files.)");
+
+  // ==== Stage Attributes Template manager ====
+  declareBaseAttributesManager<StageAttributes, ManagedObjectAccess::Copy>(
+      m, "StageAttributes", "BaseStage");
+  // NOLINTNEXTLINE(bugprone-unused-raii)
+  py::class_<StageAttributesManager,
+             AttributesManager<StageAttributes, ManagedObjectAccess::Copy>,
+             StageAttributesManager::ptr>(
+      m, "StageAttributesManager",
+      R"(Manages StageAttributes which define metadata for stages (i.e. static background mesh such
+      as architectural elements) pre-instantiation. Can import .stage_config.json files.)");
 
 }  // initAttributesManagersBindings
 }  // namespace managers
