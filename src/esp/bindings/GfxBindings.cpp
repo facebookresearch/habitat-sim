@@ -92,8 +92,7 @@ py::class_<Renderer, Renderer::ptr> createRendererBind(py::module& m) {
   return renderer;
 }  // createRendererBind
 
-void finalInitRenderer(py::module& m,
-                       py::class_<Renderer, Renderer::ptr>& renderer) {
+void finalInitRenderer(py::class_<Renderer, Renderer::ptr>& renderer) {
   // ==== Renderer ====
   // Add additional bindings for simulator and sensor bindings access
   renderer.def(py::init(&Renderer::create<>))

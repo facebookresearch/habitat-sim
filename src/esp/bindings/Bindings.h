@@ -60,7 +60,6 @@ createRendererBind(pybind11::module& m);
  * defined.
  */
 void finalInitRenderer(
-    pybind11::module& m,
     pybind11::class_<Renderer, std::shared_ptr<Renderer>>& renderer);
 
 /**
