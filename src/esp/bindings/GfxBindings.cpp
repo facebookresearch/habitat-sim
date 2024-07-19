@@ -38,25 +38,27 @@ esp::scene::SceneNode* nodeGetter(T& self) {
 
 namespace esp {
 namespace gfx {
-
-void initGfxBindings(py::module& m) {
-  // ==== RenderCamera ====
+py::class_<RenderCamera,
+           Magnum::SceneGraph::PyFeature<RenderCamera>,
+           Magnum::SceneGraph::Camera3D,
+           Magnum::SceneGraph::PyFeatureHolder<RenderCamera>>
+createRenderCameraBind(py::module& m) {
   py::class_<RenderCamera, Magnum::SceneGraph::PyFeature<RenderCamera>,
              Magnum::SceneGraph::Camera3D,
              Magnum::SceneGraph::PyFeatureHolder<RenderCamera>>
-      render_camera(
+      renderCamera(
           m, "Camera",
           R"(RenderCamera: The object of this class is a camera attached
       to the scene node for rendering.)");
 
-  py::enum_<RenderCamera::Flag> flags{render_camera, "Flags", "Flags"};
+  py::enum_<RenderCamera::Flag> flags{renderCamera, "Flags", "Flags"};
 
   flags.value("FRUSTUM_CULLING", RenderCamera::Flag::FrustumCulling)
       .value("OBJECTS_ONLY", RenderCamera::Flag::ObjectsOnly)
       .value("NONE", RenderCamera::Flag{});
   pybindEnumOperators(flags);
 
-  render_camera
+  renderCamera
       .def(
           "set_projection_matrix",
           [](RenderCamera& self, int w, int h, float n, float f, Mn::Degd fov) {
@@ -71,13 +73,12 @@ void initGfxBindings(py::module& m) {
       .def(
           "unproject", &RenderCamera::unproject,
           R"(Unproject a 2D viewport point to a 3D ray with its origin at the camera position. Ray direction is optionally normalized. Non-normalized rays originate at the camera location and terminate at a view plane one unit down the Z axis.)",
-          "viewport_point"_a, "normalized"_a = true)
-      .def_property_readonly("node", nodeGetter<RenderCamera>,
-                             "Node this object is attached to")
-      .def_property_readonly("object", nodeGetter<RenderCamera>,
-                             "Alias to node");
+          "viewport_point"_a, "normalized"_a = true);
 
-  // ==== Renderer ====
+  return renderCamera;
+}  // createRenderCameraBind
+
+py::class_<Renderer, Renderer::ptr> createRendererBind(py::module& m) {
   py::class_<Renderer, Renderer::ptr> renderer(m, "Renderer");
 
   py::enum_<Renderer::Flag> rendererFlags{renderer, "Flags", "Flags"};
@@ -86,6 +87,13 @@ void initGfxBindings(py::module& m) {
       .value("NONE", Renderer::Flag{});
   pybindEnumOperators(rendererFlags);
 
+  return renderer;
+}  // createRendererBind
+
+void finalInitRenderer(py::module& m,
+                       py::class_<Renderer, Renderer::ptr>& renderer) {
+  // ==== Renderer ====
+  // Add additional bindings for simulator and sensor bindings access
   renderer.def(py::init(&Renderer::create<>))
       .def(
           "draw",
@@ -130,7 +138,11 @@ void initGfxBindings(py::module& m) {
           R"(Binds a RenderTarget to the sensor)", "visualSensor"_a,
           "flags"_a = Renderer::Flag{});
 
-  py::class_<RenderTarget>(m, "RenderTarget")
+}  // finalInitRenderer
+
+void initRenderTargetBind(py::module& m) {
+  auto pyRenderTarget = py::class_<RenderTarget>(m, "RenderTarget");
+  pyRenderTarget
       .def("__enter__",
            [](RenderTarget& self) {
              self.renderEnter();
@@ -176,6 +188,24 @@ void initGfxBindings(py::module& m) {
       .def("render_enter", &RenderTarget::renderEnter)
       .def("render_exit", &RenderTarget::renderExit);
 
+}  // initRenderTargetBind
+
+void initGfxBindings(
+    py::module& m,
+    py::class_<RenderCamera,
+               Magnum::SceneGraph::PyFeature<RenderCamera>,
+               Magnum::SceneGraph::Camera3D,
+               Magnum::SceneGraph::PyFeatureHolder<RenderCamera>>&
+        renderCamera) {
+  // ==== RenderCamera ====
+  // Add additional bindings for SceneNode access after SceneNode bindings are
+  // defined
+  renderCamera
+      .def_property_readonly("node", nodeGetter<RenderCamera>,
+                             "Node this object is attached to")
+      .def_property_readonly("object", nodeGetter<RenderCamera>,
+                             "Alias to node");
+
   py::enum_<LightPositionModel>(
       m, "LightPositionModel",
       R"(Defines the coordinate frame of a light source.)")
@@ -188,6 +218,7 @@ void initGfxBindings(py::module& m) {
       .value("Point", LightType::Point)
       .value("Directional", LightType::Directional);
 
+  // ========== LightInfo =============
   py::class_<LightInfo>(
       m, "LightInfo",
       R"(Defines the vector, color and LightPositionModel of a single light source.
@@ -203,6 +234,7 @@ void initGfxBindings(py::module& m) {
       .def(py::self == py::self)
       .def(py::self != py::self);
 
+  // ========== DebugLineRender ============
   py::class_<DebugLineRender, std::shared_ptr<DebugLineRender>>(
       m, "DebugLineRender")
       .def(

@@ -9,6 +9,7 @@
 #include "esp/core/Configuration.h"
 #include "esp/core/Esp.h"
 #include "esp/core/RigidState.h"
+#include "esp/gfx/Renderer.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -58,17 +59,25 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
 
   py::bind_map<std::map<std::string, std::string>>(m, "MapStringString");
 
-  // NOTE(msb) These need to be run in dependency order.
-  // TODO(msb) gfx, scene, and sensor should not cross-depend
-  // TODO(msb) sim and sensor should not cross-depend
   esp::initEspBindings(m);
   esp::core::config::initConfigBindings(m);
   esp::core::initCoreBindings(m);
   esp::geo::initGeoBindings(m);
+
+  // To address circular references, we build certain class binding before
+  // other bindings that reference it, and then complete its definition that
+  // includes references to those classes.
   auto pySceneNode = esp::scene::createSceneNodeBind(m);
+  auto pyRenderCamera = esp::gfx::createRenderCameraBind(m);
+  auto pyRenderer = esp::gfx::createRendererBind(m);
+  esp::gfx::initRenderTargetBind(m);
+  // Sensor depends on SceneNode, RenderCamera and RenderTarget bindings
   esp::sensor::initSensorBindings(m);
-  esp::gfx::initGfxBindings(m);
+  esp::gfx::initGfxBindings(m, pyRenderCamera);
+
   esp::gfx::replay::initGfxReplayBindings(m);
+  // We pass the created scene node class binding to the initialization function
+  // to complete its definition
   esp::scene::initSceneBindings(m, pySceneNode);
   esp::nav::initShortestPathBindings(m);
   esp::sim::initSimConfigBindings(m);
@@ -80,4 +89,6 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   esp::physics::initPhysicsObjectBindings(m);
   esp::physics::initPhysicsWrapperManagerBindings(m);
   esp::sim::initSimBindings(m);
+  // Renderer relies on simulator class bindings
+  esp::gfx::finalInitRenderer(m, pyRenderer);
 }

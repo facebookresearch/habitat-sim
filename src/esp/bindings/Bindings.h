@@ -35,9 +35,51 @@ void initGeoBindings(pybind11::module& m);
 namespace gfx {
 
 /**
+ * @brief Create pybind class for RenderCamera, and partially define bindings.
+ * Bindings should be completed in @ref initGfxBindings, once dependent
+ * bindings have been created (i.e. SceneNode)
+ */
+pybind11::class_<RenderCamera,
+                 Magnum::SceneGraph::PyFeature<RenderCamera>,
+                 Magnum::SceneGraph::Camera3D,
+                 Magnum::SceneGraph::PyFeatureHolder<RenderCamera>>
+createRenderCameraBind(pybind11::module& m);
+
+class Renderer;
+
+/**
+ * @brief Create pybind class for Renderer, and partially define bindings.
+ * Bindings should be completed in @ref initGfxBindings, once dependent
+ * bindings have been created (i.e. SceneNode)
+ */
+pybind11::class_<esp::gfx::Renderer, std::shared_ptr<Renderer>>
+createRendererBind(pybind11::module& m);
+
+/**
+ * @brief Finalize Renderer bindings definitions after sim bindings class
+ * defined.
+ */
+void finalInitRenderer(
+    pybind11::module& m,
+    pybind11::class_<Renderer, std::shared_ptr<Renderer>>& renderer);
+
+/**
+ * @brief Specify bindings for RenderTarget. Done separately so that it can be
+ * performed before Sensor bindings are defined, which depend on it.
+ */
+void initRenderTargetBind(pybind11::module& m);
+
+/**
  * @brief Specify bindings for constructs in esp::gfx namespace
  */
-void initGfxBindings(pybind11::module& m);
+void initGfxBindings(
+    pybind11::module& m,
+    pybind11::class_<RenderCamera,
+                     Magnum::SceneGraph::PyFeature<RenderCamera>,
+                     Magnum::SceneGraph::Camera3D,
+                     Magnum::SceneGraph::PyFeatureHolder<RenderCamera>>&
+        renderCamera);
+
 namespace replay {
 /**
  * @brief Specify bindings for constructs in esp::gfx::replay namespace
