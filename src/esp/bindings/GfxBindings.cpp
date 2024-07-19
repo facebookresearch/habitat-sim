@@ -72,7 +72,9 @@ createRenderCameraBind(py::module& m) {
            "height"_a, "znear"_a, "zfar"_a, "scale"_a)
       .def(
           "unproject", &RenderCamera::unproject,
-          R"(Unproject a 2D viewport point to a 3D ray with its origin at the camera position. Ray direction is optionally normalized. Non-normalized rays originate at the camera location and terminate at a view plane one unit down the Z axis.)",
+          R"(Unproject a 2D viewport point to a 3D ray with its origin at the camera
+          position. Ray direction is optionally normalized. Non-normalized rays
+          originate at the camera location and terminate at a view plane one unit down the Z axis.)",
           "viewport_point"_a, "normalized"_a = true);
 
   return renderCamera;
@@ -227,7 +229,7 @@ void initGfxBindings(
       .def(py::init())
       .def(py::init<Magnum::Vector4, Magnum::Color3, LightPositionModel>(),
            "vector"_a, "color"_a = Magnum::Color3{1},
-           "model"_a = LightPositionModel::Global)
+           py::arg_v("model", LightPositionModel::Global, "LightPositionModel"))
       .def_readwrite("vector", &LightInfo::vector)
       .def_readwrite("color", &LightInfo::color)
       .def_readwrite("model", &LightInfo::model)
