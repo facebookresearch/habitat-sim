@@ -32,6 +32,7 @@ from magnum.platform.glfw import Application
 import habitat_sim
 import habitat_sim.utils.sim_utils as sim_utils
 from habitat_sim import ReplayRenderer, ReplayRendererConfiguration, physics
+from habitat_sim.gfx import DEFAULT_LIGHTING_KEY, DebugLineRender
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
@@ -417,7 +418,7 @@ class HabitatSimInteractiveViewer(Application):
             return None
         closest_rec = None
         closest_rec_dist = max_dist
-        for obj in self.obj_editor.sel_objs.values():
+        for obj in self.obj_editor.sel_objs:
             # find for all currently selected objects
             recs = (
                 self.receptacles
@@ -786,7 +787,7 @@ class HabitatSimInteractiveViewer(Application):
                     debug_line_render.pop_transform()
 
     def draw_receptacles(self, debug_line_render):
-        for obj in self.obj_editor.sel_objs.values():
+        for obj in self.obj_editor.sel_objs:
             self._draw_receptacle_per_obj(obj, debug_line_render=debug_line_render)
 
     def debug_draw(self):
@@ -798,7 +799,7 @@ class HabitatSimInteractiveViewer(Application):
             proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
             self.sim.physics_debug_draw(proj_mat)
 
-        debug_line_render = self.sim.get_debug_line_render()
+        debug_line_render: DebugLineRender = self.sim.get_debug_line_render()
         if self.contact_debug_draw:
             self.draw_contact_debug(debug_line_render)
 
@@ -814,7 +815,7 @@ class HabitatSimInteractiveViewer(Application):
         if self.receptacles is not None and self.display_receptacles:
             self.draw_receptacles(debug_line_render)
 
-        self.obj_editor.draw_selected_object(debug_line_render)
+        self.obj_editor.draw_selected_objects(debug_line_render)
         # mouse raycast circle
         if self.mouse_cast_has_hits:
             debug_line_render.draw_circle(
@@ -979,7 +980,7 @@ class HabitatSimInteractiveViewer(Application):
         if self.sim_settings["use_default_lighting"]:
             logger.info("Setting default lighting override for scene.")
             self.cfg.sim_cfg.override_scene_light_defaults = True
-            self.cfg.sim_cfg.scene_light_setup = habitat_sim.gfx.DEFAULT_LIGHTING_KEY
+            self.cfg.sim_cfg.scene_light_setup = DEFAULT_LIGHTING_KEY
 
         if self.sim is None:
             self.tiled_sims = []
@@ -1258,7 +1259,7 @@ class HabitatSimInteractiveViewer(Application):
                 rec_set = [self.selected_rec]
             elif len(self.obj_editor.sel_objs) != 0:
                 rec_set = []
-                for obj in self.obj_editor.sel_objs.values():
+                for obj in self.obj_editor.sel_objs:
                     tmp_list = [
                         rec
                         for rec in self.receptacles
@@ -1777,7 +1778,7 @@ class HabitatSimInteractiveViewer(Application):
                     link_id = obj.link_object_ids[hit_id]
                 sel_obj = obj
                 print(f"Object: {obj.handle}")
-                if isinstance(obj, physics.ManagedArticulatedObject):
+                if obj.is_articulated:
                     print("links = ")
                     for obj_id, link_id in obj.link_object_ids.items():
                         print(f" {link_id} : {obj_id} : {obj.get_link_name(link_id)}")
@@ -1853,6 +1854,14 @@ class HabitatSimInteractiveViewer(Application):
                             sim_utils.close_link(obj, default_link)
                         else:
                             sim_utils.open_link(obj, default_link)
+
+            if not shift_pressed:
+                # clear all selected objects and set to found obj
+                self.obj_editor.set_sel_obj(sel_obj)
+            else:
+                # add or remove object from selected objects, depending on whether it is already selected or not
+                self.obj_editor.toggle_sel_obj(sel_obj)
+
         elif (
             self.mouse_interaction == MouseMode.MARKER
             and physics_enabled
@@ -1864,7 +1873,8 @@ class HabitatSimInteractiveViewer(Application):
                 self.ao_link_map,
                 event.button == button.LEFT,
             )
-        self.obj_editor.set_sel_obj(sel_obj)
+            # clear all selected objects and set to found obj
+            self.obj_editor.set_sel_obj(sel_obj)
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
