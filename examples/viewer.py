@@ -1646,6 +1646,105 @@ class HabitatSimInteractiveViewer(Application):
         )
         self.mouse_cast_results = mouse_cast_results
 
+    def mouse_look_handler(
+        self, is_right_btn: bool, shift_pressed: bool, alt_pressed: bool
+    ):
+        if is_right_btn:
+            sel_obj = None
+            self.selected_rec = None
+            hit_info = self.mouse_cast_results.hits[0]
+            hit_id = hit_info.object_id
+            # right click in look mode to print object information
+            if hit_id == habitat_sim.stage_id:
+                print("This is the stage.")
+            else:
+                obj = sim_utils.get_obj_from_id(self.sim, hit_id)
+                link_id = None
+                if obj.object_id != hit_id:
+                    # this is a link
+                    link_id = obj.link_object_ids[hit_id]
+                sel_obj = obj
+                print(f"Object: {obj.handle}")
+                if obj.is_articulated:
+                    print("links = ")
+                    for obj_id, link_id in obj.link_object_ids.items():
+                        print(f" {link_id} : {obj_id} : {obj.get_link_name(link_id)}")
+                        if hit_id == obj_id:
+                            print("     !^!")
+                if self.receptacles is not None:
+                    for rec in self.receptacles:
+                        if rec.parent_object_handle == obj.handle:
+                            print(f"    - Receptacle: {rec.name}")
+                if shift_pressed:
+                    if obj.handle not in self.poh_to_rec:
+                        new_rec = hab_receptacle.AnyObjectReceptacle(
+                            obj.handle + "_aor",
+                            parent_object_handle=obj.handle,
+                            parent_link=link_id,
+                        )
+                        self.receptacles.append(new_rec)
+                        self.poh_to_rec[obj.handle] = [new_rec]
+                        self.rec_to_poh[new_rec] = obj.creation_attributes.handle
+                    self.selected_rec = self.get_closest_tri_receptacle(hit_info.point)
+                    if self.selected_rec is not None:
+                        print(f"Selected Receptacle: {self.selected_rec.name}")
+                elif alt_pressed:
+                    filtered_rec = self.get_closest_tri_receptacle(hit_info.point)
+                    if filtered_rec is not None:
+                        filtered_rec_name = filtered_rec.unique_name
+                        print(f"Modified Receptacle Filter State: {filtered_rec_name}")
+                        if (
+                            filtered_rec_name
+                            in self.rec_filter_data["manually_filtered"]
+                        ):
+                            print(" remove from manual filter")
+                            # this was manually filtered, remove it and try to make active
+                            self.rec_filter_data["manually_filtered"].remove(
+                                filtered_rec_name
+                            )
+                            add_to_active = True
+                            for other_out_set in [
+                                "access_filtered",
+                                "stability_filtered",
+                                "height_filtered",
+                            ]:
+                                if (
+                                    filtered_rec_name
+                                    in self.rec_filter_data[other_out_set]
+                                ):
+                                    print(f"     is in {other_out_set}")
+                                    add_to_active = False
+                                    break
+                            if add_to_active:
+                                print("     is active")
+                                self.rec_filter_data["active"].append(filtered_rec_name)
+                        elif filtered_rec_name in self.rec_filter_data["active"]:
+                            print(" remove from active, add manual filter")
+                            # this was active, remove it and mark manually filtered
+                            self.rec_filter_data["active"].remove(filtered_rec_name)
+                            self.rec_filter_data["manually_filtered"].append(
+                                filtered_rec_name
+                            )
+                        else:
+                            print(" add to manual filter, but has other filter")
+                            # this is already filtered, but add it to manual filters
+                            self.rec_filter_data["manually_filtered"].append(
+                                filtered_rec_name
+                            )
+                elif obj.is_articulated:
+                    # get the default link
+                    default_link = sim_utils.get_ao_default_link(obj, True)
+                    if default_link is None:
+                        print("Selected AO has no default link.")
+                    else:
+                        if sim_utils.link_is_open(obj, default_link, 0.05):
+                            sim_utils.close_link(obj, default_link)
+                        else:
+                            sim_utils.open_link(obj, default_link)
+
+            # clear all selected objects and set to found obj
+            self.obj_editor.set_sel_obj(sel_obj)
+
     def mouse_grab_handler(self, is_right_btn: bool):
         ao_link = -1
         hit_info = self.mouse_cast_results.hits[0]
@@ -1754,127 +1853,25 @@ class HabitatSimInteractiveViewer(Application):
         self.calc_mouse_cast_results(event.position)
 
         # if interactive mode is True -> GRAB MODE
-        if self.mouse_interaction == MouseMode.GRAB and physics_enabled:
-            if self.mouse_cast_has_hits:
+        if physics_enabled and self.mouse_cast_has_hits:
+            if self.mouse_interaction == MouseMode.GRAB:
                 self.mouse_grab_handler(event.button == button.RIGHT)
-        elif (
-            self.mouse_interaction == MouseMode.LOOK
-            and physics_enabled
-            and self.mouse_cast_has_hits
-            and event.button == button.RIGHT
-        ):
-            sel_obj = None
-            self.selected_rec = None
-            hit_info = self.mouse_cast_results.hits[0]
-            hit_id = hit_info.object_id
-            # right click in look mode to print object information
-            if hit_id == habitat_sim.stage_id:
-                print("This is the stage.")
-            else:
-                obj = sim_utils.get_obj_from_id(self.sim, hit_id)
-                link_id = None
-                if obj.object_id != hit_id:
-                    # this is a link
-                    link_id = obj.link_object_ids[hit_id]
-                sel_obj = obj
-                print(f"Object: {obj.handle}")
-                if obj.is_articulated:
-                    print("links = ")
-                    for obj_id, link_id in obj.link_object_ids.items():
-                        print(f" {link_id} : {obj_id} : {obj.get_link_name(link_id)}")
-                        if hit_id == obj_id:
-                            print("     !^!")
-                if self.receptacles is not None:
-                    for rec in self.receptacles:
-                        if rec.parent_object_handle == obj.handle:
-                            print(f"    - Receptacle: {rec.name}")
-                if shift_pressed:
-                    if obj.handle not in self.poh_to_rec:
-                        new_rec = hab_receptacle.AnyObjectReceptacle(
-                            obj.handle + "_aor",
-                            parent_object_handle=obj.handle,
-                            parent_link=link_id,
-                        )
-                        self.receptacles.append(new_rec)
-                        self.poh_to_rec[obj.handle] = [new_rec]
-                        self.rec_to_poh[new_rec] = obj.creation_attributes.handle
-                    self.selected_rec = self.get_closest_tri_receptacle(hit_info.point)
-                    if self.selected_rec is not None:
-                        print(f"Selected Receptacle: {self.selected_rec.name}")
-                elif alt_pressed:
-                    filtered_rec = self.get_closest_tri_receptacle(hit_info.point)
-                    if filtered_rec is not None:
-                        filtered_rec_name = filtered_rec.unique_name
-                        print(f"Modified Receptacle Filter State: {filtered_rec_name}")
-                        if (
-                            filtered_rec_name
-                            in self.rec_filter_data["manually_filtered"]
-                        ):
-                            print(" remove from manual filter")
-                            # this was manually filtered, remove it and try to make active
-                            self.rec_filter_data["manually_filtered"].remove(
-                                filtered_rec_name
-                            )
-                            add_to_active = True
-                            for other_out_set in [
-                                "access_filtered",
-                                "stability_filtered",
-                                "height_filtered",
-                            ]:
-                                if (
-                                    filtered_rec_name
-                                    in self.rec_filter_data[other_out_set]
-                                ):
-                                    print(f"     is in {other_out_set}")
-                                    add_to_active = False
-                                    break
-                            if add_to_active:
-                                print("     is active")
-                                self.rec_filter_data["active"].append(filtered_rec_name)
-                        elif filtered_rec_name in self.rec_filter_data["active"]:
-                            print(" remove from active, add manual filter")
-                            # this was active, remove it and mark manually filtered
-                            self.rec_filter_data["active"].remove(filtered_rec_name)
-                            self.rec_filter_data["manually_filtered"].append(
-                                filtered_rec_name
-                            )
-                        else:
-                            print(" add to manual filter, but has other filter")
-                            # this is already filtered, but add it to manual filters
-                            self.rec_filter_data["manually_filtered"].append(
-                                filtered_rec_name
-                            )
-                elif obj.is_articulated:
-                    # get the default link
-                    default_link = sim_utils.get_ao_default_link(obj, True)
-                    if default_link is None:
-                        print("Selected AO has no default link.")
-                    else:
-                        if sim_utils.link_is_open(obj, default_link, 0.05):
-                            sim_utils.close_link(obj, default_link)
-                        else:
-                            sim_utils.open_link(obj, default_link)
+            elif self.mouse_interaction == MouseMode.LOOK:
+                self.mouse_look_handler(
+                    event.button == button.RIGHT,
+                    shift_pressed=shift_pressed,
+                    alt_pressed=alt_pressed,
+                )
 
-            if not shift_pressed:
+            elif self.mouse_interaction == MouseMode.MARKER:
+                # hit_info = self.mouse_cast_results.hits[0]
+                sel_obj = self.markersets_util.place_marker_at_hit_location(
+                    self.mouse_cast_results.hits[0],
+                    self.ao_link_map,
+                    event.button == button.LEFT,
+                )
                 # clear all selected objects and set to found obj
                 self.obj_editor.set_sel_obj(sel_obj)
-            else:
-                # add or remove object from selected objects, depending on whether it is already selected or not
-                self.obj_editor.toggle_sel_obj(sel_obj)
-
-        elif (
-            self.mouse_interaction == MouseMode.MARKER
-            and physics_enabled
-            and self.mouse_cast_has_hits
-        ):
-            # hit_info = self.mouse_cast_results.hits[0]
-            sel_obj = self.markersets_util.place_marker_at_hit_location(
-                self.mouse_cast_results.hits[0],
-                self.ao_link_map,
-                event.button == button.LEFT,
-            )
-            # clear all selected objects and set to found obj
-            self.obj_editor.set_sel_obj(sel_obj)
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
@@ -1902,18 +1899,19 @@ class HabitatSimInteractiveViewer(Application):
         # if interactive mode is False -> LOOK MODE
         if self.mouse_interaction == MouseMode.LOOK:
             # use shift for fine-grained zooming
-            if alt_pressed:
-                # move camera in/out
-                mod_val = 0.3 if shift_pressed else 0.15
-                scroll_delta = scroll_mod_val * mod_val
-                self.camera_distance -= scroll_delta
-            else:
-                mod_val = 1.01 if shift_pressed else 1.1
-                mod = mod_val if scroll_mod_val > 0 else 1.0 / mod_val
+            # TODO : need to support camera handling like done for spot here. See spot_viewer.py
+            # if alt_pressed:
+            #     # move camera in/out
+            #     mod_val = 0.3 if shift_pressed else 0.15
+            #     scroll_delta = scroll_mod_val * mod_val
+            #     self.camera_distance -= scroll_delta
+            # else:
+            mod_val = 1.01 if shift_pressed else 1.1
+            mod = mod_val if scroll_mod_val > 0 else 1.0 / mod_val
 
-                cam = self.render_camera
-                cam.zoom(mod)
-            # self.redraw()
+            cam = self.render_camera
+            cam.zoom(mod)
+        # self.redraw()
 
         elif self.mouse_interaction == MouseMode.GRAB and self.mouse_grabber:
             # adjust the depth
@@ -1938,18 +1936,13 @@ class HabitatSimInteractiveViewer(Application):
                 self.mouse_grabber.grip_depth += scroll_delta
                 self.update_grab_position(self.get_mouse_position(event.position))
         elif self.mouse_interaction == MouseMode.MARKER:
-            marker_mod = 1 if scroll_mod_val > 0 else -1
-            self.current_markerset_taskset_idx = (
-                self.current_markerset_taskset_idx
-                + len(self.markerset_taskset_names)
-                + marker_mod
-            ) % len(self.markerset_taskset_names)
-            # if scroll_mod_val > 0:
-            #     self.current_markerset_taskset_idx = (self.current_markerset_taskset_idx + 1) %
-            # else:
-            #     self.selected_marker_set_index = max(
-            #         self.selected_marker_set_index - 1, 0
-            #     )
+            self.markersets_util.cycle_current_taskname(scroll_mod_val > 0)
+            # marker_mod = 1 if scroll_mod_val > 0 else -1
+            # self.current_markerset_taskset_idx = (
+            #     self.current_markerset_taskset_idx
+            #     + len(self.markerset_taskset_names)
+            #     + marker_mod
+            # ) % len(self.markerset_taskset_names)
 
         self.redraw()
         event.accepted = True
@@ -2082,7 +2075,7 @@ Sensor Type: {sensor_type_string}
 Sensor Subtype: {sensor_subtype_string}
 Mouse Interaction Mode: {mouse_mode_string}
 {edit_string}
-Selected MarkerSets TaskSet name : {self.markersets_util.get_current_markerset_taskname()}
+Selected MarkerSets TaskSet name : {self.markersets_util.get_current_taskname()}
 Unstable Objects: {self.num_unstable_objects} of {len(self.clutter_object_instances)}
             """
         )

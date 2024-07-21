@@ -719,7 +719,6 @@ class HabitatSimInteractiveViewer(Application):
 
         elif key == pressed.T:
             self.remove_outdoor_objects()
-            pass
 
         elif key == pressed.U:
             # Undo all edits on selected objects 1 step
@@ -802,7 +801,7 @@ class HabitatSimInteractiveViewer(Application):
         physics_enabled = self.sim.get_physics_simulation_library()
         mod = Application.InputEvent.Modifier
         shift_pressed = bool(event.modifiers & mod.SHIFT)
-        bool(event.modifiers & mod.ALT)
+        # alt_pressed = bool(event.modifiers & mod.ALT)
         self.calc_mouse_cast_results(event.position)
 
         # select an object with RIGHT-click
