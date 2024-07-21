@@ -520,7 +520,7 @@ void initAttributesManagersBindings(py::module& m) {
              AttributesManager<PbrShaderAttributes, ManagedObjectAccess::Copy>,
              PbrShaderAttributesManager::ptr>(
       m, "PbrShaderAttributesManager",
-      R"(Manages PbrShaderAttributess which define PBR shader calculation control values, such as
+      R"(Manages PbrShaderAttributes which define PBR shader calculation control values, such as
       enabling IBL or specifying direct and indirect lighting balance. Can import .pbr_config.json files.)");
 
   // ==== Semantic Attributes Template manager ====
