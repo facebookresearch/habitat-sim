@@ -5,6 +5,7 @@
 #ifndef ESP_BINDINGS_BINDINGS_H_
 #define ESP_BINDINGS_BINDINGS_H_
 
+#include <Magnum/SceneGraph/PythonBindings.h>
 #include <pybind11/pybind11.h>
 #include "esp/bindings/OpaqueTypes.h"
 
@@ -34,9 +35,50 @@ void initGeoBindings(pybind11::module& m);
 namespace gfx {
 
 /**
+ * @brief Create pybind class for RenderCamera, and partially define bindings.
+ * Bindings should be completed in @ref initGfxBindings, once dependent
+ * bindings have been created (i.e. SceneNode)
+ */
+pybind11::class_<RenderCamera,
+                 Magnum::SceneGraph::PyFeature<RenderCamera>,
+                 Magnum::SceneGraph::Camera3D,
+                 Magnum::SceneGraph::PyFeatureHolder<RenderCamera>>
+createRenderCameraBind(pybind11::module& m);
+
+class Renderer;
+
+/**
+ * @brief Create pybind class for Renderer, and partially define bindings.
+ * Bindings should be completed in @ref initGfxBindings, once dependent
+ * bindings have been created (i.e. SceneNode)
+ */
+pybind11::class_<esp::gfx::Renderer, std::shared_ptr<Renderer>>
+createRendererBind(pybind11::module& m);
+
+/**
+ * @brief Finalize Renderer bindings definitions after sim bindings class
+ * defined.
+ */
+void finalInitRenderer(
+    pybind11::class_<Renderer, std::shared_ptr<Renderer>>& renderer);
+
+/**
+ * @brief Specify bindings for RenderTarget. Done separately so that it can be
+ * performed before Sensor bindings are defined, which depend on it.
+ */
+void initRenderTargetBind(pybind11::module& m);
+
+/**
  * @brief Specify bindings for constructs in esp::gfx namespace
  */
-void initGfxBindings(pybind11::module& m);
+void initGfxBindings(
+    pybind11::module& m,
+    pybind11::class_<RenderCamera,
+                     Magnum::SceneGraph::PyFeature<RenderCamera>,
+                     Magnum::SceneGraph::Camera3D,
+                     Magnum::SceneGraph::PyFeatureHolder<RenderCamera>>&
+        renderCamera);
+
 namespace replay {
 /**
  * @brief Specify bindings for constructs in esp::gfx::replay namespace
@@ -96,6 +138,16 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m);
 }  // namespace physics
 
 namespace scene {
+
+pybind11::class_<
+    esp::scene::SceneNode,
+    Magnum::SceneGraph::PyObject<esp::scene::SceneNode>,
+    Magnum::SceneGraph::Object<
+        Magnum::SceneGraph::BasicTranslationRotationScalingTransformation3D<
+            float>>,
+    Magnum::SceneGraph::PyObjectHolder<esp::scene::SceneNode>>
+createSceneNodeBind(pybind11::module& m);
+
 /**
  * @brief Specify bindings for @ref esp::scene::SceneNode , @ref esp::scene::SceneGraph ,
  * @ref esp::scene::SceneManager , @ref esp::scene::SemanticCategory ,
@@ -104,7 +156,16 @@ namespace scene {
  * @ref esp::scene::SemanticLevel , @ref esp::scene::SemanticScene , and
  * @ref esp::scene::ObjectControls
  */
-void initSceneBindings(pybind11::module& m);
+void initSceneBindings(
+    pybind11::module& m,
+    pybind11::class_<
+        esp::scene::SceneNode,
+        Magnum::SceneGraph::PyObject<esp::scene::SceneNode>,
+        Magnum::SceneGraph::Object<
+            Magnum::SceneGraph::BasicTranslationRotationScalingTransformation3D<
+                float>>,
+        Magnum::SceneGraph::PyObjectHolder<esp::scene::SceneNode>>&
+        pySceneNode);
 }  // namespace scene
 
 namespace sensor {
@@ -116,10 +177,14 @@ void initSensorBindings(pybind11::module& m);
 
 namespace sim {
 /**
- * @brief Specify bindings for @ref esp::sim::SimulatorConfiguration , @ref esp::sim::Simulator ,
- * @ref esp::sim::ReplayRendererConfiguration , @ref esp::sim::AbstractReplayRenderer ,
+ * @brief Specify bindings for @ref esp::sim::Simulator and @ref esp::sim::AbstractReplayRenderer ,
  */
 void initSimBindings(pybind11::module& m);
+/**
+ * @brief Specify bindings for @ref esp::sim::SimulatorConfiguration and
+ * @ref esp::sim::ReplayRendererConfiguration
+ */
+void initSimConfigBindings(pybind11::module& m);
 }  // namespace sim
 
 }  // namespace esp
