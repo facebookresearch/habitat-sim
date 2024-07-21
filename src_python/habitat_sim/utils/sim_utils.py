@@ -424,6 +424,11 @@ class MarkerSetsInfo:
 
         # Necessary class-level variables.
         self.markerset_taskset_names = list(task_names_set)
+        # remove trailing s from taskset name for each markerset label prefix
+        self.markerset_label_prefix = [
+            s[:-1] if s.endswith("s") else s for s in self.markerset_taskset_names
+        ]
+
         self.current_markerset_taskset_idx = 0
 
         self.marker_sets_changed = {}
@@ -435,11 +440,29 @@ class MarkerSetsInfo:
         # for debugging
         self.glbl_marker_point_dicts_per_obj = self.get_all_global_markers()
 
-    def get_current_markerset_taskname(self):
+    def get_current_taskname(self):
         """
         Retrieve the name of the currently used markerset taskname, as specified in the current object's markersets
         """
         return self.markerset_taskset_names[self.current_markerset_taskset_idx]
+
+    def cycle_current_taskname(self, forward: bool = True):
+        mod_val = 1 if forward else -1
+        self.current_markerset_taskset_idx = (
+            self.current_markerset_taskset_idx
+            + len(self.markerset_taskset_names)
+            + mod_val
+        ) % len(self.markerset_taskset_names)
+
+    def set_current_taskname(self, taskname: str):
+        if taskname in self.markerset_taskset_names:
+            self.current_markerset_taskset_idx = self.markerset_taskset_names.index(
+                taskname
+            )
+        else:
+            print(
+                f"Specified taskname {taskname} not valid, so taskname is remaining{self.get_current_taskname()}"
+            )
 
     def get_all_markersets(self):
         """
@@ -475,8 +498,10 @@ class MarkerSetsInfo:
             f"Marker : Mouse click object : {hit_info.object_id} : Point : {hit_info.point} "
         )
         # TODO these values need to be modifiable
-        task_set_name = self.get_current_markerset_taskname()
-        marker_set_name = "faucet_000"
+        task_set_name = self.get_current_taskname()
+        marker_set_name = (
+            f"{self.markerset_label_prefix[self.current_markerset_taskset_idx]}_000"
+        )
         if obj is None:
             print(
                 f"Currently can't add a marker to the stage : ID : ({hit_info.object_id})."
@@ -525,7 +550,7 @@ class MarkerSetsInfo:
                         obj_marker_sets.init_task_link_markerset(
                             task_set_name, link_name, marker_set_name
                         )
-                    # get points for current task_set ("faucets"), link_name, marker_set_name ("faucet_000")
+                    # get points for current task_set i.e. ("faucets"), link_name, marker_set_name i.e.("faucet_000")
                     curr_markers = obj_marker_sets.get_task_link_markerset_points(
                         task_set_name, link_name, marker_set_name
                     )
