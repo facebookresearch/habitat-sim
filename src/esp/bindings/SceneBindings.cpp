@@ -9,7 +9,6 @@
 
 #include <Magnum/PythonBindings.h>
 #include <Magnum/SceneGraph/PythonBindings.h>
-
 #include "esp/scene/Mp3dSemanticScene.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneGraph.h"
@@ -19,10 +18,61 @@
 namespace py = pybind11;
 using py::literals::operator""_a;
 
+namespace Mn = Magnum;
 namespace esp {
 namespace scene {
 
-void initSceneBindings(py::module& m) {
+py::class_<esp::scene::SceneNode,
+           Magnum::SceneGraph::PyObject<esp::scene::SceneNode>,
+           Magnum::SceneGraph::Object<
+               Magnum::SceneGraph::
+                   BasicTranslationRotationScalingTransformation3D<float>>,
+           Magnum::SceneGraph::PyObjectHolder<esp::scene::SceneNode>>
+createSceneNodeBind(py::module& m) {
+  // ==== SceneNode ====
+  py::class_<esp::scene::SceneNode,
+             Magnum::SceneGraph::PyObject<esp::scene::SceneNode>,
+             Magnum::SceneGraph::Object<
+                 Magnum::SceneGraph::
+                     BasicTranslationRotationScalingTransformation3D<float>>,
+             Magnum::SceneGraph::PyObjectHolder<esp::scene::SceneNode>>
+      pySceneNode(m, "SceneNode", R"(
+      SceneNode: a node in the scene graph.
+
+      Cannot apply a smart pointer to a SceneNode object.
+      You can "create it and forget it".
+      Simulator backend will handle the memory.)");
+
+  py::class_<SceneGraph>(m, "SceneGraph")
+      .def(py::init())
+      .def("get_root_node",
+           py::overload_cast<>(&SceneGraph::getRootNode, py::const_),
+           R"(
+            Get the root node of the scene graph.
+
+            User can specify transformation of the root node w.r.t. the world
+            frame. (const function) PYTHON DOES NOT GET OWNERSHIP)",
+           py::return_value_policy::reference)
+      .def("get_root_node", py::overload_cast<>(&SceneGraph::getRootNode),
+           R"(
+            Get the root node of the scene graph.
+
+            User can specify transformation of the root node w.r.t. the world
+            frame. PYTHON DOES NOT GET OWNERSHIP)",
+           py::return_value_policy::reference);
+
+  return pySceneNode;
+}  // createSceneNodeBind
+
+void initSceneBindings(
+    py::module& m,
+    py::class_<esp::scene::SceneNode,
+               Magnum::SceneGraph::PyObject<esp::scene::SceneNode>,
+               Magnum::SceneGraph::Object<
+                   Magnum::SceneGraph::
+                       BasicTranslationRotationScalingTransformation3D<float>>,
+               Magnum::SceneGraph::PyObjectHolder<esp::scene::SceneNode>>&
+        pySceneNode) {
   // ==== SceneGraph ====
 
   // !!Warning!!
@@ -41,14 +91,7 @@ void initSceneBindings(py::module& m) {
       .value("CAMERA", SceneNodeType::CAMERA)
       .value("OBJECT", SceneNodeType::OBJECT);
 
-  // ==== SceneNode ====
-  py::class_<SceneNode, Magnum::SceneGraph::PyObject<SceneNode>, MagnumObject,
-             Magnum::SceneGraph::PyObjectHolder<SceneNode>>(m, "SceneNode", R"(
-      SceneNode: a node in the scene graph.
-
-      Cannot apply a smart pointer to a SceneNode object.
-      You can "create it and forget it".
-      Simulator backend will handle the memory.)")
+  pySceneNode
       .def(py::init_alias<std::reference_wrapper<SceneNode>>(),
            R"(Constructor: creates a scene node, and sets its parent.)")
       .def_property("type", &SceneNode::getType, &SceneNode::setType)
@@ -93,24 +136,6 @@ void initSceneBindings(py::module& m) {
       .def_property_readonly("subtree_sensors", &SceneNode::getSubtreeSensors,
                              R"(Get subtree sensors of this SceneNode)");
 
-  py::class_<SceneGraph>(m, "SceneGraph")
-      .def(py::init())
-      .def("get_root_node",
-           py::overload_cast<>(&SceneGraph::getRootNode, py::const_),
-           R"(
-            Get the root node of the scene graph.
-
-            User can specify transformation of the root node w.r.t. the world
-            frame. (const function) PYTHON DOES NOT GET OWNERSHIP)",
-           pybind11::return_value_policy::reference)
-      .def("get_root_node", py::overload_cast<>(&SceneGraph::getRootNode),
-           R"(
-            Get the root node of the scene graph.
-
-            User can specify transformation of the root node w.r.t. the world
-            frame. PYTHON DOES NOT GET OWNERSHIP)",
-           pybind11::return_value_policy::reference);
-
   // ==== SceneManager ====
   py::class_<SceneManager>(m, "SceneManager")
       .def("init_scene_graph", &SceneManager::initSceneGraph,
@@ -122,14 +147,14 @@ void initSceneBindings(py::module& m) {
              Get the scene graph by scene graph ID.
 
              PYTHON DOES NOT GET OWNERSHIP)",
-           "sceneGraphID"_a, pybind11::return_value_policy::reference)
+           "sceneGraphID"_a, py::return_value_policy::reference)
       .def("get_scene_graph",
            py::overload_cast<int>(&SceneManager::getSceneGraph, py::const_),
            R"(
              Get the scene graph by scene graph ID.
 
              PYTHON DOES NOT GET OWNERSHIP)",
-           "sceneGraphID"_a, pybind11::return_value_policy::reference);
+           "sceneGraphID"_a, py::return_value_policy::reference);
 
   // ==== SemanticCategory ====
   py::class_<SemanticCategory, SemanticCategory::ptr>(m, "SemanticCategory")

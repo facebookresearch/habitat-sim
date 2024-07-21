@@ -163,11 +163,17 @@ void initSensorBindings(py::module& m) {
       .def_readwrite("alpha", &FisheyeSensorDoubleSphereSpec::alpha)
       .def_readwrite("xi", &FisheyeSensorDoubleSphereSpec::xi);
 
-  // ==== SensorFactory ====
-  py::class_<SensorFactory>(m, "SensorFactory")
-      .def("create_sensors", &SensorFactory::createSensors)
-      .def("delete_sensor", &SensorFactory::deleteSensor)
-      .def("delete_subtree_sensor", &SensorFactory::deleteSubtreeSensor);
+  // ==== Sensor ====
+  py::class_<Sensor, Magnum::SceneGraph::PyFeature<Sensor>,
+             Magnum::SceneGraph::AbstractFeature3D,
+             Magnum::SceneGraph::PyFeatureHolder<Sensor>>(m, "Sensor")
+      .def("specification", &Sensor::specification)
+      .def("set_transformation_from_spec", &Sensor::setTransformationFromSpec)
+      .def("is_visual_sensor", &Sensor::isVisualSensor)
+      .def("get_observation", &Sensor::getObservation)
+      .def_property_readonly("node", nodeGetter<Sensor>,
+                             "Node this object is attached to")
+      .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node");
 
   // ==== SensorSuite ====
   py::class_<SensorSuite, Magnum::SceneGraph::PyFeature<SensorSuite>,
@@ -185,17 +191,11 @@ void initSensorBindings(py::module& m) {
                              "Node this object is attached to")
       .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node");
 
-  // ==== Sensor ====
-  py::class_<Sensor, Magnum::SceneGraph::PyFeature<Sensor>,
-             Magnum::SceneGraph::AbstractFeature3D,
-             Magnum::SceneGraph::PyFeatureHolder<Sensor>>(m, "Sensor")
-      .def("specification", &Sensor::specification)
-      .def("set_transformation_from_spec", &Sensor::setTransformationFromSpec)
-      .def("is_visual_sensor", &Sensor::isVisualSensor)
-      .def("get_observation", &Sensor::getObservation)
-      .def_property_readonly("node", nodeGetter<Sensor>,
-                             "Node this object is attached to")
-      .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node");
+  // ==== SensorFactory ====
+  py::class_<SensorFactory>(m, "SensorFactory")
+      .def("create_sensors", &SensorFactory::createSensors)
+      .def("delete_sensor", &SensorFactory::deleteSensor)
+      .def("delete_subtree_sensor", &SensorFactory::deleteSubtreeSensor);
 
   // ==== VisualSensor ====
   py::class_<VisualSensor, Magnum::SceneGraph::PyFeature<VisualSensor>, Sensor,
