@@ -176,7 +176,7 @@ void initAttributesBindings(py::module& m) {
       .value("LINK_VISUALS",
              metadata::attributes::ArticulatedObjectRenderMode::LinkVisuals,
              "Render the Articulated Object using urdf-defined "
-             "meshes/primitives to respresent each link.")
+             "meshes/primitives to represent each link.")
       .value("NONE", metadata::attributes::ArticulatedObjectRenderMode::None,
              "Do not render the Articulated Object.")
       .value("BOTH", metadata::attributes::ArticulatedObjectRenderMode::Both,
@@ -1045,7 +1045,7 @@ void initAttributesBindings(py::module& m) {
           R"(Whether or not the asset described by this attributes supports texture-based semantics)")
       .def_property_readonly(
           "num_regions", &SemanticAttributes::getNumRegionInstances,
-          R"(The nmumber of semantic regions defined by this Semantic Attributes.)");
+          R"(The number of semantic regions defined by this Semantic Attributes.)");
 
   // ==== StageAttributes ====
   py::class_<StageAttributes, AbstractObjectAttributes, StageAttributes::ptr>(
