@@ -461,7 +461,7 @@ class MarkerSetsInfo:
             )
         else:
             print(
-                f"Specified taskname {taskname} not valid, so taskname is remaining{self.get_current_taskname()}"
+                f"Specified taskname {taskname} not valid, so taskname is remaining {self.get_current_taskname()}"
             )
 
     def get_all_markersets(self):

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -24,6 +26,13 @@ from habitat_sim import ReplayRenderer, ReplayRendererConfiguration, physics
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
+from habitat_sim.utils.sim_utils import (
+    MarkerSetsInfo,
+    ObjectEditor,
+    SemanticManager,
+    get_ao_link_id_map,
+    get_obj_from_id,
+)
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -76,8 +85,6 @@ class HabitatSimInteractiveViewer(Application):
         self.debug_bullet_draw = False
         # draw active contact point debug line visualizations
         self.contact_debug_draw = False
-        # draw semantic region debug visualizations if present
-        self.semantic_region_debug_draw = False
 
         # cache most recently loaded URDF file for quick-reload
         self.cached_urdf = ""
@@ -121,7 +128,7 @@ class HabitatSimInteractiveViewer(Application):
         )
 
         # Glyphs we need to render everything
-        self.glyph_cache = text.GlyphCache(mn.Vector2i(256), mn.Vector2i(1))
+        self.glyph_cache = text.GlyphCache(mn.Vector2i(256))
         self.display_font.fill_glyph_cache(
             self.glyph_cache,
             string.ascii_lowercase
@@ -152,6 +159,12 @@ class HabitatSimInteractiveViewer(Application):
         )
         self.shader = shaders.VectorGL2D()
 
+        # make magnum text background transparent
+        mn.gl.Renderer.enable(mn.gl.Renderer.Feature.BLENDING)
+        mn.gl.Renderer.set_blend_function(
+            mn.gl.Renderer.BlendFunction.ONE,
+            mn.gl.Renderer.BlendFunction.ONE_MINUS_SOURCE_ALPHA,
+        )
         # Set blend function
         mn.gl.Renderer.set_blend_equation(
             mn.gl.Renderer.BlendEquation.ADD, mn.gl.Renderer.BlendEquation.ADD
@@ -162,7 +175,6 @@ class HabitatSimInteractiveViewer(Application):
 
         # Cycle mouse utilities
         self.mouse_interaction = MouseMode.LOOK
-        self.mouse_grabber: Optional[MouseGrabber] = None
         self.previous_mouse_point = None
 
         # toggle physics simulation on/off
@@ -178,8 +190,33 @@ class HabitatSimInteractiveViewer(Application):
         self.tiled_sims: list[habitat_sim.simulator.Simulator] = None
         self.replay_renderer_cfg: Optional[ReplayRendererConfiguration] = None
         self.replay_renderer: Optional[ReplayRenderer] = None
+
+        self.last_hit_details = None
+        # cache modified states of any objects moved by the interface.
+        self.modified_objects_buffer: Dict[physics.ManagedRigidObject, mn.Matrix4] = {}
+        self.removed_clutter = []
+
+        self.navmesh_dirty = False
+        self.removed_objects_debug_frames = []
+
+        # mouse raycast visualization
+        self.mouse_cast_results = None
+        self.mouse_cast_has_hits = False
+
+        self.ao_link_map = None
+
         self.reconfigure_sim()
-        self.debug_semantic_colors = {}
+
+        # load markersets for every object and ao into a cache
+        task_names_set = {"faucets", "handles"}
+        self.markersets_util = MarkerSetsInfo(self.sim, task_names_set)
+        self.markersets_util.set_current_taskname("handles")
+
+        # Editing for object selection
+        self.obj_editor = ObjectEditor(self.sim)
+
+        # Semantics
+        self.dbg_semantics = SemanticManager(self.sim)
 
         # compute NavMesh if not already loaded by the scene.
         if (
@@ -227,40 +264,38 @@ class HabitatSimInteractiveViewer(Application):
                 normal=camera_position - cp.position_on_b_in_ws,
             )
 
-    def draw_region_debug(self, debug_line_render: Any) -> None:
-        """
-        Draw the semantic region wireframes.
-        """
-
-        for region in self.sim.semantic_scene.regions:
-            color = self.debug_semantic_colors.get(region.id, mn.Color4.magenta())
-            for edge in region.volume_edges:
-                debug_line_render.draw_transformed_line(
-                    edge[0],
-                    edge[1],
-                    color,
-                )
-
     def debug_draw(self):
         """
         Additional draw commands to be called during draw_event.
         """
+
+        debug_line_render = self.sim.get_debug_line_render()
         if self.debug_bullet_draw:
             render_cam = self.render_camera.render_camera
             proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
             self.sim.physics_debug_draw(proj_mat)
 
-        debug_line_render = self.sim.get_debug_line_render()
         if self.contact_debug_draw:
             self.draw_contact_debug(debug_line_render)
+        # draw semantic information
+        self.dbg_semantics.draw_region_debug(debug_line_render=debug_line_render)
+        # draw markersets information
+        if self.markersets_util.marker_sets_per_obj is not None:
+            self.markersets_util.draw_marker_sets_debug(
+                debug_line_render,
+                self.render_camera.render_camera.node.absolute_translation,
+            )
 
-        if self.semantic_region_debug_draw:
-            if len(self.debug_semantic_colors) != len(self.sim.semantic_scene.regions):
-                for region in self.sim.semantic_scene.regions:
-                    self.debug_semantic_colors[region.id] = mn.Color4(
-                        mn.Vector3(np.random.random(3))
-                    )
-            self.draw_region_debug(debug_line_render)
+        self.obj_editor.draw_selected_objects(debug_line_render)
+        # mouse raycast circle
+        # This is confusing with the marker placement
+        # if self.mouse_cast_has_hits:
+        #     debug_line_render.draw_circle(
+        #         translation=self.mouse_cast_results.hits[0].point,
+        #         radius=0.005,
+        #         color=mn.Color4(mn.Vector3(1.0), 1.0),
+        #         normal=self.mouse_cast_results.hits[0].normal,
+        #     )
 
     def draw_event(
         self,
@@ -292,6 +327,9 @@ class HabitatSimInteractiveViewer(Application):
                     simulation_call()
             if global_call is not None:
                 global_call()
+            if self.navmesh_dirty:
+                self.navmesh_config_and_recompute()
+                self.navmesh_dirty = False
 
             # reset time_since_last_simulation, accounting for potential overflow
             self.time_since_last_simulation = math.fmod(
@@ -428,6 +466,18 @@ class HabitatSimInteractiveViewer(Application):
                 for composite_file in sim_settings["composite_files"]:
                     self.replay_renderer.preload_file(composite_file)
 
+        self.ao_link_map = get_ao_link_id_map(self.sim)
+        # check that clearing joint positions on save won't corrupt the content
+        for ao in (
+            self.sim.get_articulated_object_manager()
+            .get_objects_by_handle_substring()
+            .values()
+        ):
+            for joint_val in ao.joint_positions:
+                assert (
+                    joint_val == 0
+                ), "If this fails, there are non-zero joint positions in the scene_instance or default pose. Export with 'i' will clear these."
+
         Timer.start()
         self.step = -1
 
@@ -444,8 +494,8 @@ class HabitatSimInteractiveViewer(Application):
             for sensor_uuid, sensor in sensor_suite.items():
                 transform = sensor._sensor_object.node.absolute_transformation()
                 self.replay_renderer.set_sensor_transform(i, sensor_uuid, transform)
-        # Render
-        self.replay_renderer.render(mn.gl.default_framebuffer)
+            # Render
+            self.replay_renderer.render(mn.gl.default_framebuffer)
 
     def move_and_look(self, repetitions: int) -> None:
         """
@@ -453,24 +503,17 @@ class HabitatSimInteractiveViewer(Application):
         any changes in the movement keys map `Dict[KeyEvent.key, Bool]`.
         When a key in the map is set to `True` the corresponding action is taken.
         """
-        # avoids unnecessary updates to grabber's object position
         if repetitions == 0:
             return
 
-        key = Application.KeyEvent.Key
         agent = self.sim.agents[self.agent_id]
-        press: Dict[key.key, bool] = self.pressed
-        act: Dict[key.key, str] = self.key_to_action
+        press: Dict[Application.KeyEvent.Key.key, bool] = self.pressed
+        act: Dict[Application.KeyEvent.Key.key, str] = self.key_to_action
 
         action_queue: List[str] = [act[k] for k, v in press.items() if v]
 
         for _ in range(int(repetitions)):
             [agent.act(x) for x in action_queue]
-
-        # update the grabber transform when our agent is moved
-        if self.mouse_grabber is not None:
-            # update location of grabbed object
-            self.update_grab_position(self.previous_mouse_point)
 
     def invert_gravity(self) -> None:
         """
@@ -498,16 +541,6 @@ class HabitatSimInteractiveViewer(Application):
             event.accepted = True
             self.exit_event(Application.ExitEvent)
             return
-
-        elif key == pressed.H:
-            self.print_help_text()
-        elif key == pressed.J:
-            logger.info(
-                f"Toggle Region Draw from {self.semantic_region_debug_draw } to {not self.semantic_region_debug_draw}"
-            )
-            # Toggle visualize semantic bboxes. Currently only regions supported
-            self.semantic_region_debug_draw = not self.semantic_region_debug_draw
-
         elif key == pressed.TAB:
             # NOTE: (+ALT) - reconfigure without cycling scenes
             if not alt_pressed:
@@ -557,73 +590,42 @@ class HabitatSimInteractiveViewer(Application):
             self.debug_bullet_draw = not self.debug_bullet_draw
             logger.info(f"Command: toggle Bullet debug draw: {self.debug_bullet_draw}")
 
+        elif key == pressed.B:
+            # Save all markersets that have been changed
+            self.markersets_util.save_all_dirty_markersets()
+
         elif key == pressed.C:
-            if shift_pressed:
-                self.contact_debug_draw = not self.contact_debug_draw
-                logger.info(
-                    f"Command: toggle contact debug draw: {self.contact_debug_draw}"
-                )
-            else:
+            self.contact_debug_draw = not self.contact_debug_draw
+            log_str = f"Command: toggle contact debug draw: {self.contact_debug_draw}"
+            if self.contact_debug_draw:
                 # perform a discrete collision detection pass and enable contact debug drawing to visualize the results
-                logger.info(
-                    "Command: perform discrete collision detection and visualize active contacts."
-                )
-                self.sim.perform_discrete_collision_detection()
-                self.contact_debug_draw = True
                 # TODO: add a nice log message with concise contact pair naming.
+                log_str = f"{log_str}: performing discrete collision detection and visualize active contacts."
+                self.sim.perform_discrete_collision_detection()
+            logger.info(log_str)
 
-        elif key == pressed.T:
-            # load URDF
-            fixed_base = alt_pressed
-            urdf_file_path = ""
-            if shift_pressed and self.cached_urdf:
-                urdf_file_path = self.cached_urdf
-            else:
-                urdf_file_path = input("Load URDF: provide a URDF filepath:").strip()
+        elif key == pressed.E:
+            # Cyle through semantics display
+            info_str = self.dbg_semantics.cycle_semantic_region_draw()
+            logger.info(info_str)
 
-            if not urdf_file_path:
-                logger.warn("Load URDF: no input provided. Aborting.")
-            elif not urdf_file_path.endswith((".URDF", ".urdf")):
-                logger.warn("Load URDF: input is not a URDF. Aborting.")
-            elif os.path.exists(urdf_file_path):
-                self.cached_urdf = urdf_file_path
-                aom = self.sim.get_articulated_object_manager()
-                ao = aom.add_articulated_object_from_urdf(
-                    urdf_file_path,
-                    fixed_base,
-                    1.0,
-                    1.0,
-                    True,
-                    maintain_link_order=False,
-                    intertia_from_urdf=False,
-                )
-                ao.translation = (
-                    self.default_agent.scene_node.transformation.transform_point(
-                        [0.0, 1.0, -1.5]
-                    )
-                )
-                # check removal and auto-creation
-                joint_motor_settings = habitat_sim.physics.JointMotorSettings(
-                    position_target=0.0,
-                    position_gain=1.0,
-                    velocity_target=0.0,
-                    velocity_gain=1.0,
-                    max_impulse=1000.0,
-                )
-                existing_motor_ids = ao.existing_joint_motor_ids
-                for motor_id in existing_motor_ids:
-                    ao.remove_joint_motor(motor_id)
-                ao.create_all_motors(joint_motor_settings)
-            else:
-                logger.warn("Load URDF: input file not found. Aborting.")
+        elif key == pressed.H:
+            self.print_help_text()
+
+        elif key == pressed.J:
+            # If shift pressed then open, otherwise close
+            # If alt pressed then selected, otherwise all
+            self.obj_editor.set_ao_joint_states(
+                do_open=shift_pressed, selected=alt_pressed
+            )
+            if not shift_pressed:
+                # if closing then redo navmesh
+                self.navmesh_config_and_recompute()
 
         elif key == pressed.M:
             self.cycle_mouse_mode()
             logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
 
-        elif key == pressed.V:
-            self.invert_gravity()
-            logger.info("Command: gravity inverted")
         elif key == pressed.N:
             # (default) - toggle navmesh visualization
             # NOTE: (+ALT) - re-sample the agent position on the NavMesh
@@ -654,6 +656,24 @@ class HabitatSimInteractiveViewer(Application):
                 else:
                     logger.warn("Warning: recompute navmesh first")
 
+        elif key == pressed.V:
+            # self.invert_gravity()
+            # logger.info("Command: gravity inverted")
+            # Duplicate all the selected objects and place them in the scene
+            # or inject a new object by queried handle substring in front of
+            # the agent if no objects selected
+
+            new_obj_list, self.navmesh_dirty = self.obj_editor.build_objects(
+                self.navmesh_dirty,
+                build_loc=self.spot_agent.get_point_in_front(
+                    disp_in_front=[1.5, 0.0, 0.0]
+                ),
+            )
+            if len(new_obj_list) == 0:
+                print("Failed to add any new objects.")
+            else:
+                print(f"Finished adding {len(new_obj_list)} object(s).")
+
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
             self.pressed[key] = True
@@ -674,11 +694,19 @@ class HabitatSimInteractiveViewer(Application):
         event.accepted = True
         self.redraw()
 
+    def calc_mouse_cast_results(self, screen_location: mn.Vector3) -> None:
+        render_camera = self.render_camera.render_camera
+        ray = render_camera.unproject(self.get_mouse_position(screen_location))
+        mouse_cast_results = self.sim.cast_ray(ray=ray)
+        self.mouse_cast_has_hits = (
+            mouse_cast_results is not None and mouse_cast_results.has_hits()
+        )
+        self.mouse_cast_results = mouse_cast_results
+
     def mouse_move_event(self, event: Application.MouseMoveEvent) -> None:
         """
         Handles `Application.MouseMoveEvent`. When in LOOK mode, enables the left
-        mouse button to steer the agent's facing direction. When in GRAB mode,
-        continues to update the grabber's object position with our agents position.
+        mouse button to steer the agent's facing direction.
         """
         button = Application.MouseMoveEvent.Buttons
         # if interactive mode -> LOOK MODE
@@ -702,96 +730,58 @@ class HabitatSimInteractiveViewer(Application):
 
     def mouse_press_event(self, event: Application.MouseEvent) -> None:
         """
-        Handles `Application.MouseEvent`. When in GRAB mode, click on
-        objects to drag their position. (right-click for fixed constraints)
+        Handles `Application.MouseEvent`. When in MARKER mode :
+        LEFT CLICK : places a marker at mouse position on targeted object if not the stage
+        RIGHT CLICK : removes the closest marker to mouse position on targeted object
         """
         button = Application.MouseEvent.Button
         physics_enabled = self.sim.get_physics_simulation_library()
+        mod = Application.InputEvent.Modifier
+        shift_pressed = bool(event.modifiers & mod.SHIFT)
+        bool(event.modifiers & mod.ALT)
+        self.calc_mouse_cast_results(event.position)
 
-        # if interactive mode is True -> GRAB MODE
-        if self.mouse_interaction == MouseMode.GRAB and physics_enabled:
-            render_camera = self.render_camera.render_camera
-            ray = render_camera.unproject(self.get_mouse_position(event.position))
-            raycast_results = self.sim.cast_ray(ray=ray)
-
-            if raycast_results.has_hits():
-                hit_object, ao_link = -1, -1
-                hit_info = raycast_results.hits[0]
-
-                if hit_info.object_id > habitat_sim.stage_id:
-                    # we hit an non-staged collision object
-                    ro_mngr = self.sim.get_rigid_object_manager()
-                    ao_mngr = self.sim.get_articulated_object_manager()
-                    ao = ao_mngr.get_object_by_id(hit_info.object_id)
-                    ro = ro_mngr.get_object_by_id(hit_info.object_id)
-
-                    if ro:
-                        # if grabbed an object
-                        hit_object = hit_info.object_id
-                        object_pivot = ro.transformation.inverted().transform_point(
-                            hit_info.point
-                        )
-                        object_frame = ro.rotation.inverted()
-                    elif ao:
-                        # if grabbed the base link
-                        hit_object = hit_info.object_id
-                        object_pivot = ao.transformation.inverted().transform_point(
-                            hit_info.point
-                        )
-                        object_frame = ao.rotation.inverted()
-                    else:
-                        for ao_handle in ao_mngr.get_objects_by_handle_substring():
-                            ao = ao_mngr.get_object_by_handle(ao_handle)
-                            link_to_obj_ids = ao.link_object_ids
-
-                            if hit_info.object_id in link_to_obj_ids:
-                                # if we got a link
-                                ao_link = link_to_obj_ids[hit_info.object_id]
-                                object_pivot = (
-                                    ao.get_link_scene_node(ao_link)
-                                    .transformation.inverted()
-                                    .transform_point(hit_info.point)
-                                )
-                                object_frame = ao.get_link_scene_node(
-                                    ao_link
-                                ).rotation.inverted()
-                                hit_object = ao.object_id
-                                break
-                    # done checking for AO
-
-                    if hit_object >= 0:
-                        node = self.default_agent.scene_node
-                        constraint_settings = physics.RigidConstraintSettings()
-
-                        constraint_settings.object_id_a = hit_object
-                        constraint_settings.link_id_a = ao_link
-                        constraint_settings.pivot_a = object_pivot
-                        constraint_settings.frame_a = (
-                            object_frame.to_matrix() @ node.rotation.to_matrix()
-                        )
-                        constraint_settings.frame_b = node.rotation.to_matrix()
-                        constraint_settings.pivot_b = hit_info.point
-
-                        # by default use a point 2 point constraint
-                        if event.button == button.RIGHT:
-                            constraint_settings.constraint_type = (
-                                physics.RigidConstraintType.Fixed
-                            )
-
-                        grip_depth = (
-                            hit_info.point - render_camera.node.absolute_translation
-                        ).length()
-
-                        self.mouse_grabber = MouseGrabber(
-                            constraint_settings,
-                            grip_depth,
-                            self.sim,
+        if physics_enabled and self.mouse_cast_has_hits:
+            # If look enabled
+            if self.mouse_interaction == MouseMode.LOOK:
+                mouse_cast_results = self.mouse_cast_results
+                if event.button == button.RIGHT:
+                    # Find object being clicked
+                    obj_found = False
+                    obj = None
+                    # find first non-stage object
+                    hit_idx = 0
+                    while hit_idx < len(mouse_cast_results.hits) and not obj_found:
+                        self.last_hit_details = mouse_cast_results.hits[hit_idx]
+                        hit_obj_id = mouse_cast_results.hits[hit_idx].object_id
+                        obj = get_obj_from_id(self.sim, hit_obj_id)
+                        if obj is None:
+                            hit_idx += 1
+                        else:
+                            obj_found = True
+                    if obj_found:
+                        print(
+                            f"Object: {obj.handle} is {'Articlated' if obj.is_articulated else 'Rigid'} Object at {obj.translation}"
                         )
                     else:
-                        logger.warn("Oops, couldn't find the hit object. That's odd.")
-                # end if didn't hit the scene
-            # end has raycast hit
-        # end has physics enabled
+                        print("This is the stage.")
+
+                    if not shift_pressed:
+                        # clear all selected objects and set to found obj
+                        self.obj_editor.set_sel_obj(obj)
+                    elif obj_found:
+                        # add or remove object from selected objects, depending on whether it is already selected or not
+                        self.obj_editor.toggle_sel_obj(obj)
+            # else if marker enabled
+            elif self.mouse_interaction == MouseMode.MARKER:
+                # hit_info = self.mouse_cast_results.hits[0]
+                sel_obj = self.markersets_util.place_marker_at_hit_location(
+                    self.mouse_cast_results.hits[0],
+                    self.ao_link_map,
+                    event.button == button.LEFT,
+                )
+                # clear all selected objects and set to found obj
+                self.obj_editor.set_sel_obj(sel_obj)
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
@@ -800,8 +790,7 @@ class HabitatSimInteractiveViewer(Application):
     def mouse_scroll_event(self, event: Application.MouseScrollEvent) -> None:
         """
         Handles `Application.MouseScrollEvent`. When in LOOK mode, enables camera
-        zooming (fine-grained zoom using shift) When in GRAB mode, adjusts the depth
-        of the grabber's object. (larger depth change rate using shift)
+        zooming (fine-grained zoom using shift) When in MARKER mode, wheel cycles through available taskset names
         """
         scroll_mod_val = (
             event.offset.y
@@ -813,8 +802,8 @@ class HabitatSimInteractiveViewer(Application):
 
         # use shift to scale action response
         shift_pressed = bool(event.modifiers & Application.InputEvent.Modifier.SHIFT)
-        alt_pressed = bool(event.modifiers & Application.InputEvent.Modifier.ALT)
-        ctrl_pressed = bool(event.modifiers & Application.InputEvent.Modifier.CTRL)
+        bool(event.modifiers & Application.InputEvent.Modifier.ALT)
+        bool(event.modifiers & Application.InputEvent.Modifier.CTRL)
 
         # if interactive mode is False -> LOOK MODE
         if self.mouse_interaction == MouseMode.LOOK:
@@ -825,28 +814,8 @@ class HabitatSimInteractiveViewer(Application):
             cam.zoom(mod)
             self.redraw()
 
-        elif self.mouse_interaction == MouseMode.GRAB and self.mouse_grabber:
-            # adjust the depth
-            mod_val = 0.1 if shift_pressed else 0.01
-            scroll_delta = scroll_mod_val * mod_val
-            if alt_pressed or ctrl_pressed:
-                # rotate the object's local constraint frame
-                agent_t = self.default_agent.scene_node.transformation_matrix()
-                # ALT - yaw
-                rotation_axis = agent_t.transform_vector(mn.Vector3(0, 1, 0))
-                if alt_pressed and ctrl_pressed:
-                    # ALT+CTRL - roll
-                    rotation_axis = agent_t.transform_vector(mn.Vector3(0, 0, -1))
-                elif ctrl_pressed:
-                    # CTRL - pitch
-                    rotation_axis = agent_t.transform_vector(mn.Vector3(1, 0, 0))
-                self.mouse_grabber.rotate_local_frame_by_global_angle_axis(
-                    rotation_axis, mn.Rad(scroll_delta)
-                )
-            else:
-                # update location of grabbed object
-                self.mouse_grabber.grip_depth += scroll_delta
-                self.update_grab_position(self.get_mouse_position(event.position))
+        elif self.mouse_interaction == MouseMode.MARKER:
+            self.markersets_util.cycle_current_taskname(scroll_mod_val > 0)
         self.redraw()
         event.accepted = True
 
@@ -854,28 +823,7 @@ class HabitatSimInteractiveViewer(Application):
         """
         Release any existing constraints.
         """
-        del self.mouse_grabber
-        self.mouse_grabber = None
         event.accepted = True
-
-    def update_grab_position(self, point: mn.Vector2i) -> None:
-        """
-        Accepts a point derived from a mouse click event and updates the
-        transform of the mouse grabber.
-        """
-        # check mouse grabber
-        if not self.mouse_grabber:
-            return
-
-        render_camera = self.render_camera.render_camera
-        ray = render_camera.unproject(point)
-
-        rotation: mn.Matrix3x3 = self.default_agent.scene_node.rotation.to_matrix()
-        translation: mn.Vector3 = (
-            render_camera.node.absolute_translation
-            + ray.direction * self.mouse_grabber.grip_depth
-        )
-        self.mouse_grabber.update_transform(mn.Matrix4.from_(rotation, translation))
 
     def get_mouse_position(self, mouse_event_position: mn.Vector2i) -> mn.Vector2i:
         """
@@ -892,8 +840,8 @@ class HabitatSimInteractiveViewer(Application):
         This method defines how to cycle through the mouse mode.
         """
         if self.mouse_interaction == MouseMode.LOOK:
-            self.mouse_interaction = MouseMode.GRAB
-        elif self.mouse_interaction == MouseMode.GRAB:
+            self.mouse_interaction = MouseMode.MARKER
+        elif self.mouse_interaction == MouseMode.MARKER:
             self.mouse_interaction = MouseMode.LOOK
 
     def navmesh_config_and_recompute(self) -> None:
@@ -901,6 +849,8 @@ class HabitatSimInteractiveViewer(Application):
         This method is setup to be overridden in for setting config accessibility
         in inherited classes.
         """
+        if self.cfg.sim_cfg.scene_id.lower() == "none":
+            return
         self.navmesh_settings = habitat_sim.NavMeshSettings()
         self.navmesh_settings.set_defaults()
         self.navmesh_settings.agent_height = self.cfg.agents[self.agent_id].height
@@ -937,13 +887,16 @@ class HabitatSimInteractiveViewer(Application):
         sensor_subtype_string = str(sensor_spec.sensor_subtype.name)
         if self.mouse_interaction == MouseMode.LOOK:
             mouse_mode_string = "LOOK"
-        elif self.mouse_interaction == MouseMode.GRAB:
-            mouse_mode_string = "GRAB"
+        elif self.mouse_interaction == MouseMode.MARKER:
+            mouse_mode_string = "MARKER"
+        edit_string = self.obj_editor.edit_disp_str()
         self.window_text.render(
             f"""
 {self.fps} FPS
 Sensor Type: {sensor_type_string}
 Sensor Subtype: {sensor_subtype_string}
+{edit_string}
+Selected MarkerSets TaskSet name : {self.markersets_util.get_current_taskname()}
 Mouse Interaction Mode: {mouse_mode_string}
             """
         )
@@ -969,18 +922,9 @@ In LOOK mode (default):
     WHEEL:
         Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
 
-In GRAB mode (with 'enable-physics'):
-    LEFT:
-        Click and drag to pickup and move an object with a point-to-point constraint (e.g. ball joint).
-    RIGHT:
-        Click and drag to pickup and move an object with a fixed frame constraint.
-    WHEEL (with picked object):
-        default - Pull gripped object closer or push it away.
-        (+ALT) rotate object fixed constraint frame (yaw)
-        (+CTRL) rotate object fixed constraint frame (pitch)
-        (+ALT+CTRL) rotate object fixed constraint frame (roll)
-        (+SHIFT) amplify scroll magnitude
-
+In MARKER mode :
+    LEFT CLICK : Add a marker to the target object at the mouse location, if not the stage
+    RIGHT CLICK : Remove the closest marker to the mouse location on the target object
 
 Key Commands:
 -------------
@@ -1018,70 +962,6 @@ Key Commands:
 class MouseMode(Enum):
     LOOK = 0
     MARKER = 2
-
-
-class MouseGrabber:
-    """
-    Create a MouseGrabber from RigidConstraintSettings to manipulate objects.
-    """
-
-    def __init__(
-        self,
-        settings: physics.RigidConstraintSettings,
-        grip_depth: float,
-        sim: habitat_sim.simulator.Simulator,
-    ) -> None:
-        self.settings = settings
-        self.simulator = sim
-
-        # defines distance of the grip point from the camera for pivot updates
-        self.grip_depth = grip_depth
-        self.constraint_id = sim.create_rigid_constraint(settings)
-
-    def __del__(self):
-        self.remove_constraint()
-
-    def remove_constraint(self) -> None:
-        """
-        Remove a rigid constraint by id.
-        """
-        self.simulator.remove_rigid_constraint(self.constraint_id)
-
-    def updatePivot(self, pos: mn.Vector3) -> None:
-        self.settings.pivot_b = pos
-        self.simulator.update_rigid_constraint(self.constraint_id, self.settings)
-
-    def update_frame(self, frame: mn.Matrix3x3) -> None:
-        self.settings.frame_b = frame
-        self.simulator.update_rigid_constraint(self.constraint_id, self.settings)
-
-    def update_transform(self, transform: mn.Matrix4) -> None:
-        self.settings.frame_b = transform.rotation()
-        self.settings.pivot_b = transform.translation
-        self.simulator.update_rigid_constraint(self.constraint_id, self.settings)
-
-    def rotate_local_frame_by_global_angle_axis(
-        self, axis: mn.Vector3, angle: mn.Rad
-    ) -> None:
-        """rotate the object's local constraint frame with a global angle axis input."""
-        object_transform = mn.Matrix4()
-        rom = self.simulator.get_rigid_object_manager()
-        aom = self.simulator.get_articulated_object_manager()
-        if rom.get_library_has_id(self.settings.object_id_a):
-            object_transform = rom.get_object_by_id(
-                self.settings.object_id_a
-            ).transformation
-        else:
-            # must be an ao
-            object_transform = (
-                aom.get_object_by_id(self.settings.object_id_a)
-                .get_link_scene_node(self.settings.link_id_a)
-                .transformation
-            )
-        local_axis = object_transform.inverted().transform_vector(axis)
-        R = mn.Matrix4.rotation(angle, local_axis.normalized())
-        self.settings.frame_a = R.rotation().__matmul__(self.settings.frame_a)
-        self.simulator.update_rigid_constraint(self.constraint_id, self.settings)
 
 
 class Timer:
