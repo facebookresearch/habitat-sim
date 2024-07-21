@@ -76,7 +76,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
   void setAssetAttributesManager(
       AssetAttributesManager::cptr assetAttributesMgr) {
     assetAttributesMgr_ = std::move(assetAttributesMgr);
-    // Create default primitive-based object attributess
+    // Create default primitive-based object attributes
     createDefaultPrimBasedAttributesTemplates();
   }
 
