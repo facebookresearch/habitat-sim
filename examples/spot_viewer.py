@@ -180,6 +180,10 @@ class HabitatSimInteractiveViewer(Application):
         self.navmesh_dirty = False
         self.removed_objects_debug_frames = []
 
+        # mouse raycast visualization
+        self.mouse_cast_results = None
+        self.mouse_cast_has_hits = False
+
         self.reconfigure_sim()
 
         # Editing
@@ -300,6 +304,14 @@ class HabitatSimInteractiveViewer(Application):
             )
         # draw selected object frames if any objects are selected
         self.obj_editor.draw_selected_objects(debug_line_render)
+        # mouse raycast circle
+        if self.mouse_cast_has_hits:
+            debug_line_render.draw_circle(
+                translation=self.mouse_cast_results.hits[0].point,
+                radius=0.005,
+                color=mn.Color4(mn.Vector3(1.0), 1.0),
+                normal=self.mouse_cast_results.hits[0].normal,
+            )
 
         self.draw_removed_objects_debug_frames()
 
@@ -749,6 +761,15 @@ class HabitatSimInteractiveViewer(Application):
         event.accepted = True
         self.redraw()
 
+    def calc_mouse_cast_results(self, screen_location: mn.Vector3) -> None:
+        render_camera = self.render_camera.render_camera
+        ray = render_camera.unproject(self.get_mouse_position(screen_location))
+        mouse_cast_results = self.sim.cast_ray(ray=ray)
+        self.mouse_cast_has_hits = (
+            mouse_cast_results is not None and mouse_cast_results.has_hits()
+        )
+        self.mouse_cast_results = mouse_cast_results
+
     def mouse_move_event(self, event: Application.MouseMoveEvent) -> None:
         """
         Handles `Application.MouseMoveEvent`. When in LOOK mode, enables the left
@@ -781,16 +802,16 @@ class HabitatSimInteractiveViewer(Application):
         physics_enabled = self.sim.get_physics_simulation_library()
         mod = Application.InputEvent.Modifier
         shift_pressed = bool(event.modifiers & mod.SHIFT)
+        bool(event.modifiers & mod.ALT)
+        self.calc_mouse_cast_results(event.position)
 
         # select an object with RIGHT-click
-        if physics_enabled and event.button == button.RIGHT:
-            # Find object being clicked
-            obj_found = False
-            render_camera = self.render_camera.render_camera
-            ray = render_camera.unproject(self.get_mouse_position(event.position))
-            mouse_cast_results = self.sim.cast_ray(ray=ray)
-            obj = None
-            if mouse_cast_results.has_hits():
+        if physics_enabled and self.mouse_cast_has_hits:
+            mouse_cast_results = self.mouse_cast_results
+            if event.button == button.RIGHT:
+                # Find object being clicked
+                obj_found = False
+                obj = None
                 # find first non-stage object
                 hit_idx = 0
                 while hit_idx < len(mouse_cast_results.hits) and not obj_found:
@@ -808,12 +829,12 @@ class HabitatSimInteractiveViewer(Application):
                 else:
                     print("This is the stage.")
 
-            if not shift_pressed:
-                # clear all selected objects and set to found obj
-                self.obj_editor.set_sel_obj(obj)
-            elif obj_found:
-                # add or remove object from selected objects, depending on whether it is already selected or not
-                self.obj_editor.toggle_sel_obj(obj)
+                if not shift_pressed:
+                    # clear all selected objects and set to found obj
+                    self.obj_editor.set_sel_obj(obj)
+                elif obj_found:
+                    # add or remove object from selected objects, depending on whether it is already selected or not
+                    self.obj_editor.toggle_sel_obj(obj)
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
