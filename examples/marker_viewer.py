@@ -696,11 +696,6 @@ class HabitatSimInteractiveViewer(Application):
             sensors = list(self.default_agent.scene_node.subtree_sensors.values())
             [action(s.object, "look_down", act_spec(delta.y), False) for s in sensors]
 
-        # if interactive mode is TRUE -> GRAB MODE
-        elif self.mouse_interaction == MouseMode.GRAB and self.mouse_grabber:
-            # update location of grabbed object
-            self.update_grab_position(self.get_mouse_position(event.position))
-
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
         event.accepted = True
@@ -1022,8 +1017,7 @@ Key Commands:
 
 class MouseMode(Enum):
     LOOK = 0
-    GRAB = 1
-    MOTION = 2
+    MARKER = 2
 
 
 class MouseGrabber:
