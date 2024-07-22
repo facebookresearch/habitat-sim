@@ -1294,8 +1294,7 @@ Num Sel Objs: {len(self.sel_objs)}
                     # Remove object from removal queue if there - undo removal
                     self._removed_objs[obj.is_articulated].pop(obj_id, None)
 
-    def save_current_scene(self):
-        # update scene with removals before saving
+    def remove_all_objs(self):
         ao_removed_objs = self._removed_objs[True]
         if len(ao_removed_objs) > 0:
             ao_mgr = self.sim.get_articulated_object_manager()
@@ -1310,6 +1309,10 @@ Num Sel Objs: {len(self.sel_objs)}
                 ro_mgr.remove_object_by_id(obj_id)
                 # Get rid of all recorded transforms of specified object
                 self.obj_transform_edits.pop(obj_id, None)
+                
+    def save_current_scene(self):
+        # update scene with removals before saving
+        self.remove_all_objs()
 
         # clear out cache of removed objects by resetting dictionary
         self._removed_objs = defaultdict(dict)
