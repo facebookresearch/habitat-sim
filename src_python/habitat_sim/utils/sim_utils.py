@@ -161,10 +161,6 @@ def get_obj_from_id(
     :return: a ManagedObject or None
     """
 
-    rom = sim.get_rigid_object_manager()
-    if rom.get_library_has_id(obj_id):
-        return rom.get_object_by_id(obj_id)
-
     if ao_link_map is None:
         # Note: better to pre-compute this and pass it around
         ao_link_map = get_ao_link_id_map(sim)
@@ -172,6 +168,10 @@ def get_obj_from_id(
     aom = sim.get_articulated_object_manager()
     if obj_id in ao_link_map:
         return aom.get_object_by_id(ao_link_map[obj_id])
+    
+    rom = sim.get_rigid_object_manager()
+    if rom.get_library_has_id(obj_id):
+        return rom.get_object_by_id(obj_id)
 
     return None
 
@@ -295,13 +295,13 @@ def get_obj_from_handle(
 
     :return: a ManagedObject or None
     """
+    aom = sim.get_articulated_object_manager()
+    if aom.get_library_has_handle(obj_handle):
+        return aom.get_object_by_handle(obj_handle)
 
     rom = sim.get_rigid_object_manager()
     if rom.get_library_has_handle(obj_handle):
         return rom.get_object_by_handle(obj_handle)
-    aom = sim.get_articulated_object_manager()
-    if aom.get_library_has_handle(obj_handle):
-        return aom.get_object_by_handle(obj_handle)
 
     return None
 
@@ -416,11 +416,21 @@ class MarkerSetsInfo:
         if task_names_set is None:
             task_names_set = set()
         self.sim = sim
+        self.markerset_taskset_names = list(task_names_set)
+        self.update_markersets()
+
+    def update_markersets(self):
+        """
+        Call when created and when a new AO is added or removed
+        """
+        task_names_set = set(self.markerset_taskset_names)
+
         self.marker_sets_per_obj = self.get_all_markersets()
 
         # initialize list of possible taskSet names along with those being added specifically
-        for _obj_handle, MarkerSet in self.marker_sets_per_obj.items():
-            task_names_set.update(MarkerSet.get_all_taskset_names())
+        for _,sub_dict in self.marker_sets_per_obj.items():
+            for _obj_handle, MarkerSet in sub_dict.items():
+                task_names_set.update(MarkerSet.get_all_taskset_names())
 
         # Necessary class-level variables.
         self.markerset_taskset_names = list(task_names_set)
@@ -432,13 +442,20 @@ class MarkerSetsInfo:
         self.current_markerset_taskset_idx = 0
 
         self.marker_sets_changed = {}
+        self.marker_sets_changed["ro"] = {}
+        self.marker_sets_changed["ao"] = {}
         self.marker_debug_random_colors: Dict[str, Any] = {}
-        for key in self.marker_sets_per_obj:
-            self.marker_sets_changed[key] = False
-            self.marker_debug_random_colors[key] = {}
+        self.marker_debug_random_colors["ro"] = {}
+        self.marker_debug_random_colors["ao"] = {}
+        for sub_key,sub_dict in self.marker_sets_per_obj.items():
+            for key in sub_dict:
+                print(f"subkey : {sub_key} | key : {key}")
+                self.marker_sets_changed[sub_key][key] = False
+                self.marker_debug_random_colors[sub_key][key] = {}
 
         # for debugging
         self.glbl_marker_point_dicts_per_obj = self.get_all_global_markers()
+
 
     def get_current_taskname(self):
         """
@@ -473,18 +490,23 @@ class MarkerSetsInfo:
         print("Start getting all markersets")
         # marker set cache of existing markersets for all objs in scene, keyed by object name
         marker_sets_per_obj = {}
+        ro_marker_sets = {}
         rom = self.sim.get_rigid_object_manager()
         obj_dict = rom.get_objects_by_handle_substring("")
         for handle, obj in obj_dict.items():
             print(f"setting rigid markersets for {handle}")
-            marker_sets_per_obj[handle] = obj.marker_sets
+            ro_marker_sets[handle] = obj.marker_sets
+        ao_marker_sets = {}
         aom = self.sim.get_articulated_object_manager()
         ao_obj_dict = aom.get_objects_by_handle_substring("")
         for handle, obj in ao_obj_dict.items():
             print(f"setting ao markersets for {handle}")
-            marker_sets_per_obj[handle] = obj.marker_sets
+            ao_marker_sets[handle] = obj.marker_sets
         print("Done getting all markersets")
 
+        marker_sets_per_obj["ao"]=ao_marker_sets
+        marker_sets_per_obj["ro"]=ro_marker_sets
+        
         return marker_sets_per_obj
 
     def place_marker_at_hit_location(
@@ -523,12 +545,14 @@ class MarkerSetsInfo:
                 # this is an ArticulatedLink, so we can add markers'
                 link_ix = obj.link_object_ids[hit_info.object_id]
                 link_name = obj.get_link_name(link_ix)
+                obj_type_key = "ao"
 
             else:
                 obj_type = "rigid object"
                 # this is an ArticulatedLink, so we can add markers'
                 link_ix = -1
                 link_name = "root"
+                obj_type_key = "ro"
 
             local_hit_point_list = obj.transform_world_pts_to_local(
                 [hit_info.point], link_ix
@@ -588,8 +612,8 @@ class MarkerSetsInfo:
                         print(
                             f"There are no points in MarkerSet : {marker_set_name}, LinkSet :{link_name}, TaskSet :{task_set_name} so removal aborted."
                         )
-            self.marker_sets_per_obj[obj_handle] = obj_marker_sets
-            self.marker_sets_changed[obj_handle] = True
+            self.marker_sets_per_obj[obj_type_key][obj_handle] = obj_marker_sets
+            self.marker_sets_changed[obj_type_key][obj_handle] = True
             self.save_markerset_attributes(obj)
         return selected_object
 
@@ -599,61 +623,64 @@ class MarkerSetsInfo:
         """
         Draw the global state of all configured marker sets.
         """
-        for obj_handle, obj_markerset in self.marker_sets_per_obj.items():
-            marker_points_dict = obj_markerset.get_all_marker_points()
-            if obj_markerset.num_tasksets > 0:
-                obj = get_obj_from_handle(self.sim, obj_handle)
-                for task_name, task_set_dict in marker_points_dict.items():
-                    if task_name not in self.marker_debug_random_colors[obj_handle]:
-                        self.marker_debug_random_colors[obj_handle][task_name] = {}
-                    for link_name, link_set_dict in task_set_dict.items():
-                        if (
-                            link_name
-                            not in self.marker_debug_random_colors[obj_handle][
-                                task_name
-                            ]
-                        ):
-                            self.marker_debug_random_colors[obj_handle][task_name][
-                                link_name
-                            ] = {}
-                        if link_name == "root":
-                            link_id = -1
-                        else:
-                            link_id = obj.get_link_id_from_name(link_name)
-
-                        for markerset_name, marker_pts_list in link_set_dict.items():
-                            # print(f"markerset_name : {markerset_name} : marker_pts_list : {marker_pts_list} type : {type(marker_pts_list)} : len : {len(marker_pts_list)}")
+        for obj_type_key, sub_dict in self.marker_sets_per_obj.items():
+            color_dict = self.marker_debug_random_colors[obj_type_key]
+            for obj_handle, obj_markerset in sub_dict.items():
+                marker_points_dict = obj_markerset.get_all_marker_points()
+                if obj_markerset.num_tasksets > 0:
+                    obj = get_obj_from_handle(self.sim, obj_handle)
+                    for task_name, task_set_dict in marker_points_dict.items():
+                        if task_name not in color_dict[obj_handle]:
+                            color_dict[obj_handle][task_name] = {}
+                        for link_name, link_set_dict in task_set_dict.items():
                             if (
-                                markerset_name
-                                not in self.marker_debug_random_colors[obj_handle][
+                                link_name
+                                not in color_dict[obj_handle][
                                     task_name
-                                ][link_name]
+                                ]
                             ):
-                                self.marker_debug_random_colors[obj_handle][task_name][
+                                color_dict[obj_handle][task_name][
                                     link_name
-                                ][markerset_name] = mn.Color4(
-                                    mn.Vector3(np.random.random(3))
+                                ] = {}
+                            if link_name == "root":
+                                link_id = -1
+                            else:
+                                link_id = obj.get_link_id_from_name(link_name)
+
+                            for markerset_name, marker_pts_list in link_set_dict.items():
+                                # print(f"markerset_name : {markerset_name} : marker_pts_list : {marker_pts_list} type : {type(marker_pts_list)} : len : {len(marker_pts_list)}")
+                                if (
+                                    markerset_name
+                                    not in color_dict[obj_handle][
+                                        task_name
+                                    ][link_name]
+                                ):
+                                    color_dict[obj_handle][task_name][
+                                        link_name
+                                    ][markerset_name] = mn.Color4(
+                                        mn.Vector3(np.random.random(3))
+                                    )
+                                marker_set_color = color_dict[
+                                    obj_handle
+                                ][task_name][link_name][markerset_name]
+                                global_points = obj.transform_local_pts_to_world(
+                                    marker_pts_list, link_id
                                 )
-                            marker_set_color = self.marker_debug_random_colors[
-                                obj_handle
-                            ][task_name][link_name][markerset_name]
-                            global_points = obj.transform_local_pts_to_world(
-                                marker_pts_list, link_id
-                            )
-                            for global_marker_pos in global_points:
-                                debug_line_render.draw_circle(
-                                    translation=global_marker_pos,
-                                    radius=0.005,
-                                    color=marker_set_color,
-                                    normal=camera_position - global_marker_pos,
-                                )
+                                for global_marker_pos in global_points:
+                                    debug_line_render.draw_circle(
+                                        translation=global_marker_pos,
+                                        radius=0.005,
+                                        color=marker_set_color,
+                                        normal=camera_position - global_marker_pos,
+                                    )
 
     def save_all_dirty_markersets(self) -> None:
         # save config for object handle's markersets
-        for obj_handle, is_dirty in self.marker_sets_changed.items():
-            if is_dirty:
-                obj = get_obj_from_handle(self.sim, obj_handle)
-                self.save_markerset_attributes(obj)
+        for _, subdict in self.marker_sets_changed.items():
+            for obj_handle, is_dirty in subdict.items():
+                if is_dirty:
+                    obj = get_obj_from_handle(self.sim, obj_handle)
+                    self.save_markerset_attributes(obj)
 
     def save_markerset_attributes(self, obj) -> None:
         """
@@ -666,16 +693,18 @@ class MarkerSetsInfo:
         if obj.is_articulated:
             # save AO config
             attrMgr = self.sim.metadata_mediator.ao_template_manager
+            subdict = "ao"
         else:
             # save obj config
             attrMgr = self.sim.metadata_mediator.object_template_manager
+            subdict = "ro"
         # get copy of initialization attributes as they were in manager,
         # unmodified by scene instance values such as scale
         init_attrs = attrMgr.get_template_by_handle(obj_init_attr_handle)
         # put edited subconfig into initial attributes
         markersets = init_attrs.get_marker_sets()
         # manually copying because the markersets type is getting lost from markersets
-        edited_marker_sets = self.marker_sets_per_obj[obj.handle]
+        edited_marker_sets = self.marker_sets_per_obj[subdict][obj.handle]
         for subconfig_key in edited_marker_sets.get_subconfig_keys():
             markersets.save_subconfig(
                 subconfig_key, edited_marker_sets.get_subconfig(subconfig_key)
@@ -686,78 +715,79 @@ class MarkerSetsInfo:
         # save to original location - uses saved location in attributes
         attrMgr.save_template_by_handle(init_attrs.handle, True)
         # clear out dirty flag
-        self.marker_sets_changed[obj.handle] = False
+        self.marker_sets_changed[subdict][obj.handle] = False
 
-    def correct_and_save_object_markersets(self):
-        import json
+    # def correct_and_save_object_markersets(self):
+    #     import json
 
-        """
-        Debug function used to correct issues with improper markerset loading/saving.
-        Should not be needed any longer.
-        """
+    #     """
+    #     Debug function used to correct issues with improper markerset loading/saving.
+    #     Should not be needed any longer.
+    #     NOTE : Only works with rigid objects currently - was correcting for an erroneous rigid object attribute
+    #     """
 
-        def save_markerset_as_json(obj_handle, obj, markers_dict, attrMgr):
-            # get the name of the attrs used to initialize the object
-            obj_init_attr_handle = obj.creation_attributes.handle
+    #     def save_markerset_as_json(obj_handle, obj, markers_dict, attrMgr):
+    #         # get the name of the attrs used to initialize the object
+    #         obj_init_attr_handle = obj.creation_attributes.handle
 
-            # get copy of initialization attributes as they were in manager,
-            # unmodified by scene instance values such as scale
-            init_attrs = attrMgr.get_template_by_handle(obj_init_attr_handle)
-            filename = init_attrs.handle.replace(
-                ".object_config.json", ".markersets.json"
-            )
+    #         # get copy of initialization attributes as they were in manager,
+    #         # unmodified by scene instance values such as scale
+    #         init_attrs = attrMgr.get_template_by_handle(obj_init_attr_handle)
+    #         filename = init_attrs.handle.replace(
+    #             ".object_config.json", ".markersets.json"
+    #         )
 
-            marker_sets = {}
-            new_markerset_dict = {}
-            for task, task_dict in markers_dict.items():
-                new_task_dict = {}
-                for link, link_dict in task_dict.items():
-                    new_link_dict = {}
-                    tmp_dict = {}
-                    for subset, markers_list in link_dict.items():
-                        new_markers_dict = {}
-                        key = 0
-                        for pt in markers_list:
-                            key_str = f"{key:03}"
-                            new_markers_dict[key_str] = list(pt)
-                            key += 1
-                        tmp_dict["markers"] = new_markers_dict
-                        new_link_dict[subset] = tmp_dict
-                    new_task_dict[link] = new_link_dict
-                new_markerset_dict[task] = new_task_dict
+    #         marker_sets = {}
+    #         new_markerset_dict = {}
+    #         for task, task_dict in markers_dict.items():
+    #             new_task_dict = {}
+    #             for link, link_dict in task_dict.items():
+    #                 new_link_dict = {}
+    #                 tmp_dict = {}
+    #                 for subset, markers_list in link_dict.items():
+    #                     new_markers_dict = {}
+    #                     key = 0
+    #                     for pt in markers_list:
+    #                         key_str = f"{key:03}"
+    #                         new_markers_dict[key_str] = list(pt)
+    #                         key += 1
+    #                     tmp_dict["markers"] = new_markers_dict
+    #                     new_link_dict[subset] = tmp_dict
+    #                 new_task_dict[link] = new_link_dict
+    #             new_markerset_dict[task] = new_task_dict
 
-            marker_sets["marker_sets"] = new_markerset_dict
+    #         marker_sets["marker_sets"] = new_markerset_dict
 
-            with open(filename, "w") as f:
-                f.write(json.dumps(marker_sets, indent=2))
+    #         with open(filename, "w") as f:
+    #             f.write(json.dumps(marker_sets, indent=2))
 
-        rom = self.sim.get_rigid_object_manager()
-        obj_dict = rom.get_objects_by_handle_substring("")
-        for handle, obj in obj_dict.items():
-            if ":0000" not in handle:
-                continue
-            obj_com = obj.transform_world_pts_to_local(
-                [obj.uncorrected_translation], -1
-            )[0]
-            markers_dict = obj.marker_sets.get_all_marker_points()
-            changed = False
-            for _task, task_dict in markers_dict.items():
-                for _link, link_dict in task_dict.items():
-                    for _subset, markers_list in link_dict.items():
-                        for pt in markers_list:
-                            pt += obj_com
-                            print(f"new point location {pt}")
-                            changed = True
-            if changed:
-                print(
-                    f"Obj: {handle} | Location: {obj.translation} | uncorrected COM : {obj.uncorrected_translation} | Correction to be added to point : {obj_com} "
-                )
-                self.marker_sets_per_obj[handle].set_all_points(markers_dict)
+    #     rom = self.sim.get_rigid_object_manager()
+    #     obj_dict = rom.get_objects_by_handle_substring("")
+    #     for handle, obj in obj_dict.items():
+    #         if ":0000" not in handle:
+    #             continue
+    #         obj_com = obj.transform_world_pts_to_local(
+    #             [obj.uncorrected_translation], -1
+    #         )[0]
+    #         markers_dict = obj.marker_sets.get_all_marker_points()
+    #         changed = False
+    #         for _task, task_dict in markers_dict.items():
+    #             for _link, link_dict in task_dict.items():
+    #                 for _subset, markers_list in link_dict.items():
+    #                     for pt in markers_list:
+    #                         pt += obj_com
+    #                         print(f"new point location {pt}")
+    #                         changed = True
+    #         if changed:
+    #             print(
+    #                 f"Obj: {handle} | Location: {obj.translation} | uncorrected COM : {obj.uncorrected_translation} | Correction to be added to point : {obj_com} "
+    #             )
+    #             self.marker_sets_per_obj[handle].set_all_points(markers_dict)
 
-                # save obj config
-                attrMgr = self.sim.metadata_mediator.object_template_manager
+    #             # save obj config
+    #             attrMgr = self.sim.metadata_mediator.object_template_manager
 
-                save_markerset_as_json(handle, obj, markers_dict, attrMgr)
+    #             save_markerset_as_json(handle, obj, markers_dict, attrMgr)
 
     def get_all_global_markers(self):
         """
@@ -789,37 +819,41 @@ class MarkerSetsInfo:
 
         # marker set cache of existing markersets for all objs in scene, keyed by object name
         marker_set_global_dicts_per_obj = {}
-        rom = self.sim.get_rigid_object_manager()
-        obj_dict = rom.get_objects_by_handle_substring("")
-        for handle, obj in obj_dict.items():
-            marker_set_global_dicts_per_obj[handle] = get_points_as_global(
-                obj, obj.marker_sets.get_all_marker_points()
-            )
+        marker_set_dict_ao = {}       
         aom = self.sim.get_articulated_object_manager()
         ao_obj_dict = aom.get_objects_by_handle_substring("")
         for handle, obj in ao_obj_dict.items():
-            marker_set_global_dicts_per_obj[handle] = get_points_as_global(
+            marker_set_dict_ao[handle] = get_points_as_global(
                 obj, obj.marker_sets.get_all_marker_points()
             )
-
+        marker_set_dict_ro = {}
+        rom = self.sim.get_rigid_object_manager()
+        obj_dict = rom.get_objects_by_handle_substring("")
+        for handle, obj in obj_dict.items():
+            marker_set_dict_ro[handle] = get_points_as_global(
+                obj, obj.marker_sets.get_all_marker_points()
+            )
+        marker_set_global_dicts_per_obj["ao"] = marker_set_dict_ao
+        marker_set_global_dicts_per_obj["ro"] = marker_set_dict_ro
         return marker_set_global_dicts_per_obj
-
-    def draw_markersets_glbl_debug(
-        self, debug_line_render: Any, camera_position: mn.Vector3
+  
+    def _draw_markersets_glbl_debug_objtype(self, obj_type_key: str, debug_line_render: Any, camera_position: mn.Vector3
     ) -> None:
+        obj_dict = self.glbl_marker_point_dicts_per_obj[obj_type_key]
+        color_dict = self.marker_debug_random_colors[obj_type_key]
         for (
             obj_handle,
             marker_points_dict,
-        ) in self.glbl_marker_point_dicts_per_obj.items():
+        ) in obj_dict.items():
             for task_name, task_set_dict in marker_points_dict.items():
-                if task_name not in self.marker_debug_random_colors[obj_handle]:
-                    self.marker_debug_random_colors[obj_handle][task_name] = {}
+                if task_name not in color_dict[obj_handle]:
+                    color_dict[obj_handle][task_name] = {}
                 for link_name, link_set_dict in task_set_dict.items():
                     if (
                         link_name
-                        not in self.marker_debug_random_colors[obj_handle][task_name]
+                        not in color_dict[obj_handle][task_name]
                     ):
-                        self.marker_debug_random_colors[obj_handle][task_name][
+                        color_dict[obj_handle][task_name][
                             link_name
                         ] = {}
 
@@ -827,16 +861,16 @@ class MarkerSetsInfo:
                         # print(f"markerset_name : {markerset_name} : marker_pts_list : {marker_pts_list} type : {type(marker_pts_list)} : len : {len(marker_pts_list)}")
                         if (
                             markerset_name
-                            not in self.marker_debug_random_colors[obj_handle][
+                            not in color_dict[obj_handle][
                                 task_name
                             ][link_name]
                         ):
-                            self.marker_debug_random_colors[obj_handle][task_name][
+                            color_dict[obj_handle][task_name][
                                 link_name
                             ][markerset_name] = mn.Color4(
                                 mn.Vector3(np.random.random(3))
                             )
-                        marker_set_color = self.marker_debug_random_colors[obj_handle][
+                        marker_set_color = color_dict[obj_handle][
                             task_name
                         ][link_name][markerset_name]
                         for global_marker_pos in global_points:
@@ -846,6 +880,15 @@ class MarkerSetsInfo:
                                 color=marker_set_color,
                                 normal=camera_position - global_marker_pos,
                             )
+
+
+
+    def draw_markersets_glbl_debug(
+        self, debug_line_render: Any, camera_position: mn.Vector3
+    ) -> None:
+        self._draw_markersets_glbl_debug_objtype("ao", debug_line_render=debug_line_render, camera_position=camera_position)
+        self._draw_markersets_glbl_debug_objtype("ro", debug_line_render=debug_line_render, camera_position=camera_position)
+
 
 
 # Class to control editing objects

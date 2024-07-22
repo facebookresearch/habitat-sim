@@ -233,12 +233,8 @@ class HabitatSimInteractiveViewer(Application):
         self.obj_editor = ObjectEditor(self.sim)
 
         # Load first object
-        _, self.navmesh_dirty = self.obj_editor.load_from_substring(
-            navmesh_dirty=self.navmesh_dirty,
-            obj_substring=self.urdf_edit_obj,
-            build_loc=self.ao_place_location,
-        )
-
+        self.load_urdf_obj()
+        
         # Semantics
         self.dbg_semantics = SemanticManager(self.sim)
 
@@ -253,6 +249,15 @@ class HabitatSimInteractiveViewer(Application):
         LoggingContext.reinitialize_from_env()
         logger.setLevel("INFO")
         self.print_help_text()
+
+    def load_urdf_obj(self):
+        _, self.navmesh_dirty = self.obj_editor.load_from_substring(
+            navmesh_dirty=self.navmesh_dirty,
+            obj_substring=self.urdf_edit_obj,
+            build_loc=self.ao_place_location,
+        )
+        self.ao_link_map = get_ao_link_id_map(self.sim)
+        self.markersets_util.update_markersets()
 
     def read_urdf_files(self):
         urdfFileNamesDict: Dict[str, bool] = {}
@@ -591,12 +596,8 @@ class HabitatSimInteractiveViewer(Application):
         self.save_urdf_files()
         # load a new urdf
         self.urdf_edit_obj = self.pick_unfinished_ao()
-
-        _, self.navmesh_dirty = self.obj_editor.load_from_substring(
-            navmesh_dirty=self.navmesh_dirty,
-            obj_substring=self.urdf_edit_obj,
-            build_loc=self.ao_place_location,
-        )
+        # load next object
+        self.load_urdf_obj()
 
     def invert_gravity(self) -> None:
         """
@@ -726,6 +727,8 @@ class HabitatSimInteractiveViewer(Application):
                 print("Failed to add any new objects.")
             else:
                 print(f"Finished adding {len(new_obj_list)} object(s).")
+                self.ao_link_map = get_ao_link_id_map(self.sim)
+                self.markersets_util.update_markersets()
 
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
