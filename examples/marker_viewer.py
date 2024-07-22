@@ -33,8 +33,15 @@ from habitat_sim.utils.sim_utils import (
     get_ao_link_id_map,
     get_obj_from_id,
 )
+
 # file holding all URDF filenames
-URDF_FILES = "urdfFileNames.txt"
+URDF_FILES = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), "urdfFileNames.txt"
+)
+URDF_FILES2 = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), "urdfFileNames2.txt"
+)
+
 
 class HabitatSimInteractiveViewer(Application):
     # the maximum number of chars displayable in the app window
@@ -205,13 +212,17 @@ class HabitatSimInteractiveViewer(Application):
         self.mouse_cast_has_hits = False
 
         self.ao_link_map = None
-        
+
         self.agent_start_location = mn.Vector3(-5.7, 0.0, -4.0)
         self.ao_place_location = mn.Vector3(-7.7, 1.0, -4.0)
 
-        #self.read_urdf_files()
-
         self.reconfigure_sim()
+        # load file holding filenames
+        print(f"URDF hashes file name : {URDF_FILES}")
+        self.read_urdf_files()
+
+        # load first URDF into scene
+        self.urdf_edit_obj = self.pick_unfinished_ao()
 
         # load markersets for every object and ao into a cache
         task_names_set = {"faucets", "handles"}
@@ -220,6 +231,13 @@ class HabitatSimInteractiveViewer(Application):
 
         # Editing for object selection
         self.obj_editor = ObjectEditor(self.sim)
+
+        # Load first object
+        _, self.navmesh_dirty = self.obj_editor.load_from_substring(
+            navmesh_dirty=self.navmesh_dirty,
+            obj_substring=self.urdf_edit_obj,
+            build_loc=self.ao_place_location,
+        )
 
         # Semantics
         self.dbg_semantics = SemanticManager(self.sim)
@@ -237,16 +255,28 @@ class HabitatSimInteractiveViewer(Application):
         self.print_help_text()
 
     def read_urdf_files(self):
-        urdfFileNamesDict : Dict[str, bool] = {}
+        urdfFileNamesDict: Dict[str, bool] = {}
         # File names of all URDFs
-        with open(URDF_FILES, "r") as f :
+        with open(URDF_FILES, "r") as f:
             for line in f.readlines():
                 vals = line.split(",")
-                urdfFileNamesDict[vals[0]] = True if vals[1].lower()=="true" else False
+                urdfFileNamesDict[vals[0]] = (
+                    vals[1].strip().lower() == "true"
+                )
 
-        for k,v in urdfFileNamesDict.items():
-            print(f"Filename : {k} : edited : {v}")
         self.urdfFileNamesDict = urdfFileNamesDict
+
+    def pick_unfinished_ao(self):
+        for k, v in self.urdfFileNamesDict.items():
+            if not v:
+                return k
+        return None
+
+    def save_urdf_files(self):
+        # save current state of URDF files
+        with open(URDF_FILES, "w") as f:
+            for urdfhash, state in self.urdfFileNamesDict.items():
+                f.write(f"{urdfhash}, {state}\n")
 
     def draw_contact_debug(self, debug_line_render: Any):
         """
@@ -460,11 +490,10 @@ class HabitatSimInteractiveViewer(Application):
         new_agent_state = habitat_sim.AgentState()
         new_agent_state.position = self.agent_start_location
         new_agent_state.rotation = quat_from_angle_axis(
-            0.5*np.pi,
+            0.5 * np.pi,
             np.array([0, 1, 0]),
         )
         self.default_agent.set_state(new_agent_state)
-
 
         self.render_camera = self.default_agent.scene_node.node_sensor_suite.get(
             "color_sensor"
@@ -543,6 +572,32 @@ class HabitatSimInteractiveViewer(Application):
         for _ in range(int(repetitions)):
             [agent.act(x) for x in action_queue]
 
+    def cycle_through_urdfs(self) -> None:
+        print(
+            "NOT FINISHED YET : cycle through URDFS to edit - not yet adding next object or reading from/updating file."
+        )
+        # remove currently selected objects
+        removed_obj_handles = self.obj_editor.remove_sel_objects()
+
+        for handle in removed_obj_handles:
+            print(f"Removed {handle}")
+        # finalize removal
+        self.obj_editor.remove_all_objs()
+
+        # set edited state in urdf dict to true
+        #
+        self.urdfFileNamesDict[self.urdf_edit_obj] = True
+        # save current status
+        self.save_urdf_files()
+        # load a new urdf
+        self.urdf_edit_obj = self.pick_unfinished_ao()
+
+        _, self.navmesh_dirty = self.obj_editor.load_from_substring(
+            navmesh_dirty=self.navmesh_dirty,
+            obj_substring=self.urdf_edit_obj,
+            build_loc=self.ao_place_location,
+        )
+
     def invert_gravity(self) -> None:
         """
         Sets the gravity vector to the negative of it's previous value. This is
@@ -570,11 +625,7 @@ class HabitatSimInteractiveViewer(Application):
             self.exit_event(Application.ExitEvent)
             return
         elif key == pressed.TAB:
-            print("NOT FINISHED YET : cycle through URDFS to edit - not yet adding next object or reading from/updating file.")
-            removed_obj_handles = self.obj_editor.remove_sel_objects()
-            for handle in removed_obj_handles:
-                print(f"Removed {handle}")
-            self.obj_editor.remove_all_objs()
+            self.cycle_through_urdfs()
 
         elif key == pressed.SPACE:
             if not self.sim.config.sim_cfg.enable_physics:
@@ -666,7 +717,7 @@ class HabitatSimInteractiveViewer(Application):
             # Duplicate all the selected objects and place them in the scene
             # or inject a new object by queried handle substring in front of
             # the agent if no objects selected
-            
+
             new_obj_list, self.navmesh_dirty = self.obj_editor.build_objects(
                 self.navmesh_dirty,
                 build_loc=self.ao_place_location,

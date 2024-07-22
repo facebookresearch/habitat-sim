@@ -1309,7 +1309,7 @@ Num Sel Objs: {len(self.sel_objs)}
                 ro_mgr.remove_object_by_id(obj_id)
                 # Get rid of all recorded transforms of specified object
                 self.obj_transform_edits.pop(obj_id, None)
-                
+
     def save_current_scene(self):
         # update scene with removals before saving
         self.remove_all_objs()
@@ -1321,12 +1321,68 @@ Num Sel Objs: {len(self.sel_objs)}
         # Save current scene
         self.sim.save_current_scene_config(overwrite=True)
 
+    def load_from_substring(
+        self, navmesh_dirty: bool, obj_substring: str, build_loc: mn.Vector3
+    ):
+        sim = self.sim
+        mm = sim.metadata_mediator
+        template_mgr = mm.ao_template_manager
+        template_handles = template_mgr.get_template_handles(obj_substring)
+        build_ao = False
+        if len(template_handles) == 1:
+            # Specific AO template found
+            obj_mgr = sim.get_articulated_object_manager()
+            base_motion_type = HSim_MT.DYNAMIC
+            build_ao = True
+        else:
+            template_mgr = mm.object_template_manager
+            template_handles = template_mgr.get_template_handles(obj_substring)
+            if len(template_handles) != 1:
+                print(
+                    f"No distinct Rigid or Articulated Object handle found matching substring: '{obj_substring}'. Aborting"
+                )
+                return [], navmesh_dirty
+            # Specific Rigid template found
+            obj_mgr = sim.get_rigid_object_manager()
+            base_motion_type = HSim_MT.STATIC
+
+        obj_temp_handle = template_handles[0]
+        # Build an object using obj_temp_handle, getting template from attr_mgr and object manager obj_mgr
+        temp = template_mgr.get_template_by_handle(obj_temp_handle)
+
+        if build_ao:
+            obj_type = "Articulated"
+            temp.base_type = "FIXED"
+            template_mgr.register_template(temp)
+            new_obj = obj_mgr.add_articulated_object_by_template_handle(obj_temp_handle)
+        else:
+            # If any changes to template, put them here and re-register template
+            # template_mgr.register_template(temp)
+            obj_type = "Rigid"
+            new_obj = obj_mgr.add_object_by_template_handle(obj_temp_handle)
+
+        if new_obj is not None:
+            # set new object location to be above location of selected object
+            new_obj.motion_type = base_motion_type
+            self.set_sel_obj(new_obj)
+            # move new object to appropriate location
+            new_navmesh_dirty = self._move_one_object(
+                new_obj, navmesh_dirty, translation=build_loc
+            )
+            navmesh_dirty = new_navmesh_dirty or navmesh_dirty
+        else:
+            print(
+                f"Failed to load/create {obj_type} Object from template named {obj_temp_handle}."
+            )
+            # creation failing would have its own message
+            return [], navmesh_dirty
+        return [new_obj], navmesh_dirty
+
     def build_objects(self, navmesh_dirty: bool, build_loc: mn.Vector3):
         """
         Make a copy of the selected object(s), or load a named item at some distance away
         """
         sim = self.sim
-        mm = sim.metadata_mediator
         if len(self.sel_objs) > 0:
             # Copy all selected objects
             res_objs = []
@@ -1371,60 +1427,11 @@ Num Sel Objs: {len(self.sel_objs)}
             if len(obj_substring) == 0:
                 print("No valid name given. Aborting")
                 return [], navmesh_dirty
-
-            template_mgr = mm.ao_template_manager
-            template_handles = template_mgr.get_template_handles(obj_substring)
-            build_ao = False
-            if len(template_handles) == 1:
-                # Specific AO template found
-                obj_mgr = sim.get_articulated_object_manager()
-                base_motion_type = HSim_MT.DYNAMIC
-                build_ao = True
-            else:
-                template_mgr = mm.object_template_manager
-                template_handles = template_mgr.get_template_handles(obj_substring)
-                if len(template_handles) != 1:
-                    print(
-                        f"No distinct Rigid or Articulated Object handle found matching substring: '{obj_substring}'. Aborting"
-                    )
-                    return [], navmesh_dirty
-                # Specific Rigid template found
-                obj_mgr = sim.get_rigid_object_manager()
-                base_motion_type = HSim_MT.STATIC
-
-            obj_temp_handle = template_handles[0]
-            # Build an object using obj_temp_handle, getting template from attr_mgr and object manager obj_mgr
-            temp = template_mgr.get_template_by_handle(obj_temp_handle)
-
-            if build_ao:
-                obj_type = "Articulated"
-                temp.base_type = "FIXED"
-                template_mgr.register_template(temp)
-                new_obj = obj_mgr.add_articulated_object_by_template_handle(
-                    obj_temp_handle
-                )
-            else:
-                # If any changes to template, put them here and re-register template
-                # template_mgr.register_template(temp)
-                obj_type = "Rigid"
-                new_obj = obj_mgr.add_object_by_template_handle(obj_temp_handle)
-
-            if new_obj is not None:
-                # set new object location to be above location of selected object
-                new_obj.motion_type = base_motion_type
-                self.set_sel_obj(new_obj)
-                # move new object to appropriate location
-                new_navmesh_dirty = self._move_one_object(
-                    new_obj, navmesh_dirty, translation=build_loc
-                )
-                navmesh_dirty = new_navmesh_dirty or navmesh_dirty
-            else:
-                print(
-                    f"Failed to load/create {obj_type} Object from template named {obj_temp_handle}."
-                )
-                # creation failing would have its own message
-                return [], navmesh_dirty
-            return [new_obj], navmesh_dirty
+            return self.load_from_substring(
+                navmesh_dirty=navmesh_dirty,
+                obj_substring=obj_substring,
+                build_loc=build_loc,
+            )
 
     def change_edit_mode(self, toggle: bool):
         # toggle edit mode
