@@ -168,7 +168,7 @@ def get_obj_from_id(
     aom = sim.get_articulated_object_manager()
     if obj_id in ao_link_map:
         return aom.get_object_by_id(ao_link_map[obj_id])
-    
+
     rom = sim.get_rigid_object_manager()
     if rom.get_library_has_id(obj_id):
         return rom.get_object_by_id(obj_id)
@@ -428,7 +428,7 @@ class MarkerSetsInfo:
         self.marker_sets_per_obj = self.get_all_markersets()
 
         # initialize list of possible taskSet names along with those being added specifically
-        for _,sub_dict in self.marker_sets_per_obj.items():
+        for sub_dict in self.marker_sets_per_obj.values():
             for _obj_handle, MarkerSet in sub_dict.items():
                 task_names_set.update(MarkerSet.get_all_taskset_names())
 
@@ -441,13 +441,13 @@ class MarkerSetsInfo:
 
         self.current_markerset_taskset_idx = 0
 
-        self.marker_sets_changed = {}
+        self.marker_sets_changed: Dict[str, Dict[str, bool]] = {}
         self.marker_sets_changed["ro"] = {}
         self.marker_sets_changed["ao"] = {}
-        self.marker_debug_random_colors: Dict[str, Any] = {}
+        self.marker_debug_random_colors: Dict[str, Dict[str, Any]] = {}
         self.marker_debug_random_colors["ro"] = {}
         self.marker_debug_random_colors["ao"] = {}
-        for sub_key,sub_dict in self.marker_sets_per_obj.items():
+        for sub_key, sub_dict in self.marker_sets_per_obj.items():
             for key in sub_dict:
                 print(f"subkey : {sub_key} | key : {key}")
                 self.marker_sets_changed[sub_key][key] = False
@@ -455,7 +455,6 @@ class MarkerSetsInfo:
 
         # for debugging
         self.glbl_marker_point_dicts_per_obj = self.get_all_global_markers()
-
 
     def get_current_taskname(self):
         """
@@ -504,9 +503,9 @@ class MarkerSetsInfo:
             ao_marker_sets[handle] = obj.marker_sets
         print("Done getting all markersets")
 
-        marker_sets_per_obj["ao"]=ao_marker_sets
-        marker_sets_per_obj["ro"]=ro_marker_sets
-        
+        marker_sets_per_obj["ao"] = ao_marker_sets
+        marker_sets_per_obj["ro"] = ro_marker_sets
+
         return marker_sets_per_obj
 
     def place_marker_at_hit_location(
@@ -633,36 +632,28 @@ class MarkerSetsInfo:
                         if task_name not in color_dict[obj_handle]:
                             color_dict[obj_handle][task_name] = {}
                         for link_name, link_set_dict in task_set_dict.items():
-                            if (
-                                link_name
-                                not in color_dict[obj_handle][
-                                    task_name
-                                ]
-                            ):
-                                color_dict[obj_handle][task_name][
-                                    link_name
-                                ] = {}
+                            if link_name not in color_dict[obj_handle][task_name]:
+                                color_dict[obj_handle][task_name][link_name] = {}
                             if link_name == "root":
                                 link_id = -1
                             else:
                                 link_id = obj.get_link_id_from_name(link_name)
 
-                            for markerset_name, marker_pts_list in link_set_dict.items():
+                            for (
+                                markerset_name,
+                                marker_pts_list,
+                            ) in link_set_dict.items():
                                 # print(f"markerset_name : {markerset_name} : marker_pts_list : {marker_pts_list} type : {type(marker_pts_list)} : len : {len(marker_pts_list)}")
                                 if (
                                     markerset_name
-                                    not in color_dict[obj_handle][
-                                        task_name
-                                    ][link_name]
+                                    not in color_dict[obj_handle][task_name][link_name]
                                 ):
-                                    color_dict[obj_handle][task_name][
-                                        link_name
-                                    ][markerset_name] = mn.Color4(
-                                        mn.Vector3(np.random.random(3))
-                                    )
-                                marker_set_color = color_dict[
-                                    obj_handle
-                                ][task_name][link_name][markerset_name]
+                                    color_dict[obj_handle][task_name][link_name][
+                                        markerset_name
+                                    ] = mn.Color4(mn.Vector3(np.random.random(3)))
+                                marker_set_color = color_dict[obj_handle][task_name][
+                                    link_name
+                                ][markerset_name]
                                 global_points = obj.transform_local_pts_to_world(
                                     marker_pts_list, link_id
                                 )
@@ -676,7 +667,7 @@ class MarkerSetsInfo:
 
     def save_all_dirty_markersets(self) -> None:
         # save config for object handle's markersets
-        for _, subdict in self.marker_sets_changed.items():
+        for subdict in self.marker_sets_changed.values():
             for obj_handle, is_dirty in subdict.items():
                 if is_dirty:
                     obj = get_obj_from_handle(self.sim, obj_handle)
@@ -819,7 +810,7 @@ class MarkerSetsInfo:
 
         # marker set cache of existing markersets for all objs in scene, keyed by object name
         marker_set_global_dicts_per_obj = {}
-        marker_set_dict_ao = {}       
+        marker_set_dict_ao = {}
         aom = self.sim.get_articulated_object_manager()
         ao_obj_dict = aom.get_objects_by_handle_substring("")
         for handle, obj in ao_obj_dict.items():
@@ -836,8 +827,9 @@ class MarkerSetsInfo:
         marker_set_global_dicts_per_obj["ao"] = marker_set_dict_ao
         marker_set_global_dicts_per_obj["ro"] = marker_set_dict_ro
         return marker_set_global_dicts_per_obj
-  
-    def _draw_markersets_glbl_debug_objtype(self, obj_type_key: str, debug_line_render: Any, camera_position: mn.Vector3
+
+    def _draw_markersets_glbl_debug_objtype(
+        self, obj_type_key: str, debug_line_render: Any, camera_position: mn.Vector3
     ) -> None:
         obj_dict = self.glbl_marker_point_dicts_per_obj[obj_type_key]
         color_dict = self.marker_debug_random_colors[obj_type_key]
@@ -849,30 +841,21 @@ class MarkerSetsInfo:
                 if task_name not in color_dict[obj_handle]:
                     color_dict[obj_handle][task_name] = {}
                 for link_name, link_set_dict in task_set_dict.items():
-                    if (
-                        link_name
-                        not in color_dict[obj_handle][task_name]
-                    ):
-                        color_dict[obj_handle][task_name][
-                            link_name
-                        ] = {}
+                    if link_name not in color_dict[obj_handle][task_name]:
+                        color_dict[obj_handle][task_name][link_name] = {}
 
                     for markerset_name, global_points in link_set_dict.items():
                         # print(f"markerset_name : {markerset_name} : marker_pts_list : {marker_pts_list} type : {type(marker_pts_list)} : len : {len(marker_pts_list)}")
                         if (
                             markerset_name
-                            not in color_dict[obj_handle][
-                                task_name
-                            ][link_name]
+                            not in color_dict[obj_handle][task_name][link_name]
                         ):
-                            color_dict[obj_handle][task_name][
-                                link_name
-                            ][markerset_name] = mn.Color4(
-                                mn.Vector3(np.random.random(3))
-                            )
-                        marker_set_color = color_dict[obj_handle][
-                            task_name
-                        ][link_name][markerset_name]
+                            color_dict[obj_handle][task_name][link_name][
+                                markerset_name
+                            ] = mn.Color4(mn.Vector3(np.random.random(3)))
+                        marker_set_color = color_dict[obj_handle][task_name][link_name][
+                            markerset_name
+                        ]
                         for global_marker_pos in global_points:
                             debug_line_render.draw_circle(
                                 translation=global_marker_pos,
@@ -881,14 +864,15 @@ class MarkerSetsInfo:
                                 normal=camera_position - global_marker_pos,
                             )
 
-
-
     def draw_markersets_glbl_debug(
         self, debug_line_render: Any, camera_position: mn.Vector3
     ) -> None:
-        self._draw_markersets_glbl_debug_objtype("ao", debug_line_render=debug_line_render, camera_position=camera_position)
-        self._draw_markersets_glbl_debug_objtype("ro", debug_line_render=debug_line_render, camera_position=camera_position)
-
+        self._draw_markersets_glbl_debug_objtype(
+            "ao", debug_line_render=debug_line_render, camera_position=camera_position
+        )
+        self._draw_markersets_glbl_debug_objtype(
+            "ro", debug_line_render=debug_line_render, camera_position=camera_position
+        )
 
 
 # Class to control editing objects
@@ -1372,12 +1356,15 @@ Num Sel Objs: {len(self.sel_objs)}
         template_mgr = mm.ao_template_manager
         template_handles = template_mgr.get_template_handles(obj_substring)
         build_ao = False
+        print(f"Attempting to find {obj_substring} as an articulated object")
         if len(template_handles) == 1:
+            print(f"{obj_substring} found as an AO!")
             # Specific AO template found
             obj_mgr = sim.get_articulated_object_manager()
             base_motion_type = HSim_MT.DYNAMIC
             build_ao = True
         else:
+            print(f"Attempting to find {obj_substring} as a rigid object instead")
             template_mgr = mm.object_template_manager
             template_handles = template_mgr.get_template_handles(obj_substring)
             if len(template_handles) != 1:
@@ -1385,6 +1372,7 @@ Num Sel Objs: {len(self.sel_objs)}
                     f"No distinct Rigid or Articulated Object handle found matching substring: '{obj_substring}'. Aborting"
                 )
                 return [], navmesh_dirty
+            print(f"{obj_substring} found as an RO!")
             # Specific Rigid template found
             obj_mgr = sim.get_rigid_object_manager()
             base_motion_type = HSim_MT.STATIC

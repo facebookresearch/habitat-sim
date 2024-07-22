@@ -38,9 +38,6 @@ from habitat_sim.utils.sim_utils import (
 URDF_FILES = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "urdfFileNames.txt"
 )
-URDF_FILES2 = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), "urdfFileNames2.txt"
-)
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -234,7 +231,7 @@ class HabitatSimInteractiveViewer(Application):
 
         # Load first object
         self.load_urdf_obj()
-        
+
         # Semantics
         self.dbg_semantics = SemanticManager(self.sim)
 
@@ -258,6 +255,8 @@ class HabitatSimInteractiveViewer(Application):
         )
         self.ao_link_map = get_ao_link_id_map(self.sim)
         self.markersets_util.update_markersets()
+        self.markersets_util.set_current_taskname("handles")
+
 
     def read_urdf_files(self):
         urdfFileNamesDict: Dict[str, bool] = {}
@@ -265,9 +264,7 @@ class HabitatSimInteractiveViewer(Application):
         with open(URDF_FILES, "r") as f:
             for line in f.readlines():
                 vals = line.split(",")
-                urdfFileNamesDict[vals[0]] = (
-                    vals[1].strip().lower() == "true"
-                )
+                urdfFileNamesDict[vals[0]] = vals[1].strip().lower() == "true"
 
         self.urdfFileNamesDict = urdfFileNamesDict
 
