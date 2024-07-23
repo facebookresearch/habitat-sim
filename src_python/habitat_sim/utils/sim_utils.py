@@ -692,6 +692,14 @@ class MarkerSetsInfo:
         # get copy of initialization attributes as they were in manager,
         # unmodified by scene instance values such as scale
         init_attrs = attrMgr.get_template_by_handle(obj_init_attr_handle)
+        # TEMP TODO Remove this when fixed in Simulator
+        # Clean up sub-dirs being added to asset handles.
+        if obj.is_articulated:
+            init_attrs.urdf_filepath = init_attrs.urdf_filepath.split(os.sep)[-1]
+            init_attrs.render_asset_handle = init_attrs.render_asset_handle.split(os.sep)[-1]
+        else:
+            init_attrs.render_asset_handle = init_attrs.render_asset_handle.split(os.sep)[-1]
+            init_attrs.collision_asset_handle = init_attrs.collision_asset_handle.split(os.sep)[-1]
         # put edited subconfig into initial attributes
         markersets = init_attrs.get_marker_sets()
         # manually copying because the markersets type is getting lost from markersets

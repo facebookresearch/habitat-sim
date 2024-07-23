@@ -257,6 +257,7 @@ class HabitatSimInteractiveViewer(Application):
             print(f"Finished going through all {self.urdf_hash_names_dict['done']} loaded urdf files. Exiting.")
             self.exit_event(Application.ExitEvent)
         self.urdf_edit_obj = next(iter(self.urdf_hash_names_dict["unfinished"]))
+        print(f"URDF hash we want : `{self.urdf_edit_obj}`")
         _, self.navmesh_dirty = self.obj_editor.load_from_substring(
             navmesh_dirty=self.navmesh_dirty,
             obj_substring=self.urdf_edit_obj,
@@ -582,9 +583,9 @@ class HabitatSimInteractiveViewer(Application):
         for _ in range(int(repetitions)):
             [agent.act(x) for x in action_queue]
 
-    def cycle_through_urdfs(self) -> None:
+    def cycle_through_urdfs(self, shift_pressed:bool) -> None:
         print(
-            "NOT FINISHED YET : cycle through URDFS to edit - not yet adding next object or reading from/updating file."
+            "NOT FINISHED YET : back-tab does not go backward yet."
         )
         # remove currently selected objects
         removed_obj_handles = self.obj_editor.remove_sel_objects()
@@ -628,7 +629,7 @@ class HabitatSimInteractiveViewer(Application):
             self.exit_event(Application.ExitEvent)
             return
         elif key == pressed.TAB:
-            self.cycle_through_urdfs()
+            self.cycle_through_urdfs(shift_pressed=shift_pressed)
 
         elif key == pressed.SPACE:
             if not self.sim.config.sim_cfg.enable_physics:
