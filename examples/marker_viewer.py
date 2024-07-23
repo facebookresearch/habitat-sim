@@ -202,7 +202,6 @@ class HabitatSimInteractiveViewer(Application):
         self.removed_clutter = []
 
         self.navmesh_dirty = False
-        self.removed_objects_debug_frames = []
 
         # mouse raycast visualization
         self.mouse_cast_results = None
@@ -213,13 +212,11 @@ class HabitatSimInteractiveViewer(Application):
         self.agent_start_location = mn.Vector3(-5.7, 0.0, -4.0)
         self.ao_place_location = mn.Vector3(-7.7, 1.0, -4.0)
 
+        # Load simulatioon scene
         self.reconfigure_sim()
-        # load file holding filenames
+        # load file holding urdf filenames needing handles
         print(f"URDF hashes file name : {URDF_FILES}")
         self.read_urdf_files()
-
-        # load first URDF into scene
-        self.urdf_edit_obj = self.pick_unfinished_ao()
 
         # load markersets for every object and ao into a cache
         task_names_set = {"faucets", "handles"}
@@ -247,7 +244,19 @@ class HabitatSimInteractiveViewer(Application):
         logger.setLevel("INFO")
         self.print_help_text()
 
+    def set_urdf_file_finished(self, file_hash:str):
+        # Take urdf file hash out of unfinished dict, put in done dict
+        dict_val = self.urdf_hash_names_dict["unfinished"].pop(file_hash, None)
+        if dict_val is None:
+            print(f"{file_hash} was not found in the unfinished collection of urdf files")
+        self.urdf_hash_names_dict["done"][file_hash] = file_hash
+
     def load_urdf_obj(self):
+        # load first URDF into scene by first picking hash of an unmarkered object
+        if len(self.urdf_hash_names_dict["unfinished"]) == 0:
+            print(f"Finished going through all {self.urdf_hash_names_dict['done']} loaded urdf files. Exiting.")
+            self.exit_event(Application.ExitEvent)
+        self.urdf_edit_obj = next(iter(self.urdf_hash_names_dict["unfinished"]))
         _, self.navmesh_dirty = self.obj_editor.load_from_substring(
             navmesh_dirty=self.navmesh_dirty,
             obj_substring=self.urdf_edit_obj,
@@ -257,28 +266,27 @@ class HabitatSimInteractiveViewer(Application):
         self.markersets_util.update_markersets()
         self.markersets_util.set_current_taskname("handles")
 
-
     def read_urdf_files(self):
-        urdfFileNamesDict: Dict[str, bool] = {}
+        # 2 dicts, finished and unfinished, of dicts being used as sets
+        urdf_hash_names: Dict[str, Dict[str,str]] = {}
+        urdf_hash_names["done"] = {}
+        urdf_hash_names["unfinished"] = {}
         # File names of all URDFs
         with open(URDF_FILES, "r") as f:
             for line in f.readlines():
                 vals = line.split(",")
-                urdfFileNamesDict[vals[0]] = vals[1].strip().lower() == "true"
+                finished = "done" if vals[1].strip().lower() == "true" else "unfinished"
+                urdf_hash_names[finished][vals[0]] = vals[0]
 
-        self.urdfFileNamesDict = urdfFileNamesDict
-
-    def pick_unfinished_ao(self):
-        for k, v in self.urdfFileNamesDict.items():
-            if not v:
-                return k
-        return None
+        self.urdf_hash_names_dict = urdf_hash_names
 
     def save_urdf_files(self):
         # save current state of URDF files
         with open(URDF_FILES, "w") as f:
-            for urdfhash, state in self.urdfFileNamesDict.items():
-                f.write(f"{urdfhash}, {state}\n")
+            for status_key, sub_dict in self.urdf_hash_names_dict.items():
+                state = status_key.lower() == "done"
+                for urdfhash in sub_dict:
+                    f.write(f"{urdfhash}, {state}\n")
 
     def draw_contact_debug(self, debug_line_render: Any):
         """
@@ -580,19 +588,16 @@ class HabitatSimInteractiveViewer(Application):
         )
         # remove currently selected objects
         removed_obj_handles = self.obj_editor.remove_sel_objects()
-
+        # should only have 1 handle
         for handle in removed_obj_handles:
             print(f"Removed {handle}")
         # finalize removal
         self.obj_editor.remove_all_objs()
 
         # set edited state in urdf dict to true
-        #
-        self.urdfFileNamesDict[self.urdf_edit_obj] = True
+        self.set_urdf_file_finished(self.urdf_edit_obj)
         # save current status
         self.save_urdf_files()
-        # load a new urdf
-        self.urdf_edit_obj = self.pick_unfinished_ao()
         # load next object
         self.load_urdf_obj()
 
