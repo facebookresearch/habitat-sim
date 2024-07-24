@@ -299,7 +299,7 @@ class HabitatSimInteractiveViewer(Application):
                     continue
                 vals = line.split(",", maxsplit=1)
                 # hash is idx0; notes is idx1
-                urdf_nolink_hash_names[vals[0]] = vals[1].split("\n")[0]
+                urdf_nolink_hash_names[vals[0]] = vals[1].strip()
         if has_markers:
             # if it has markers now, remove it from record
             urdf_nolink_hash_names.pop(urdf_hash, None)
