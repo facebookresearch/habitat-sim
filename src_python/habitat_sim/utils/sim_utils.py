@@ -857,9 +857,6 @@ class ObjectEditor:
         self.curr_edit_multiplier = ObjectEditor.DistanceMode.VERY_SMALL
         # Set initial values
         self.set_edit_vals()
-        
-    def set_edit_mode_rotate(self):
-        self.curr_edit_mode = ObjectEditor.EditMode.ROTATE
 
     def _init_obj_caches(self):
         # Internal: Dict of currently selected object ids to index in
@@ -884,6 +881,9 @@ class ObjectEditor:
         # saved, when they should be actually removed (to allow for undo).
         # First key is whether they are articulated or not, value is dict with key == object id, value is object,
         self._removed_objs: Dict[bool, Dict[int, Any]] = defaultdict(dict)
+
+    def set_edit_mode_rotate(self):
+        self.curr_edit_mode = ObjectEditor.EditMode.ROTATE
 
     def set_edit_vals(self):
         # Set current scene object edit values for translation and rotation
@@ -910,13 +910,27 @@ class ObjectEditor:
             else f"Rotation:{ObjectEditor.ROTATION_MULT_VALS[self.curr_edit_multiplier.value]} deg "
         )
         edit_distance_mode_string = f"{dist_mode_substr}"
+        obj_str = self.edit_obj_disp_str()
 
         disp_str = f"""Edit Mode: {edit_mode_string}
 Edit Value: {edit_distance_mode_string}
-Num Sel Objs: {len(self.sel_objs)}
+Num Sel Objs: {len(self.sel_objs)}{obj_str}
           """
         return disp_str
-
+    
+    def edit_obj_disp_str(self):
+        """
+        Specify primary selected object display quantities
+        """
+        if len(self.sel_objs) == 0:
+            return ""
+        sel_obj = self.sel_objs[-1]
+        if sel_obj.is_articulated :
+            tar_str = f"Articulated Object : {sel_obj.handle} with {sel_obj.num_links} links."
+        else :
+            tar_str = f"Rigid Object : {sel_obj.handle}"
+        return f"\nTarget Object is {tar_str}"
+    
     def _clear_sel_objs(self):
         """
         Internal: clear object selection structure(s)
@@ -1090,6 +1104,7 @@ Num Sel Objs: {len(self.sel_objs)}
         """
         if len(self.sel_objs) == 0:
             return
+        # primary object is always at idx -1
         match_obj = self.sel_objs[-1]
         obj_is_articulated = match_obj.is_articulated
         if only_matches:
@@ -1482,6 +1497,7 @@ Num Sel Objs: {len(self.sel_objs)}
         )
         obj_list = self.sel_objs
         mag_color = mn.Color4.magenta()
+        # draw all but last/target object
         for i in range(len(obj_list) - 1):
             self._draw_selected_obj(
                 obj_list[i], debug_line_render=debug_line_render, box_color=mag_color

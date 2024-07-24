@@ -44,7 +44,7 @@ class HabitatSimInteractiveViewer(Application):
     # the maximum number of chars displayable in the app window
     # using the magnum text module. These chars are used to
     # display the CPU/GPU usage data
-    MAX_DISPLAY_TEXT_CHARS = 256
+    MAX_DISPLAY_TEXT_CHARS = 512
 
     # how much to displace window text relative to the center of the
     # app window (e.g if you want the display text in the top left of
