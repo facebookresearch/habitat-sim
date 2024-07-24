@@ -232,6 +232,8 @@ class HabitatSimInteractiveViewer(Application):
         self.obj_editor = ObjectEditor(self.sim)
         # Set default editing to rotation
         self.obj_editor.set_edit_mode_rotate()
+        # Force save of urdf hash to NOLINK_URDF_FILES file
+        self.force_urdf_notes_save = False
 
         # Load first object
         self.load_urdf_obj()
@@ -288,7 +290,7 @@ class HabitatSimInteractiveViewer(Application):
 
         self.urdf_hash_names_dict = urdf_hash_names
 
-    def update_nolink_file(self, urdf_hash:str, has_markers:bool):
+    def update_nolink_file(self, urdf_hash:str, save_no_markers:bool):
         # remove urdf hash from NOLINK_URDF_FILES if it has links, add it if it does not
 
         # preserve all text in file after comma
@@ -300,14 +302,14 @@ class HabitatSimInteractiveViewer(Application):
                 vals = line.split(",", maxsplit=1)
                 # hash is idx0; notes is idx1
                 urdf_nolink_hash_names[vals[0]] = vals[1].strip()
-        if has_markers:
-            # if it has markers now, remove it from record
-            urdf_nolink_hash_names.pop(urdf_hash, None)
-        else:
-            # it has no markers, so add it to record if it isn't already there
+        if save_no_markers:
+            # it has no markers or we are forcing a save, so add it to record if it isn't already there
             if urdf_hash not in urdf_nolink_hash_names:
                 # add empty string
                 urdf_nolink_hash_names[urdf_hash] = ""
+        else:
+            # if it has markers now, remove it from record
+            urdf_nolink_hash_names.pop(urdf_hash, None)
         # save results
         with open(NOLINK_URDF_FILES, "w") as f:
             for hash, notes in urdf_nolink_hash_names.items():
@@ -624,8 +626,10 @@ class HabitatSimInteractiveViewer(Application):
         if sel_obj is None:
             sel_obj = get_obj_from_handle(self.urdf_edit_obj)
         
-        has_markers = sel_obj.marker_sets.num_tasksets > 0
-        print(f"Object {sel_obj.handle} has {sel_obj.marker_sets.num_tasksets} tasksets == {has_markers}")
+        save_no_markers = (self.force_urdf_notes_save or
+                           sel_obj.marker_sets.num_tasksets == 0
+                           or (not sel_obj.marker_sets.has_taskset("handles")))
+        print(f"Object {sel_obj.handle} has {sel_obj.marker_sets.num_tasksets} tasksets and Force save set to {self.force_urdf_notes_save} == {save_no_markers}")
         # remove currently selected objects
         removed_obj_handles = self.obj_editor.remove_sel_objects()
         # should only have 1 handle
@@ -637,11 +641,13 @@ class HabitatSimInteractiveViewer(Application):
         # set edited state in urdf dict to true
         self.set_urdf_file_finished(self.urdf_edit_obj)
         # update record of object hashes with/without markers
-        self.update_nolink_file(urdf_hash=self.urdf_edit_obj, has_markers=has_markers)
+        self.update_nolink_file(urdf_hash=self.urdf_edit_obj, save_no_markers=save_no_markers)
         # save current status
         self.save_urdf_files()
         # load next object
         self.load_urdf_obj()
+        # reset force save to False for each object
+        self.force_urdf_notes_save = False
 
     def invert_gravity(self) -> None:
         """
@@ -712,7 +718,9 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.R:
             # cycle through rotation amount
             self.obj_editor.change_edit_vals(toggle=shift_pressed)
-
+        elif key==pressed.F:
+            self.force_urdf_notes_save = not self.force_urdf_notes_save 
+            print(f"Force save of hash to URDF notes file set to {self.force_urdf_notes_save}")
         elif key == pressed.H:
             self.print_help_text()
 
