@@ -1220,21 +1220,21 @@ class Configuration {
   /**
    * @brief Templated subconfig copy getter. Retrieves a shared pointer to a
    * copy of the subConfig @ref esp::core::config::Configuration that has the
-   * passed @p name .
+   * passed @p cfgName .
    *
    * @tparam Type to return. Must inherit from @ref
    * esp::core::config::Configuration
-   * @param name The name of the Configuration to retrieve.
+   * @param cfgName The name of the Configuration to retrieve.
    * @return A pointer to a copy of the Configuration having the requested
    * name, cast to the appropriate type, or nullptr if not found.
    */
 
   template <typename T>
-  std::shared_ptr<T> getSubconfigCopy(const std::string& name) const {
+  std::shared_ptr<T> getSubconfigCopy(const std::string& cfgName) const {
     static_assert(std::is_base_of<Configuration, T>::value,
                   "Configuration : Desired subconfig must be derived from "
                   "core::config::Configuration");
-    auto configIter = configMap_.find(name);
+    auto configIter = configMap_.find(cfgName);
     if (configIter != configMap_.end()) {
       // if exists return copy, so that consumers can modify it freely
       return std::make_shared<T>(
@@ -1244,24 +1244,24 @@ class Configuration {
   }
 
   /**
-   * @brief return pointer to read-only sub-Configuration of given @p name.
+   * @brief return pointer to read-only sub-Configuration of given @p cfgName.
    * Will fail if Configuration with given name dne.
-   * @param name The name of the desired Configuration.
+   * @param cfgName The name of the desired Configuration.
    */
   std::shared_ptr<const Configuration> getSubconfigView(
-      const std::string& name) const {
-    auto configIter = configMap_.find(name);
-    CORRADE_ASSERT(
-        configIter != configMap_.end(),
-        "SubConfiguration with name " << name << " not found in Configuration.",
-        nullptr);
+      const std::string& cfgName) const {
+    auto configIter = configMap_.find(cfgName);
+    CORRADE_ASSERT(configIter != configMap_.end(),
+                   "SubConfiguration with name "
+                       << cfgName << " not found in Configuration.",
+                   nullptr);
     // if exists return actual object
     return configIter->second;
   }
 
   /**
    * @brief Templated Version. Retrieves the stored shared pointer to the
-   * subConfig @ref esp::core::config::Configuration that has the passed @p name
+   * subConfig @ref esp::core::config::Configuration that has the passed @p cfgName
    * , cast to the specified type. This will create a shared pointer to a new
    * sub-Configuration if none exists and return it, cast to specified type.
    *
@@ -1269,49 +1269,50 @@ class Configuration {
    * subgroup, possibly creating it in the process.
    * @tparam The type to cast the @ref esp::core::config::Configuration to. Type
    * is checked to verify that it inherits from Configuration.
-   * @param name The name of the Configuration to edit.
+   * @param cfgName The name of the Configuration to edit.
    * @return The actual pointer to the Configuration having the requested
    * name, cast to the specified type.
    */
   template <typename T>
-  std::shared_ptr<T> editSubconfig(const std::string& name) {
+  std::shared_ptr<T> editSubconfig(const std::string& cfgName) {
     static_assert(std::is_base_of<Configuration, T>::value,
                   "Configuration : Desired subconfig must be derived from "
                   "core::config::Configuration");
     // retrieve existing (or create new) subgroup, with passed name
     return std::static_pointer_cast<T>(
-        addOrEditSubgroup<T>(name).first->second);
+        addOrEditSubgroup<T>(cfgName).first->second);
   }
 
   /**
    * @brief move specified subgroup config into configMap at desired name.
    * Will replace any subConfiguration at given name without warning if
    * present.
-   * @param name The name of the subConfiguration to add
+   * @param cfgName The name of the subConfiguration to add
    * @param configPtr A pointer to a subConfiguration to add.
    */
   template <typename T>
-  void setSubconfigPtr(const std::string& name, std::shared_ptr<T>& configPtr) {
+  void setSubconfigPtr(const std::string& cfgName,
+                       std::shared_ptr<T>& configPtr) {
     static_assert(std::is_base_of<Configuration, T>::value,
                   "Configuration : Desired subconfig must be derived from "
                   "core::config::Configuration");
 
-    configMap_[name] = std::move(configPtr);
+    configMap_[cfgName] = std::move(configPtr);
   }  // setSubconfigPtr
 
   /**
    * @brief Removes and returns the named subconfig. If not found, returns an
    * empty subconfig with a warning.
-   * @param name The name of the subConfiguration to delete
+   * @param cfgName The name of the subConfiguration to delete
    * @return a shared pointer to the removed subConfiguration.
    */
-  std::shared_ptr<Configuration> removeSubconfig(const std::string& name) {
-    ConfigMapType::const_iterator mapIter = configMap_.find(name);
+  std::shared_ptr<Configuration> removeSubconfig(const std::string& cfgName) {
+    ConfigMapType::const_iterator mapIter = configMap_.find(cfgName);
     if (mapIter != configMap_.end()) {
       configMap_.erase(mapIter);
       return mapIter->second;
     }
-    ESP_WARNING() << "Name :" << name
+    ESP_WARNING() << "Name :" << cfgName
                   << "not present in map of subConfigurations.";
     return {};
   }
@@ -1319,16 +1320,16 @@ class Configuration {
   /**
    * @brief Retrieve the number of entries held by the subconfig with the
    * given name
-   * @param name The name of the subconfig to query. If not found, returns 0
+   * @param cfgName The name of the subconfig to query. If not found, returns 0
    * with a warning.
    * @return The number of entries in the named subconfig
    */
-  int getSubconfigNumEntries(const std::string& name) const {
-    auto configIter = configMap_.find(name);
+  int getSubconfigNumEntries(const std::string& cfgName) const {
+    auto configIter = configMap_.find(cfgName);
     if (configIter != configMap_.end()) {
       return configIter->second->getNumEntries();
     }
-    ESP_WARNING() << "No Subconfig found named :" << name;
+    ESP_WARNING() << "No Subconfig found named :" << cfgName;
     return 0;
   }
 
@@ -1403,7 +1404,12 @@ class Configuration {
   std::vector<T> getSubconfigValsOfTypeInVector(
       const std::string& subCfgName) const {
     const ConfigValType desiredType = configValTypeFor<T>();
-    const auto subCfg = getSubconfigView(subCfgName);
+    auto configIter = configMap_.find(subCfgName);
+    if (configIter == configMap_.end()) {
+      ESP_WARNING() << "No Subconfig found named :" << subCfgName;
+      return {};
+    }
+    const auto subCfg = configIter->second;
     const auto& subCfgTags = subCfg->getKeysByType(desiredType, true);
     std::vector<T> res;
     res.reserve(subCfgTags.size());
