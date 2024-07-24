@@ -1015,6 +1015,7 @@ Sensor Subtype: {sensor_subtype_string}
 {edit_string}
 Selected MarkerSets TaskSet name : {self.markersets_util.get_current_taskname()}
 Mouse Interaction Mode: {mouse_mode_string}
+FORCE SAVE URDF HASH IN NOTES FILE : {self.force_urdf_notes_save}
             """
         )
         self.shader.draw(self.window_text.mesh)
