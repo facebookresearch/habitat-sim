@@ -26,7 +26,12 @@ class MarkerSet : public esp::core::config::Configuration {
   /**
    * @brief Returns the number of existing marker points in this MarkerSet.
    */
-  int getNumPoints() const {
+  int getNumPoints() {
+    // the 'markers' subconfig may not exist due to how the MarkerSet hierarchy
+    // is loaded from JSON.
+    if (!hasSubconfig("markers")) {
+      return 0;
+    }
     return getSubconfigView("markers")->getNumValues();
   }
 
@@ -34,6 +39,11 @@ class MarkerSet : public esp::core::config::Configuration {
    * @brief Returns a list of all the marker points in this MarkerSet
    */
   std::vector<Mn::Vector3> getAllPoints() const {
+    // the 'markers' subconfig may not exist due to how the MarkerSet hierarchy
+    // is loaded from JSON.
+    if (!hasSubconfig("markers")) {
+      return {};
+    }
     return getSubconfigValsOfTypeInVector<Mn::Vector3>("markers");
   }
 
@@ -51,6 +61,7 @@ class MarkerSet : public esp::core::config::Configuration {
    */
   int rekeyAllMarkers() { return rekeySubconfigValues("markers"); }
 
+ public:
   ESP_SMART_POINTERS(MarkerSet)
 };  // class MarkerSet
 
