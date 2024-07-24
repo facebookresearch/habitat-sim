@@ -897,6 +897,14 @@ class ObjectEditor:
             * ObjectEditor.ROTATION_MULT_VALS[self.curr_edit_multiplier.value]
         )
 
+    def get_target_sel_obj(self):
+        """
+        Retrieve the primary/target selected object. If none then will return none
+        """
+        if len(self.sel_objs) == 0:
+            return None
+        return self.sel_objs[-1]
+
     def edit_disp_str(self):
         """
         Specify display quantities for editing

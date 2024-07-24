@@ -32,11 +32,16 @@ from habitat_sim.utils.sim_utils import (
     SemanticManager,
     get_ao_link_id_map,
     get_obj_from_id,
+    get_obj_from_handle,
 )
 
 # file holding all URDF filenames
 URDF_FILES = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "urdfFileNames.txt"
+)
+# file holding hashes of objects that have no links
+NOLINK_URDF_FILES = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), "urdfsWithNoLinks.txt"
 )
 
 
@@ -215,7 +220,7 @@ class HabitatSimInteractiveViewer(Application):
         # Load simulatioon scene
         self.reconfigure_sim()
         # load file holding urdf filenames needing handles
-        print(f"URDF hashes file name : {URDF_FILES}")
+        print(f"URDF hashes file name : {URDF_FILES} | No-link URDFS file name : {NOLINK_URDF_FILES}")
         self.read_urdf_files()
 
         # load markersets for every object and ao into a cache
@@ -282,6 +287,32 @@ class HabitatSimInteractiveViewer(Application):
                 urdf_hash_names[finished][vals[0]] = vals[0]
 
         self.urdf_hash_names_dict = urdf_hash_names
+
+    def update_nolink_file(self, urdf_hash:str, has_markers:bool):
+        # remove urdf hash from NOLINK_URDF_FILES if it has links, add it if it does not
+
+        # preserve all text in file after comma
+        urdf_nolink_hash_names :Dict[str,str] = {}
+        with open(NOLINK_URDF_FILES, "r") as f:
+            for line in f.readlines():
+                if len(line.strip()) == 0:
+                    continue
+                vals = line.split(",", maxsplit=1)
+                # hash is idx0; notes is idx1
+                urdf_nolink_hash_names[vals[0]] = vals[1].split("\n")[0]
+        if has_markers:
+            # if it has markers now, remove it from record
+            urdf_nolink_hash_names.pop(urdf_hash, None)
+        else:
+            # it has no markers, so add it to record if it isn't already there
+            if urdf_hash not in urdf_nolink_hash_names:
+                # add empty string
+                urdf_nolink_hash_names[urdf_hash] = ""
+        # save results
+        with open(NOLINK_URDF_FILES, "w") as f:
+            for hash, notes in urdf_nolink_hash_names.items():
+                f.write(f"{hash}, {notes}\n")
+            
 
     def save_urdf_files(self):
         # save current state of URDF files
@@ -589,6 +620,12 @@ class HabitatSimInteractiveViewer(Application):
         print(
             "NOT FINISHED YET : back-tab does not go backward yet."
         )
+        sel_obj = self.obj_editor.get_target_sel_obj()
+        if sel_obj is None:
+            sel_obj = get_obj_from_handle(self.urdf_edit_obj)
+        
+        has_markers = sel_obj.marker_sets.num_tasksets > 0
+        print(f"Object {sel_obj.handle} has {sel_obj.marker_sets.num_tasksets} tasksets == {has_markers}")
         # remove currently selected objects
         removed_obj_handles = self.obj_editor.remove_sel_objects()
         # should only have 1 handle
@@ -599,6 +636,8 @@ class HabitatSimInteractiveViewer(Application):
 
         # set edited state in urdf dict to true
         self.set_urdf_file_finished(self.urdf_edit_obj)
+        # update record of object hashes with/without markers
+        self.update_nolink_file(urdf_hash=self.urdf_edit_obj, has_markers=has_markers)
         # save current status
         self.save_urdf_files()
         # load next object
