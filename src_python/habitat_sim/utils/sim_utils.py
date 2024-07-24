@@ -857,6 +857,9 @@ class ObjectEditor:
         self.curr_edit_multiplier = ObjectEditor.DistanceMode.VERY_SMALL
         # Set initial values
         self.set_edit_vals()
+        
+    def set_edit_mode_rotate(self):
+        self.curr_edit_mode = ObjectEditor.EditMode.ROTATE
 
     def _init_obj_caches(self):
         # Internal: Dict of currently selected object ids to index in

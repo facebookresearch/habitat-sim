@@ -225,6 +225,8 @@ class HabitatSimInteractiveViewer(Application):
 
         # Editing for object selection
         self.obj_editor = ObjectEditor(self.sim)
+        # Set default editing to rotation
+        self.obj_editor.set_edit_mode_rotate()
 
         # Load first object
         self.load_urdf_obj()
@@ -662,11 +664,15 @@ class HabitatSimInteractiveViewer(Application):
                 log_str = f"{log_str}: performing discrete collision detection and visualize active contacts."
                 self.sim.perform_discrete_collision_detection()
             logger.info(log_str)
-
+        elif key == pressed.Q:
+            # rotate selected object(s) to left
+            self.navmesh_dirty = self.obj_editor.edit_left(self.navmesh_dirty)
         elif key == pressed.E:
-            # Cyle through semantics display
-            info_str = self.dbg_semantics.cycle_semantic_region_draw()
-            logger.info(info_str)
+            # rotate selected object(s) right
+            self.navmesh_dirty = self.obj_editor.edit_right(self.navmesh_dirty)
+        elif key == pressed.R:
+            # cycle through rotation amount
+            self.obj_editor.change_edit_vals(toggle=shift_pressed)
 
         elif key == pressed.H:
             self.print_help_text()
@@ -680,6 +686,11 @@ class HabitatSimInteractiveViewer(Application):
             if not shift_pressed:
                 # if closing then redo navmesh
                 self.navmesh_config_and_recompute()
+
+        elif key == pressed.K:
+            # Cyle through semantics display
+            info_str = self.dbg_semantics.cycle_semantic_region_draw()
+            logger.info(info_str)
 
         elif key == pressed.M:
             self.cycle_mouse_mode()
