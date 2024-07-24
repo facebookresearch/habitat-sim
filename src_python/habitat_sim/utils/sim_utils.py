@@ -442,16 +442,16 @@ class MarkerSetsInfo:
         self.current_markerset_taskset_idx = 0
 
         self.marker_sets_changed: Dict[str, Dict[str, bool]] = {}
-        self.marker_sets_changed["ro"] = {}
-        self.marker_sets_changed["ao"] = {}
         self.marker_debug_random_colors: Dict[str, Dict[str, Any]] = {}
-        self.marker_debug_random_colors["ro"] = {}
-        self.marker_debug_random_colors["ao"] = {}
         for sub_key, sub_dict in self.marker_sets_per_obj.items():
+            tmp_dict_changed = {}
+            tmp_dict_colors = {}
             for key in sub_dict:
                 print(f"subkey : {sub_key} | key : {key}")
-                self.marker_sets_changed[sub_key][key] = False
-                self.marker_debug_random_colors[sub_key][key] = {}
+                tmp_dict_changed[key] = False
+                tmp_dict_colors[key] = {}
+            self.marker_sets_changed[sub_key] = tmp_dict_changed
+            self.marker_debug_random_colors[sub_key] = tmp_dict_colors
 
         # for debugging
         self.glbl_marker_point_dicts_per_obj = self.get_all_global_markers()
@@ -585,7 +585,7 @@ class MarkerSetsInfo:
                     )
                 else:
                     # right click is remove marker
-                    print(f"About to check obj {obj_handle} if it has any markersets")
+                    print(f"About to check obj {obj_handle} if it has points in MarkerSet : {marker_set_name}, LinkSet :{link_name}, TaskSet :{task_set_name} so removal aborted.")
                     if obj_marker_sets.has_task_link_markerset(
                         task_set_name, link_name, marker_set_name
                     ):
@@ -700,14 +700,21 @@ class MarkerSetsInfo:
         else:
             init_attrs.render_asset_handle = init_attrs.render_asset_handle.split(os.sep)[-1]
             init_attrs.collision_asset_handle = init_attrs.collision_asset_handle.split(os.sep)[-1]
-        # put edited subconfig into initial attributes
+        # put edited subconfig into initial attributes' markersets
         markersets = init_attrs.get_marker_sets()
         # manually copying because the markersets type is getting lost from markersets
-        edited_marker_sets = self.marker_sets_per_obj[subdict][obj.handle]
-        for subconfig_key in edited_marker_sets.get_subconfig_keys():
-            markersets.save_subconfig(
-                subconfig_key, edited_marker_sets.get_subconfig(subconfig_key)
-            )
+        edited_markersets = self.marker_sets_per_obj[subdict][obj.handle]
+        if edited_markersets.top_level_num_entries == 0:
+            # if all subconfigs of edited_markersets are gone, clear out those in
+            # markersets ref within attributes.
+            for subconfig_key in markersets.get_subconfig_keys():
+                markersets.remove_subconfig(subconfig_key)
+        else:
+            # Copy subconfigs from local copy of markersets to init attributes' copy
+            for subconfig_key in edited_markersets.get_subconfig_keys():
+                markersets.save_subconfig(
+                    subconfig_key, edited_markersets.get_subconfig(subconfig_key)
+                )
 
         # reregister template
         attrMgr.register_template(init_attrs, init_attrs.handle, True)
@@ -715,78 +722,6 @@ class MarkerSetsInfo:
         attrMgr.save_template_by_handle(init_attrs.handle, True)
         # clear out dirty flag
         self.marker_sets_changed[subdict][obj.handle] = False
-
-    # def correct_and_save_object_markersets(self):
-    #     import json
-
-    #     """
-    #     Debug function used to correct issues with improper markerset loading/saving.
-    #     Should not be needed any longer.
-    #     NOTE : Only works with rigid objects currently - was correcting for an erroneous rigid object attribute
-    #     """
-
-    #     def save_markerset_as_json(obj_handle, obj, markers_dict, attrMgr):
-    #         # get the name of the attrs used to initialize the object
-    #         obj_init_attr_handle = obj.creation_attributes.handle
-
-    #         # get copy of initialization attributes as they were in manager,
-    #         # unmodified by scene instance values such as scale
-    #         init_attrs = attrMgr.get_template_by_handle(obj_init_attr_handle)
-    #         filename = init_attrs.handle.replace(
-    #             ".object_config.json", ".markersets.json"
-    #         )
-
-    #         marker_sets = {}
-    #         new_markerset_dict = {}
-    #         for task, task_dict in markers_dict.items():
-    #             new_task_dict = {}
-    #             for link, link_dict in task_dict.items():
-    #                 new_link_dict = {}
-    #                 tmp_dict = {}
-    #                 for subset, markers_list in link_dict.items():
-    #                     new_markers_dict = {}
-    #                     key = 0
-    #                     for pt in markers_list:
-    #                         key_str = f"{key:03}"
-    #                         new_markers_dict[key_str] = list(pt)
-    #                         key += 1
-    #                     tmp_dict["markers"] = new_markers_dict
-    #                     new_link_dict[subset] = tmp_dict
-    #                 new_task_dict[link] = new_link_dict
-    #             new_markerset_dict[task] = new_task_dict
-
-    #         marker_sets["marker_sets"] = new_markerset_dict
-
-    #         with open(filename, "w") as f:
-    #             f.write(json.dumps(marker_sets, indent=2))
-
-    #     rom = self.sim.get_rigid_object_manager()
-    #     obj_dict = rom.get_objects_by_handle_substring("")
-    #     for handle, obj in obj_dict.items():
-    #         if ":0000" not in handle:
-    #             continue
-    #         obj_com = obj.transform_world_pts_to_local(
-    #             [obj.uncorrected_translation], -1
-    #         )[0]
-    #         markers_dict = obj.marker_sets.get_all_marker_points()
-    #         changed = False
-    #         for _task, task_dict in markers_dict.items():
-    #             for _link, link_dict in task_dict.items():
-    #                 for _subset, markers_list in link_dict.items():
-    #                     for pt in markers_list:
-    #                         pt += obj_com
-    #                         print(f"new point location {pt}")
-    #                         changed = True
-    #         if changed:
-    #             print(
-    #                 f"Obj: {handle} | Location: {obj.translation} | uncorrected COM : {obj.uncorrected_translation} | Correction to be added to point : {obj_com} "
-    #             )
-    #             self.marker_sets_per_obj[handle].set_all_points(markers_dict)
-
-    #             # save obj config
-    #             attrMgr = self.sim.metadata_mediator.object_template_manager
-
-    #             save_markerset_as_json(handle, obj, markers_dict, attrMgr)
 
     def get_all_global_markers(self):
         """
