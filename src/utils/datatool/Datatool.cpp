@@ -13,6 +13,7 @@
 
 #include "Mp3dInstanceMeshData.h"
 #include "esp/core/Esp.h"
+#include "esp/core/Utility.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/SemanticScene.h"
 
@@ -23,6 +24,7 @@ using esp::assets::SceneLoader;
 using esp::nav::NavMeshSettings;
 using esp::nav::PathFinder;
 using esp::scene::SemanticScene;
+using Magnum::Math::Literals::operator""_degf;
 
 int createNavMesh(const std::string& meshFile, const std::string& navmeshFile) {
   SceneLoader loader;
@@ -95,13 +97,13 @@ int createGibsonSemanticMesh(const std::string& objFile,
   f << "end_header" << std::endl;
 
   // We need to rotate to match .glb where -Z is gravity
-  const auto transform =
-      esp::quatf::FromTwoVectors(esp::vec3f::UnitY(), esp::vec3f::UnitZ());
+  const Mn::Quaternion transform =
+      Mn::Quaternion::rotation(90.0_degf, Mn::Vector3::xAxis());
   for (size_t i = 0; i < numVerts; ++i) {
     unsigned char gray[] = {0x80, 0x80, 0x80};
     float* components = &attrib.vertices[i * 3];
-    Eigen::Map<esp::vec3f> vertex{components};
-    vertex = transform * vertex;
+    Mn::Vector3 vertex = Mn::Vector3::from(components);
+    vertex = transform.transformVectorNormalized(vertex);
     f.write(reinterpret_cast<char*>(components), sizeof(float) * 3);
     f.write(reinterpret_cast<char*>(gray), sizeof(gray));
   }
