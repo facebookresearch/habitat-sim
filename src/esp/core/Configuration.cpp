@@ -606,8 +606,8 @@ void Configuration::writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
   auto cfgIterPair = getSubconfigIterator();
   for (auto& cfgIter = cfgIterPair.first; cfgIter != cfgIterPair.second;
        ++cfgIter) {
-    // only save if subconfig has entries
-    if (cfgIter->second->getNumEntries() > 0) {
+    // only save if subconfig tree has value entries
+    if (cfgIter->second->getConfigTreeNumValues() > 0) {
       // Create Generic value for key, using allocator, to make sure its a copy
       // and lives long enough
       io::JsonGenericValue name{cfgIter->first.c_str(), allocator};
