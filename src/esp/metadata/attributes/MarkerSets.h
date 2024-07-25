@@ -145,11 +145,7 @@ class LinkSet : public esp::core::config::Configuration {
    */
   void setMarkerSetPoints(const std::string& markerSetName,
                           const std::vector<Mn::Vector3>& markerList) {
-    if (markerList.size() == 0) {
-      removeMarkerSet(markerSetName);
-    } else {
-      editMarkerSet(markerSetName)->setAllPoints(markerList);
-    }
+    editMarkerSet(markerSetName)->setAllPoints(markerList);
   }
 
   /**
@@ -325,12 +321,7 @@ class TaskSet : public esp::core::config::Configuration {
   void setLinkMarkerSetPoints(const std::string& linkSetName,
                               const std::string& markerSetName,
                               const std::vector<Mn::Vector3>& markerList) {
-    auto linkSet = editLinkSet(linkSetName);
-    linkSet->setMarkerSetPoints(markerSetName, markerList);
-    // The above may result in the link set being empty. If so remove it.
-    if (linkSet->getNumMarkerSets() == 0) {
-      removeLinkSet(linkSetName);
-    }
+    editLinkSet(linkSetName)->setMarkerSetPoints(markerSetName, markerList);
   }
 
   /**
@@ -345,12 +336,7 @@ class TaskSet : public esp::core::config::Configuration {
       const std::string& linkSetName,
       const std::unordered_map<std::string, std::vector<Mn::Vector3>>&
           markers) {
-    auto linkSet = editLinkSet(linkSetName);
-    linkSet->setAllMarkerPoints(markers);
-    // The above may result in the link set being empty. If so remove it.
-    if (linkSet->getNumMarkerSets() == 0) {
-      removeLinkSet(linkSetName);
-    }
+    editLinkSet(linkSetName)->setAllMarkerPoints(markers);
   }
 
   /**
@@ -585,12 +571,8 @@ class MarkerSets : public esp::core::config::Configuration {
                                   const std::string& linkSetName,
                                   const std::string& markerSetName,
                                   const std::vector<Mn::Vector3>& markerList) {
-    auto taskSetPtr = editTaskSet(taskSetName);
-    taskSetPtr->setLinkMarkerSetPoints(linkSetName, markerSetName, markerList);
-    // After this process, the taskset might be empty, if so, delete it.
-    if (taskSetPtr->getNumLinkSets() == 0) {
-      removeTaskSet(taskSetName);
-    }
+    editTaskSet(taskSetName)
+        ->setLinkMarkerSetPoints(linkSetName, markerSetName, markerList);
   }
 
   /**
@@ -607,12 +589,7 @@ class MarkerSets : public esp::core::config::Configuration {
       const std::string& linkSetName,
       const std::unordered_map<std::string, std::vector<Mn::Vector3>>&
           markerMap) {
-    auto taskSetPtr = editTaskSet(taskSetName);
-    taskSetPtr->setLinkSetPoints(linkSetName, markerMap);
-    // After this process, the taskset might be empty, if so, delete it.
-    if (taskSetPtr->getNumLinkSets() == 0) {
-      removeTaskSet(taskSetName);
-    }
+    editTaskSet(taskSetName)->setLinkSetPoints(linkSetName, markerMap);
   }
 
   /**
@@ -631,10 +608,6 @@ class MarkerSets : public esp::core::config::Configuration {
     auto taskSetPtr = editTaskSet(taskSetName);
     for (const auto& markers : markerMap) {
       taskSetPtr->setLinkSetPoints(markers.first, markers.second);
-    }
-    // After this process, the taskset might be empty, if so, delete it.
-    if (taskSetPtr->getNumLinkSets() == 0) {
-      removeTaskSet(taskSetName);
     }
   }
 
