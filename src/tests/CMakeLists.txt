@@ -115,6 +115,16 @@ corrade_add_test(
 target_include_directories(GfxBatchHbaoTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(
+  GfxPbrIblTest
+  GfxPbrIblTest.cpp
+  LIBRARIES
+  assets
+  core
+  gfx
+  metadata
+)
+target_include_directories(GfxPbrIblTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+corrade_add_test(
   GfxReplayTest
   GfxReplayTest.cpp
   LIBRARIES
