@@ -316,7 +316,7 @@ class LightLayoutAttributes : public AbstractAttributes {
   std::shared_ptr<Configuration> lightInstConfig_{};
 
   /**
-   * @brief Deque holding all released IDs to consume for @ref LightInstanceAttributess when
+   * @brief Deque holding all released IDs to consume for @ref LightInstanceAttributes when
    * one is deleted, before using size of lightInstances_ container.
    */
   std::deque<int> availableLightIDs_;

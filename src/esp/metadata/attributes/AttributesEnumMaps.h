@@ -128,7 +128,7 @@ enum class ArticulatedObjectRenderMode {
   Skin,
   /**
    * @brief Render the Articulated Object using urdf-defined meshes/primitives
-   * to respresent each link.
+   * to represent each link.
    */
   LinkVisuals,
   /**
