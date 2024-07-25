@@ -1497,19 +1497,23 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
     def draw_selected_objects(self, debug_line_render):
         if len(self.sel_objs) == 0:
             return
-        # Last object selected is target object
-        self._draw_selected_obj(
-            self.sel_objs[-1],
-            debug_line_render=debug_line_render,
-            box_color=mn.Color4.yellow(),
-        )
+        sel_obj = self.sel_objs[-1]
+        if sel_obj.is_alive:
+            # Last object selected is target object
+            self._draw_selected_obj(
+                sel_obj,
+                debug_line_render=debug_line_render,
+                box_color=mn.Color4.yellow(),
+            )
         obj_list = self.sel_objs
         mag_color = mn.Color4.magenta()
         # draw all but last/target object
         for i in range(len(obj_list) - 1):
-            self._draw_selected_obj(
-                obj_list[i], debug_line_render=debug_line_render, box_color=mag_color
-            )
+            obj = obj_list[i]
+            if obj.is_alive:
+                self._draw_selected_obj(
+                    obj, debug_line_render=debug_line_render, box_color=mag_color
+                )
 
 
 # Class to instantiate and maneuver spot from a viewer
