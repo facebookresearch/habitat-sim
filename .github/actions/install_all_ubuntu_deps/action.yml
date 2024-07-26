@@ -1,0 +1,152 @@
+name: install_all_ubuntu_deps
+runs:
+  using: composite
+  steps:
+  - name: Install dependencies
+    run: |-
+      echo "Install dependencies"
+      sudo apt-get update || true
+      sudo apt-get install -y --no-install-recommends \
+          build-essential \
+          git \
+          curl \
+          vim \
+          ca-certificates \
+          libjpeg-dev \
+          libglm-dev \
+          libegl1-mesa-dev \
+          ninja-build \
+          xorg-dev \
+          freeglut3-dev \
+          pkg-config \
+          wget \
+          zip \
+          lcov\
+          libhdf5-dev \
+          libomp-dev \
+          unzip || true
+    shell: bash
+  - name: Install Headless Chrome dependencies
+    run: |-
+      echo "Install Headless Chrome dependencies"
+      sudo apt-get update || true
+      sudo apt-get install -yq \
+            gconf-service \
+            libasound2 \
+            libatk1.0-0 \
+            libatk-bridge2.0-0 \
+            libc6 \
+            libcairo2 \
+            libcups2 \
+            libdbus-1-3  \
+            libexpat1 \
+            libfontconfig1 \
+            libgcc1 \
+            libgconf-2-4 \
+            libgdk-pixbuf2.0-0 \
+            libglib2.0-0 \
+            libgtk-3-0 \
+            libnspr4 \
+            libpango-1.0-0 \
+            libpangocairo-1.0-0 \
+            libstdc++6 \
+            libx11-6 \
+            libx11-xcb1 \
+            libxcb1 \
+            libxcomposite1 \
+            libxcursor1 \
+            libxdamage1 \
+            libxext6 \
+            libxfixes3 \
+            libxi6 \
+            libxrandr2 \
+            libxrender1 \
+            libxss1 \
+            libxtst6 \
+            ca-certificates \
+            fonts-liberation \
+            libappindicator1 \
+            libnss3 \
+            lsb-release \
+            xdg-utils \
+            wget \
+            cmake
+    shell: bash
+  - name: Install cuda
+    run: |-
+      echo "Install cuda"
+      wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+      sudo dpkg -i cuda-keyring_1.1-1_all.deb
+      sudo apt-get update
+      sudo apt-get -y install cuda-toolkit-12-3
+      touch ~/cuda_installed
+      if command -v nvidia-smi; then nvidia-smi; fi
+    shell: bash
+  - name: restore_cache
+    uses: actions/cache@v3.3.2
+    with:
+      key: conda-{{ checksum "habitat-sim/.circleci/config.yml" }}-{{ checksum "./date" }}
+      path: UPDATE_ME
+      restore-keys: conda-{{ checksum "habitat-sim/.circleci/config.yml" }}-{{ checksum "./date" }}
+  - name: Setup miniconda
+    uses: conda-incubator/setup-miniconda@v3.0.1
+    with:
+      miniconda-version: "latest"
+      python-version: "3.9"
+      activate-environment: "habitat"
+  - name: Install conda and dependencies
+    run: |-
+      echo "Install conda and dependencies"
+      # For whatever reason we have to install pytorch first. If it isn't
+      # it installs the 1.4 cpuonly version. Which is no good.
+      conda install -y pytorch==1.12.1=py3.9_cuda11.3_cudnn8.3.2_0 torchvision==0.13.1=py39_cu113 cudatoolkit=11.3 -c pytorch -c nvidia
+      conda install -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis pytest-mock
+      pip install pytest-sugar pytest-xdist pytest-benchmark opencv-python cython mock
+    shell: bash -el {0}
+  - name: Validate Pytorch Installation
+    run: |-
+      echo "Validate Pytorch Installation"
+      # Check that pytorch is installed with CUDA.
+      python -c 'import torch; torch.cuda.set_device(0)'
+    shell: bash -el {0}
+  - name: Install emscripten
+    run: |-
+      echo "Install emscripten"
+      if [ ! -f ~/emscripten_installed ]
+      then
+        git clone -q https://github.com/emscripten-core/emsdk.git ~/emsdk
+        cd ~/emsdk
+        ./emsdk install 1.38.48
+        ./emsdk activate 1.38.48
+        . ~/emsdk/emsdk_env.sh
+        touch ~/emscripten_installed
+      fi
+    shell: bash -el {0}
+  - name: Setup node
+    uses: actions/setup-node@v4.0.2
+    with:
+      node-version: "11.9.0"
+  - name: Install JavaScript dependencies
+    run: |-
+      echo "Install JavaScript dependencies"
+      if [ ! -f ~/npm_deps_installed ]; then
+        npm install
+        touch ~/npm_deps_installed
+      fi
+    shell: bash -el {0}
+  - name: restore_cache
+    uses: actions/cache@v3.3.2
+    with:
+      key: ccache-{{ arch }}-{{ .Branch }}-{{ .BuildNum }}
+      path:
+        ~/.ccache
+      restore-keys: |-
+        ccache-{{ arch }}-{{ .Branch }}-{{ .BuildNum }}
+        ccache-{{ arch }}-{{ .Branch }}-
+        ccache-{{ arch }}-main-
+  - name: CCache initialization
+    run: |-
+      ccache --show-stats
+      ccache --zero-stats
+      ccache --max-size=10.0G
+    shell: bash -el {0}
