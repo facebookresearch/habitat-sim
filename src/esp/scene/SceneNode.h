@@ -292,6 +292,15 @@ class SceneNode : public MagnumObject,
   //! set frustum plane in last frame that culls this node
   void setFrustumPlaneIndex(int index) { frustumPlaneIndex = index; };
 
+  //! Set this node's drawable's volume
+  void setMeshVolume(double _volume) { volume_ = _volume; }
+  //! Get this node's drawable's volume
+  double getMeshVolume() const { return volume_; }
+  //! Set this node's drawable's surface area
+  void setMeshSurfaceArea(double _surfArea) { surfArea_ = _surfArea; }
+  //! Get this node's drawable's surface area
+  double getMeshSurfaceArea() const { return surfArea_; }
+
  protected:
   // DO not make the following constructor public!
   // it can ONLY be called from SceneGraph class to initialize the scene graph
@@ -330,6 +339,12 @@ class SceneNode : public MagnumObject,
 
   //! The absolute translation of this node, updated in clean
   Magnum::Matrix4 absoluteTransformation_;
+
+  //! The volume of the drawable mesh held in this node
+  double volume_ = 0.0f;
+
+  //! The surface area of the drawable mesh held in this node
+  double surfArea_ = 0.0f;
 
   //! the global bounding box for *static* meshes stored at this node
   //  NOTE: this is different from the local bounding box meshBB_ defined above:

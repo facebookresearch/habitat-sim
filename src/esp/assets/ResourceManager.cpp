@@ -1040,6 +1040,65 @@ Mn::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
   return Mn::Math::minmax(meshData.positions);
 }
 
+void ResourceManager::computeGeneralMeshAreaAndVolume(
+    const std::vector<StaticDrawableInfo>& staticDrawableInfo) {
+  std::vector<Mn::Matrix4> absTransforms =
+      computeAbsoluteTransformations(staticDrawableInfo);
+
+  CORRADE_ASSERT(absTransforms.size() == staticDrawableInfo.size(),
+                 "::computeGeneralMeshAreaAndVolume: number of "
+                 "transforms does not match number of drawables.", );
+
+  for (uint32_t iEntry = 0; iEntry < staticDrawableInfo.size(); ++iEntry) {
+    const int meshID = staticDrawableInfo[iEntry].meshID;
+
+    Cr::Containers::Optional<Mn::Trade::MeshData>& meshData =
+        meshes_.at(meshID)->getMeshData();
+    CORRADE_ASSERT(
+        meshData,
+        "::computeGeneralMeshAreaAndVolume: The mesh data specified at ID:"
+            << meshID << "is empty/undefined. Aborting", );
+
+    // Precalc all transformed verts - only use first position array for this
+    Cr::Containers::Array<Mn::Vector3> posArray =
+        meshData->positions3DAsArray(0);
+    Mn::MeshTools::transformPointsInPlace(absTransforms[iEntry], posArray);
+
+    // Surface area of the mesh : .5 * ba.cross(bc)
+    double ttlSurfaceArea = 0.0;
+
+    // Volume of the mesh : 1/6 * (OA.dot(ba.cross(bc)))
+    // Where O is a distant vertex
+    double ttlVolume = 0.0f;
+
+    // locate the scene node which contains the current drawable
+    scene::SceneNode& node = staticDrawableInfo[iEntry].node;
+    // # of indices
+    int numIdxs = meshData->indexCount();
+
+    // const auto idxView = meshData->indices<std::uint32_t>();
+    const auto idxView = meshData->indicesAsArray();
+    Mn::Vector3 distPt{1000, 1000, 1000};
+    for (uint32_t rawIdx = 0; rawIdx < numIdxs; rawIdx += 3) {
+      const auto aVert = posArray[idxView[rawIdx + 1]];
+      Mn::Vector3 a = posArray[idxView[rawIdx]] - aVert;
+      Mn::Vector3 b = posArray[idxView[rawIdx + 2]] - aVert;
+      Mn::Vector3 areaNorm = 0.5 * Mn::Math::cross(a, b);
+      double surfArea = areaNorm.length();
+      ttlSurfaceArea += surfArea;
+      Mn::Vector3 c = distPt - aVert;
+      double signedVol = (Mn::Math::dot(c, areaNorm)) / 3.0;
+      ttlVolume += signedVol;
+    }
+
+    // set the node's volume and surface area
+    node.setMeshVolume(ttlVolume);
+    node.setMeshSurfaceArea(ttlSurfaceArea);
+
+  }  // iEntry
+
+}  // ResourceManager::computeGeneralMeshVolume
+
 void ResourceManager::computeGeneralMeshAbsoluteAABBs(
     const std::vector<StaticDrawableInfo>& staticDrawableInfo) {
   std::vector<Mn::Matrix4> absTransforms =
@@ -1719,7 +1778,8 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
     // now compute aabbs by constructed staticDrawableInfo
     computeGeneralMeshAbsoluteAABBs(staticDrawableInfo);
   }
-
+  // Might be expensive
+  computeGeneralMeshAreaAndVolume(staticDrawableInfo);
   // set the node type for all cached visual nodes
   if (nodeType != scene::SceneNodeType::Empty) {
     for (auto* node : visNodeCache) {
