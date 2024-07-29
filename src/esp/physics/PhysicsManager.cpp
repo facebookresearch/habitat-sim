@@ -385,7 +385,7 @@ int PhysicsManager::addObjectInternal(
   rigidObjectManager_->registerObject(std::move(objWrapper), newObjectHandle);
 
   return nextObjectID_;
-}  // PhysicsManager::addObject
+}  // PhysicsManager::addObjectInternal
 
 /////////////////////////////////
 // Articulated Object Creation
