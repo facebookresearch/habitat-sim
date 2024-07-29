@@ -615,6 +615,12 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     _managedObject = std::move(managedObjPtr);
   }
 
+  /** @brief Return this object's mesh volume. */
+  virtual double getVolume() const { return node().getMeshVolume(); }
+
+  /** @brief Return this object's mesh surface area. */
+  virtual double getSurfaceArea() const { return node().getMeshSurfaceArea(); }
+
  protected:
   /**
    * @brief Accessed Internally. Get the Managed Object that references this
