@@ -41,6 +41,15 @@ enum class SceneNodeType {
   EndSceneNodeType,
 };
 
+// Topological nature of the drawable mesh held by this scene node, if exists
+enum class DrawableMeshTopology {
+  Unknown = ID_UNDEFINED,
+  ClosedManifold = 0,
+  NonManifold,
+  OpenManifold
+
+};
+
 /**
  * @brief This enum holds the idx values for the vector of various types
  * of IDs that can be rendered via semantic sensors.
@@ -292,6 +301,11 @@ class SceneNode : public MagnumObject,
   //! set frustum plane in last frame that culls this node
   void setFrustumPlaneIndex(int index) { frustumPlaneIndex = index; };
 
+  DrawableMeshTopology getMeshTopology() const { return isClosedManifold_; }
+
+  void setMeshTopology(DrawableMeshTopology _isClosedManifold) {
+    isClosedManifold_ = _isClosedManifold;
+  }
   //! Set this node's drawable's volume
   void setMeshVolume(double _volume) { volume_ = _volume; }
   //! Get this node's drawable's volume
@@ -340,11 +354,15 @@ class SceneNode : public MagnumObject,
   //! The absolute translation of this node, updated in clean
   Magnum::Matrix4 absoluteTransformation_;
 
+  //! Whether the drawable mesh is closed and manifold (ever edge is adjacent to
+  //! exactly 2 faces)
+  DrawableMeshTopology isClosedManifold_ = DrawableMeshTopology::Unknown;
+
   //! The volume of the drawable mesh held in this node
-  double volume_ = 0.0f;
+  double volume_ = 0.0;
 
   //! The surface area of the drawable mesh held in this node
-  double surfArea_ = 0.0f;
+  double surfArea_ = 0.0;
 
   //! the global bounding box for *static* meshes stored at this node
   //  NOTE: this is different from the local bounding box meshBB_ defined above:
