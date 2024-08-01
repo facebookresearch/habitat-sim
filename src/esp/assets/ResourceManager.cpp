@@ -1034,6 +1034,126 @@ Mn::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
   return Mn::Math::minmax(meshData.positions);
 }
 
+void ResourceManager::computeGeneralMeshAreaAndVolume(
+    const std::vector<StaticDrawableInfo>& staticDrawableInfo) {
+  std::vector<Mn::Matrix4> absTransforms =
+      computeAbsoluteTransformations(staticDrawableInfo);
+
+  CORRADE_ASSERT(absTransforms.size() == staticDrawableInfo.size(),
+                 "::computeGeneralMeshAreaAndVolume: number of "
+                 "transforms does not match number of drawables.", );
+
+  for (uint32_t iEntry = 0; iEntry < staticDrawableInfo.size(); ++iEntry) {
+    // Current drawable's meshID
+    const int meshID = staticDrawableInfo[iEntry].meshID;
+    // Current drawable's scene node
+    scene::SceneNode& node = staticDrawableInfo[iEntry].node;
+
+    Cr::Containers::Optional<Mn::Trade::MeshData>& meshData =
+        meshes_.at(meshID)->getMeshData();
+    if (meshData->primitive() != Mn::MeshPrimitive::Triangles) {
+      // These calculations rely on this mesh being purely triangle-based
+      // Make sure mesh's topology is set to unknown so area/volume values are
+      // not trusted
+      node.setMeshTopology(scene::DrawableMeshTopology::Unknown);
+      continue;
+    }
+    CORRADE_ASSERT(
+        meshData,
+        "::computeGeneralMeshAreaAndVolume: The mesh data specified at ID:"
+            << meshID << "is empty/undefined. Aborting", );
+    // Make temp copy that removes dupes for volume calc
+    Cr::Containers::Optional<Mn::Trade::MeshData> newMeshData =
+        Mn::MeshTools::removeDuplicates(Mn::MeshTools::filterOnlyAttributes(
+            *meshData, {Mn::Trade::MeshAttribute::Position}));
+
+    // Precalc all transformed verts - only use first position array for this
+    Cr::Containers::Array<Mn::Vector3> posArray =
+        newMeshData->positions3DAsArray(0);
+    Mn::MeshTools::transformPointsInPlace(absTransforms[iEntry], posArray);
+
+    // Getting the view properly relies on having the appropriate type of the
+    // loaded data
+    // const auto idxView = newMeshData->indices<std::uint32_t>();
+    const auto idxAra = newMeshData->indicesAsArray();
+    // # of indices
+    uint32_t numIdxs = newMeshData->indexCount();
+    // Assuming no duplicate vertices with different idxs
+    // Determine that all edges have exactly 2 sides ->
+    // idxAra describes exactly 2 pairs of the same idxs, a->b and b->a
+    std::unordered_map<uint64_t, int> edgeCount;
+    std::unordered_map<uint64_t, int> altEdgeCount;
+    scene::DrawableMeshTopology meshTopology =
+        scene::DrawableMeshTopology::ClosedManifold;
+    for (uint32_t idx = 0; idx < numIdxs; idx += 3) {
+      uint64_t vals[] = {uint64_t(idxAra[idx]), uint64_t(idxAra[idx + 1]),
+                         uint64_t(idxAra[idx + 2])};
+      uint64_t shift_vals[] = {vals[0] << 32, vals[1] << 32, vals[2] << 32};
+      // for each edge in poly
+      for (uint32_t i = 0; i < 3; ++i) {
+        uint32_t next_i = (i + 1) % 3;
+        auto res =
+            edgeCount.emplace(std::make_pair(shift_vals[i] + vals[next_i], 0));
+        if (!res.second) {
+          res.first->second += 1;
+          // Duplicate edge with same orientation
+          meshTopology = scene::DrawableMeshTopology::NonManifold;
+        }
+        // Alt edge placement - verify the alternate edge is present
+        altEdgeCount.emplace(std::make_pair(shift_vals[next_i] + vals[i], 0));
+      }
+    }
+    // If still closed manifold then check that every edge has an alt edge
+    // present
+    if (meshTopology == scene::DrawableMeshTopology::ClosedManifold) {
+      for (const auto entry : edgeCount) {
+        altEdgeCount.erase(entry.first);
+      }
+      if (altEdgeCount.size() > 0) {
+        meshTopology = scene::DrawableMeshTopology::OpenManifold;
+      }
+    }
+
+    // Surface area of the mesh : .5 * ba.cross(bc)
+    double ttlSurfaceArea = 0.0;
+    // Volume of the mesh : 1/6 * (OA.dot(ba.cross(bc)))
+    // Where O is a distant vertex
+    // Only applicable on closed manifold meshes (i.e. all edges have exactly
+    // 2 faces)
+    double ttlVolume = 0.0f;
+    if (meshTopology == scene::DrawableMeshTopology::ClosedManifold) {
+      Mn::Vector3 origin{};
+      for (uint32_t idx = 0; idx < numIdxs; idx += 3) {
+        const auto aVert = posArray[idxAra[idx + 1]];
+        Mn::Vector3 aVec = posArray[idxAra[idx]] - aVert;
+        Mn::Vector3 bVec = posArray[idxAra[idx + 2]] - aVert;
+        Mn::Vector3 areaNormVec = 0.5 * Mn::Math::cross(aVec, bVec);
+        double surfArea = areaNormVec.length();
+        ttlSurfaceArea += surfArea;
+        Mn::Vector3 c = origin - aVert;
+        double signedVol = (Mn::Math::dot(c, areaNormVec)) / 3.0;
+        ttlVolume += signedVol;
+      }
+    } else {
+      // Open or non-manifold meshes won't have an accurate volume calc
+      for (uint32_t idx = 0; idx < numIdxs; idx += 3) {
+        const auto aVert = posArray[idxAra[idx + 1]];
+        Mn::Vector3 aVec = posArray[idxAra[idx]] - aVert;
+        Mn::Vector3 bVec = posArray[idxAra[idx + 2]] - aVert;
+        Mn::Vector3 areaNormVec = 0.5 * Mn::Math::cross(aVec, bVec);
+        double surfArea = areaNormVec.length();
+        ttlSurfaceArea += surfArea;
+      }
+    }
+    // set the node's volume and surface area
+    node.setMeshVolume(ttlVolume);
+    node.setMeshSurfaceArea(ttlSurfaceArea);
+    // Set whether the mesh is manifold and/or closed/watertight
+    node.setMeshTopology(meshTopology);
+  }  // iEntry
+
+}  // ResourceManager::computeGeneralMeshVolume
+
 void ResourceManager::computeGeneralMeshAbsoluteAABBs(
     const std::vector<StaticDrawableInfo>& staticDrawableInfo) {
   std::vector<Mn::Matrix4> absTransforms =
@@ -1712,7 +1832,8 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
     // now compute aabbs by constructed staticDrawableInfo
     computeGeneralMeshAbsoluteAABBs(staticDrawableInfo);
   }
-
+  // Might be expensive
+  computeGeneralMeshAreaAndVolume(staticDrawableInfo);
   // set the node type for all cached visual nodes
   if (nodeType != scene::SceneNodeType::EMPTY) {
     for (auto* node : visNodeCache) {
@@ -3136,9 +3257,9 @@ void ResourceManager::addComponent(
                    drawableConfig);     // instance skinning data
 
     // compute the bounding box for the mesh we are adding
-    if (computeAbsoluteAABBs) {
-      staticDrawableInfo.emplace_back(StaticDrawableInfo{node, meshID});
-    }
+    // if (computeAbsoluteAABBs) {
+    staticDrawableInfo.emplace_back(StaticDrawableInfo{node, meshID});
+    //}
     BaseMesh* meshBB = meshes_.at(meshID).get();
     node.setMeshBB(computeMeshBB(meshBB));
   }
