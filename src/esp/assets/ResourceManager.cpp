@@ -1050,26 +1050,40 @@ void ResourceManager::computeGeneralMeshAreaAndVolume(
                  "transforms does not match number of drawables.", );
 
   for (uint32_t iEntry = 0; iEntry < staticDrawableInfo.size(); ++iEntry) {
+    // Current drawable's meshID
     const int meshID = staticDrawableInfo[iEntry].meshID;
+    // Current drawable's scene node
+    scene::SceneNode& node = staticDrawableInfo[iEntry].node;
 
     Cr::Containers::Optional<Mn::Trade::MeshData>& meshData =
         meshes_.at(meshID)->getMeshData();
+    if (meshData->primitive() != Mn::MeshPrimitive::Triangles) {
+      // These calculations rely on this mesh being purely triangle-based
+      // Make sure mesh's topology is set to unknown so area/volume values are
+      // not trusted
+      node.setMeshTopology(scene::DrawableMeshTopology::Unknown);
+      continue;
+    }
     CORRADE_ASSERT(
         meshData,
         "::computeGeneralMeshAreaAndVolume: The mesh data specified at ID:"
             << meshID << "is empty/undefined. Aborting", );
+    // Make temp copy that removes dupes for volume calc
+    Cr::Containers::Optional<Mn::Trade::MeshData> newMeshData =
+        Mn::MeshTools::removeDuplicates(Mn::MeshTools::filterOnlyAttributes(
+            *meshData, {Mn::Trade::MeshAttribute::Position}));
 
     // Precalc all transformed verts - only use first position array for this
     Cr::Containers::Array<Mn::Vector3> posArray =
-        meshData->positions3DAsArray(0);
+        newMeshData->positions3DAsArray(0);
     Mn::MeshTools::transformPointsInPlace(absTransforms[iEntry], posArray);
 
     // Getting the view properly relies on having the appropriate type of the
     // loaded data
-    // const auto idxView = meshData->indices<std::uint32_t>();
-    const auto idxAra = meshData->indicesAsArray();
+    // const auto idxView = newMeshData->indices<std::uint32_t>();
+    const auto idxAra = newMeshData->indicesAsArray();
     // # of indices
-    uint32_t numIdxs = meshData->indexCount();
+    uint32_t numIdxs = newMeshData->indexCount();
     // Assuming no duplicate vertices with different idxs
     // Determine that all edges have exactly 2 sides ->
     // idxAra describes exactly 2 pairs of the same idxs, a->b and b->a
@@ -1106,8 +1120,6 @@ void ResourceManager::computeGeneralMeshAreaAndVolume(
       }
     }
 
-    // locate the scene node which contains the current drawable
-    scene::SceneNode& node = staticDrawableInfo[iEntry].node;
     // Surface area of the mesh : .5 * ba.cross(bc)
     double ttlSurfaceArea = 0.0;
     // Volume of the mesh : 1/6 * (OA.dot(ba.cross(bc)))
