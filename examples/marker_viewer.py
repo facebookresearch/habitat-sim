@@ -721,10 +721,7 @@ class HabitatSimInteractiveViewer(Application):
         elif key==pressed.F:
             self.force_urdf_notes_save = not self.force_urdf_notes_save 
             print(f"Force save of hash to URDF notes file set to {self.force_urdf_notes_save}")
-        elif key == pressed.H:
-            self.print_help_text()
-
-        elif key == pressed.J:
+        elif key == pressed.G:
             # If shift pressed then open, otherwise close
             # If alt pressed then selected, otherwise all
             self.obj_editor.set_ao_joint_states(
@@ -733,7 +730,8 @@ class HabitatSimInteractiveViewer(Application):
             if not shift_pressed:
                 # if closing then redo navmesh
                 self.navmesh_config_and_recompute()
-
+        elif key == pressed.H:
+            self.print_help_text()
         elif key == pressed.K:
             # Cyle through semantics display
             info_str = self.dbg_semantics.cycle_semantic_region_draw()
