@@ -202,9 +202,6 @@ class HabitatSimInteractiveViewer(Application):
         self.replay_renderer: Optional[ReplayRenderer] = None
 
         self.last_hit_details = None
-        # cache modified states of any objects moved by the interface.
-        self.modified_objects_buffer: Dict[physics.ManagedRigidObject, mn.Matrix4] = {}
-        self.removed_clutter = []
 
         self.navmesh_dirty = False
 
@@ -219,9 +216,13 @@ class HabitatSimInteractiveViewer(Application):
 
         # Load simulatioon scene
         self.reconfigure_sim()
+
         # load file holding urdf filenames needing handles
         print(f"URDF hashes file name : {URDF_FILES} | No-link URDFS file name : {NOLINK_URDF_FILES}")
-        self.read_urdf_files()
+        # dictionary of URDF hash names loaded from disk
+        # holds a list keyed by "done", and a subdict "unfinished"
+        # as URDFs are completed they are moved from "done" to "unfinished"
+        self.urdf_hash_names_dict = self.load_urdf_filenames()
 
         # load markersets for every object and ao into a cache
         task_names_set = {"faucets", "handles"}
@@ -235,8 +236,9 @@ class HabitatSimInteractiveViewer(Application):
         # Force save of urdf hash to NOLINK_URDF_FILES file
         self.force_urdf_notes_save = False
 
-        # Load first object
-        self.load_urdf_obj()
+        # Load first object to place markers on
+        self.urdf_edit_obj_hash :str = None
+        self.load_urdf_obj(False)
 
         # Semantics
         self.dbg_semantics = SemanticManager(self.sim)
@@ -260,23 +262,25 @@ class HabitatSimInteractiveViewer(Application):
             print(f"{file_hash} was not found in the unfinished collection of urdf files")
         self.urdf_hash_names_dict["done"][file_hash] = file_hash
 
-    def load_urdf_obj(self):
+    def load_urdf_obj(self, go_back:bool):
         # load first URDF into scene by first picking hash of an unmarkered object
         if len(self.urdf_hash_names_dict["unfinished"]) == 0:
             print(f"Finished going through all {self.urdf_hash_names_dict['done']} loaded urdf files. Exiting.")
             self.exit_event(Application.ExitEvent)
-        self.urdf_edit_obj = next(iter(self.urdf_hash_names_dict["unfinished"]))
-        print(f"URDF hash we want : `{self.urdf_edit_obj}`")
+
+        self.urdf_edit_obj_hash = next(iter(self.urdf_hash_names_dict["unfinished"]))
+        print(f"URDF hash we want : `{self.urdf_edit_obj_hash}`")
+        # Load object into scene
         _, self.navmesh_dirty = self.obj_editor.load_from_substring(
             navmesh_dirty=self.navmesh_dirty,
-            obj_substring=self.urdf_edit_obj,
+            obj_substring=self.urdf_edit_obj_hash,
             build_loc=self.ao_place_location,
         )
         self.ao_link_map = get_ao_link_id_map(self.sim)
         self.markersets_util.update_markersets()
         self.markersets_util.set_current_taskname("handles")
 
-    def read_urdf_files(self):
+    def load_urdf_filenames(self):
         # 2 dicts, finished and unfinished, of dicts being used as sets
         urdf_hash_names: Dict[str, Dict[str,str]] = {}
         urdf_hash_names["done"] = {}
@@ -287,8 +291,8 @@ class HabitatSimInteractiveViewer(Application):
                 vals = line.split(",")
                 finished = "done" if vals[1].strip().lower() == "true" else "unfinished"
                 urdf_hash_names[finished][vals[0]] = vals[0]
-
-        self.urdf_hash_names_dict = urdf_hash_names
+                
+        return urdf_hash_names
 
     def update_nolink_file(self, urdf_hash:str, save_no_markers:bool):
         # remove urdf hash from NOLINK_URDF_FILES if it has links, add it if it does not
@@ -310,18 +314,18 @@ class HabitatSimInteractiveViewer(Application):
         else:
             # if it has markers now, remove it from record
             urdf_nolink_hash_names.pop(urdf_hash, None)
-        # save results
+        # save no-link status results
         with open(NOLINK_URDF_FILES, "w") as f:
             for hash, notes in urdf_nolink_hash_names.items():
                 f.write(f"{hash}, {notes}\n")
             
 
-    def save_urdf_files(self):
+    def save_urdf_filesnames(self):
         # save current state of URDF files
         with open(URDF_FILES, "w") as f:
-            for status_key, sub_dict in self.urdf_hash_names_dict.items():
+            for status_key, sub_struct in self.urdf_hash_names_dict.items():
                 state = status_key.lower() == "done"
-                for urdfhash in sub_dict:
+                for urdfhash in sub_struct:
                     f.write(f"{urdfhash}, {state}\n")
 
     def draw_contact_debug(self, debug_line_render: Any):
@@ -624,12 +628,12 @@ class HabitatSimInteractiveViewer(Application):
         )
         sel_obj = self.obj_editor.get_target_sel_obj()
         if sel_obj is None:
-            sel_obj = get_obj_from_handle(self.urdf_edit_obj)
+            sel_obj = get_obj_from_handle(self.urdf_edit_obj_hash)
         
         save_no_markers = (self.force_urdf_notes_save or
                            sel_obj.marker_sets.num_tasksets == 0
                            or (not sel_obj.marker_sets.has_taskset("handles")))
-        print(f"Object {sel_obj.handle} has {sel_obj.marker_sets.num_tasksets} tasksets and Force save set to {self.force_urdf_notes_save} == {save_no_markers}")
+        print(f"Object {sel_obj.handle} has {sel_obj.marker_sets.num_tasksets} tasksets and Force save set to {self.force_urdf_notes_save} == Save as no marker urdf? {save_no_markers}")
         # remove currently selected objects
         removed_obj_handles = self.obj_editor.remove_sel_objects()
         # should only have 1 handle
@@ -637,15 +641,16 @@ class HabitatSimInteractiveViewer(Application):
             print(f"Removed {handle}")
         # finalize removal
         self.obj_editor.remove_all_objs()
-
+        
+        # update record of object hashes with/without markers with current file's state
+        self.update_nolink_file(urdf_hash=self.urdf_edit_obj_hash, save_no_markers=save_no_markers)
+        
         # set edited state in urdf dict to true
-        self.set_urdf_file_finished(self.urdf_edit_obj)
-        # update record of object hashes with/without markers
-        self.update_nolink_file(urdf_hash=self.urdf_edit_obj, save_no_markers=save_no_markers)
+        self.set_urdf_file_finished(self.urdf_edit_obj_hash)
         # save current status
-        self.save_urdf_files()
+        self.save_urdf_filesnames()
         # load next object
-        self.load_urdf_obj()
+        self.load_urdf_obj(go_back=shift_pressed)
         # reset force save to False for each object
         self.force_urdf_notes_save = False
 
@@ -1061,8 +1066,9 @@ Key Commands:
     ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep).
     'c':        Run a discrete collision detection pass and render a debug wireframe overlay showing active contact points and normals (yellow=fixed length normals, red=collision distances).
                 (+SHIFT) Toggle the contact point debug render overlay on/off.
-    'j'         Toggle Semantic visualization bounds (currently only Semantic Region annotations)
-
+    'g' :       Modify AO link states :
+                    (+SHIFT) : Open Selected AO
+                    (-SHIFT) : Close Selected AO
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
     '.':        Take a single simulation step if not simulating continuously.
@@ -1073,7 +1079,6 @@ Key Commands:
 =====================================================
 """
         )
-
 
 class MouseMode(Enum):
     LOOK = 0
