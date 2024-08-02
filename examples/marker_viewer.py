@@ -219,10 +219,12 @@ class HabitatSimInteractiveViewer(Application):
 
         # load file holding urdf filenames needing handles
         print(f"URDF hashes file name : {URDF_FILES} | No-link URDFS file name : {NOLINK_URDF_FILES}")
-        # dictionary of URDF hash names loaded from disk
-        # holds a list keyed by "done", and a subdict "unfinished"
-        # as URDFs are completed they are moved from "done" to "unfinished"
-        self.urdf_hash_names_dict = self.load_urdf_filenames()
+        # Build a List of URDF hash names loaded from disk, where each entry 
+        # is a dictionary of hash, status, and notes (if present).
+        # As URDFs are completed their status is changed from "unfinished" to "done"
+        self.urdf_hash_names_list = self.load_urdf_filenames()
+        # Start with first idx in self.urdf_hash_names_list
+        self.urdf_edit_hash_idx = self._get_next_hash_idx(start_idx=0,forward=True,status="unfinished")
 
         # load markersets for every object and ao into a cache
         task_names_set = {"faucets", "handles"}
@@ -237,8 +239,7 @@ class HabitatSimInteractiveViewer(Application):
         self.force_urdf_notes_save = False
 
         # Load first object to place markers on
-        self.urdf_edit_obj_hash :str = None
-        self.load_urdf_obj(False)
+        self.load_urdf_obj()
 
         # Semantics
         self.dbg_semantics = SemanticManager(self.sim)
@@ -255,48 +256,44 @@ class HabitatSimInteractiveViewer(Application):
         logger.setLevel("INFO")
         self.print_help_text()
 
-    def set_urdf_file_finished(self, file_hash:str):
-        # Take urdf file hash out of unfinished dict, put in done dict
-        dict_val = self.urdf_hash_names_dict["unfinished"].pop(file_hash, None)
-        if dict_val is None:
-            print(f"{file_hash} was not found in the unfinished collection of urdf files")
-        self.urdf_hash_names_dict["done"][file_hash] = file_hash
+    def _get_next_hash_idx(self, start_idx:int, forward:bool, status:str):
+        if forward : 
+            iter_range = range(start_idx, len(self.urdf_hash_names_list))
+        else :
+            iter_range = range(start_idx, -1, -1)
 
-    def load_urdf_obj(self, go_back:bool):
-        # load first URDF into scene by first picking hash of an unmarkered object
-        if len(self.urdf_hash_names_dict["unfinished"]) == 0:
-            print(f"Finished going through all {self.urdf_hash_names_dict['done']} loaded urdf files. Exiting.")
-            self.exit_event(Application.ExitEvent)
-
-        self.urdf_edit_obj_hash = next(iter(self.urdf_hash_names_dict["unfinished"]))
-        print(f"URDF hash we want : `{self.urdf_edit_obj_hash}`")
-        # Load object into scene
-        _, self.navmesh_dirty = self.obj_editor.load_from_substring(
-            navmesh_dirty=self.navmesh_dirty,
-            obj_substring=self.urdf_edit_obj_hash,
-            build_loc=self.ao_place_location,
-        )
-        self.ao_link_map = get_ao_link_id_map(self.sim)
-        self.markersets_util.update_markersets()
-        self.markersets_util.set_current_taskname("handles")
+        for i in iter_range:
+            if self.urdf_hash_names_list[i]["status"]==status:
+                return i
+        print(f"No {status} hashes left to be found {('forward of' if forward else 'backward from')} starting idx {start_idx}.")
+        return -1
+    
+    def _set_hash_list_status(self, hash_idx:int, is_finished:bool):
+        if is_finished:
+            status_str = "done"
+        else:
+            status_str = "unfinished"
 
     def load_urdf_filenames(self):
-        # 2 dicts, finished and unfinished, of dicts being used as sets
-        urdf_hash_names: Dict[str, Dict[str,str]] = {}
-        urdf_hash_names["done"] = {}
-        urdf_hash_names["unfinished"] = {}
+        # list of dicts holding hash, status, notes
+        urdf_hash_names_list: List[Dict[str:str]] = []
         # File names of all URDFs
         with open(URDF_FILES, "r") as f:
             for line in f.readlines():
-                vals = line.split(",")
+                vals = line.split(",", maxsplit=2)
                 finished = "done" if vals[1].strip().lower() == "true" else "unfinished"
-                urdf_hash_names[finished][vals[0]] = vals[0]
-                
-        return urdf_hash_names
+                new_dict = {"hash":vals[0].strip(), "status":finished}
+                if len(vals) > 2:
+                    new_dict["notes"]=vals[2].strip()
+                else:
+                    new_dict["notes"]=""
+                urdf_hash_names_list.append(new_dict)
 
-    def update_nolink_file(self, urdf_hash:str, save_no_markers:bool):
+        return urdf_hash_names_list
+
+    def update_nolink_file(self, save_no_markers:bool):
         # remove urdf hash from NOLINK_URDF_FILES if it has links, add it if it does not
-
+        urdf_hash:str = self.urdf_hash_names_list[self.urdf_edit_hash_idx]["hash"]
         # preserve all text in file after comma
         urdf_nolink_hash_names :Dict[str,str] = {}
         with open(NOLINK_URDF_FILES, "r") as f:
@@ -318,15 +315,94 @@ class HabitatSimInteractiveViewer(Application):
         with open(NOLINK_URDF_FILES, "w") as f:
             for hash, notes in urdf_nolink_hash_names.items():
                 f.write(f"{hash}, {notes}\n")
-            
 
     def save_urdf_filesnames(self):
         # save current state of URDF files
         with open(URDF_FILES, "w") as f:
-            for status_key, sub_struct in self.urdf_hash_names_dict.items():
-                state = status_key.lower() == "done"
-                for urdfhash in sub_struct:
-                    f.write(f"{urdfhash}, {state}\n")
+            for urdf_entry in self.urdf_hash_names_list:
+                notes = "" if len(urdf_entry) > 2 else f", {urdf_entry['notes']}"
+                status = urdf_entry['status'].strip().lower() == "done"
+                f.write(f"{urdf_entry['hash']}, {status}{notes}\n")
+
+    def _delete_sel_obj_update_nolink_file(self, sel_obj_hash:str):
+        sel_obj = self.obj_editor.get_target_sel_obj()
+        if sel_obj is None:
+            sel_obj = get_obj_from_handle(sel_obj_hash)
+        
+        save_no_markers = (self.force_urdf_notes_save or
+                           sel_obj.marker_sets.num_tasksets == 0
+                           or (not sel_obj.marker_sets.has_taskset("handles")))
+        print(f"Object {sel_obj.handle} has {sel_obj.marker_sets.num_tasksets} tasksets and Force save set to {self.force_urdf_notes_save} == Save as no marker urdf? {save_no_markers}")
+        # remove currently selected objects
+        removed_obj_handles = self.obj_editor.remove_sel_objects()
+        # should only have 1 handle
+        for handle in removed_obj_handles:
+            print(f"Removed {handle}")
+        # finalize removal
+        self.obj_editor.remove_all_objs()        
+        # update record of object hashes with/without markers with current file's state
+        self.update_nolink_file(save_no_markers=save_no_markers)
+
+    def load_urdf_obj(self):
+        # Next object to be edited
+        sel_obj_hash = self.urdf_hash_names_list[self.urdf_edit_hash_idx]["hash"]
+        print(f"URDF hash we want : `{sel_obj_hash}`")
+        # Load object into scene
+        _, self.navmesh_dirty = self.obj_editor.load_from_substring(
+            navmesh_dirty=self.navmesh_dirty,
+            obj_substring=sel_obj_hash,
+            build_loc=self.ao_place_location,
+        )
+        self.ao_link_map = get_ao_link_id_map(self.sim)
+        self.markersets_util.update_markersets()
+        self.markersets_util.set_current_taskname("handles")
+
+    def cycle_through_urdfs(self, shift_pressed:bool) -> None:
+        # current object hash
+        old_sel_obj_hash = self.urdf_hash_names_list[self.urdf_edit_hash_idx]["hash"]
+        # Determine the status we are looking for when we search for the next desired index
+        if shift_pressed:
+            status = "done" 
+            start_idx = self.urdf_edit_hash_idx
+        else:
+            status = "unfinished"
+            start_idx = self.urdf_edit_hash_idx
+            # Moving forward - set current to finished
+            self.urdf_hash_names_list[self.urdf_edit_hash_idx]["status"] = "done"
+
+        # Get the idx of the next object we want to edit
+        # Either the idx of the next record that is unfinished, or the most recent previous record that is done
+        next_idx = self._get_next_hash_idx(start_idx=start_idx,forward=not shift_pressed,status=status)
+
+        # If we don't have a valid next index then handle edge case
+        if next_idx == -1:
+            if not shift_pressed:
+                # save current status
+                self.save_urdf_filesnames()
+                # moving forward - done!
+                print(f"Finished going through all {len(self.urdf_hash_names_list)} loaded urdf files. Exiting.")
+                self.exit_event(Application.ExitEvent)
+            else:
+                # moving backward, at the start of all the objects so nowhere to go
+                print(f"No objects previous to current object {old_sel_obj_hash}.")
+                return
+        # set edited state in urdf file list appropriately if moving backward, set previous to unfinished, leave current unfinished
+        if shift_pressed:
+            # Moving backward - set previous to unfinished, leave current unchanged
+            self.urdf_hash_names_list[next_idx]["status"] = "unfinished"
+
+        # remove the current selected object and update the no_link file
+        self._delete_sel_obj_update_nolink_file(sel_obj_hash=old_sel_obj_hash)
+
+        # Update the current edit hash idx
+        self.urdf_edit_hash_idx = next_idx
+        # save current status
+        self.save_urdf_filesnames()
+        print(f"URDF hash we just finished : `{old_sel_obj_hash}`")
+        # load next urdf object
+        self.load_urdf_obj()
+        # reset force save to False for each object
+        self.force_urdf_notes_save = False
 
     def draw_contact_debug(self, debug_line_render: Any):
         """
@@ -621,38 +697,6 @@ class HabitatSimInteractiveViewer(Application):
 
         for _ in range(int(repetitions)):
             [agent.act(x) for x in action_queue]
-
-    def cycle_through_urdfs(self, shift_pressed:bool) -> None:
-        print(
-            "NOT FINISHED YET : back-tab does not go backward yet."
-        )
-        sel_obj = self.obj_editor.get_target_sel_obj()
-        if sel_obj is None:
-            sel_obj = get_obj_from_handle(self.urdf_edit_obj_hash)
-        
-        save_no_markers = (self.force_urdf_notes_save or
-                           sel_obj.marker_sets.num_tasksets == 0
-                           or (not sel_obj.marker_sets.has_taskset("handles")))
-        print(f"Object {sel_obj.handle} has {sel_obj.marker_sets.num_tasksets} tasksets and Force save set to {self.force_urdf_notes_save} == Save as no marker urdf? {save_no_markers}")
-        # remove currently selected objects
-        removed_obj_handles = self.obj_editor.remove_sel_objects()
-        # should only have 1 handle
-        for handle in removed_obj_handles:
-            print(f"Removed {handle}")
-        # finalize removal
-        self.obj_editor.remove_all_objs()
-        
-        # update record of object hashes with/without markers with current file's state
-        self.update_nolink_file(urdf_hash=self.urdf_edit_obj_hash, save_no_markers=save_no_markers)
-        
-        # set edited state in urdf dict to true
-        self.set_urdf_file_finished(self.urdf_edit_obj_hash)
-        # save current status
-        self.save_urdf_filesnames()
-        # load next object
-        self.load_urdf_obj(go_back=shift_pressed)
-        # reset force save to False for each object
-        self.force_urdf_notes_save = False
 
     def invert_gravity(self) -> None:
         """
