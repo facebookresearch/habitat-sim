@@ -182,6 +182,53 @@ def save_interaction_points_to_markerset(
     )
 
 
+def save_markerset_attributes(
+    sim: habitat_sim.Simulator,
+    obj: Union[physics.ManagedRigidObject, physics.ManagedArticulatedObject],
+) -> None:
+    """
+    Modify the attributes for the passed object to include the
+    currently edited markersets and save those attributes to disk
+    """
+    # get the name of the attrs used to initialize the object
+    obj_init_attr_handle = obj.creation_attributes.handle
+
+    if obj.is_articulated:
+        # save AO config
+        attrMgr = sim.metadata_mediator.ao_template_manager
+    else:
+        # save obj config
+        attrMgr = sim.metadata_mediator.object_template_manager
+    # get copy of initialization attributes as they were in manager,
+    # unmodified by scene instance values such as scale
+    init_attrs = attrMgr.get_template_by_handle(obj_init_attr_handle)
+    # TEMP TODO Remove this when fixed in Simulator
+    # Clean up sub-dirs being added to asset handles.
+    if obj.is_articulated:
+        init_attrs.urdf_filepath = init_attrs.urdf_filepath.split(os.sep)[-1]
+        init_attrs.render_asset_handle = init_attrs.render_asset_handle.split(os.sep)[
+            -1
+        ]
+    else:
+        init_attrs.render_asset_handle = init_attrs.render_asset_handle.split(os.sep)[
+            -1
+        ]
+        init_attrs.collision_asset_handle = init_attrs.collision_asset_handle.split(
+            os.sep
+        )[-1]
+    # put edited subconfig into initial attributes' markersets
+    markersets = init_attrs.get_marker_sets()
+    for subconfig_key in obj.marker_sets.get_subconfig_keys():
+        markersets.save_subconfig(
+            subconfig_key, obj.marker_sets.get_subconfig(subconfig_key)
+        )
+
+    # reregister template
+    attrMgr.register_template(init_attrs, init_attrs.handle, True)
+    # save to original location - uses saved location in attributes
+    attrMgr.save_template_by_handle(init_attrs.handle, True)
+
+
 class HabitatSimInteractiveViewer(Application):
     # the maximum number of chars displayable in the app window
     # using the magnum text module. These chars are used to
@@ -800,6 +847,9 @@ class HabitatSimInteractiveViewer(Application):
                 print(
                     f"Saved {len(self.surface_points)} surface points to marker set for objects {self.surface_point_obj.handle}"
                 )
+                if shift_pressed:
+                    save_markerset_attributes(self.sim, self.surface_point_obj)
+                    print("Also saved markerset to config.")
 
         elif key == pressed.M:
             self.cycle_mouse_mode()
