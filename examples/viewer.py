@@ -9,13 +9,14 @@ import string
 import sys
 import time
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
 import magnum as mn
 import numpy as np
+from habitat.sims.habitat_simulator.sim_utilities import get_obj_from_id
 from magnum import shaders, text
 from magnum.platform.glfw import Application
 
@@ -24,6 +25,147 @@ from habitat_sim import ReplayRenderer, ReplayRendererConfiguration, physics
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
+
+
+def find_interaction_surface_points(
+    sim: habitat_sim.Simulator,
+    obj: Union[physics.ManagedRigidObject, physics.ManagedArticulatedObject],
+    num_vertical_slices: int = 10,
+    num_radial_slices: int = 10,
+    cull_points=True,
+    max_point_set_size: int = 20,
+) -> List[mn.Vector3]:
+    """
+    Use raycasting to find a set of points on the lateral surfaces of an object.
+    """
+
+    assert num_vertical_slices >= 1, "Must at least slice in half."
+    assert num_radial_slices >= 4, "Must at least form a 2D simplex."
+    assert max_point_set_size >= 3, "Must at least form a 2D simplex."
+
+    surface_points: List[mn.Vector3] = []
+
+    # compute the ray set:
+    aabb = obj.aabb
+    ray_set: List[habitat_sim.geo.Ray] = []
+
+    # compute the circle size to contain the aabb: xz diagonal length+10%.
+    # Used for max ray distance and cylinder sampling.
+    size_x = aabb.size_x()
+    size_y = aabb.size_y()
+    size_z = aabb.size_z()
+    circle_rad = math.sqrt((size_x / 2.0) ** 2 + (size_z / 2.0) ** 2) * 1.1
+    if False:
+        # cylinder (furniture):
+        # for each vertical slice, select rays in a circle
+        for i in range(1, num_vertical_slices + 1):
+            y_val = aabb.bottom + (i / num_vertical_slices) * size_y
+            center_point = mn.Vector3(0, y_val, 0)
+            for r in range(num_radial_slices):
+                cx = circle_rad * math.cos(2 * math.pi * r / num_radial_slices)
+                cz = circle_rad * math.sin(2 * math.pi * r / num_radial_slices)
+                origin_point = mn.Vector3(cx, y_val, cz)
+                ray_set.append(
+                    habitat_sim.geo.Ray(origin_point, center_point - origin_point)
+                )
+
+    if True:
+        # cast from box edges along box axes
+        # NOTE: using num_radial_slices per face
+        # for each vertical slice, select rays from each xz edge
+        front_to_back = mn.Vector3(aabb.right - aabb.left, 0, 0) * 1.1
+        back_to_front = mn.Vector3(aabb.left - aabb.right, 0, 0) * 1.1
+        left_to_right = mn.Vector3(0, 0, aabb.back - aabb.front) * 1.1
+        right_to_left = mn.Vector3(0, 0, aabb.front - aabb.back) * 1.1
+        for i in range(num_vertical_slices):
+            y_val = aabb.bottom + (i / (num_vertical_slices - 1)) * size_y
+            # front to back
+            for s in range(num_radial_slices):
+                z_val = aabb.back + size_z * (s / (num_radial_slices - 1))
+                origin_point1 = mn.Vector3(aabb.left * 1.1, y_val, z_val)
+                origin_point2 = mn.Vector3(aabb.right * 1.1, y_val, z_val)
+                ray_set.append(habitat_sim.geo.Ray(origin_point1, front_to_back))
+                ray_set.append(habitat_sim.geo.Ray(origin_point2, back_to_front))
+            # left to right
+            for s in range(num_radial_slices):
+                x_val = aabb.left + size_x * (s / (num_radial_slices - 1))
+                origin_point1 = mn.Vector3(x_val, y_val, aabb.front * 1.1)
+                origin_point2 = mn.Vector3(x_val, y_val, aabb.back * 1.1)
+                ray_set.append(habitat_sim.geo.Ray(origin_point1, left_to_right))
+                ray_set.append(habitat_sim.geo.Ray(origin_point2, right_to_left))
+
+    # sphere (objects):
+    # TODO: compute the sphere rad size to contain the aabb: max(size)/2
+    # TODO: jittered spherical sample or icosphere verts
+    # TODO: aim at the sphere center
+
+    # move object to a safe (far away) location and re-orient to identity
+    cached_transform = obj.transformation
+    cached_mt = obj.motion_type
+    obj.motion_type = physics.MotionType.KINEMATIC
+    obj.translation += mn.Vector3(9000, 9000, 9000)
+    obj.rotation = mn.Quaternion()  # identity
+
+    # raycast:
+    for ray in ray_set:
+        # move the local ray to global space
+        ray.origin += obj.translation
+        # cast ray and get fist contact point
+        ray_results = sim.cast_ray(ray, max_distance=circle_rad * 2)
+        if ray_results.has_hits():
+            surface_points.append(ray_results.hits[0].point - obj.translation)
+        ray.origin -= obj.translation
+
+    # return the object to initial state
+    obj.transformation = cached_transform
+    obj.motion_type = cached_mt
+
+    # culling:
+    if cull_points:
+        # first compute pairwise distance
+        distances: List[Tuple[float, int, int]] = []
+        for pix in range(len(surface_points)):
+            for pix2 in range(pix + 1, len(surface_points)):
+                # tuple (dist, index1, index2)
+                distances.append(
+                    ((surface_points[pix] - surface_points[pix2]).length(), pix, pix2)
+                )
+        remove_ixs = []
+        # pairwise nearest point removal
+        while len(surface_points) - len(remove_ixs) > max_point_set_size:
+            # sort smallest distance to the top
+            distances.sort(key=lambda x: x[0])
+            # determine which of the pair to remove by identifying the one with next closest neighbor
+            candidates = [distances[0][1], distances[0][2]]
+            remove_ix = candidates[0]
+            for _dist, ix1, ix2 in distances[1:]:
+                if ix1 in candidates:
+                    remove_ix = ix1
+                    break
+                if ix2 in candidates:
+                    remove_ix = ix2
+                    break
+            remove_ixs.append(remove_ix)
+            # remove the index from distances
+            distances = [tpl for tpl in distances if remove_ix not in tpl]
+        surface_points = [
+            surface_points[ix]
+            for ix in range(len(surface_points))
+            if ix not in remove_ixs
+        ]
+
+    return surface_points, ray_set
+
+    # follow-ups:
+    # TODO: cache points in a markerset and save to metadata per-object
+    # TODO: render the points for debug (render rays too?)
+    # TODO: AOs and links
+
+    # tests:
+    # TODO: scaled object
+    # TODO: re-oriented object
+    # TODO: thin structures
+    # TODO: L shaped couch
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -78,6 +220,17 @@ class HabitatSimInteractiveViewer(Application):
         self.contact_debug_draw = False
         # draw semantic region debug visualizations if present
         self.semantic_region_debug_draw = False
+        self.surface_points: List[mn.Vector3] = None
+        self.debug_rays: List[habitat_sim.geo.Ray] = None
+        self.draw_debug_rays = True
+        self.surface_point_obj: Union[
+            physics.ManagedArticulatedObject, physics.ManagedRigidObject
+        ] = None
+        self.num_vertical_slices: int = 10
+        self.num_radial_slices: int = 4
+        self.previous_surface_point_compute_time = 0.0
+        self.do_culling = True
+        self.cull_to = 20
 
         # cache most recently loaded URDF file for quick-reload
         self.cached_urdf = ""
@@ -261,6 +414,28 @@ class HabitatSimInteractiveViewer(Application):
                         mn.Vector3(np.random.random(3))
                     )
             self.draw_region_debug(debug_line_render)
+
+        if self.surface_points is not None and len(self.surface_points) > 1:
+            centroid = mn.Vector3()
+            for point in self.surface_points:
+                centroid += point
+            centroid /= len(self.surface_points)
+            debug_line_render.push_transform(self.surface_point_obj.transformation)
+            for point in self.surface_points:
+                debug_line_render.draw_circle(
+                    translation=point,
+                    radius=0.005,
+                    color=mn.Color4.yellow(),
+                    normal=centroid - point,
+                )
+            if self.draw_debug_rays:
+                for ray in self.debug_rays:
+                    debug_line_render.draw_transformed_line(
+                        ray.origin,
+                        ray.origin + ray.direction,
+                        mn.Color4.green(),
+                    )
+            debug_line_render.pop_transform()
 
     def draw_event(
         self,
@@ -558,72 +733,73 @@ class HabitatSimInteractiveViewer(Application):
             logger.info(f"Command: toggle Bullet debug draw: {self.debug_bullet_draw}")
 
         elif key == pressed.C:
-            if shift_pressed:
-                self.contact_debug_draw = not self.contact_debug_draw
-                logger.info(
-                    f"Command: toggle contact debug draw: {self.contact_debug_draw}"
-                )
+            if alt_pressed:
+                self.do_culling = not self.do_culling
+                print(f"do_culling = {self.do_culling}")
+            elif shift_pressed:
+                self.cull_to -= 1
             else:
-                # perform a discrete collision detection pass and enable contact debug drawing to visualize the results
-                logger.info(
-                    "Command: perform discrete collision detection and visualize active contacts."
+                self.cull_to += 1
+            self.cull_to = max(3, self.cull_to)
+            if self.surface_point_obj is not None:
+                start_time = time.time()
+                self.surface_points, self.debug_rays = find_interaction_surface_points(
+                    self.sim,
+                    self.surface_point_obj,
+                    num_radial_slices=self.num_radial_slices,
+                    num_vertical_slices=self.num_vertical_slices,
+                    cull_points=self.do_culling,
+                    max_point_set_size=self.cull_to,
                 )
-                self.sim.perform_discrete_collision_detection()
-                self.contact_debug_draw = True
-                # TODO: add a nice log message with concise contact pair naming.
+                self.previous_surface_point_compute_time = time.time() - start_time
 
         elif key == pressed.T:
-            # load URDF
-            fixed_base = alt_pressed
-            urdf_file_path = ""
-            if shift_pressed and self.cached_urdf:
-                urdf_file_path = self.cached_urdf
-            else:
-                urdf_file_path = input("Load URDF: provide a URDF filepath:").strip()
-
-            if not urdf_file_path:
-                logger.warn("Load URDF: no input provided. Aborting.")
-            elif not urdf_file_path.endswith((".URDF", ".urdf")):
-                logger.warn("Load URDF: input is not a URDF. Aborting.")
-            elif os.path.exists(urdf_file_path):
-                self.cached_urdf = urdf_file_path
-                aom = self.sim.get_articulated_object_manager()
-                ao = aom.add_articulated_object_from_urdf(
-                    urdf_file_path,
-                    fixed_base,
-                    1.0,
-                    1.0,
-                    True,
-                    maintain_link_order=False,
-                    intertia_from_urdf=False,
-                )
-                ao.translation = (
-                    self.default_agent.scene_node.transformation.transform_point(
-                        [0.0, 1.0, -1.5]
-                    )
-                )
-                # check removal and auto-creation
-                joint_motor_settings = habitat_sim.physics.JointMotorSettings(
-                    position_target=0.0,
-                    position_gain=1.0,
-                    velocity_target=0.0,
-                    velocity_gain=1.0,
-                    max_impulse=1000.0,
-                )
-                existing_motor_ids = ao.existing_joint_motor_ids
-                for motor_id in existing_motor_ids:
-                    ao.remove_joint_motor(motor_id)
-                ao.create_all_motors(joint_motor_settings)
-            else:
-                logger.warn("Load URDF: input file not found. Aborting.")
+            # toggle debug ray display
+            self.draw_debug_rays = not self.draw_debug_rays
+            print(f"draw_debug_rays = {self.draw_debug_rays}")
 
         elif key == pressed.M:
             self.cycle_mouse_mode()
             logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
 
         elif key == pressed.V:
-            self.invert_gravity()
-            logger.info("Command: gravity inverted")
+            # increment vertical slice count
+            if shift_pressed:
+                self.num_vertical_slices -= 1
+            else:
+                self.num_vertical_slices += 1
+            self.num_vertical_slices = max(1, self.num_vertical_slices)
+            # recompute surface points
+            if self.surface_point_obj is not None:
+                start_time = time.time()
+                self.surface_points, self.debug_rays = find_interaction_surface_points(
+                    self.sim,
+                    self.surface_point_obj,
+                    num_radial_slices=self.num_radial_slices,
+                    num_vertical_slices=self.num_vertical_slices,
+                    cull_points=self.do_culling,
+                    max_point_set_size=self.cull_to,
+                )
+                self.previous_surface_point_compute_time = time.time() - start_time
+        elif key == pressed.R:
+            # increment radial slice count
+            if shift_pressed:
+                self.num_radial_slices -= 1
+            else:
+                self.num_radial_slices += 1
+            self.num_radial_slices = max(3, self.num_radial_slices)
+            # recompute surface points
+            if self.surface_point_obj is not None:
+                start_time = time.time()
+                self.surface_points, self.debug_rays = find_interaction_surface_points(
+                    self.sim,
+                    self.surface_point_obj,
+                    num_radial_slices=self.num_radial_slices,
+                    num_vertical_slices=self.num_vertical_slices,
+                    cull_points=self.do_culling,
+                    max_point_set_size=self.cull_to,
+                )
+                self.previous_surface_point_compute_time = time.time() - start_time
         elif key == pressed.N:
             # (default) - toggle navmesh visualization
             # NOTE: (+ALT) - re-sample the agent position on the NavMesh
@@ -714,7 +890,7 @@ class HabitatSimInteractiveViewer(Application):
         physics_enabled = self.sim.get_physics_simulation_library()
 
         # if interactive mode is True -> GRAB MODE
-        if self.mouse_interaction == MouseMode.GRAB and physics_enabled:
+        if physics_enabled:
             render_camera = self.render_camera.render_camera
             ray = render_camera.unproject(self.get_mouse_position(event.position))
             raycast_results = self.sim.cast_ray(ray=ray)
@@ -765,33 +941,54 @@ class HabitatSimInteractiveViewer(Application):
                     # done checking for AO
 
                     if hit_object >= 0:
-                        node = self.default_agent.scene_node
-                        constraint_settings = physics.RigidConstraintSettings()
+                        if self.mouse_interaction == MouseMode.GRAB:
+                            node = self.default_agent.scene_node
+                            constraint_settings = physics.RigidConstraintSettings()
 
-                        constraint_settings.object_id_a = hit_object
-                        constraint_settings.link_id_a = ao_link
-                        constraint_settings.pivot_a = object_pivot
-                        constraint_settings.frame_a = (
-                            object_frame.to_matrix() @ node.rotation.to_matrix()
-                        )
-                        constraint_settings.frame_b = node.rotation.to_matrix()
-                        constraint_settings.pivot_b = hit_info.point
-
-                        # by default use a point 2 point constraint
-                        if event.button == button.RIGHT:
-                            constraint_settings.constraint_type = (
-                                physics.RigidConstraintType.Fixed
+                            constraint_settings.object_id_a = hit_object
+                            constraint_settings.link_id_a = ao_link
+                            constraint_settings.pivot_a = object_pivot
+                            constraint_settings.frame_a = (
+                                object_frame.to_matrix() @ node.rotation.to_matrix()
                             )
+                            constraint_settings.frame_b = node.rotation.to_matrix()
+                            constraint_settings.pivot_b = hit_info.point
 
-                        grip_depth = (
-                            hit_info.point - render_camera.node.absolute_translation
-                        ).length()
+                            # by default use a point 2 point constraint
+                            if event.button == button.RIGHT:
+                                constraint_settings.constraint_type = (
+                                    physics.RigidConstraintType.Fixed
+                                )
 
-                        self.mouse_grabber = MouseGrabber(
-                            constraint_settings,
-                            grip_depth,
-                            self.sim,
-                        )
+                            grip_depth = (
+                                hit_info.point - render_camera.node.absolute_translation
+                            ).length()
+
+                            self.mouse_grabber = MouseGrabber(
+                                constraint_settings,
+                                grip_depth,
+                                self.sim,
+                            )
+                        elif event.button == button.RIGHT:
+                            # right click in LOOK
+                            self.surface_point_obj = get_obj_from_id(
+                                self.sim, hit_object
+                            )
+                            start_time = time.time()
+                            (
+                                self.surface_points,
+                                self.debug_rays,
+                            ) = find_interaction_surface_points(
+                                self.sim,
+                                self.surface_point_obj,
+                                num_radial_slices=self.num_radial_slices,
+                                num_vertical_slices=self.num_vertical_slices,
+                                cull_points=self.do_culling,
+                                max_point_set_size=self.cull_to,
+                            )
+                            self.previous_surface_point_compute_time = (
+                                time.time() - start_time
+                            )
                     else:
                         logger.warn("Oops, couldn't find the hit object. That's odd.")
                 # end if didn't hit the scene
@@ -950,6 +1147,11 @@ class HabitatSimInteractiveViewer(Application):
 Sensor Type: {sensor_type_string}
 Sensor Subtype: {sensor_subtype_string}
 Mouse Interaction Mode: {mouse_mode_string}
+Radial Slices: {self.num_radial_slices}
+Vertical Slices: {self.num_vertical_slices}
+Prev Compute Time: {self.previous_surface_point_compute_time}
+Culling to: {self.cull_to if self.do_culling else "NA"}
+Num Points: {len(self.surface_points) if self.surface_points is not None else None}
             """
         )
         self.shader.draw(self.window_text.mesh)
