@@ -16,7 +16,10 @@ sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
 import magnum as mn
 import numpy as np
-from habitat.sims.habitat_simulator.sim_utilities import get_obj_from_id
+from habitat.sims.habitat_simulator.sim_utilities import (
+    get_all_objects,
+    get_obj_from_id,
+)
 from magnum import shaders, text
 from magnum.platform.glfw import Application
 
@@ -157,15 +160,26 @@ def find_interaction_surface_points(
     return surface_points, ray_set
 
     # follow-ups:
-    # TODO: cache points in a markerset and save to metadata per-object
-    # TODO: render the points for debug (render rays too?)
-    # TODO: AOs and links
+    # TODO: links
 
     # tests:
     # TODO: scaled object
     # TODO: re-oriented object
     # TODO: thin structures
     # TODO: L shaped couch
+
+
+def save_interaction_points_to_markerset(
+    obj: Union[physics.ManagedRigidObject, physics.ManagedArticulatedObject],
+    interaction_points: List[mn.Vector3],
+) -> None:
+    """
+    Save the set of interaction points into the object's user_defined metadata as a MarkerSet.
+    """
+
+    obj.marker_sets.set_task_link_markerset_points(
+        "interaction_surface_points", "body", "primary", interaction_points
+    )
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -436,6 +450,25 @@ class HabitatSimInteractiveViewer(Application):
                         mn.Color4.green(),
                     )
             debug_line_render.pop_transform()
+        # draw any active marker_sets with interaction_surface_points
+        for obj in get_all_objects(self.sim):
+            if obj.marker_sets.has_taskset("interaction_surface_points"):
+                points = obj.marker_sets.get_task_link_markerset_points(
+                    "interaction_surface_points", "body", "primary"
+                )
+                centroid = mn.Vector3()
+                for point in points:
+                    centroid += point
+                centroid /= len(points)
+                debug_line_render.push_transform(obj.transformation)
+                for point in points:
+                    debug_line_render.draw_circle(
+                        translation=point,
+                        radius=0.005,
+                        color=mn.Color4.blue(),
+                        normal=centroid - point,
+                    )
+                debug_line_render.pop_transform()
 
     def draw_event(
         self,
@@ -757,6 +790,16 @@ class HabitatSimInteractiveViewer(Application):
             # toggle debug ray display
             self.draw_debug_rays = not self.draw_debug_rays
             print(f"draw_debug_rays = {self.draw_debug_rays}")
+
+        elif key == pressed.F:
+            # save the current interaction_surface_points as a MarkerSet
+            if self.surface_point_obj is not None and self.surface_points is not None:
+                save_interaction_points_to_markerset(
+                    self.surface_point_obj, self.surface_points
+                )
+                print(
+                    f"Saved {len(self.surface_points)} surface points to marker set for objects {self.surface_point_obj.handle}"
+                )
 
         elif key == pressed.M:
             self.cycle_mouse_mode()
