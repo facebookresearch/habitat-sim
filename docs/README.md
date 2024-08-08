@@ -151,6 +151,9 @@ NOTE, Be aware of spaces, and backtick should be used, not single quote
 - :ref: \<MODDULE>.\<MODULE>.[...]\<CLASS>
   - Make a hyperlink that references to other parts of documentation
 
+- :raises ExceptionType: Some multi-line \
+        exception description.
+
 - :math: \`\$\<LATEX MATH FUNCTION>\$`
   - This if meant to display math functions inline using LaTeX notation. NOTE:  use double slash \\\\ instead of \\ for special LaTeX functions.
 
