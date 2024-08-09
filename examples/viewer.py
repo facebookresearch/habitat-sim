@@ -37,9 +37,11 @@ def find_interaction_surface_points(
     num_radial_slices: int = 10,
     cull_points=True,
     max_point_set_size: int = 20,
-) -> List[mn.Vector3]:
+) -> Tuple[List[mn.Vector3], List[mn.Vector3]]:
     """
     Use raycasting to find a set of points on the lateral surfaces of an object.
+
+    :return: the list of interaction points and the list of cast rays
     """
 
     assert num_vertical_slices >= 1, "Must at least slice in half."
@@ -288,7 +290,7 @@ class HabitatSimInteractiveViewer(Application):
             physics.ManagedArticulatedObject, physics.ManagedRigidObject
         ] = None
         self.num_vertical_slices: int = 10
-        self.num_radial_slices: int = 4
+        self.num_radial_slices: int = 10
         self.previous_surface_point_compute_time = 0.0
         self.do_culling = True
         self.cull_to = 20
@@ -402,6 +404,12 @@ class HabitatSimInteractiveViewer(Application):
         ):
             self.navmesh_config_and_recompute()
 
+        # NOTE: precompute the interaction points for all objects
+        # for obj in get_all_objects(self.sim):
+        #    interaction_points, _ = find_interaction_surface_points(self.sim, obj)
+        #    save_interaction_points_to_markerset(obj, interaction_points)
+        #    save_markerset_attributes(self.sim, obj)
+
         self.time_since_last_simulation = 0.0
         LoggingContext.reinitialize_from_env()
         logger.setLevel("INFO")
@@ -503,19 +511,22 @@ class HabitatSimInteractiveViewer(Application):
                 points = obj.marker_sets.get_task_link_markerset_points(
                     "interaction_surface_points", "body", "primary"
                 )
+                global_points = [
+                    obj.transformation.transform_point(point) for point in points
+                ]
                 centroid = mn.Vector3()
                 for point in points:
                     centroid += point
                 centroid /= len(points)
-                debug_line_render.push_transform(obj.transformation)
-                for point in points:
+                # debug_line_render.push_transform(obj.transformation)
+                for point in global_points:
                     debug_line_render.draw_circle(
                         translation=point,
                         radius=0.005,
                         color=mn.Color4.blue(),
                         normal=centroid - point,
                     )
-                debug_line_render.pop_transform()
+                # debug_line_render.pop_transform()
 
     def draw_event(
         self,

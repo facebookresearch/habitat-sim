@@ -78,7 +78,7 @@ void declareBasePhysicsObjectWrapper(py::module& m,
           &PhysObjWrapper::transformLocalPointsToWorld,
           R"(Given the list of passed points in this object's local space, return
           those points transformed to world space. The link_id is for articulated
-          objects and is ignored for rigid objects and stages )",
+          objects and is ignored for rigid objects and stages. link_id==-1 uses the AO's base transform.)",
           "ls_points"_a, "link_id"_a)
       .def_property(
           "rotation", &PhysObjWrapper::getRotation,
