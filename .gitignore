@@ -200,3 +200,7 @@ pre-commit-deps.txt
 tools/qa_scenes/qa_scenes_output/
 
 data/replica_cad
+
+data/datasets
+
+data/versioned_data
