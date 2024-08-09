@@ -555,19 +555,25 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
       for (const auto& linkEntry : taskEntry.second) {
         const std::string linkName = linkEntry.first;
         int linkId = getLinkIdFromName(linkName);
-        auto linkIter = links_.find(linkId);
-        ESP_CHECK(
-            linkIter != links_.end(),
-            "ArticulatedObject::getMarkerPointsGlobal - no link found with "
-            "linkId ="
-                << linkId);
+        // locally access the unique pointer's payload
+        const esp::physics::ArticulatedLink* aoLink;
+        if (linkId == -1) {
+          aoLink = baseLink_.get();
+        } else {
+          auto linkIter = links_.find(linkId);
+          ESP_CHECK(
+              linkIter != links_.end(),
+              "ArticulatedObject::getMarkerPointsGlobal - no link found with "
+              "linkId ="
+                  << linkId);
+          aoLink = linkIter->second.get();
+        }
         std::unordered_map<std::string, std::vector<Mn::Vector3>> perLinkMap;
         // for each set in link
         for (const auto& markersEntry : linkEntry.second) {
           const std::string markersName = markersEntry.first;
           perLinkMap[markersName] =
-              linkIter->second->transformLocalPointsToWorld(markersEntry.second,
-                                                            linkId);
+              aoLink->transformLocalPointsToWorld(markersEntry.second, linkId);
         }
         perTaskMap[linkName] = perLinkMap;
       }
