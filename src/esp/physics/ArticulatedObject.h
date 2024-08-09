@@ -493,7 +493,10 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    */
   std::vector<Mn::Vector3> transformLocalPointsToWorld(
       const std::vector<Mn::Vector3>& points,
-      int linkId) const override {
+      int linkId = -1) const override {
+    if (linkId == -1) {
+      return this->baseLink_->transformLocalPointsToWorld(points, -1);
+    }
     auto linkIter = links_.find(linkId);
     ESP_CHECK(linkIter != links_.end(),
               "ArticulatedObject::getLinkVisualSceneNodes - no link found with "
@@ -511,7 +514,10 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    */
   std::vector<Mn::Vector3> transformWorldPointsToLocal(
       const std::vector<Mn::Vector3>& points,
-      int linkId) const override {
+      int linkId = -1) const override {
+    if (linkId == -1) {
+      return this->baseLink_->transformWorldPointsToLocal(points, -1);
+    }
     auto linkIter = links_.find(linkId);
     ESP_CHECK(linkIter != links_.end(),
               "ArticulatedObject::getLinkVisualSceneNodes - no link found with "
