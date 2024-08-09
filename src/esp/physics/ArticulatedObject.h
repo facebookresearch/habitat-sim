@@ -493,7 +493,10 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    */
   std::vector<Mn::Vector3> transformLocalPointsToWorld(
       const std::vector<Mn::Vector3>& points,
-      int linkId) const override {
+      int linkId = -1) const override {
+    if (linkId == -1) {
+      return this->baseLink_->transformLocalPointsToWorld(points, -1);
+    }
     auto linkIter = links_.find(linkId);
     ESP_CHECK(linkIter != links_.end(),
               "ArticulatedObject::getLinkVisualSceneNodes - no link found with "
@@ -511,7 +514,10 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    */
   std::vector<Mn::Vector3> transformWorldPointsToLocal(
       const std::vector<Mn::Vector3>& points,
-      int linkId) const override {
+      int linkId = -1) const override {
+    if (linkId == -1) {
+      return this->baseLink_->transformWorldPointsToLocal(points, -1);
+    }
     auto linkIter = links_.find(linkId);
     ESP_CHECK(linkIter != links_.end(),
               "ArticulatedObject::getLinkVisualSceneNodes - no link found with "
@@ -549,19 +555,25 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
       for (const auto& linkEntry : taskEntry.second) {
         const std::string linkName = linkEntry.first;
         int linkId = getLinkIdFromName(linkName);
-        auto linkIter = links_.find(linkId);
-        ESP_CHECK(
-            linkIter != links_.end(),
-            "ArticulatedObject::getMarkerPointsGlobal - no link found with "
-            "linkId ="
-                << linkId);
+        // locally access the unique pointer's payload
+        const esp::physics::ArticulatedLink* aoLink = nullptr;
+        if (linkId == -1) {
+          aoLink = baseLink_.get();
+        } else {
+          auto linkIter = links_.find(linkId);
+          ESP_CHECK(
+              linkIter != links_.end(),
+              "ArticulatedObject::getMarkerPointsGlobal - no link found with "
+              "linkId ="
+                  << linkId);
+          aoLink = linkIter->second.get();
+        }
         std::unordered_map<std::string, std::vector<Mn::Vector3>> perLinkMap;
         // for each set in link
         for (const auto& markersEntry : linkEntry.second) {
           const std::string markersName = markersEntry.first;
           perLinkMap[markersName] =
-              linkIter->second->transformLocalPointsToWorld(markersEntry.second,
-                                                            linkId);
+              aoLink->transformLocalPointsToWorld(markersEntry.second, linkId);
         }
         perTaskMap[linkName] = perLinkMap;
       }
