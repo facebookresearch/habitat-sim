@@ -556,7 +556,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
         const std::string linkName = linkEntry.first;
         int linkId = getLinkIdFromName(linkName);
         // locally access the unique pointer's payload
-        const esp::physics::ArticulatedLink* aoLink;
+        const esp::physics::ArticulatedLink* aoLink = nullptr;
         if (linkId == -1) {
           aoLink = baseLink_.get();
         } else {
