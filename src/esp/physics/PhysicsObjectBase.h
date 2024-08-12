@@ -229,11 +229,11 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   virtual std::vector<Mn::Vector3> transformLocalPointsToWorld(
       const std::vector<Mn::Vector3>& points,
-      CORRADE_UNUSED int linkID) const {
+      CORRADE_UNUSED int linkID = -1) const {
     std::vector<Mn::Vector3> wsPoints;
     wsPoints.reserve(points.size());
     Mn::Vector3 objScale = getScale();
-    Mn::Matrix4 worldTransform = getTransformation();
+    Mn::Matrix4 worldTransform = node().absoluteTransformation();
     for (const auto& lsPoint : points) {
       wsPoints.emplace_back(worldTransform.transformPoint(lsPoint * objScale));
     }
@@ -249,11 +249,11 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   virtual std::vector<Mn::Vector3> transformWorldPointsToLocal(
       const std::vector<Mn::Vector3>& points,
-      CORRADE_UNUSED int linkID) const {
+      CORRADE_UNUSED int linkID = -1) const {
     std::vector<Mn::Vector3> lsPoints;
     lsPoints.reserve(points.size());
     Mn::Vector3 objScale = getScale();
-    Mn::Matrix4 worldTransform = getTransformation();
+    Mn::Matrix4 worldTransform = node().absoluteTransformation();
     for (const auto& wsPoint : points) {
       lsPoints.emplace_back(worldTransform.inverted().transformPoint(wsPoint) /
                             objScale);
