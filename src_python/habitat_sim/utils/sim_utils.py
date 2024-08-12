@@ -1049,6 +1049,7 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
                 action_str = f"{action_str} rotated to {obj.rotation};"
             print(action_str)
             obj.motion_type = orig_mt
+            # Save transformation for potential undoing later
             trans_tuple = (orig_transform, obj.transformation, removal)
             self.obj_transform_edits[obj.object_id].append(trans_tuple)
             # Clear entries for redo since we have a new edit
@@ -1077,6 +1078,28 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
             )
             navmesh_dirty = new_navmesh_dirty or navmesh_dirty
         return navmesh_dirty
+    
+    def _remove_obj(self, obj):
+        """
+        Move and mark the passed object for removal from the scene.
+        """
+        # move selected object outside of direct render area -20 m below current location
+        translation = mn.Vector3(0.0, -20.0, 0.0)
+        # ignore navmesh result; removal always recomputes
+        self._move_one_object(obj, True, translation=translation, removal=True)
+        # record removed object for eventual deletion upon scene save
+        self._removed_objs[obj.is_articulated][obj.object_id] = obj
+
+    def _restore_obj(self, obj):
+        """
+        Restore the passed object from the removal queue
+        """
+        # move selected object back to where it was before - back 20m up
+        translation = mn.Vector3(0.0, 20.0, 0.0)
+        # ignore navmesh result; restoration always recomputes
+        self._move_one_object(obj, True, translation=translation, removal=False)
+        # remove object from deletion record
+        self._removed_objs[obj.is_articulated].pop(obj.object_id, None)
 
     def remove_sel_objects(self):
         """
@@ -1089,21 +1112,111 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
         for obj in self.sel_objs:
             if obj is None:
                 continue
-            # move selected object outside of direct render area
-            translation = mn.Vector3(0.0, -20.0, 0.0)
-            # ignore navmesh result; removal always recomputes
-            self._move_one_object(obj, True, translation=translation, removal=True)
-            # record removed object for eventual deletion upon scene save
-            self._removed_objs[obj.is_articulated][obj.object_id] = obj
-            # record handle of removed objects, for return
-            removed_obj_handles.append(obj.handle)
+            self._remove_obj(obj)
             print(
                 f"Moved {obj.handle} out of view and marked for removal. Removal becomes permanent when scene is saved."
             )
+            # record handle of removed objects, for return
+            removed_obj_handles.append(obj.handle)
         # unselect all objects, since they were all 'removed'
         self._clear_sel_objs()
         # retain all object selected transformations.
         return removed_obj_handles
+    
+    def restore_removed_objects(self):
+        """
+        Undo removals that have not been saved yet via scene instance. Will put object back where it was before marking it for removal
+        """
+        restored_obj_handles = []
+        obj_rem_dict = self._removed_objs[True]
+        removed_obj_keys = list(obj_rem_dict.keys())
+        for id in removed_obj_keys:
+            obj = obj_rem_dict.pop(id, None)
+            if obj is not None:
+                self._restore_obj(obj)
+                restored_obj_handles.append(obj.handle)
+        obj_rem_dict = self._removed_objs[False]
+        removed_obj_keys = list(obj_rem_dict.keys())
+        for id in removed_obj_keys:
+            obj = obj_rem_dict.pop(id, None)
+            if obj is not None:
+                self._restore_obj(obj)
+                restored_obj_handles.append(obj.handle)
+
+        return restored_obj_handles
+
+    def _undo_obj_edit(self, obj, transform_tuple:tuple[mn.Matrix4, mn.Matrix4, bool]):
+        """
+        Changes the object's current transformation to the passed, previous transformation (in idx 0). 
+        Different than a move, only called by undo/redo procedure
+        """
+        old_transform = transform_tuple[0]
+        orig_mt = obj.motion_type
+        obj.motion_type = HSim_MT.KINEMATIC
+        obj.transformation = old_transform
+        obj.motion_type = orig_mt
+
+    def redo_sel_edits(self):
+        """
+        Redo edits that have been undone on all currently selected objects one step
+        """
+        if len(self.sel_objs) == 0:
+            return
+        # For every object in selected object
+        for obj in self.sel_objs:
+            obj_id = obj.object_id
+            # Verify there are transforms to redo for this object
+            if len(self.obj_transform_undone_edits[obj_id]) > 0:
+                # Last undo state is last element in transforms list
+                # In tuple idxs : 0 : previous transform, 1 : current transform, 2 : whether was a removal op
+                # Retrieve and remove last undo
+                transform_tuple = self.obj_transform_undone_edits[obj_id].pop()
+                # If this had been a removal that had been undone, redo removal
+                remove_str = ""
+                if transform_tuple[2]:
+                    # Restore object to removal queue for eventual deletion upon scene save
+                    self._removed_objs[obj.is_articulated][obj.object_id] = obj
+                    remove_str = ", being remarked for removal,"
+                self._undo_obj_edit(obj, transform_tuple)
+                # Save transformation tuple for subsequent undoing
+                # Swap order of transforms since they were redon, for potential undo
+                undo_tuple = (transform_tuple[1], transform_tuple[0], transform_tuple[2])
+                self.obj_transform_edits[obj_id].append(undo_tuple)
+                print(
+                    f"REDO : Sel Obj : {obj.handle} : Current object{remove_str} transformation : \n{transform_tuple[1]}\nReplaced by saved transformation : \n{transform_tuple[0]}"
+                )                
+
+
+    def undo_sel_edits(self):
+        """
+        Undo the edits that have been performed on all the currently selected objects one step, (TODO including removal marks)
+        """
+        if len(self.sel_objs) == 0:
+            return
+        # For every object in selected object
+        for obj in self.sel_objs:
+            obj_id = obj.object_id
+            # Verify there are transforms to undo for this object
+            if len(self.obj_transform_edits[obj_id]) > 0:
+                # Last edit state is last element in transforms list
+                # In tuple idxs : 0 : previous transform, 1 : current transform, 2 : whether was a removal op
+                # Retrieve and remove last edit
+                transform_tuple = self.obj_transform_edits[obj_id].pop()
+                # If this was a removal, remove object from removal queue
+                remove_str = ""
+                if transform_tuple[2]:
+                    # Remove object from removal queue if there - undo removal
+                    self._removed_objs[obj.is_articulated].pop(obj_id, None)
+                    remove_str = ", being restored from removal list,"
+                
+                self._undo_obj_edit(obj, transform_tuple)
+                # Save transformation tuple for redoing
+                # Swap order of transforms since they were undone, for potential redo
+                redo_tuple = (transform_tuple[1], transform_tuple[0], transform_tuple[2])
+                self.obj_transform_undone_edits[obj_id].append(redo_tuple)
+                print(
+                    f"UNDO : Sel Obj : {obj.handle} : Current object{remove_str} transformation : \n{transform_tuple[1]}\nReplaced by saved transformation : \n{transform_tuple[0]}"
+                )   
 
     def select_all_matching_objects(self, only_matches: bool):
         """
@@ -1252,43 +1365,6 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
             navmesh_dirty=navmesh_dirty,
             rotation=mn.Quaternion.rotation(-mn.Rad(self.edit_rotation_amt), rot_axis),
         )
-
-    def _undo_obj_edit(self, obj, transform_tuple):
-        """
-        Changes the object's current transformation to the passed, previous transformation (in idx 0)
-        """
-        old_transform = transform_tuple[0]
-        print(
-            f"Sel Obj : {obj.handle} : Current object transformation : \n{obj.transformation}\n Being replaced by saved transformation : \n{old_transform}"
-        )
-        orig_mt = obj.motion_type
-        obj.motion_type = HSim_MT.KINEMATIC
-        obj.transformation = old_transform
-        obj.motion_type = orig_mt
-
-    def undo_sel_edits(self):
-        """
-        Undo the edits that have been performed on all the currently selected objects one step, including removal marks
-        """
-        if len(self.sel_objs) == 0:
-            return
-        # For every object in selected object
-        for obj in self.sel_objs:
-            obj_id = obj.object_id
-            # Verify there are transforms to undo for this object
-            if len(self.obj_transform_edits[obj_id]) > 0:
-                # Last edit state is last element in transforms list
-                # In tuple idxs : 0 : previous transform, 1 : current transform, 2 : whether was a removal op
-                # Retrieve and remove last edit
-                transform_tuple = self.obj_transform_edits[obj_id].pop()
-                self._undo_obj_edit(obj, transform_tuple)
-                # Save transformation tuple for redoing
-                # TODO process redos
-                self.obj_transform_undone_edits[obj_id].append(transform_tuple)
-                # If this was a removal, remove object from removal queue
-                if transform_tuple[2]:
-                    # Remove object from removal queue if there - undo removal
-                    self._removed_objs[obj.is_articulated].pop(obj_id, None)
 
     def remove_all_objs(self):
         ao_removed_objs = self._removed_objs[True]

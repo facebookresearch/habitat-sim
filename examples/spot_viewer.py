@@ -175,7 +175,7 @@ class HabitatSimInteractiveViewer(Application):
         self.modified_objects_buffer: Dict[
             habitat_sim.physics.ManagedRigidObject, mn.Matrix4
         ] = {}
-        self.removed_clutter = []
+        self.removed_clutter: Dict[str,str] = {}
 
         self.navmesh_dirty = False
         self.removed_objects_debug_frames = []
@@ -633,13 +633,23 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.BACKSPACE or key == pressed.Y:
             # 'Remove' all selected objects by moving them out of view.
             # Removal only becomes permanent when scene is saved
-            removed_obj_handles = self.obj_editor.remove_sel_objects()
-            if key == pressed.Y:
-                for handle in removed_obj_handles:
-                    # Mark removed clutter
-                    obj_name = handle.split("/")[-1].split("_:")[0]
-                    self.removed_clutter.append(obj_name)
-            self.navmesh_config_and_recompute()
+            # If shift pressed, undo removals
+            if shift_pressed:
+                restored_obj_handles = self.obj_editor.restore_removed_objects()
+                if key == pressed.Y:
+                    for handle in restored_obj_handles:
+                        obj_name = handle.split("/")[-1].split("_:")[0]
+                        self.removed_clutter.pop(obj_name, None)
+
+                self.navmesh_config_and_recompute()
+            else :
+                removed_obj_handles = self.obj_editor.remove_sel_objects()
+                if key == pressed.Y:
+                    for handle in removed_obj_handles:
+                        # Mark removed clutter
+                        obj_name = handle.split("/")[-1].split("_:")[0]
+                        self.removed_clutter[obj_name] = ""
+                self.navmesh_config_and_recompute()
 
         elif key == pressed.B:
             # Cycle through available edit amount values
@@ -671,12 +681,13 @@ class HabitatSimInteractiveViewer(Application):
             self.obj_editor.save_current_scene()
 
             print("Saved modified scene instance JSON to original location.")
-            # de-duplicate and save clutter list
-            self.removed_clutter = list(dict.fromkeys(self.removed_clutter))
+            # save clutter
             if len(self.removed_clutter) > 0:
                 with open("removed_clutter.txt", "a") as f:
                     for obj_name in self.removed_clutter:
                         f.write(obj_name + "\n")
+                # clear clutter
+                self.removed_clutter: Dict[str,str] = {}
             # only exit if shift pressed
             if shift_pressed:
                 event.accepted = True
@@ -721,8 +732,11 @@ class HabitatSimInteractiveViewer(Application):
             self.remove_outdoor_objects()
 
         elif key == pressed.U:
-            # Undo all edits on selected objects 1 step
-            self.obj_editor.undo_sel_edits()
+            # Undo all edits on selected objects 1 step, or redo undone, if shift
+            if shift_pressed:
+                self.obj_editor.redo_sel_edits()
+            else:
+                self.obj_editor.undo_sel_edits()
 
         elif key == pressed.V:
             # Duplicate all the selected objects and place them in the scene
