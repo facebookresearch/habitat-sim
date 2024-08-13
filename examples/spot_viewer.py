@@ -175,7 +175,7 @@ class HabitatSimInteractiveViewer(Application):
         self.modified_objects_buffer: Dict[
             habitat_sim.physics.ManagedRigidObject, mn.Matrix4
         ] = {}
-        self.removed_clutter: Dict[str,str] = {}
+        self.removed_clutter: Dict[str, str] = {}
 
         self.navmesh_dirty = False
         self.removed_objects_debug_frames = []
@@ -642,7 +642,7 @@ class HabitatSimInteractiveViewer(Application):
                         self.removed_clutter.pop(obj_name, None)
 
                 self.navmesh_config_and_recompute()
-            else :
+            else:
                 removed_obj_handles = self.obj_editor.remove_sel_objects()
                 if key == pressed.Y:
                     for handle in removed_obj_handles:
@@ -687,7 +687,7 @@ class HabitatSimInteractiveViewer(Application):
                     for obj_name in self.removed_clutter:
                         f.write(obj_name + "\n")
                 # clear clutter
-                self.removed_clutter: Dict[str,str] = {}
+                self.removed_clutter: Dict[str, str] = {}
             # only exit if shift pressed
             if shift_pressed:
                 event.accepted = True

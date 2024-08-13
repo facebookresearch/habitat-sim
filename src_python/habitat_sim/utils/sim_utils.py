@@ -442,10 +442,11 @@ class MarkerSetsInfo:
         self.current_markerset_taskset_idx = 0
 
         self.marker_sets_changed: Dict[str, Dict[str, bool]] = {}
+        # Hierarchy of colors to match the markerset hierarchy
         self.marker_debug_random_colors: Dict[str, Dict[str, Any]] = {}
         for sub_key, sub_dict in self.marker_sets_per_obj.items():
             tmp_dict_changed = {}
-            tmp_dict_colors = {}
+            tmp_dict_colors: Dict[str, Any] = {}
             for key in sub_dict:
                 print(f"subkey : {sub_key} | key : {key}")
                 tmp_dict_changed[key] = False
@@ -585,7 +586,9 @@ class MarkerSetsInfo:
                     )
                 else:
                     # right click is remove marker
-                    print(f"About to check obj {obj_handle} if it has points in MarkerSet : {marker_set_name}, LinkSet :{link_name}, TaskSet :{task_set_name} so removal aborted.")
+                    print(
+                        f"About to check obj {obj_handle} if it has points in MarkerSet : {marker_set_name}, LinkSet :{link_name}, TaskSet :{task_set_name} so removal aborted."
+                    )
                     if obj_marker_sets.has_task_link_markerset(
                         task_set_name, link_name, marker_set_name
                     ):
@@ -696,10 +699,16 @@ class MarkerSetsInfo:
         # Clean up sub-dirs being added to asset handles.
         if obj.is_articulated:
             init_attrs.urdf_filepath = init_attrs.urdf_filepath.split(os.sep)[-1]
-            init_attrs.render_asset_handle = init_attrs.render_asset_handle.split(os.sep)[-1]
+            init_attrs.render_asset_handle = init_attrs.render_asset_handle.split(
+                os.sep
+            )[-1]
         else:
-            init_attrs.render_asset_handle = init_attrs.render_asset_handle.split(os.sep)[-1]
-            init_attrs.collision_asset_handle = init_attrs.collision_asset_handle.split(os.sep)[-1]
+            init_attrs.render_asset_handle = init_attrs.render_asset_handle.split(
+                os.sep
+            )[-1]
+            init_attrs.collision_asset_handle = init_attrs.collision_asset_handle.split(
+                os.sep
+            )[-1]
         # put edited subconfig into initial attributes' markersets
         markersets = init_attrs.get_marker_sets()
         # manually copying because the markersets type is getting lost from markersets
@@ -925,7 +934,7 @@ Edit Value: {edit_distance_mode_string}
 Num Sel Objs: {len(self.sel_objs)}{obj_str}
           """
         return disp_str
-    
+
     def edit_obj_disp_str(self):
         """
         Specify primary selected object display quantities
@@ -933,12 +942,14 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
         if len(self.sel_objs) == 0:
             return ""
         sel_obj = self.sel_objs[-1]
-        if sel_obj.is_articulated :
-            tar_str = f"Articulated Object : {sel_obj.handle} with {sel_obj.num_links} links."
-        else :
+        if sel_obj.is_articulated:
+            tar_str = (
+                f"Articulated Object : {sel_obj.handle} with {sel_obj.num_links} links."
+            )
+        else:
             tar_str = f"Rigid Object : {sel_obj.handle}"
         return f"\nTarget Object is {tar_str}"
-    
+
     def _clear_sel_objs(self):
         """
         Internal: clear object selection structure(s)
@@ -1078,7 +1089,7 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
             )
             navmesh_dirty = new_navmesh_dirty or navmesh_dirty
         return navmesh_dirty
-    
+
     def _remove_obj(self, obj):
         """
         Move and mark the passed object for removal from the scene.
@@ -1122,7 +1133,7 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
         self._clear_sel_objs()
         # retain all object selected transformations.
         return removed_obj_handles
-    
+
     def restore_removed_objects(self):
         """
         Undo removals that have not been saved yet via scene instance. Will put object back where it was before marking it for removal
@@ -1130,24 +1141,24 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
         restored_obj_handles = []
         obj_rem_dict = self._removed_objs[True]
         removed_obj_keys = list(obj_rem_dict.keys())
-        for id in removed_obj_keys:
-            obj = obj_rem_dict.pop(id, None)
+        for obj_id in removed_obj_keys:
+            obj = obj_rem_dict.pop(obj_id, None)
             if obj is not None:
                 self._restore_obj(obj)
                 restored_obj_handles.append(obj.handle)
         obj_rem_dict = self._removed_objs[False]
         removed_obj_keys = list(obj_rem_dict.keys())
-        for id in removed_obj_keys:
-            obj = obj_rem_dict.pop(id, None)
+        for obj_id in removed_obj_keys:
+            obj = obj_rem_dict.pop(obj_id, None)
             if obj is not None:
                 self._restore_obj(obj)
                 restored_obj_handles.append(obj.handle)
 
         return restored_obj_handles
 
-    def _undo_obj_edit(self, obj, transform_tuple:tuple[mn.Matrix4, mn.Matrix4, bool]):
+    def _undo_obj_edit(self, obj, transform_tuple: tuple[mn.Matrix4, mn.Matrix4, bool]):
         """
-        Changes the object's current transformation to the passed, previous transformation (in idx 0). 
+        Changes the object's current transformation to the passed, previous transformation (in idx 0).
         Different than a move, only called by undo/redo procedure
         """
         old_transform = transform_tuple[0]
@@ -1180,12 +1191,15 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
                 self._undo_obj_edit(obj, transform_tuple)
                 # Save transformation tuple for subsequent undoing
                 # Swap order of transforms since they were redon, for potential undo
-                undo_tuple = (transform_tuple[1], transform_tuple[0], transform_tuple[2])
+                undo_tuple = (
+                    transform_tuple[1],
+                    transform_tuple[0],
+                    transform_tuple[2],
+                )
                 self.obj_transform_edits[obj_id].append(undo_tuple)
                 print(
                     f"REDO : Sel Obj : {obj.handle} : Current object{remove_str} transformation : \n{transform_tuple[1]}\nReplaced by saved transformation : \n{transform_tuple[0]}"
-                )                
-
+                )
 
     def undo_sel_edits(self):
         """
@@ -1208,15 +1222,19 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
                     # Remove object from removal queue if there - undo removal
                     self._removed_objs[obj.is_articulated].pop(obj_id, None)
                     remove_str = ", being restored from removal list,"
-                
+
                 self._undo_obj_edit(obj, transform_tuple)
                 # Save transformation tuple for redoing
                 # Swap order of transforms since they were undone, for potential redo
-                redo_tuple = (transform_tuple[1], transform_tuple[0], transform_tuple[2])
+                redo_tuple = (
+                    transform_tuple[1],
+                    transform_tuple[0],
+                    transform_tuple[2],
+                )
                 self.obj_transform_undone_edits[obj_id].append(redo_tuple)
                 print(
                     f"UNDO : Sel Obj : {obj.handle} : Current object{remove_str} transformation : \n{transform_tuple[1]}\nReplaced by saved transformation : \n{transform_tuple[0]}"
-                )   
+                )
 
     def select_all_matching_objects(self, only_matches: bool):
         """
