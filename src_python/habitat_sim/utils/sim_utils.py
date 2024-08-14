@@ -1388,11 +1388,12 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
         All selected objects should match specified target object's orientation
         """
         match_rotation = self.sel_objs[-1].rotation
+        local_navmesh_dirty = False
         for obj in self.sel_objs:
             obj.rotation = match_rotation
-            return True
+            local_navmesh_dirty = True
         # If nothing selected, no further navmesh modifications
-        return navmesh_dirty
+        return navmesh_dirty or local_navmesh_dirty
 
     def edit_left(self, navmesh_dirty: bool) -> bool:
         """
@@ -1482,7 +1483,13 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
             self.sim.save_current_scene_config(overwrite=True)
             # Specify most recent edits for each object that has an undo queue
             self.obj_last_save_transform = {}
-            for obj_id, transform_list in self.obj_transform_edits.items():
+            obj_ids = self.obj_transform_edits.keys()
+            for obj_id in obj_ids:
+                transform_list = self.obj_transform_edits[obj_id]
+                if len(transform_list) == 0:
+                    # if transform list is empty, delete it and skip
+                    self.obj_transform_edits.pop(obj_id, None)
+                    continue
                 self.obj_last_save_transform[obj_id] = transform_list[-1][1]
 
             # Clear edited flag
