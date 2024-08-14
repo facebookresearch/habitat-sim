@@ -171,10 +171,6 @@ class HabitatSimInteractiveViewer(Application):
         self.replay_renderer: Optional[ReplayRenderer] = None
 
         self.last_hit_details = None
-        # cache modified states of any objects moved by the interface.
-        self.modified_objects_buffer: Dict[
-            habitat_sim.physics.ManagedRigidObject, mn.Matrix4
-        ] = {}
         self.removed_clutter: Dict[str, str] = {}
 
         self.navmesh_dirty = False
@@ -544,6 +540,32 @@ class HabitatSimInteractiveViewer(Application):
             turn_right=press[key.D],
         )
 
+    def save_scene(self, event: Application.KeyEvent, exit_scene: bool):
+        """
+        Save current scene. Exit if shift is pressed
+        """
+
+        # Save spot's state and remove it
+        self.spot_agent.cache_transform_and_remove()
+
+        # Save scene
+        self.obj_editor.save_current_scene()
+
+        # save clutter
+        if len(self.removed_clutter) > 0:
+            with open("removed_clutter.txt", "a") as f:
+                for obj_name in self.removed_clutter:
+                    f.write(obj_name + "\n")
+            # clear clutter
+            self.removed_clutter: Dict[str, str] = {}
+        # whether to exit scene
+        if exit_scene:
+            event.accepted = True
+            self.exit_event(Application.ExitEvent)
+            return
+        # Restore spot at previous location
+        self.spot_agent.restore_at_previous_loc()
+
     def invert_gravity(self) -> None:
         """
         Sets the gravity vector to the negative of it's previous value. This is
@@ -566,12 +588,19 @@ class HabitatSimInteractiveViewer(Application):
         alt_pressed = bool(event.modifiers & mod.ALT)
         # warning: ctrl doesn't always pass through with other key-presses
         if key == pressed.ESC:
-            event.accepted = True
-            self.exit_event(Application.ExitEvent)
+            # If shift_pressed then exit without save
+            if shift_pressed:
+                event.accepted = True
+                self.exit_event(Application.ExitEvent)
+                return
+
+            # Otherwise, save scene if it has been edited before exiting
+            self.save_scene(event, exit_scene=True)
             return
         elif key == pressed.ZERO:
-            # reset agent camera
+            # reset agent camera location
             self.spot_agent.init_spot_cam()
+
         elif key == pressed.ONE:
             # Toggle spot's clipping/restriction to navmesh
             self.spot_agent.toggle_clip()
@@ -579,13 +608,20 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.TWO:
             # Match target object's x dim
             self.navmesh_dirty = self.obj_editor.match_x_dim(self.navmesh_dirty)
+
         elif key == pressed.THREE:
             # Match target object's y dim
             self.navmesh_dirty = self.obj_editor.match_y_dim(self.navmesh_dirty)
+
         elif key == pressed.FOUR:
             # Match target object's z dim
             self.navmesh_dirty = self.obj_editor.match_z_dim(self.navmesh_dirty)
+
         elif key == pressed.FIVE:
+            # Match target object's orientation
+            self.navmesh_dirty = self.obj_editor.match_orientation(self.navmesh_dirty)
+
+        elif key == pressed.SIX:
             # Select all items matching selected item. Shift to include all currently selected items
             self.obj_editor.select_all_matching_objects(only_matches=not shift_pressed)
 
@@ -671,30 +707,8 @@ class HabitatSimInteractiveViewer(Application):
             self.obj_editor.change_edit_mode(toggle=shift_pressed)
 
         elif key == pressed.I:
-            # dump the modified object states buffer to JSON.
-            # print(f"Writing modified_objects_buffer to 'scene_mod_buffer.json': {self.modified_objects_buffer}")
-            # with open("scene_mod_buffer.json", "w") as f:
-            #    f.write(json.dumps(self.modified_objects_buffer, indent=2))
-            self.spot_agent.save_and_remove()
-
-            # Save scene
-            self.obj_editor.save_current_scene()
-
-            print("Saved modified scene instance JSON to original location.")
-            # save clutter
-            if len(self.removed_clutter) > 0:
-                with open("removed_clutter.txt", "a") as f:
-                    for obj_name in self.removed_clutter:
-                        f.write(obj_name + "\n")
-                # clear clutter
-                self.removed_clutter: Dict[str, str] = {}
-            # only exit if shift pressed
-            if shift_pressed:
-                event.accepted = True
-                self.exit_event(Application.ExitEvent)
-                return
-            # Restore spot at previous location
-            self.spot_agent.restore_at_previous_loc()
+            # Save scene, exiting if shift has been pressed
+            self.save_scene(event=event, exit_scene=shift_pressed)
 
         elif key == pressed.J:
             # If shift pressed then open, otherwise close
@@ -837,7 +851,7 @@ class HabitatSimInteractiveViewer(Application):
                         obj_found = True
                 if obj_found:
                     print(
-                        f"Object: {obj.handle} is {'Articlated' if obj.is_articulated else 'Rigid'} Object at {obj.translation}"
+                        f"Object: {obj.handle} is {'Articulated' if obj.is_articulated else 'Rigid'} Object at {obj.translation}"
                     )
                 else:
                     print("This is the stage.")
@@ -983,7 +997,7 @@ In LOOK mode (default):
         Click and drag to rotate the view around Spot.
     RIGHT:
         Select an object(s) to modify. If multiple objects selected all will be modified equally
-        (+SHIFT) add/remove object from selected set
+        (+SHIFT) add/remove object from selected set. Most recently selected object (with yellow box) will be target object.
     WHEEL:
         Zoom in and out on Spot view.
         (+ALT): Raise/Lower the camera's target above Spot.
@@ -1004,6 +1018,7 @@ Key Commands:
                 before collision/navmesh is re-engaged, the closest point to the navmesh is searched
                 for. If found, spot is snapped to it, but if not found, spot will stay in no-clip
                 mode and a message will display.
+    '6' :       Select all objects that match the type of the current highlit (yellow box) object
 
     Scene Object Modification UI:
     'g' : Change Edit mode to either Move or Rotate the selected object
@@ -1023,6 +1038,7 @@ Key Commands:
       - '2': all selected objects match selected 'target''s x value
       - '3': all selected objects match selected 'target''s y value
       - '4': all selected objects match selected 'target''s z value
+      - '5': all selected objects match selected 'target''s orientation
 
     'i': save the current, modified, scene_instance file. Also save removed_clutter.txt containing object names of all removed clutter objects.
          - With Shift : also close the viewer.

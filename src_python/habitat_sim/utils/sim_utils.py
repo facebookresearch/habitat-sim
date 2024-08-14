@@ -877,10 +877,12 @@ class ObjectEditor:
         self.obj_transform_edits: Dict[
             int, List[tuple[mn.Matrix4, mn.Matrix4, bool]]
         ] = defaultdict(list)
+        # Dictionary by object id of transformation when object was most recently saved
+        self.obj_last_save_transform: Dict[int, mn.Matrix4] = {}
+
         # Complete list of undone transformation edits, for redo chaining,
         # keyed by object id, value is before and after transform.
         # Cleared when any future edits are performed.
-        # TODO
         self.obj_transform_undone_edits: Dict[
             int, List[tuple[mn.Matrix4, mn.Matrix4, bool]]
         ] = defaultdict(list)
@@ -890,6 +892,8 @@ class ObjectEditor:
         # saved, when they should be actually removed (to allow for undo).
         # First key is whether they are articulated or not, value is dict with key == object id, value is object,
         self._removed_objs: Dict[bool, Dict[int, Any]] = defaultdict(dict)
+        # Initialize a flag tracking if the scene is dirty or not
+        self.modified_scene: bool = False
 
     def set_edit_mode_rotate(self):
         self.curr_edit_mode = ObjectEditor.EditMode.ROTATE
@@ -931,6 +935,7 @@ class ObjectEditor:
 
         disp_str = f"""Edit Mode: {edit_mode_string}
 Edit Value: {edit_distance_mode_string}
+Scene Is Modified: {self.modified_scene}
 Num Sel Objs: {len(self.sel_objs)}{obj_str}
           """
         return disp_str
@@ -1032,6 +1037,30 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
                 j_vel = ao.joint_velocities
                 ao.joint_velocities = [0.0 for _ in range(len(j_vel))]
 
+    def _set_scene_dirty(self):
+        """
+        Set whether the scene is currently modified from saved version or
+        not. If there are objects to be deleted or cached transformations
+        in the undo stack, this flag should be true.
+        """
+        # Set scene to be modified if any aos or rigids have been marked
+        # for deletion, or any objects have been transformed
+        self.modified_scene = (len(self._removed_objs[True]) > 0) or (
+            len(self._removed_objs[False]) > 0
+        )
+
+        # only check transforms if still false
+        if not self.modified_scene:
+            # check all object transformations match most recent edit transform
+            for obj_id, transform_list in self.obj_transform_edits.items():
+                if (obj_id not in self.obj_last_save_transform) or (
+                    len(transform_list) == 0
+                ):
+                    continue
+                curr_transform = transform_list[-1][1]
+                if curr_transform != self.obj_last_save_transform[obj_id]:
+                    self.modified_scene = True
+
     def _move_one_object(
         self,
         obj,
@@ -1047,11 +1076,23 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
         if obj is None:
             print("No object is selected so ignoring move request")
             return navmesh_dirty
+        action_str = (
+            f"{'Articulated' if obj.is_articulated else 'Rigid'} Object {obj.handle}"
+        )
+        # If object is marked for deletion, don't allow it to be further moved
+        if obj.object_id in self._removed_objs[obj.is_articulated]:
+            print(
+                f"{action_str} already marked for deletion so cannot be moved. Restore object to change its transformation."
+            )
+            return navmesh_dirty
+        # Move object if transforms exist
         if translation is not None or rotation is not None:
             orig_transform = obj.transformation
+            # First time save of original transformation for objects being moved
+            if obj.object_id not in self.obj_last_save_transform:
+                self.obj_last_save_transform[obj.object_id] = orig_transform
             orig_mt = obj.motion_type
             obj.motion_type = HSim_MT.KINEMATIC
-            action_str = f"{'Articulated' if obj.is_articulated else 'Rigid'} Object {obj.handle}"
             if translation is not None:
                 obj.translation = obj.translation + translation
                 action_str = f"{action_str} translated to {obj.translation};"
@@ -1065,6 +1106,8 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
             self.obj_transform_edits[obj.object_id].append(trans_tuple)
             # Clear entries for redo since we have a new edit
             self.obj_transform_undone_edits[obj.object_id] = []
+            # Set whether scene has been modified or not
+            self._set_scene_dirty()
             return True
         return navmesh_dirty
 
@@ -1107,10 +1150,10 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
         """
         # move selected object back to where it was before - back 20m up
         translation = mn.Vector3(0.0, 20.0, 0.0)
-        # ignore navmesh result; restoration always recomputes
-        self._move_one_object(obj, True, translation=translation, removal=False)
         # remove object from deletion record
         self._removed_objs[obj.is_articulated].pop(obj.object_id, None)
+        # ignore navmesh result; restoration always recomputes
+        self._move_one_object(obj, True, translation=translation, removal=False)
 
     def remove_sel_objects(self):
         """
@@ -1154,7 +1197,30 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
                 self._restore_obj(obj)
                 restored_obj_handles.append(obj.handle)
 
+        # Set whether scene is still considered modified/'dirty'
+        self._set_scene_dirty()
         return restored_obj_handles
+
+    def delete_removed_objs(self):
+        """
+        Delete all the objects in the scene marked for removal. Call before saving a scene instance.
+        """
+        ao_removed_objs = self._removed_objs[True]
+        if len(ao_removed_objs) > 0:
+            ao_mgr = self.sim.get_articulated_object_manager()
+            for obj_id in ao_removed_objs:
+                ao_mgr.remove_object_by_id(obj_id)
+                # Get rid of all recorded transforms of specified object
+                self.obj_transform_edits.pop(obj_id, None)
+        ro_removed_objs = self._removed_objs[False]
+        if len(ro_removed_objs) > 0:
+            ro_mgr = self.sim.get_rigid_object_manager()
+            for obj_id in ro_removed_objs:
+                ro_mgr.remove_object_by_id(obj_id)
+                # Get rid of all recorded transforms of specified object
+                self.obj_transform_edits.pop(obj_id, None)
+        # Set whether scene is still considered modified/'dirty'
+        self._set_scene_dirty()
 
     def _undo_obj_edit(self, obj, transform_tuple: tuple[mn.Matrix4, mn.Matrix4, bool]):
         """
@@ -1182,6 +1248,8 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
                 # In tuple idxs : 0 : previous transform, 1 : current transform, 2 : whether was a removal op
                 # Retrieve and remove last undo
                 transform_tuple = self.obj_transform_undone_edits[obj_id].pop()
+                if len(self.obj_transform_undone_edits[obj_id]) == 0:
+                    self.obj_transform_undone_edits.pop(obj_id, None)
                 # If this had been a removal that had been undone, redo removal
                 remove_str = ""
                 if transform_tuple[2]:
@@ -1200,6 +1268,8 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
                 print(
                     f"REDO : Sel Obj : {obj.handle} : Current object{remove_str} transformation : \n{transform_tuple[1]}\nReplaced by saved transformation : \n{transform_tuple[0]}"
                 )
+        # Set whether scene is still considered modified/'dirty'
+        self._set_scene_dirty()
 
     def undo_sel_edits(self):
         """
@@ -1216,13 +1286,15 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
                 # In tuple idxs : 0 : previous transform, 1 : current transform, 2 : whether was a removal op
                 # Retrieve and remove last edit
                 transform_tuple = self.obj_transform_edits[obj_id].pop()
+                # If all object edits have been removed, also remove entry
+                if len(self.obj_transform_edits[obj_id]) == 0:
+                    self.obj_transform_edits.pop(obj_id, None)
                 # If this was a removal, remove object from removal queue
                 remove_str = ""
                 if transform_tuple[2]:
                     # Remove object from removal queue if there - undo removal
                     self._removed_objs[obj.is_articulated].pop(obj_id, None)
                     remove_str = ", being restored from removal list,"
-
                 self._undo_obj_edit(obj, transform_tuple)
                 # Save transformation tuple for redoing
                 # Swap order of transforms since they were undone, for potential redo
@@ -1235,6 +1307,8 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
                 print(
                     f"UNDO : Sel Obj : {obj.handle} : Current object{remove_str} transformation : \n{transform_tuple[1]}\nReplaced by saved transformation : \n{transform_tuple[0]}"
                 )
+        # Set whether scene is still considered modified/'dirty'
+        self._set_scene_dirty()
 
     def select_all_matching_objects(self, only_matches: bool):
         """
@@ -1272,9 +1346,9 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
         axis: mn.Vector3,
     ) -> bool:
         """
-        Set all selected objects to have the same specified translation dim value.
+        Set all selected objects to have the same specified translation dimension value.
         new_val : new value to set the location of the object
-        axis : the axis to match the value of
+        axis : the dimension's axis to match the value of
         """
         trans_vec = new_val * axis
         for obj in self.sel_objs:
@@ -1308,6 +1382,17 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
         """
         match_val = self.sel_objs[-1].translation.z
         return self.match_dim_sel_objects(navmesh_dirty, match_val, mn.Vector3.z_axis())
+
+    def match_orientation(self, navmesh_dirty: bool) -> bool:
+        """
+        All selected objects should match specified target object's orientation
+        """
+        match_rotation = self.sel_objs[-1].rotation
+        for obj in self.sel_objs:
+            obj.rotation = match_rotation
+            return True
+        # If nothing selected, no further navmesh modifications
+        return navmesh_dirty
 
     def edit_left(self, navmesh_dirty: bool) -> bool:
         """
@@ -1384,32 +1469,26 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
             rotation=mn.Quaternion.rotation(-mn.Rad(self.edit_rotation_amt), rot_axis),
         )
 
-    def remove_all_objs(self):
-        ao_removed_objs = self._removed_objs[True]
-        if len(ao_removed_objs) > 0:
-            ao_mgr = self.sim.get_articulated_object_manager()
-            for obj_id in ao_removed_objs:
-                ao_mgr.remove_object_by_id(obj_id)
-                # Get rid of all recorded transforms of specified object
-                self.obj_transform_edits.pop(obj_id, None)
-        ro_removed_objs = self._removed_objs[False]
-        if len(ro_removed_objs) > 0:
-            ro_mgr = self.sim.get_rigid_object_manager()
-            for obj_id in ro_removed_objs:
-                ro_mgr.remove_object_by_id(obj_id)
-                # Get rid of all recorded transforms of specified object
-                self.obj_transform_edits.pop(obj_id, None)
-
     def save_current_scene(self):
-        # update scene with removals before saving
-        self.remove_all_objs()
+        if self.modified_scene:
+            # update scene with removals before saving
+            self.delete_removed_objs()
 
-        # clear out cache of removed objects by resetting dictionary
-        self._removed_objs = defaultdict(dict)
-        # Reset all AOs to be 0
-        self.set_ao_joint_states(do_open=False, selected=False)
-        # Save current scene
-        self.sim.save_current_scene_config(overwrite=True)
+            # clear out cache of removed objects by resetting dictionary
+            self._removed_objs = defaultdict(dict)
+            # Reset all AOs to be 0
+            self.set_ao_joint_states(do_open=False, selected=False)
+            # Save current scene
+            self.sim.save_current_scene_config(overwrite=True)
+            # Specify most recent edits for each object that has an undo queue
+            self.obj_last_save_transform = {}
+            for obj_id, transform_list in self.obj_transform_edits.items():
+                self.obj_last_save_transform[obj_id] = transform_list[-1][1]
+
+            # Clear edited flag
+            self.modified_scene = False
+            #
+            print("Saved modified scene instance JSON to original location.")
 
     def load_from_substring(
         self, navmesh_dirty: bool, obj_substring: str, build_loc: mn.Vector3
@@ -1995,7 +2074,7 @@ class SpotAgent:
             angular=self.spot_angular,
         )
 
-    def save_and_remove(self):
+    def cache_transform_and_remove(self):
         """
         Save spot's current location and remove from scene, for saving scene instance.
         """
