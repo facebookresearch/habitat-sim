@@ -118,12 +118,8 @@ def find_interaction_surface_points(
         # cast ray and get fist contact point
         ray_results = sim.cast_ray(ray, max_distance=circle_rad * 2)
         if ray_results.has_hits():
-            surface_points.append(ray_results.hits[0].point - obj.translation)
+            surface_points.append(ray_results.hits[0].point)
         ray.origin -= obj.translation
-
-    # return the object to initial state
-    obj.transformation = cached_transform
-    obj.motion_type = cached_mt
 
     # culling:
     if cull_points:
@@ -158,6 +154,12 @@ def find_interaction_surface_points(
             for ix in range(len(surface_points))
             if ix not in remove_ixs
         ]
+
+    surface_points = obj.transform_world_pts_to_local(surface_points, link_id=-1)
+
+    # return the object to initial state
+    obj.transformation = cached_transform
+    obj.motion_type = cached_mt
 
     return surface_points, ray_set
 
@@ -406,9 +408,9 @@ class HabitatSimInteractiveViewer(Application):
 
         # NOTE: precompute the interaction points for all objects
         # for obj in get_all_objects(self.sim):
-        #    interaction_points, _ = find_interaction_surface_points(self.sim, obj)
-        #    save_interaction_points_to_markerset(obj, interaction_points)
-        #    save_markerset_attributes(self.sim, obj)
+        #     interaction_points, _ = find_interaction_surface_points(self.sim, obj)
+        #     save_interaction_points_to_markerset(obj, interaction_points)
+        #     save_markerset_attributes(self.sim, obj)
 
         self.time_since_last_simulation = 0.0
         LoggingContext.reinitialize_from_env()
@@ -484,38 +486,40 @@ class HabitatSimInteractiveViewer(Application):
                     )
             self.draw_region_debug(debug_line_render)
 
-        if self.surface_points is not None and len(self.surface_points) > 1:
-            centroid = mn.Vector3()
-            for point in self.surface_points:
-                centroid += point
-            centroid /= len(self.surface_points)
-            debug_line_render.push_transform(self.surface_point_obj.transformation)
-            for point in self.surface_points:
-                debug_line_render.draw_circle(
-                    translation=point,
-                    radius=0.005,
-                    color=mn.Color4.yellow(),
-                    normal=centroid - point,
-                )
-            if self.draw_debug_rays:
-                for ray in self.debug_rays:
-                    debug_line_render.draw_transformed_line(
-                        ray.origin,
-                        ray.origin + ray.direction,
-                        mn.Color4.green(),
-                    )
-            debug_line_render.pop_transform()
+        # if self.surface_points is not None and len(self.surface_points) > 1:
+        # centroid = mn.Vector3()
+        # for point in self.surface_points:
+        #     centroid += point
+        # centroid /= len(self.surface_points)
+        # debug_line_render.push_transform(self.surface_point_obj.transformation)
+        # for point in self.surface_points:
+        #     debug_line_render.draw_circle(
+        #         translation=point,
+        #         radius=0.005,
+        #         color=mn.Color4.yellow(),
+        #         normal=centroid - point,
+        #     )
+        # if self.draw_debug_rays:
+        #     for ray in self.debug_rays:
+        #         debug_line_render.draw_transformed_line(
+        #             ray.origin,
+        #             ray.origin + ray.direction,
+        #             mn.Color4.green(),
+        #         )
+        # debug_line_render.pop_transform()
         # draw any active marker_sets with interaction_surface_points
         for obj in get_all_objects(self.sim):
             if obj.marker_sets.has_taskset("interaction_surface_points"):
                 points = obj.marker_sets.get_task_link_markerset_points(
                     "interaction_surface_points", "body", "primary"
                 )
-                global_points = [
-                    obj.transformation.transform_point(point) for point in points
-                ]
+                global_points = obj.transform_local_pts_to_world(points, link_id=-1)
+                # global_points = [obj.transformation.transform_point(point) for point in points]
+                # dif = [pix for pix in range(len(global_points)) if global_points[pix] != alt_global_points[pix]]
+                # if len(dif) > 0:
+                #    breakpoint()
                 centroid = mn.Vector3()
-                for point in points:
+                for point in global_points:
                     centroid += point
                 centroid /= len(points)
                 # debug_line_render.push_transform(obj.transformation)
