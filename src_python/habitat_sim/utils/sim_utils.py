@@ -849,6 +849,13 @@ class ObjectEditor:
         HUGE = 5
         NUM_VALS = 6
 
+    # What kind of objects to display boxes around
+    class ObjectTypeToDraw(Enum):
+        NONE = 0
+        ARTICULATED = 1
+        RIGID = 2
+        BOTH = 3
+
     # distance values in m
     DISTANCE_MODE_VALS = [0.001, 0.01, 0.02, 0.05, 0.1, 0.5]
     # angle value multipliers (in degrees) - multiplied by conversion
@@ -1635,6 +1642,40 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
         # update the edit values
         self.set_edit_vals()
 
+    def change_draw_box_types(self, toggle: bool):
+        # Cycle through types of objects to display with highlight box
+        pass
+
+    def _draw_coordinate_axes(self, loc: mn.Vector3, debug_line_render):
+        # draw global coordinate axis
+        debug_line_render.draw_transformed_line(
+            loc - mn.Vector3.x_axis(), loc + mn.Vector3.x_axis(), mn.Color4.red()
+        )
+        debug_line_render.draw_transformed_line(
+            loc - mn.Vector3.y_axis(), loc + mn.Vector3.y_axis(), mn.Color4.green()
+        )
+        debug_line_render.draw_transformed_line(
+            loc - mn.Vector3.z_axis(), loc + mn.Vector3.z_axis(), mn.Color4.blue()
+        )
+        debug_line_render.draw_circle(
+            loc + mn.Vector3.x_axis() * 0.95,
+            radius=0.05,
+            color=mn.Color4.red(),
+            normal=mn.Vector3.x_axis(),
+        )
+        debug_line_render.draw_circle(
+            loc + mn.Vector3.y_axis() * 0.95,
+            radius=0.05,
+            color=mn.Color4.green(),
+            normal=mn.Vector3.y_axis(),
+        )
+        debug_line_render.draw_circle(
+            loc + mn.Vector3.z_axis() * 0.95,
+            radius=0.05,
+            color=mn.Color4.blue(),
+            normal=mn.Vector3.z_axis(),
+        )
+
     def _draw_selected_obj(self, obj, debug_line_render, box_color):
         """
         Draw a selection box around and axis frame at the origin of a single object
@@ -1644,40 +1685,11 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
         debug_line_render.draw_box(aabb.min, aabb.max, box_color)
         debug_line_render.pop_transform()
 
-        ot = obj.translation
-        # draw global coordinate axis
-        debug_line_render.draw_transformed_line(
-            ot - mn.Vector3.x_axis(), ot + mn.Vector3.x_axis(), mn.Color4.red()
-        )
-        debug_line_render.draw_transformed_line(
-            ot - mn.Vector3.y_axis(), ot + mn.Vector3.y_axis(), mn.Color4.green()
-        )
-        debug_line_render.draw_transformed_line(
-            ot - mn.Vector3.z_axis(), ot + mn.Vector3.z_axis(), mn.Color4.blue()
-        )
-        debug_line_render.draw_circle(
-            ot + mn.Vector3.x_axis() * 0.95,
-            radius=0.05,
-            color=mn.Color4.red(),
-            normal=mn.Vector3.x_axis(),
-        )
-        debug_line_render.draw_circle(
-            ot + mn.Vector3.y_axis() * 0.95,
-            radius=0.05,
-            color=mn.Color4.green(),
-            normal=mn.Vector3.y_axis(),
-        )
-        debug_line_render.draw_circle(
-            ot + mn.Vector3.z_axis() * 0.95,
-            radius=0.05,
-            color=mn.Color4.blue(),
-            normal=mn.Vector3.z_axis(),
-        )
-
     def draw_selected_objects(self, debug_line_render):
         if len(self.sel_objs) == 0:
             return
-        sel_obj = self.sel_objs[-1]
+        obj_list = self.sel_objs
+        sel_obj = obj_list[-1]
         if sel_obj.is_alive:
             # Last object selected is target object
             self._draw_selected_obj(
@@ -1685,7 +1697,9 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
                 debug_line_render=debug_line_render,
                 box_color=mn.Color4.yellow(),
             )
-        obj_list = self.sel_objs
+            self._draw_coordinate_axes(
+                sel_obj.translation, debug_line_render=debug_line_render
+            )
         mag_color = mn.Color4.magenta()
         # draw all but last/target object
         for i in range(len(obj_list) - 1):
@@ -1694,6 +1708,35 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
                 self._draw_selected_obj(
                     obj, debug_line_render=debug_line_render, box_color=mag_color
                 )
+                self._draw_coordinate_axes(
+                    obj.translation, debug_line_render=debug_line_render
+                )
+
+    def draw_box_around_objs(
+        self, debug_line_render, draw_aos: bool = True, draw_rigids: bool = True
+    ):
+        """
+        Draw a box of an object-type-specific color around every object in the scene (green for AOs and cyan for Rigids)
+        """
+        if draw_aos:
+            attr_mgr = self.sim.get_articulated_object_manager()
+            new_sel_objs_dict = attr_mgr.get_objects_by_handle_substring(search_str="")
+            obj_clr = mn.Color4.green()
+            for obj in new_sel_objs_dict.values():
+                if obj.is_alive:
+                    self._draw_selected_obj(
+                        obj, debug_line_render=debug_line_render, box_color=obj_clr
+                    )
+
+        if draw_rigids:
+            attr_mgr = self.sim.get_rigid_object_manager()
+            new_sel_objs_dict = attr_mgr.get_objects_by_handle_substring(search_str="")
+            obj_clr = mn.Color4.cyan()
+            for obj in new_sel_objs_dict.values():
+                if obj.is_alive:
+                    self._draw_selected_obj(
+                        obj, debug_line_render=debug_line_render, box_color=obj_clr
+                    )
 
 
 # Class to instantiate and maneuver spot from a viewer
