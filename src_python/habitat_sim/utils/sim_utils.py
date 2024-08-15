@@ -1499,7 +1499,7 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}{obj_type_disp_str}
             self.sim.save_current_scene_config(overwrite=True)
             # Specify most recent edits for each object that has an undo queue
             self.obj_last_save_transform = {}
-            obj_ids = self.obj_transform_edits.keys()
+            obj_ids = list(self.obj_transform_edits.keys())
             for obj_id in obj_ids:
                 transform_list = self.obj_transform_edits[obj_id]
                 if len(transform_list) == 0:
