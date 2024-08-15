@@ -298,8 +298,10 @@ class HabitatSimInteractiveViewer(Application):
                 color=mn.Color4.yellow(),
                 num_segments=12,
             )
-        # draw selected object frames if any objects are selected
-        self.obj_editor.draw_selected_objects(debug_line_render)
+        # draw selected object frames if any objects are selected and any toggled object settings
+        self.obj_editor.draw_selected_objects(debug_line_render=debug_line_render)
+        # draw highlight box around all objects
+        self.obj_editor.draw_box_around_objs(debug_line_render=debug_line_render)
         # mouse raycast circle
         if self.mouse_cast_has_hits:
             debug_line_render.draw_circle(
@@ -721,9 +723,12 @@ class HabitatSimInteractiveViewer(Application):
                 self.navmesh_config_and_recompute()
 
         elif key == pressed.K:
-            # Cyle through semantics display
+            # Cycle through semantics display
             info_str = self.dbg_semantics.cycle_semantic_region_draw()
             logger.info(info_str)
+        elif key == pressed.L:
+            # Cycle through types of objects to draw highlight box around - aos, rigids, both, none
+            self.obj_editor.change_draw_box_types(toggle=shift_pressed)
 
         elif key == pressed.N:
             # (default) - toggle navmesh visualization
@@ -1018,7 +1023,6 @@ Key Commands:
                 before collision/navmesh is re-engaged, the closest point to the navmesh is searched
                 for. If found, spot is snapped to it, but if not found, spot will stay in no-clip
                 mode and a message will display.
-    '6' :       Select all objects that match the type of the current highlit (yellow box) object
 
     Scene Object Modification UI:
     'g' : Change Edit mode to either Move or Rotate the selected object
@@ -1040,7 +1044,9 @@ Key Commands:
       - '4': all selected objects match selected 'target''s z value
       - '5': all selected objects match selected 'target''s orientation
 
-    'i': save the current, modified, scene_instance file. Also save removed_clutter.txt containing object names of all removed clutter objects.
+    '6': Select all objects that match the type of the current target/highlit (yellow box) object
+
+    'i': Save the current, modified, scene_instance file. Also save removed_clutter.txt containing object names of all removed clutter objects.
          - With Shift : also close the viewer.
 
     'j': Modify AO link states :
@@ -1048,6 +1054,8 @@ Key Commands:
          (-SHIFT) : Close Selected/All AOs
          (+ALT) : Modify Selected AOs
          (-ALT) : Modify All AOs
+
+    'l' : Toggle types of objects to display boxes around : None, AOs, Rigids, Both
 
     'u': Undo a single modification step for all selected objects
         (+SHIFT) : redo (TODO)

@@ -855,6 +855,9 @@ class ObjectEditor:
         ARTICULATED = 1
         RIGID = 2
         BOTH = 3
+        NUM_VALS = 4
+
+    OBJECT_TYPE_NAMES = ["", "Articulated", "Rigid", "Both"]
 
     # distance values in m
     DISTANCE_MODE_VALS = [0.001, 0.01, 0.02, 0.05, 0.1, 0.5]
@@ -871,6 +874,8 @@ class ObjectEditor:
         self.curr_edit_mode = ObjectEditor.EditMode.MOVE
         # Edit distance/amount
         self.curr_edit_multiplier = ObjectEditor.DistanceMode.VERY_SMALL
+        # Type of objects to draw highlight aabb boxes around
+        self.obj_type_to_draw = ObjectEditor.ObjectTypeToDraw.NONE
         # Set initial values
         self.set_edit_vals()
 
@@ -939,11 +944,15 @@ class ObjectEditor:
         )
         edit_distance_mode_string = f"{dist_mode_substr}"
         obj_str = self.edit_obj_disp_str()
-
+        obj_type_disp_str = (
+            ""
+            if self.obj_type_to_draw == ObjectEditor.ObjectTypeToDraw.NONE
+            else f"\nObject Types Being Displayed :{ObjectEditor.OBJECT_TYPE_NAMES[self.obj_type_to_draw.value]}"
+        )
         disp_str = f"""Edit Mode: {edit_mode_string}
 Edit Value: {edit_distance_mode_string}
 Scene Is Modified: {self.modified_scene}
-Num Sel Objs: {len(self.sel_objs)}{obj_str}
+Num Sel Objs: {len(self.sel_objs)}{obj_str}{obj_type_disp_str}
           """
         return disp_str
 
@@ -1644,7 +1653,15 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
 
     def change_draw_box_types(self, toggle: bool):
         # Cycle through types of objects to display with highlight box
-        pass
+        mod_val = -1 if toggle else 1
+        self.obj_type_to_draw = ObjectEditor.ObjectTypeToDraw(
+            (
+                self.obj_type_to_draw.value
+                + ObjectEditor.ObjectTypeToDraw.NUM_VALS.value
+                + mod_val
+            )
+            % ObjectEditor.ObjectTypeToDraw.NUM_VALS.value
+        )
 
     def _draw_coordinate_axes(self, loc: mn.Vector3, debug_line_render):
         # draw global coordinate axis
@@ -1712,15 +1729,17 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
                     obj.translation, debug_line_render=debug_line_render
                 )
 
-    def draw_box_around_objs(
-        self, debug_line_render, draw_aos: bool = True, draw_rigids: bool = True
-    ):
+    def draw_box_around_objs(self, debug_line_render, agent_name: str = "hab_spot"):
         """
         Draw a box of an object-type-specific color around every object in the scene (green for AOs and cyan for Rigids)
         """
-        if draw_aos:
+        if self.obj_type_to_draw.value % 2 == 1:
+            # draw aos if 1 or 3
             attr_mgr = self.sim.get_articulated_object_manager()
-            new_sel_objs_dict = attr_mgr.get_objects_by_handle_substring(search_str="")
+            # Get all aos excluding the agent if present
+            new_sel_objs_dict = attr_mgr.get_objects_by_handle_substring(
+                search_str=agent_name, contains=False
+            )
             obj_clr = mn.Color4.green()
             for obj in new_sel_objs_dict.values():
                 if obj.is_alive:
@@ -1728,7 +1747,8 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}
                         obj, debug_line_render=debug_line_render, box_color=obj_clr
                     )
 
-        if draw_rigids:
+        if self.obj_type_to_draw.value > 1:
+            # draw rigis if 2 or 3
             attr_mgr = self.sim.get_rigid_object_manager()
             new_sel_objs_dict = attr_mgr.get_objects_by_handle_substring(search_str="")
             obj_clr = mn.Color4.cyan()
