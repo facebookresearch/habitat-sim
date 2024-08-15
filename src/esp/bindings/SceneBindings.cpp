@@ -179,11 +179,16 @@ void initSceneBindings(
       .def("index", &LoopRegionCategory::index, "mapping"_a = "")
       .def("name", &LoopRegionCategory::name, "mapping"_a = "");
 
-  // These two are (cyclically) referenced by multiple classes below, define
+  // These are (cyclically) referenced by multiple classes below, define
   // the classes first so pybind has the type definition available when binding
   // functions
   py::class_<SemanticObject, SemanticObject::ptr> semanticObject(
       m, "SemanticObject");
+  py::class_<CCSemanticObject, SemanticObject, CCSemanticObject::ptr>
+      ccSemanticObject(
+          m, "CCSemanticObject",
+          "This class exists to facilitate semantic object data access for "
+          "bboxes derived from connected component analysis.");
   py::class_<SemanticRegion, SemanticRegion::ptr> semanticRegion(
       m, "SemanticRegion");
 
@@ -233,6 +238,15 @@ void initSceneBindings(
       .def_property_readonly("aabb", &SemanticObject::aabb)
       .def_property_readonly("obb", &SemanticObject::obb)
       .def_property_readonly("category", &SemanticObject::category);
+
+  // ==== CCSemanticObject =====
+  ccSemanticObject
+      .def_property_readonly("num_src_verts", &CCSemanticObject::getNumSrcVerts,
+                             "The number of vertices in the connected "
+                             "component making up this semantic object.")
+      .def_property_readonly("vert_set", &CCSemanticObject::getVertSet,
+                             "A set of the vertices in the connected component "
+                             "making up this semantic object.");
 
   // ==== SemanticScene ====
   py::class_<SemanticScene, SemanticScene::ptr>(m, "SemanticScene")

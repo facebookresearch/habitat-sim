@@ -209,7 +209,7 @@ void initPhysicsBindings(py::module& m) {
       .value("UserGroup7", CollisionGroup::UserGroup7)
       .value("UserGroup8", CollisionGroup::UserGroup8)
       .value("UserGroup9", CollisionGroup::UserGroup9)
-      .value("None", CollisionGroup{});
+      .value("NoneGroup", CollisionGroup{});
   pybindEnumOperators(collisionGroups);
 
   // ==== class object CollisionGroupHelper ====
