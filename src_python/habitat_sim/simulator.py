@@ -177,6 +177,7 @@ class Simulator(SimulatorBackend):
         Sets the world time to 0.0, changes the physical state of all objects back to their initial states.
         Does not invalidate existing ManagedObject wrappers.
         Does not add or remove object instances.
+        Only changes motion_type when scene_instance specified a motion type.
 
         :param agent_ids: An optional list of agent ids for which to return the sensor observations. If none is provide, default agent is used.
 

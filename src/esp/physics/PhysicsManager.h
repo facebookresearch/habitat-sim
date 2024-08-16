@@ -264,7 +264,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /**
    * @brief Reset the simulation and physical world.
-   * Sets the @ref worldTime_ to 0.0, changes the physical state of all objects back to their initial states.
+   * Sets the @ref worldTime_ to 0.0, changes the physical state of all objects back to their initial states. Only changes motion_type when scene_instance specified a motion type.
    */
   virtual void reset() {
     // reset object states from initial values (e.g. from scene instance)
