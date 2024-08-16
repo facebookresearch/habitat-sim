@@ -264,11 +264,17 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /**
    * @brief Reset the simulation and physical world.
-   * Sets the @ref worldTime_ to 0.0, does not change physical state.
+   * Sets the @ref worldTime_ to 0.0, changes the physical state of all objects back to their initial states.
    */
   virtual void reset() {
-    /* TODO: reset object states or clear them? Other? */
+    // reset object states from initial values (e.g. from scene instance)
     worldTime_ = 0.0;
+    for (const auto& bro : existingObjects_) {
+      bro.second->resetStateFromSceneInstanceAttr();
+    }
+    for (const auto& bao : existingArticulatedObjects_) {
+      bao.second->resetStateFromSceneInstanceAttr();
+    }
   }
 
   /** @brief Stores references to a set of drawable elements. */

@@ -311,6 +311,8 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr() {
     }
     aoJointVels[i] = initJointVels[i];
   }
+  // clear any forces
+  setJointForces(std::vector<float>(size_t(btMultiBody_->getNumDofs())));
 
 }  // BulletArticulatedObject::resetStateFromSceneInstanceAttr
 

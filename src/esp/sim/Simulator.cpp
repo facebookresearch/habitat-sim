@@ -672,7 +672,9 @@ bool Simulator::instanceArticulatedObjectsForSceneAttributes(
 
 void Simulator::reset() {
   if (physicsManager_ != nullptr) {
-    // Note: only resets time to 0 by default.
+    // Note: resets time to 0 and all existing objects set back to initial
+    // states. Does not add back deleted objects or delete added objects. Does
+    // not break ManagedObject pointers.
     physicsManager_->reset();
   }
 
@@ -680,7 +682,13 @@ void Simulator::reset() {
     agent->reset();
   }
   getActiveSceneGraph().getRootNode().computeCumulativeBB();
-  resourceManager_->setLightSetup(gfx::getDefaultLights());
+  // set the default light key to reference the scene's light setup
+  auto initSceneInstanceAttr =
+      metadataMediator_->getSceneInstanceAttributesManager()
+          ->getObjectCopyByHandle(curSceneInstanceAttributes_->getHandle());
+  auto sceneLightSetup = resourceManager_->getLightSetup(
+      initSceneInstanceAttr->getLightingHandle());
+  resourceManager_->setLightSetup(*sceneLightSetup);
 }  // Simulator::reset()
 
 metadata::attributes::SceneInstanceAttributes::ptr
