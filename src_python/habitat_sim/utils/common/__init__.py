@@ -7,6 +7,7 @@
 # List functions in __all__ to make available from this namespace level
 
 
+from habitat_sim._ext.habitat_sim_bindings.core import orthonormalize_rotation_shear
 from habitat_sim.utils.common.common import d3_40_colors_hex, d3_40_colors_rgb
 from habitat_sim.utils.common.quaternion_utils import (
     angle_between_quats,
@@ -23,6 +24,7 @@ from habitat_sim.utils.common.quaternion_utils import (
 
 __all__ = [
     "angle_between_quats",
+    "orthonormalize_rotation_shear",
     "quat_from_coeffs",
     "quat_to_coeffs",
     "quat_from_magnum",
