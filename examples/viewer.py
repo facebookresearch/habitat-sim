@@ -30,17 +30,19 @@ from magnum import shaders, text
 from magnum.platform.glfw import Application
 
 import habitat_sim
-import habitat_sim.utils.sim_utils as sim_utils
 from habitat_sim import ReplayRenderer, ReplayRendererConfiguration, physics
 from habitat_sim.gfx import DEFAULT_LIGHTING_KEY, DebugLineRender
 from habitat_sim.logging import LoggingContext, logger
+from habitat_sim.utils.classes import MarkerSetsEditor, ObjectEditor, SemanticDisplay
 from habitat_sim.utils.common import quat_from_angle_axis
+from habitat_sim.utils.namespace import hsim_physics
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
 # add tools directory so I can import things to try them in the viewer
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../tools"))
 print(sys.path)
-import collision_shape_automation as csa
+
+from tools import collision_shape_automation as csa
 
 # CollisionProxyOptimizer initialized before the application
 _cpo: Optional[csa.CollisionProxyOptimizer] = None
@@ -95,7 +97,7 @@ class HabitatSimInteractiveViewer(Application):
     # the maximum number of chars displayable in the app window
     # using the magnum text module. These chars are used to
     # display the CPU/GPU usage data
-    MAX_DISPLAY_TEXT_CHARS = 256
+    MAX_DISPLAY_TEXT_CHARS = 512
 
     # how much to displace window text relative to the center of the
     # app window (e.g if you want the display text in the top left of
@@ -293,13 +295,13 @@ class HabitatSimInteractiveViewer(Application):
         # load markersets for every object and ao into a cache
         task_names_set = set()
         task_names_set.add("faucets")
-        self.markersets_util = sim_utils.MarkerSetsInfo(self.sim, task_names_set)
+        self.markersets_util = MarkerSetsEditor(self.sim, task_names_set)
 
         # Editing
-        self.obj_editor = sim_utils.ObjectEditor(self.sim)
+        self.obj_editor = ObjectEditor(self.sim)
 
         # Semantics
-        self.dbg_semantics = sim_utils.SemanticManager(self.sim)
+        self.dbg_semantics = SemanticDisplay(self.sim)
 
         # sys.exit(0)
         # load appropriate filter file for scene
@@ -442,11 +444,13 @@ class HabitatSimInteractiveViewer(Application):
                     else:
                         global_keypoints = None
                         if isinstance(receptacle, hab_receptacle.AABBReceptacle):
-                            global_keypoints = sim_utils.get_global_keypoints_from_bb(
-                                receptacle.bounds, g_trans
+                            global_keypoints = (
+                                hsim_physics.get_global_keypoints_from_bb(
+                                    receptacle.bounds, g_trans
+                                )
                             )
                         elif isinstance(receptacle, hab_receptacle.AnyObjectReceptacle):
-                            global_keypoints = sim_utils.get_bb_corners(
+                            global_keypoints = hsim_physics.get_bb_corners(
                                 receptacle._get_global_bb(self.sim)
                             )
 
@@ -571,7 +575,7 @@ class HabitatSimInteractiveViewer(Application):
         ]
         for receptacle in self.receptacles:
             if receptacle not in self.rec_to_poh:
-                po_handle = sim_utils.get_obj_from_handle(
+                po_handle = hsim_physics.get_obj_from_handle(
                     self.sim, receptacle.parent_object_handle
                 ).creation_attributes.handle
                 self.rec_to_poh[receptacle] = po_handle
@@ -701,12 +705,12 @@ class HabitatSimInteractiveViewer(Application):
                         num_segments=12,
                     )
 
-            rec_obj = sim_utils.get_obj_from_handle(
+            rec_obj = hsim_physics.get_obj_from_handle(
                 self.sim, receptacle.parent_object_handle
             )
             key_points = [r_trans.translation]
             key_points.extend(
-                sim_utils.get_bb_corners(rec_obj.root_scene_node.cumulative_bb)
+                hsim_physics.get_bb_corners(rec_obj.root_scene_node.cumulative_bb)
             )
 
             in_view = False
@@ -1031,7 +1035,7 @@ class HabitatSimInteractiveViewer(Application):
                 for composite_file in sim_settings["composite_files"]:
                     self.replay_renderer.preload_file(composite_file)
 
-        self.ao_link_map = sim_utils.get_ao_link_id_map(self.sim)
+        self.ao_link_map = hsim_physics.get_ao_link_id_map(self.sim)
         self.dbv = DebugVisualizer(self.sim)
 
         Timer.start()
@@ -1120,7 +1124,7 @@ class HabitatSimInteractiveViewer(Application):
         print(f"Checking Receptacle accessibility for {rec.unique_name}")
 
         # first check if the receptacle is close enough to the navmesh
-        rec_global_keypoints = sim_utils.get_global_keypoints_from_bb(
+        rec_global_keypoints = hsim_physics.get_global_keypoints_from_bb(
             rec.bounds, rec.get_global_transform(self.sim)
         )
         floor_point = None
@@ -1518,10 +1522,10 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.T:
             if shift_pressed:
                 # open all the AO default links
-                aos = sim_utils.get_all_ao_objects(self.sim)
+                aos = hsim_physics.get_all_ao_objects(self.sim)
                 for ao in aos:
-                    default_link = sim_utils.get_ao_default_link(ao, True)
-                    sim_utils.open_link(ao, default_link)
+                    default_link = hsim_physics.get_ao_default_link(ao, True)
+                    hsim_physics.open_link(ao, default_link)
                 # compute and set the receptacle filters
                 for rix, rec in enumerate(self.receptacles):
                     rec_accessible, filter_type = self.check_rec_accessibility(rec)
@@ -1658,7 +1662,7 @@ class HabitatSimInteractiveViewer(Application):
             if hit_id == habitat_sim.stage_id:
                 print("This is the stage.")
             else:
-                obj = sim_utils.get_obj_from_id(self.sim, hit_id)
+                obj = hsim_physics.get_obj_from_id(self.sim, hit_id)
                 link_id = None
                 if obj.object_id != hit_id:
                     # this is a link
@@ -1733,14 +1737,14 @@ class HabitatSimInteractiveViewer(Application):
                             )
                 elif obj.is_articulated:
                     # get the default link
-                    default_link = sim_utils.get_ao_default_link(obj, True)
+                    default_link = hsim_physics.get_ao_default_link(obj, True)
                     if default_link is None:
                         print("Selected AO has no default link.")
                     else:
-                        if sim_utils.link_is_open(obj, default_link, 0.05):
-                            sim_utils.close_link(obj, default_link)
+                        if hsim_physics.link_is_open(obj, default_link, 0.05):
+                            hsim_physics.close_link(obj, default_link)
                         else:
-                            sim_utils.open_link(obj, default_link)
+                            hsim_physics.open_link(obj, default_link)
 
             # clear all selected objects and set to found obj
             self.obj_editor.set_sel_obj(sel_obj)
@@ -1750,7 +1754,7 @@ class HabitatSimInteractiveViewer(Application):
         hit_info = self.mouse_cast_results.hits[0]
 
         if hit_info.object_id > habitat_sim.stage_id:
-            obj = sim_utils.get_obj_from_id(
+            obj = hsim_physics.get_obj_from_id(
                 self.sim, hit_info.object_id, self.ao_link_map
             )
 

@@ -24,16 +24,10 @@ from magnum.platform.glfw import Application
 import habitat_sim
 from habitat_sim import ReplayRenderer, ReplayRendererConfiguration
 from habitat_sim.logging import LoggingContext, logger
+from habitat_sim.utils.classes import MarkerSetsEditor, ObjectEditor, SemanticDisplay
 from habitat_sim.utils.common import quat_from_angle_axis
+from habitat_sim.utils.namespace import hsim_physics
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
-from habitat_sim.utils.sim_utils import (
-    MarkerSetsInfo,
-    ObjectEditor,
-    SemanticManager,
-    get_ao_link_id_map,
-    get_obj_from_handle,
-    get_obj_from_id,
-)
 
 # file holding all URDF filenames
 URDF_FILES = os.path.join(
@@ -232,7 +226,7 @@ class HabitatSimInteractiveViewer(Application):
 
         # load markersets for every object and ao into a cache
         task_names_set = {"faucets", "handles"}
-        self.markersets_util = MarkerSetsInfo(self.sim, task_names_set)
+        self.markersets_util = MarkerSetsEditor(self.sim, task_names_set)
         self.markersets_util.set_current_taskname("handles")
 
         # Editing for object selection
@@ -246,7 +240,7 @@ class HabitatSimInteractiveViewer(Application):
         self.load_urdf_obj()
 
         # Semantics
-        self.dbg_semantics = SemanticManager(self.sim)
+        self.dbg_semantics = SemanticDisplay(self.sim)
 
         # compute NavMesh if not already loaded by the scene.
         if (
@@ -330,7 +324,7 @@ class HabitatSimInteractiveViewer(Application):
     def _delete_sel_obj_update_nolink_file(self, sel_obj_hash: str):
         sel_obj = self.obj_editor.get_target_sel_obj()
         if sel_obj is None:
-            sel_obj = get_obj_from_handle(sel_obj_hash)
+            sel_obj = hsim_physics.get_obj_from_handle(sel_obj_hash)
 
         save_no_markers = (
             self.force_urdf_notes_save
@@ -360,7 +354,7 @@ class HabitatSimInteractiveViewer(Application):
             obj_substring=sel_obj_hash,
             build_loc=self.ao_place_location,
         )
-        self.ao_link_map = get_ao_link_id_map(self.sim)
+        self.ao_link_map = hsim_physics.get_ao_link_id_map(self.sim)
         self.markersets_util.update_markersets()
         self.markersets_util.set_current_taskname("handles")
 
@@ -660,7 +654,7 @@ class HabitatSimInteractiveViewer(Application):
                 for composite_file in sim_settings["composite_files"]:
                     self.replay_renderer.preload_file(composite_file)
 
-        self.ao_link_map = get_ao_link_id_map(self.sim)
+        self.ao_link_map = hsim_physics.get_ao_link_id_map(self.sim)
         # check that clearing joint positions on save won't corrupt the content
         for ao in (
             self.sim.get_articulated_object_manager()
@@ -848,7 +842,7 @@ class HabitatSimInteractiveViewer(Application):
                 print("Failed to add any new objects.")
             else:
                 print(f"Finished adding {len(new_obj_list)} object(s).")
-                self.ao_link_map = get_ao_link_id_map(self.sim)
+                self.ao_link_map = hsim_physics.get_ao_link_id_map(self.sim)
                 self.markersets_util.update_markersets()
 
         # update map of moving/looking keys which are currently pressed
@@ -931,7 +925,7 @@ class HabitatSimInteractiveViewer(Application):
                     while hit_idx < len(mouse_cast_results.hits) and not obj_found:
                         self.last_hit_details = mouse_cast_results.hits[hit_idx]
                         hit_obj_id = mouse_cast_results.hits[hit_idx].object_id
-                        obj = get_obj_from_id(self.sim, hit_obj_id)
+                        obj = hsim_physics.get_obj_from_id(self.sim, hit_obj_id)
                         if obj is None:
                             hit_idx += 1
                         else:

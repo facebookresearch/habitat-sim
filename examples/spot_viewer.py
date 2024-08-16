@@ -22,13 +22,12 @@ from magnum.platform.glfw import Application
 import habitat_sim
 from habitat_sim import ReplayRenderer, ReplayRendererConfiguration
 from habitat_sim.logging import LoggingContext, logger
+from habitat_sim.utils.classes import ObjectEditor, SemanticDisplay
+from habitat_sim.utils.namespace import hsim_physics
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
-from habitat_sim.utils.sim_utils import (
-    ObjectEditor,
-    SemanticManager,
-    SpotAgent,
-    get_obj_from_id,
-)
+
+# This class is dependent on hab-lab
+from habitat_sim.utils.sim_utils import SpotAgent
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -186,7 +185,7 @@ class HabitatSimInteractiveViewer(Application):
         self.obj_editor = ObjectEditor(self.sim)
 
         # Semantics
-        self.dbg_semantics = SemanticManager(self.sim)
+        self.dbg_semantics = SemanticDisplay(self.sim)
 
         # create spot right after reconfigure
         self.spot_agent = SpotAgent(self.sim)
@@ -849,7 +848,7 @@ class HabitatSimInteractiveViewer(Application):
                 while hit_idx < len(mouse_cast_results.hits) and not obj_found:
                     self.last_hit_details = mouse_cast_results.hits[hit_idx]
                     hit_obj_id = mouse_cast_results.hits[hit_idx].object_id
-                    obj = get_obj_from_id(self.sim, hit_obj_id)
+                    obj = hsim_physics.get_obj_from_id(self.sim, hit_obj_id)
                     if obj is None:
                         hit_idx += 1
                     else:
