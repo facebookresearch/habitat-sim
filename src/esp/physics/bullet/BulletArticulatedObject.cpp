@@ -280,15 +280,16 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr() {
     setMotionType(attrObjMotionType);
   }
 
-  // first clear all joint positions
-  setJointPositions(std::vector<float>(size_t(btMultiBody_->getNumPosVars())));
-  // then add back the ones for unit quaternions
+  // initially set positions to zero (or identity quaternion for spherical
+  // joints)
   int posCount = 0;
+  // init unit quat
   float quat_init[] = {0, 0, 0, 1};
   for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
     auto& link = btMultiBody_->getLink(i);
-    if (link.m_posVarCount == 4) {
-      // special handling for quaternions in spherical joints
+    if (link.m_posVarCount > 0) {
+      // feed the unit quat to all setters, only spherical joints will hit the
+      // one at the end
       btMultiBody_->setJointPosMultiDof(i, const_cast<float*>(quat_init));
       posCount += link.m_posVarCount;
     }
@@ -296,7 +297,7 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr() {
 
   // set initial joint positions from instance config if applicable
   std::vector<float> aoJointPose = getJointPositions();
-  // get instance-specified initial joint velocities
+  // get instance-specified initial joint positions
   const auto& initJointPos = sceneObjInstanceAttr->getInitJointPose();
   for (size_t i = 0; i < initJointPos.size(); ++i) {
     if (i >= aoJointPose.size()) {
