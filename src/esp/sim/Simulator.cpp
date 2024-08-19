@@ -682,13 +682,7 @@ void Simulator::reset() {
     agent->reset();
   }
   getActiveSceneGraph().getRootNode().computeCumulativeBB();
-  // set the default light key to reference the scene's light setup
-  auto initSceneInstanceAttr =
-      metadataMediator_->getSceneInstanceAttributesManager()
-          ->getObjectCopyByHandle(curSceneInstanceAttributes_->getHandle());
-  auto sceneLightSetup = resourceManager_->getLightSetup(
-      initSceneInstanceAttr->getLightingHandle());
-  resourceManager_->setLightSetup(*sceneLightSetup);
+  resourceManager_->setLightSetup(gfx::getDefaultLights());
 }  // Simulator::reset()
 
 metadata::attributes::SceneInstanceAttributes::ptr
