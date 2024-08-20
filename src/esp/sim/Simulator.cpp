@@ -672,7 +672,9 @@ bool Simulator::instanceArticulatedObjectsForSceneAttributes(
 
 void Simulator::reset() {
   if (physicsManager_ != nullptr) {
-    // Note: only resets time to 0 by default.
+    // Note: resets time to 0 and all existing objects set back to initial
+    // states. Does not add back deleted objects or delete added objects. Does
+    // not break ManagedObject pointers.
     physicsManager_->reset();
   }
 

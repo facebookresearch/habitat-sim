@@ -68,6 +68,14 @@ class Simulator {
 
   void reconfigure(const SimulatorConfiguration& cfg);
 
+  /**
+   * @brief Reset the simulation state including the state of all physics
+   * objects, agents, and the default light setup.
+   * Sets the @ref worldTime_ to 0.0, changes the physical state of all objects back to their initial states.
+   * Does not invalidate existing ManagedObject wrappers.
+   * Does not add or remove object instances.
+   * Only changes motion_type when scene_instance specified a motion type.
+   */
   void reset();
 
   void seed(uint32_t newSeed);

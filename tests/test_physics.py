@@ -447,7 +447,7 @@ def test_velocity_control():
         obj_handle = obj_template_mgr.get_template_handle_by_id(template_ids[0])
 
         for iteration in range(2):
-            sim.reset()
+            cur_time = sim.get_world_time()
 
             box_object = rigid_obj_mgr.add_object_by_template_handle(obj_handle)
             # Verify is not articulated
@@ -471,17 +471,19 @@ def test_velocity_control():
             vel_control.controlling_lin_vel = True
             vel_control.controlling_ang_vel = True
 
-            while sim.get_world_time() < 1.0:
+            while sim.get_world_time() < 1.0 + cur_time:
                 # NOTE: stepping close to default timestep to get near-constant velocity control of DYNAMIC bodies.
                 sim.step_physics(0.00416)
 
-            ground_truth_pos = sim.get_world_time() * vel_control.linear_velocity
+            ground_truth_pos = (
+                sim.get_world_time() - cur_time
+            ) * vel_control.linear_velocity
             assert np.allclose(box_object.translation, ground_truth_pos, atol=0.01)
             ground_truth_q = mn.Quaternion([[0, 0.480551, 0], 0.876967])
             angle_error = mn.math.half_angle(ground_truth_q, box_object.rotation)
             assert angle_error < mn.Rad(0.005)
 
-            sim.reset()
+            cur_time = sim.get_world_time()
 
             # test local velocities (turn in a half circle)
             vel_control.lin_vel_is_local = True
@@ -492,15 +494,12 @@ def test_velocity_control():
             box_object.translation = [0.0, 0.0, 0.0]
             box_object.rotation = mn.Quaternion()
 
-            while sim.get_world_time() < 0.5:
+            while sim.get_world_time() < 0.5 + cur_time:
                 # NOTE: stepping close to default timestep to get near-constant velocity control of DYNAMIC bodies.
                 sim.step_physics(0.008)
 
-            print(sim.get_world_time())
-
             # NOTE: explicit integration, so expect some error
             ground_truth_q = mn.Quaternion([[1.0, 0.0, 0.0], 0.0])
-            print(box_object.translation)
             assert np.allclose(
                 box_object.translation, np.array([0, 1.0, 0.0]), atol=0.07
             )

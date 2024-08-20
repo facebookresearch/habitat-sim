@@ -207,8 +207,7 @@ class RigidObject : public RigidBase {
   VelocityControl::ptr getVelocityControl() { return velControl_; };
 
   /**
-   * @brief Set the object's state from a @ref
-   * esp::metadata::attributes::SceneObjectInstanceAttributes
+   * @brief Set the object's state from a @ref esp::metadata::attributes::SceneObjectInstanceAttributes
    */
   void resetStateFromSceneInstanceAttr() override;
 
