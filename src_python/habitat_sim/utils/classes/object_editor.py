@@ -605,10 +605,11 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}{obj_type_disp_str}
         match_rotation = self.sel_objs[-1].rotation
         local_navmesh_dirty = False
         for obj in self.sel_objs:
+            obj_mod_rot = match_rotation * obj.rotation.inverted()
             local_navmesh_dirty = self._move_one_object(
                 obj,
                 navmesh_dirty,
-                rotation=match_rotation,
+                rotation=obj_mod_rot,
                 removal=False,
             )
             navmesh_dirty = navmesh_dirty or local_navmesh_dirty
