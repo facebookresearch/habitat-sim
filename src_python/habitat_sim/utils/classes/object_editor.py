@@ -573,6 +573,8 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}{obj_type_disp_str}
         """
         All selected objects should match specified target object's x value
         """
+        if len(self.sel_objs) == 0:
+            return None
         match_val = self.sel_objs[-1].translation.x
         return self.match_dim_sel_objects(navmesh_dirty, match_val, mn.Vector3.x_axis())
 
@@ -580,6 +582,8 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}{obj_type_disp_str}
         """
         All selected objects should match specified target object's y value
         """
+        if len(self.sel_objs) == 0:
+            return None
         match_val = self.sel_objs[-1].translation.y
         return self.match_dim_sel_objects(navmesh_dirty, match_val, mn.Vector3.y_axis())
 
@@ -587,6 +591,8 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}{obj_type_disp_str}
         """
         All selected objects should match specified target object's z value
         """
+        if len(self.sel_objs) == 0:
+            return None
         match_val = self.sel_objs[-1].translation.z
         return self.match_dim_sel_objects(navmesh_dirty, match_val, mn.Vector3.z_axis())
 
@@ -594,13 +600,19 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}{obj_type_disp_str}
         """
         All selected objects should match specified target object's orientation
         """
+        if len(self.sel_objs) == 0:
+            return None
         match_rotation = self.sel_objs[-1].rotation
         local_navmesh_dirty = False
         for obj in self.sel_objs:
-            obj.rotation = match_rotation
-            local_navmesh_dirty = True
-        # If nothing selected, no further navmesh modifications
-        return navmesh_dirty or local_navmesh_dirty
+            local_navmesh_dirty = self._move_one_object(
+                obj,
+                navmesh_dirty,
+                rotation=match_rotation,
+                removal=False,
+            )
+            navmesh_dirty = navmesh_dirty or local_navmesh_dirty
+        return navmesh_dirty
 
     def edit_left(self, navmesh_dirty: bool) -> bool:
         """
