@@ -194,7 +194,8 @@ void SemanticAttributesManager::setValsFromJSONDoc(
     }
     semanticAttribs->setSemanticDescriptorFilename(semanticSceneDescriptor);
   }
-
+  // TODO : drive by diagnostics when implemented
+  bool validateUnique = false;
   // Check for region instances existence
   io::JsonGenericValue::ConstMemberIterator regionJSONIter =
       jsonConfig.FindMember("region_annotations");
@@ -206,7 +207,7 @@ void SemanticAttributesManager::setValsFromJSONDoc(
         const auto& regionCell = regionArray[i];
         if (regionCell.IsObject()) {
           semanticAttribs->addRegionInstanceAttrs(
-              createRegionAttributesFromJSON(regionCell));
+              createRegionAttributesFromJSON(regionCell), validateUnique);
         } else {
           ESP_WARNING(Mn::Debug::Flag::NoSpace)
               << "Region instance issue in Semantic Configuration `"
