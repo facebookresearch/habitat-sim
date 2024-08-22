@@ -198,6 +198,13 @@ void SemanticAttributesManager::setValsFromJSONDoc(
   // Check for region instances existence
   io::JsonGenericValue::ConstMemberIterator regionJSONIter =
       jsonConfig.FindMember("region_annotations");
+
+  // TODO set this via configuration value - should only be called when
+  // explicitly filtering dataset
+  bool validateUniqueness = true;
+
+  // Only resave if attributes' attempt to be added reveals duplicate attributes
+  bool resaveAttributes = false;
   if (regionJSONIter != jsonConfig.MemberEnd()) {
     // region_annotations tag exists
     if (regionJSONIter->value.IsArray()) {
@@ -205,8 +212,10 @@ void SemanticAttributesManager::setValsFromJSONDoc(
       for (rapidjson::SizeType i = 0; i < regionArray.Size(); ++i) {
         const auto& regionCell = regionArray[i];
         if (regionCell.IsObject()) {
-          semanticAttribs->addRegionInstanceAttrs(
-              createRegionAttributesFromJSON(regionCell));
+          resaveAttributes = !semanticAttribs->addRegionInstanceAttrs(
+                                 createRegionAttributesFromJSON(regionCell),
+                                 validateUniqueness) ||
+                             resaveAttributes;
         } else {
           ESP_WARNING(Mn::Debug::Flag::NoSpace)
               << "Region instance issue in Semantic Configuration `"
@@ -233,9 +242,12 @@ void SemanticAttributesManager::setValsFromJSONDoc(
         << "`: JSON cell with tag `region_annotations` does not exist in "
            "Semantic Configuration file.";
   }
-
   // check for user defined attributes
   this->parseUserDefinedJsonVals(semanticAttribs, jsonConfig);
+
+  if (resaveAttributes) {
+    // TODO Resave this attributes due to duplicate entries being filtered out
+  }
 
 }  // SemanticAttributesManager::setValsFromJSONDoc
 

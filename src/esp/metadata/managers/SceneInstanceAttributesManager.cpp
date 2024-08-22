@@ -112,6 +112,13 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
     }
   }
 
+  // TODO set this via configuration value - should only be called when
+  // explicitly filtering dataset
+  bool validateUniqueness = true;
+
+  // Only resave if instance attributes' attempt to be added reveals duplicate
+  // attributes
+  bool resaveAttributes = false;
   // Check for object instances existence
   io::JsonGenericValue::ConstMemberIterator objJSONIter =
       jsonConfig.FindMember("object_instances");
@@ -122,8 +129,12 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
       for (rapidjson::SizeType i = 0; i < objectArray.Size(); ++i) {
         const auto& objCell = objectArray[i];
         if (objCell.IsObject()) {
-          attribs->addObjectInstanceAttrs(
-              createInstanceAttributesFromJSON(objCell));
+          // Resave if attributes not added due to being already found in the
+          // subconfiguration
+          resaveAttributes = !attribs->addObjectInstanceAttrs(
+                                 createInstanceAttributesFromJSON(objCell),
+                                 validateUniqueness) ||
+                             resaveAttributes;
         } else {
           ESP_WARNING(Mn::Debug::Flag::NoSpace)
               << "Object instance issue in Scene Instance `" << attribsDispName
@@ -133,9 +144,9 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
         }
       }
     } else {
-      // object_instances tag exists but is not an array. should warn (perhaps
-      // error?)
-      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+      // object_instances tag exists but is not an array; gives error message.
+      // (Perhaps should fail?)
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
           << "Object instances issue in Scene Instance `" << attribsDispName
           << "`: JSON cell `object_instances` is not a valid JSON "
              "array, so no object instances loaded.";
@@ -160,8 +171,12 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
         const auto& artObjCell = articulatedObjArray[i];
 
         if (artObjCell.IsObject()) {
-          attribs->addArticulatedObjectInstanceAttrs(
-              createAOInstanceAttributesFromJSON(artObjCell));
+          // Resave if attributes not added due to being already found in the
+          // subconfiguration
+          resaveAttributes = !attribs->addArticulatedObjectInstanceAttrs(
+                                 createAOInstanceAttributesFromJSON(artObjCell),
+                                 validateUniqueness) ||
+                             resaveAttributes;
         } else {
           ESP_WARNING(Mn::Debug::Flag::NoSpace)
               << "Articulated Object specification error in Scene Instance `"
@@ -171,9 +186,9 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
         }
       }
     } else {
-      // articulated_object_instances tag exists but is not an array. should
-      // warn (perhaps error?)
-      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+      // articulated_object_instances tag exists but is not an array; gives
+      // error message. (Perhaps should fail?)
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
           << "Articulated Object instances issue in Scene "
              "InstanceScene Instance `"
           << attribsDispName
@@ -282,6 +297,10 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
   }
   // check for user defined attributes
   this->parseUserDefinedJsonVals(attribs, jsonConfig);
+
+  if (resaveAttributes) {
+    // TODO Resave this attributes due to duplicate entries being filtered out
+  }
 
 }  // SceneInstanceAttributesManager::setValsFromJSONDoc
 
