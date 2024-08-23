@@ -65,87 +65,87 @@ const extern std::map<std::string, DSDiagnosticType> DSDiagnosticTypeMap;
  */
 class DatasetDiagnosticsTool {
  public:
-  DatasetDiagnosticsTool() {}
+  DatasetDiagnosticsTool() = default;
 
   /**
-   * @brief Set diagnostic values based on specifications in passed @p _jsonObj.
-   * @param _jsonObj The json object referenced by the appropriate diagnostics
+   * @brief Set diagnostic values based on specifications in passed @p jsonObj.
+   * @param jsonObj The json object referenced by the appropriate diagnostics
    * tag.
-   * @param _msgStr A string containing the type of manager and the name of the
+   * @param msgStr A string containing the type of manager and the name of the
    * attributes/config responsible for this call, for use in debug messages.
    * @return Whether the diagnostic values were set successfully or not.
    */
-  bool setDiagnosticesFromJson(const io::JsonGenericValue& _jsonObj,
-                               const std::string& _msgStr);
+  bool setDiagnosticesFromJson(const io::JsonGenericValue& jsonObj,
+                               const std::string& msgStr);
 
   /**
    * @brief Merge the passed @ref DatasetDiagnosticsTool's flag settings into this one's.
    */
-  void mergeDiagnosticsTool(const DatasetDiagnosticsTool& _tool) {
-    _diagnosticsFlags |= _tool._diagnosticsFlags;
+  void mergeDiagnosticsTool(const DatasetDiagnosticsTool& tool) {
+    _diagnosticsFlags |= tool._diagnosticsFlags;
   }
 
   /**
    * @brief Take a list of string tags that are defined as keys in
    * @ref DSDiagnosticTypeMap and set their corresponding flag values to true.
-   * @param _keyMappings A list of diagnostics to enable.
-   * @param _abortOnFail Whether or not to abort the program if a diagnostic
+   * @param keyMappings A list of diagnostics to enable.
+   * @param abortOnFail Whether or not to abort the program if a diagnostic
    * string in
-   * @p _keyMappings is unable to be mapped (not found in DSDiagnosticType).
+   * @p keyMappings is unable to be mapped (not found in DSDiagnosticType).
    * Otherwise the erroneous value will produce an error message but otherwise
    * will be ignored.
    */
-  void enableDiagnostics(const std::vector<std::string>& _keyMappings,
-                         bool _abortOnFail) {
-    for (const auto& key : _keyMappings) {
-      setNamedDiagnostic(key, true, _abortOnFail);
+  void enableDiagnostics(const std::vector<std::string>& keyMappings,
+                         bool abortOnFail) {
+    for (const auto& key : keyMappings) {
+      setNamedDiagnostic(key, true, abortOnFail);
     }
   }  // enableDiagnostics
 
   /**
-   * @brief Enable/disable the diagnostic given by @p _diagnostic based on
-   * @p _val.
+   * @brief Enable/disable the diagnostic given by @p diagnostic based on
+   * @p val.
    *
-   * @param _diagnostic The string name of the diagnostic. This must be mappable
+   * @param diagnostic The string name of the diagnostic. This must be mappable
    * to a @ref DSDiagnosticType via @p DSDiagnosticTypeMap .
-   * @param _val Whether to enable or disable the given diagnostic
-   * @param _abortOnFail Whether or not to abort the program if the
-   * @p _diagnostic requeseted is not found in  @ref DSDiagnosticType. If false,
+   * @param val Whether to enable or disable the given diagnostic
+   * @param abortOnFail Whether or not to abort the program if the
+   * @p diagnostic requeseted is not found in  @ref DSDiagnosticType. If false,
    * will print an error message and skip the unknown request.
    * @return Whether the passed string successfully mapped to a known diagnostic
    */
-  bool setNamedDiagnostic(const std::string& _diagnostic,
-                          bool _val,
-                          bool _abortOnFail = false);
+  bool setNamedDiagnostic(const std::string& diagnostic,
+                          bool val,
+                          bool abortOnFail = false);
 
   /**
    * @brief Specify whether or not to save any corrected dataset components if
    * they received correction
    */
-  void setSaveCorrected(bool _val) {
-    _setFlags(DSDiagnosticType::SaveCorrected, _val);
+  void setSaveCorrected(bool val) {
+    setFlags(DSDiagnosticType::SaveCorrected, val);
   }
   /**
    * @brief Query whether or not to save any corrected dataset components if
    * they received correction
    */
   bool saveCorrected() const {
-    return _getFlags(DSDiagnosticType::SaveCorrected);
+    return getFlags(DSDiagnosticType::SaveCorrected);
   }
 
   /**
    * @brief Specify whether or not to test for duplicate scene object instances
    * in loaded @ref SceneInstanceAttributes and not process the duplicates if found.
    */
-  void setTestDuplicateSceneInstances(bool _val) {
-    _setFlags(DSDiagnosticType::TestForDuplicateInstances, _val);
+  void setTestDuplicateSceneInstances(bool val) {
+    setFlags(DSDiagnosticType::TestForDuplicateInstances, val);
   }
   /**
    * @brief Query whether or not to test for duplicate scene object instances
    * in loaded @ref SceneInstanceAttributes and not process the duplicates if found.
    */
   bool testDuplicateSceneInstances() const {
-    return _getFlags(DSDiagnosticType::TestForDuplicateInstances);
+    return getFlags(DSDiagnosticType::TestForDuplicateInstances);
   }
 
   /**
@@ -153,19 +153,19 @@ class DatasetDiagnosticsTool {
    * specifications
    * in loaded @ref SemanticAttributes and not process the duplicates if found.
    */
-  void setTestDuplicateSemanticRegions(bool _val) {
-    _setFlags(DSDiagnosticType::TestForDuplicateRegions, _val);
+  void setTestDuplicateSemanticRegions(bool val) {
+    setFlags(DSDiagnosticType::TestForDuplicateRegions, val);
   }
   /**
    * @brief Query whether or not to test for duplicate semantic region
    * specifications in loaded @ref SemanticAttributes and not process the duplicates if found.
    */
   bool testDuplicateSemanticRegions() const {
-    return _getFlags(DSDiagnosticType::TestForDuplicateRegions);
+    return getFlags(DSDiagnosticType::TestForDuplicateRegions);
   }
 
  private:
-  inline void _setFlags(DSDiagnosticType _flag, bool _val) {
+  inline void setFlags(DSDiagnosticType _flag, bool _val) {
     if (_val) {
       _diagnosticsFlags |= static_cast<uint32_t>(_flag);
     } else {
@@ -173,7 +173,7 @@ class DatasetDiagnosticsTool {
     }
   }
 
-  inline bool _getFlags(DSDiagnosticType _flag) const {
+  inline bool getFlags(DSDiagnosticType _flag) const {
     return (_diagnosticsFlags & static_cast<uint32_t>(_flag)) ==
            static_cast<uint32_t>(_flag);
   }
