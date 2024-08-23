@@ -136,7 +136,7 @@ SemanticAttributesManager::createRegionAttributesFromJSON(
   return regionAttrs;
 }  // SemanticAttributesManager::createRegionAttributesFromJSON
 
-void SemanticAttributesManager::setValsFromJSONDoc(
+void SemanticAttributesManager::setValsFromJSONDocInternal(
     SemanticAttributes::ptr semanticAttribs,
     const io::JsonGenericValue& jsonConfig) {
   const std::string attribsDispName = semanticAttribs->getSimplifiedHandle();
@@ -209,7 +209,7 @@ void SemanticAttributesManager::setValsFromJSONDoc(
   // Only resave if instance attributes' attempt to be added reveals duplicate
   // attributes
   bool saveValidationResults =
-      validateUniqueness && this->_DSDiagnostics->saveCorrected();
+      validateUniqueness && this->_DSDiagnostics->shouldSaveCorrected();
 
   // Whether this scene instance should be resaved or not.
   bool resaveAttributes = false;
@@ -254,7 +254,9 @@ void SemanticAttributesManager::setValsFromJSONDoc(
   this->parseUserDefinedJsonVals(semanticAttribs, jsonConfig);
 
   // If we want to save corrected, and we need to due to corrections happening
-  if (saveValidationResults && resaveAttributes) {
+  bool saveRequired = (saveValidationResults && resaveAttributes);
+  this->_DSDiagnostics->setSaveRequired(saveRequired);
+  if (saveRequired) {
     // TODO Resave this attributes due to duplicate entries being filtered out
     // via diagnostics
   }

@@ -56,15 +56,6 @@ class AOAttributesManager
       bool registerTemplate = true) override;
 
   /**
-   * @brief Method to take an existing attributes and set its values from passed
-   * json config file.
-   * @param attribs (out) an existing attributes to be modified.
-   * @param jsonConfig json document to parse
-   */
-  void setValsFromJSONDoc(attributes::ArticulatedObjectAttributes::ptr attribs,
-                          const io::JsonGenericValue& jsonConfig) override;
-
-  /**
    * @brief This is to be deprecated. Provide a map of the articulated object
    * model filenames (.urdf) that have been referenced in the Scene Dataset via
    * paths, either .urdf or .json. To be removed in favor of directly accessing
@@ -84,6 +75,16 @@ class AOAttributesManager
       const override;
 
  protected:
+  /**
+   * @brief Internally accessed from AbstractAttributesManager. Method to take
+   * an existing attributes and set its values from passed json config file.
+   * @param attribs (out) an existing attributes to be modified.
+   * @param jsonConfig json document to parse
+   */
+  void setValsFromJSONDocInternal(
+      attributes::ArticulatedObjectAttributes::ptr attribs,
+      const io::JsonGenericValue& jsonConfig) override;
+
   /**
    * @brief Parse Marker_sets object in json, if present.
    * @param attribs (out) an existing attributes to be modified.
@@ -156,19 +157,21 @@ class AOAttributesManager
       CORRADE_UNUSED bool) override;
 
   /**
-   * @brief Not required for this manager.
-   *
-   * This method will perform any final manager-related handling after
-   * successfully registering an object.
+   * @brief This method will perform any final manager-related handling after
+   * successfully registering an object, specifically saving the attributes back
+   * to file if it was found to be necessary due to user-specified diagnostics.
    *
    * See @ref esp::attributes::managers::ObjectAttributesManager for an example.
    *
    * @param objectID the ID of the successfully registered managed object
    * @param objectHandle The name of the managed object
    */
-  void postRegisterObjectHandling(
-      CORRADE_UNUSED int objectID,
-      CORRADE_UNUSED const std::string& objectHandle) override {}
+  void postRegisterObjectHandling(CORRADE_UNUSED int objectID,
+                                  const std::string& objectHandle) override {
+    if (this->_DSDiagnostics->saveRequired()) {
+      this->saveManagedObjectToFile(objectHandle, true);
+    }
+  }
 
   /**
    * @brief Any articulated-object-attributes-specific resetting that needs to

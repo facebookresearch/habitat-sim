@@ -186,8 +186,13 @@ class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
    * @param attribs (out) an existing attributes to be modified.
    * @param jsonConfig json document to parse
    */
-  virtual void setValsFromJSONDoc(AttribsPtr attribs,
-                                  const io::JsonGenericValue& jsonConfig) = 0;
+
+  void setValsFromJSONDoc(AttribsPtr attribs,
+                          const io::JsonGenericValue& jsonConfig) {
+    // Clear diagnostic flags from previous run
+    this->_DSDiagnostics->clearDiagnostics();
+    this->setValsFromJSONDocInternal(attribs, jsonConfig);
+  }
 
   /**
    * @brief Configure @ref _DSDiagnostics tool based on if passsed jsonConfig
@@ -277,6 +282,16 @@ class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
       const AttribsPtr& attributes) const = 0;
 
  protected:
+  /**
+   * @brief Internally called only. Method to take an existing attributes and
+   * set its values from passed json config file.
+   * @param attribs (out) an existing attributes to be modified.
+   * @param jsonConfig json document to parse
+   */
+  virtual void setValsFromJSONDocInternal(
+      AttribsPtr attribs,
+      const io::JsonGenericValue& jsonConfig) = 0;
+
   /**
    * @brief Called internally right before attribute registration. Filepaths
    * in the json configs for Habitat SceneDatasets are specified relative to

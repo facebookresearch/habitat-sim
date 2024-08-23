@@ -42,7 +42,7 @@ LightLayoutAttributes::ptr LightLayoutAttributesManager::createObject(
   return attrs;
 }  // PhysicsAttributesManager::createObject
 
-void LightLayoutAttributesManager::setValsFromJSONDoc(
+void LightLayoutAttributesManager::setValsFromJSONDocInternal(
     attributes::LightLayoutAttributes::ptr lightAttribs,
     const io::JsonGenericValue& jsonConfig) {
   const std::string layoutNameAndPath = lightAttribs->getHandle();

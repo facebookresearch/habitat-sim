@@ -44,15 +44,6 @@ class SceneDatasetAttributesManager
       bool registerTemplate = true) override;
 
   /**
-   * @brief Method to take an existing attributes and set its values from passed
-   * json config file.
-   * @param attribs (out) an existing attributes to be modified.
-   * @param jsonConfig json document to parse
-   */
-  void setValsFromJSONDoc(attributes::SceneDatasetAttributes::ptr attribs,
-                          const io::JsonGenericValue& jsonConfig) override;
-
-  /**
    * @brief This will set the current physics manager attributes that is
    * governing the world that this SceneDatasetAttributesManager's datasets will
    * be created in.  This is used so that upon creation of new
@@ -109,6 +100,16 @@ class SceneDatasetAttributesManager
       const override {}
 
  protected:
+  /**
+   * @brief Internally accessed from AbstractAttributesManager. Method to take
+   * an existing attributes and set its values from passed json config file.
+   * @param attribs (out) an existing attributes to be modified.
+   * @param jsonConfig json document to parse
+   */
+  void setValsFromJSONDocInternal(
+      attributes::SceneDatasetAttributes::ptr attribs,
+      const io::JsonGenericValue& jsonConfig) override;
+
   /**
    * @brief This will validate a loaded dataset map with file location values
    * from the dataset config, by attempting to either verify those
