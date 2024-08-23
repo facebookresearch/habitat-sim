@@ -199,6 +199,21 @@ void SemanticAttributesManager::setValsFromJSONDoc(
   // Check for region instances existence
   io::JsonGenericValue::ConstMemberIterator regionJSONIter =
       jsonConfig.FindMember("region_annotations");
+
+  // Set this via configuration value - should only be called when explicitly
+  // filtering dataset
+  // Whether uniqueness validation should be performed
+  bool validateUniqueness =
+      this->_DSDiagnostics->testDuplicateSemanticRegions();
+
+  // Only resave if instance attributes' attempt to be added reveals duplicate
+  // attributes
+  bool saveValidationResults =
+      validateUniqueness && this->_DSDiagnostics->saveCorrected();
+
+  // Whether this scene instance should be resaved or not.
+  bool resaveAttributes = false;
+
   if (regionJSONIter != jsonConfig.MemberEnd()) {
     // region_annotations tag exists
     if (regionJSONIter->value.IsArray()) {
@@ -206,8 +221,9 @@ void SemanticAttributesManager::setValsFromJSONDoc(
       for (rapidjson::SizeType i = 0; i < regionArray.Size(); ++i) {
         const auto& regionCell = regionArray[i];
         if (regionCell.IsObject()) {
-          semanticAttribs->addRegionInstanceAttrs(
-              createRegionAttributesFromJSON(regionCell), validateUnique);
+          bool regionWasAdded = semanticAttribs->addRegionInstanceAttrs(
+              createRegionAttributesFromJSON(regionCell), validateUniqueness);
+          resaveAttributes = !regionWasAdded || resaveAttributes;
         } else {
           ESP_WARNING(Mn::Debug::Flag::NoSpace)
               << "Region instance issue in Semantic Configuration `"
@@ -234,9 +250,14 @@ void SemanticAttributesManager::setValsFromJSONDoc(
         << "`: JSON cell with tag `region_annotations` does not exist in "
            "Semantic Configuration file.";
   }
-
   // check for user defined attributes
   this->parseUserDefinedJsonVals(semanticAttribs, jsonConfig);
+
+  // If we want to save corrected, and we need to due to corrections happening
+  if (saveValidationResults && resaveAttributes) {
+    // TODO Resave this attributes due to duplicate entries being filtered out
+    // via diagnostics
+  }
 
 }  // SemanticAttributesManager::setValsFromJSONDoc
 
