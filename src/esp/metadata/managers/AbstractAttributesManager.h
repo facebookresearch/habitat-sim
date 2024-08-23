@@ -207,6 +207,15 @@ class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
   }  // setDSDiagnostics
 
   /**
+   * @brief Merge the passed DatasetDiagnosticsTool settings into
+   * @p _DSDiagnostics nondestructively (i.e. retaining this one's enabled
+   * diagnostics)
+   */
+  void mergeDSDiagnosticsTool(const DatasetDiagnosticsTool& _tool) {
+    this->_DSDiagnostics->mergeDiagnosticsTool(_tool);
+  }
+
+  /**
    * @brief This function takes the json block specifying user-defined values
    * and parses it into the passed existing attributes.
    * @param attribs (out) an existing attributes to be modified.

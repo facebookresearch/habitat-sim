@@ -141,6 +141,9 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
     const io::JsonGenericValue& jsonConfig,
     const U& attrMgr,
     std::map<std::string, std::string>* strKeyMap) {
+  // merge DatasetDiagnostics tool from this manager into passed manager
+  attrMgr->mergeDSDiagnosticsTool(*(this->_DSDiagnostics));
+
   io::JsonGenericValue::ConstMemberIterator jsonIter =
       jsonConfig.FindMember(tag);
   if (jsonIter != jsonConfig.MemberEnd()) {

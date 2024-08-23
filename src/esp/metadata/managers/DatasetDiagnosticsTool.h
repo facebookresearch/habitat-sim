@@ -79,6 +79,13 @@ class DatasetDiagnosticsTool {
                                const std::string& _msgStr);
 
   /**
+   * @brief Merge the passed @ref DatasetDiagnosticsTool's flag settings into this one's.
+   */
+  void mergeDiagnosticsTool(const DatasetDiagnosticsTool& _tool) {
+    _diagnosticsFlags |= _tool._diagnosticsFlags;
+  }
+
+  /**
    * @brief Take a list of string tags that are defined as keys in
    * @ref DSDiagnosticTypeMap and set their corresponding flag values to true.
    * @param _keyMappings A list of diagnostics to enable.
