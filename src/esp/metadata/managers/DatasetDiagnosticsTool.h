@@ -122,19 +122,45 @@ class DatasetDiagnosticsTool {
                           bool abortOnFail = false);
 
   /**
-   * @brief Specify whether or not to save any corrected dataset components if
-   * they received correction
+   * @brief Specify whether or not we should save any corrected dataset
+   * components if they received correction
    */
-  void setSaveCorrected(bool val) {
+  void setShouldSaveCorrected(bool val) {
     setFlags(DSDiagnosticType::SaveCorrected, val);
   }
   /**
-   * @brief Query whether or not to save any corrected dataset components if
-   * they received correction
+   * @brief Query whether or not we should save any corrected dataset components
+   * if they received correction
    */
-  bool saveCorrected() const {
+  bool shouldSaveCorrected() const {
     return getFlags(DSDiagnosticType::SaveCorrected);
   }
+
+  /**
+   * @brief Set that a save is required. This value should be reset to false
+   * after it is accessed one time.  This is to bridge from reading the json
+   * file into the attributes and registering the attributes to the
+   * post-registration code.
+   */
+  void setSaveRequired(bool saveRequired) {
+    _requiresCorrectedSave = saveRequired;
+  }
+  /**
+   * @brief Get whether a save is required. This value should be reset to false
+   * after it is accessed one time. This is to bridge from reading the json
+   * file into the attributes and registering the attributes to the
+   * post-registration code.
+   */
+  bool saveRequired() {
+    bool retVal = _requiresCorrectedSave;
+    clearDiagnostics();
+    return retVal;
+  }
+
+  /**
+   * @brief Clear any flags set due to specific diagnostics
+   */
+  void clearDiagnostics() { _requiresCorrectedSave = false; }
 
   /**
    * @brief Specify whether or not to test for duplicate scene object instances
@@ -181,6 +207,11 @@ class DatasetDiagnosticsTool {
            static_cast<uint32_t>(_flag);
   }
   uint32_t _diagnosticsFlags = 0u;
+
+  /**
+   * @brief Save the attributes current being processed. This flag is only so
+   */
+  bool _requiresCorrectedSave = false;
 
  public:
   ESP_SMART_POINTERS(DatasetDiagnosticsTool)

@@ -243,7 +243,7 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::buildObjectFromJSONDoc(
   return primAssetAttributes;
 }  // AssetAttributesManager::buildObjectFromJSONDoc
 
-void AssetAttributesManager::setValsFromJSONDoc(
+void AssetAttributesManager::setValsFromJSONDocInternal(
     AttribsPtr attribs,
     const io::JsonGenericValue& jsonConfig) {
   // TODO support loading values from JSON docs

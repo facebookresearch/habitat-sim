@@ -71,15 +71,6 @@ class StageAttributesManager
       bool registerTemplate = true) override;
 
   /**
-   * @brief Method to take an existing attributes and set its values from passed
-   * json config file.
-   * @param attribs (out) an existing attributes to be modified.
-   * @param jsonConfig json document to parse
-   */
-  void setValsFromJSONDoc(attributes::StageAttributes::ptr attribs,
-                          const io::JsonGenericValue& jsonConfig) override;
-
-  /**
    * @brief This function will be called to finalize attributes' paths before
    * registration, moving fully qualified paths to the appropriate hidden
    * attribute fields. This can also be called without registration to make sure
@@ -90,6 +81,16 @@ class StageAttributesManager
       const attributes::StageAttributes::ptr& attributes) const override;
 
  protected:
+  /**
+   * @brief Internally accessed from AbstractAttributesManager. Method to take
+   * an existing attributes and set its values from passed json config file.
+   * @param attribs (out) an existing attributes to be modified.
+   * @param jsonConfig json document to parse
+   */
+  void setValsFromJSONDocInternal(
+      attributes::StageAttributes::ptr attribs,
+      const io::JsonGenericValue& jsonConfig) override;
+
   /**
    * @brief Create and save default primitive asset-based object templates,
    * saving their handles as non-deletable default handles.
@@ -164,19 +165,21 @@ class StageAttributesManager
       bool forceRegistration) override;
 
   /**
-   * @brief Not required for this manager.
-   *
-   * This method will perform any final manager-related handling after
-   * successfully registering an object.
+   * @brief This method will perform any final manager-related handling after
+   * successfully registering an object, specifically saving the attributes back
+   * to file if it was found to be necessary due to user-specified diagnostics.
    *
    * See @ref esp::attributes::managers::ObjectAttributesManager for an example.
    *
    * @param objectID the ID of the successfully registered managed object
    * @param objectHandle The name of the managed object
    */
-  void postRegisterObjectHandling(
-      CORRADE_UNUSED int objectID,
-      CORRADE_UNUSED const std::string& objectHandle) override {}
+  void postRegisterObjectHandling(CORRADE_UNUSED int objectID,
+                                  const std::string& objectHandle) override {
+    if (this->_DSDiagnostics->saveRequired()) {
+      this->saveManagedObjectToFile(objectHandle, true);
+    }
+  }
 
   /**
    * @brief Any scene-attributes-specific resetting that needs to happen on

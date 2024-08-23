@@ -67,7 +67,7 @@ SceneInstanceAttributesManager::initNewObjectInternal(
   return newAttributes;
 }  // SceneInstanceAttributesManager::initNewObjectInternal
 
-void SceneInstanceAttributesManager::setValsFromJSONDoc(
+void SceneInstanceAttributesManager::setValsFromJSONDocInternal(
     SceneInstanceAttributes::ptr attribs,
     const io::JsonGenericValue& jsonConfig) {
   const std::string attribsDispName = attribs->getSimplifiedHandle();
@@ -120,7 +120,7 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
   // Only resave if instance attributes' attempt to be added reveals duplicate
   // attributes
   bool saveValidationResults =
-      validateUniqueness && this->_DSDiagnostics->saveCorrected();
+      validateUniqueness && this->_DSDiagnostics->shouldSaveCorrected();
 
   // Whether this scene instance should be resaved or not.
   bool resaveAttributes = false;
@@ -303,7 +303,9 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
   this->parseUserDefinedJsonVals(attribs, jsonConfig);
 
   // If we want to save corrected, and we need to due to corrections happening
-  if (saveValidationResults && resaveAttributes) {
+  bool saveRequired = (saveValidationResults && resaveAttributes);
+  this->_DSDiagnostics->setSaveRequired(saveRequired);
+  if (saveRequired) {
     // TODO Resave this attributes due to duplicate entries being filtered out
     // via diagnostics
   }
