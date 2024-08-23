@@ -71,7 +71,7 @@ void ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates() {
   }
 }  // ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates
 
-void ObjectAttributesManager::setValsFromJSONDoc(
+void ObjectAttributesManager::setValsFromJSONDocInternal(
     attributes::ObjectAttributes::ptr objAttributes,
     const io::JsonGenericValue& jsonConfig) {
   this->setAbstractObjectAttributesFromJson(objAttributes, jsonConfig);
@@ -361,6 +361,9 @@ void ObjectAttributesManager::postRegisterObjectHandling(
     const std::string& objectTemplateHandle) {
   if (mapToAddTo_ != nullptr) {
     mapToAddTo_->emplace(objectTemplateID, objectTemplateHandle);
+  }
+  if (this->_DSDiagnostics->saveRequired()) {
+    this->saveManagedObjectToFile(objectTemplateHandle, true);
   }
 }  // ObjectAttributesManager::postRegisterObjectHandling
 

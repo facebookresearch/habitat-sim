@@ -66,7 +66,7 @@ SceneDatasetAttributesManager::initNewObjectInternal(
   return newAttributes;
 }  // SceneDatasetAttributesManager::initNewObjectInternal
 
-void SceneDatasetAttributesManager::setValsFromJSONDoc(
+void SceneDatasetAttributesManager::setValsFromJSONDocInternal(
     attributes::SceneDatasetAttributes::ptr dsAttribs,
     const io::JsonGenericValue& jsonConfig) {
   // check for diagnostics requests
