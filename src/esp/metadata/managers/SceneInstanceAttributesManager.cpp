@@ -303,13 +303,8 @@ void SceneInstanceAttributesManager::setValsFromJSONDocInternal(
   this->parseUserDefinedJsonVals(attribs, jsonConfig);
 
   // If we want to save corrected, and we need to due to corrections happening
-  bool saveRequired = (saveValidationResults && resaveAttributes);
-  this->_DSDiagnostics->setSaveRequired(saveRequired);
-  if (saveRequired) {
-    // TODO Resave this attributes due to duplicate entries being filtered out
-    // via diagnostics
-  }
-
+  this->_DSDiagnostics->setSaveRequired(saveValidationResults &&
+                                        resaveAttributes);
 }  // SceneInstanceAttributesManager::setValsFromJSONDoc
 
 SceneObjectInstanceAttributes::ptr

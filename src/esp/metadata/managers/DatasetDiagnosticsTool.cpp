@@ -21,7 +21,7 @@ const std::map<std::string, DSDiagnosticType> DSDiagnosticTypeMap = {
     {"allsavecorrected", DSDiagnosticType::AllDiagnosticsSaveCorrected},
 };
 
-bool DatasetDiagnosticsTool::setDiagnosticesFromJson(
+bool DatasetDiagnosticsTool::setDiagnosticesFromJSON(
     const io::JsonGenericValue& jsonObj,
     const std::string& msgStr) {
   if (jsonObj.IsString()) {
@@ -50,7 +50,7 @@ bool DatasetDiagnosticsTool::setDiagnosticesFromJson(
       << " configuration specifies `request_diagnostics` but specification "
          "is unable to be parsed, so diagnostics request is ignored.";
   return false;
-}  // DatasetDiagnosticsTool::setDiagnosticesFromJson
+}  // DatasetDiagnosticsTool::setDiagnosticesFromJSON
 
 bool DatasetDiagnosticsTool::setNamedDiagnostic(const std::string& diagnostic,
                                                 bool val,

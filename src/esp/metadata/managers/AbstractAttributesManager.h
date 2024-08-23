@@ -182,7 +182,8 @@ class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
 
   /**
    * @brief Method to take an existing attributes and set its values from passed
-   * json config file.
+   * json config file. The JSON functionality is encapsulated with diagnostic
+   * preparation and reporting.
    * @param attribs (out) an existing attributes to be modified.
    * @param jsonConfig json document to parse
    */
@@ -192,7 +193,15 @@ class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
     // Clear diagnostic flags from previous run
     this->_DSDiagnostics->clearDiagnostics();
     this->setValsFromJSONDocInternal(attribs, jsonConfig);
-  }
+    if (this->_DSDiagnostics->saveRequired()) {
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "<" << this->objectType_
+          << "> : Diagnostics exposed issues in loaded attributes : `"
+          << attribs->getSimplifiedHandle()
+          << "` and the user has requested that the corrected attributes will "
+             "be saved.";
+    }
+  }  // setValsFromJSONDoc
 
   /**
    * @brief Configure @ref _DSDiagnostics tool based on if passsed jsonConfig
@@ -205,7 +214,7 @@ class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
     if (jsonIter == jsonConfig.MemberEnd()) {
       return false;
     }
-    return this->_DSDiagnostics->setDiagnosticesFromJson(
+    return this->_DSDiagnostics->setDiagnosticesFromJSON(
         jsonIter->value, Cr::Utility::formatString(
                              "(setDSDiagnostics) <{}> : {}", this->objectType_,
                              attribs->getSimplifiedHandle()));
