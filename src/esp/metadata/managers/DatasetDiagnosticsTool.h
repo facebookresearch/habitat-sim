@@ -44,11 +44,13 @@ enum class DSDiagnosticType : uint32_t {
   TestForDuplicateRegions = (1U << 2),
 
   /**
-   * @brief Perform all diagnostics but do not save corrected results.
+   * @brief Shortcut to perform all diagnostics but do not save corrected
+   * results.
    */
   AllDiagnostics = ~SaveCorrected,
+
   /**
-   * @brief Perform all diagnostics and save corrected results
+   * @brief Shortcut to perform all diagnostics and save corrected results.
    */
   AllDiagnosticsSaveCorrected = ~0U
 };
@@ -82,7 +84,8 @@ class DatasetDiagnosticsTool {
                                const std::string& msgStr);
 
   /**
-   * @brief Merge the passed @ref DatasetDiagnosticsTool's flag settings into this one's.
+   * @brief Merge the passed @ref DatasetDiagnosticsTool's @p _diagnosticsFlag
+   * settings into this one's, preserving this one's state.
    */
   void mergeDiagnosticsTool(const DatasetDiagnosticsTool& tool) {
     _diagnosticsFlags |= tool._diagnosticsFlags;
@@ -149,7 +152,7 @@ class DatasetDiagnosticsTool {
    * json file into the attributes and registering the attributes to the
    * post-registration code.
    */
-  bool saveRequired() { return _requiresCorrectedSave; }
+  bool saveRequired() const { return _requiresCorrectedSave; }
 
   /**
    * @brief Clear any flags set due to specific diagnostics
