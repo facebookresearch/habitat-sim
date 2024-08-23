@@ -200,8 +200,8 @@ class ObjectAttributesManager
 
   /**
    * @brief This method will perform any necessary updating that is
-   * attributesManager-specific upon template removal, such as removing a
-   * specific template handle from the list of file-based template handles in
+   * AbstractAttributesManager-specific upon template removal, such as removing
+   * a specific template handle from the list of file-based template handles in
    * ObjectAttributesManager.  This should only be called @ref
    * esp::core::managedContainers::ManagedContainerBase.
    *

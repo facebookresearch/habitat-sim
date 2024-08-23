@@ -24,7 +24,7 @@
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
 #include "esp/metadata/MetadataMediator.h"
-#include "esp/metadata/attributes/AttributesBase.h"
+#include "esp/metadata/attributes/AbstractAttributes.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/bullet/BulletCollisionHelper.h"

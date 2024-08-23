@@ -7,7 +7,7 @@
 
 #include <utility>
 
-#include "AttributesManagerBase.h"
+#include "AbstractAttributesManager.h"
 
 #include "esp/metadata/attributes/ArticulatedObjectAttributes.h"
 
@@ -20,14 +20,13 @@ using core::managedContainers::ManagedFileBasedContainer;
 using core::managedContainers::ManagedObjectAccess;
 
 class AOAttributesManager
-    : public AttributesManager<attributes::ArticulatedObjectAttributes,
-                               ManagedObjectAccess::Copy> {
+    : public AbstractAttributesManager<attributes::ArticulatedObjectAttributes,
+                                       ManagedObjectAccess::Copy> {
  public:
   AOAttributesManager()
-      : AttributesManager<
-            attributes::ArticulatedObjectAttributes,
-            ManagedObjectAccess::Copy>::AttributesManager("Articulated Object",
-                                                          "ao_config.json") {
+      : AbstractAttributesManager<attributes::ArticulatedObjectAttributes,
+                                  ManagedObjectAccess::Copy>::
+            AbstractAttributesManager("Articulated Object", "ao_config.json") {
     this->copyConstructorMap_["ArticulatedObjectAttributes"] =
         &AOAttributesManager::createObjectCopy<
             attributes::ArticulatedObjectAttributes>;
@@ -125,8 +124,8 @@ class AOAttributesManager
 
   /**
    * @brief This method will perform any necessary updating that is
-   * attributesManager-specific upon template removal, such as removing a
-   * specific template handle from the list of file-based template handles in
+   * AbstractAttributesManager-specific upon template removal, such as removing
+   * a specific template handle from the list of file-based template handles in
    * ObjectAttributesManager.  This should only be called @ref
    * esp::core::ManagedContainerBase.
    *

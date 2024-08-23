@@ -7,9 +7,9 @@
 #include <Magnum/PythonBindings.h>
 
 #include "esp/core/managedContainers/AbstractManagedObject.h"
+#include "esp/metadata/attributes/AbstractAttributes.h"
 #include "esp/metadata/attributes/AbstractObjectAttributes.h"
 #include "esp/metadata/attributes/ArticulatedObjectAttributes.h"
-#include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/metadata/attributes/AttributesEnumMaps.h"
 #include "esp/metadata/attributes/LightLayoutAttributes.h"
 #include "esp/metadata/attributes/MarkerSets.h"

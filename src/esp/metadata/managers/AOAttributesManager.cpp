@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "AOAttributesManager.h"
-#include "AttributesManagerBase.h"
+#include "AbstractAttributesManager.h"
 
 namespace Cr = Corrade;
 namespace esp {

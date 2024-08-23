@@ -8,7 +8,7 @@
 #include <deque>
 #include <utility>
 
-#include "AttributesBase.h"
+#include "AbstractAttributes.h"
 
 namespace esp {
 namespace physics {

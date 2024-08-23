@@ -4,8 +4,8 @@
 
 set(
   metadata_SOURCES
-  attributes/AttributesBase.h
-  attributes/AttributesBase.cpp
+  attributes/AbstractAttributes.h
+  attributes/AbstractAttributes.cpp
   attributes/AttributesEnumMaps.h
   attributes/AttributesEnumMaps.cpp
   attributes/AbstractObjectAttributes.h
@@ -31,7 +31,7 @@ set(
   attributes/SemanticAttributes.cpp
   attributes/StageAttributes.h
   attributes/StageAttributes.cpp
-  managers/AttributesManagerBase.h
+  managers/AbstractAttributesManager.h
   managers/AbstractObjectAttributesManager.h
   managers/AOAttributesManager.h
   managers/AOAttributesManager.cpp

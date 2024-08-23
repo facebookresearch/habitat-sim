@@ -11,7 +11,7 @@
  * primitives.
  */
 
-#include "AttributesManagerBase.h"
+#include "AbstractAttributesManager.h"
 #include "esp/metadata/attributes/PrimitiveAssetAttributes.h"
 
 namespace esp {
@@ -77,8 +77,8 @@ enum class PrimObjTypes : uint32_t {
 namespace managers {
 
 class AssetAttributesManager
-    : public AttributesManager<attributes::AbstractPrimitiveAttributes,
-                               ManagedObjectAccess::Copy> {
+    : public AbstractAttributesManager<attributes::AbstractPrimitiveAttributes,
+                                       ManagedObjectAccess::Copy> {
  public:
   /**
    * @brief Constant Map holding names of all Magnum 3D primitive classes
@@ -458,8 +458,8 @@ class AssetAttributesManager
  protected:
   /**
    * @brief This method will perform any necessary updating that is
-   * attributesManager-specific upon template removal, such as removing a
-   * specific template handle from the list of file-based template handles in
+   * AbstractAttributesManager-specific upon template removal, such as removing
+   * a specific template handle from the list of file-based template handles in
    * ObjectAttributesManager.  This should only be called @ref
    * esp::core::managedContainers::ManagedContainerBase.
    *
@@ -488,7 +488,7 @@ class AssetAttributesManager
       return false;
     }
     return true;
-  }  // AttributesManager::verifyTemplateHandle
+  }  // AbstractAttributesManager::verifyTemplateHandle
 
   /**
    * @brief This method will perform any essential updating to the managed

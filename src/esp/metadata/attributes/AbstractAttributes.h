@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_METADATA_ATTRIBUTES_ATTRIBUTESBASE_H_
-#define ESP_METADATA_ATTRIBUTES_ATTRIBUTESBASE_H_
+#ifndef ESP_METADATA_ATTRIBUTES_ABSTRACTATTRIBUTES_H_
+#define ESP_METADATA_ATTRIBUTES_ABSTRACTATTRIBUTES_H_
 
 #include <Corrade/Utility/Path.h>
 #include <deque>
@@ -177,7 +177,7 @@ class AbstractAttributes
   using Configuration::set;
 
   /**
-   * @brief return a vector of shared pointers to const @ref AttributesBase
+   * @brief return a vector of shared pointers to const @ref AbstractAttributes
    * sub-configurations.
    * @param subAttrConfig The subconfiguration from which to aquire the
    * subconfigs.
@@ -229,7 +229,7 @@ class AbstractAttributes
   }
 
   /**
-   * @brief Returns a shared pointer to the named @ref AttributesBase
+   * @brief Returns a shared pointer to the named @ref AbstractAttributes
    * sub-configurations member of the passed @p subAttrConfig.
    */
   template <class T>
@@ -239,9 +239,9 @@ class AbstractAttributes
 
   /**
    * @brief Removes and returns a shared pointer to the named @ref
-   * AttributesBase sub-configurations member of the passed @p subAttrConfig.
-   * The object's ID is freed as part of this process, to be used by other
-   * objects.
+   * AbstractAttributes sub-configurations member of the passed @p
+   * subAttrConfig. The object's ID is freed as part of this process, to be used
+   * by other objects.
    * @tparam The desired type of the removed Configuration
    * @param name The name of the object to remove.
    * @param availableIDs A deque of the IDs that this configuration has
@@ -457,4 +457,4 @@ void AbstractAttributes::copySubconfigIntoMe(
 }  // namespace metadata
 }  // namespace esp
 
-#endif  // ESP_METADATA_ATTRIBUTES_ATTRIBUTESBASE_H_
+#endif  // ESP_METADATA_ATTRIBUTES_ABSTRACTATTRIBUTES_H_

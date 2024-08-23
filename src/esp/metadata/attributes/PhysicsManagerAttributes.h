@@ -5,7 +5,7 @@
 #ifndef ESP_METADATA_ATTRIBUTES_PHYSICSMANAGERATTRIBUTES_H_
 #define ESP_METADATA_ATTRIBUTES_PHYSICSMANAGERATTRIBUTES_H_
 
-#include "AttributesBase.h"
+#include "AbstractAttributes.h"
 
 namespace esp {
 namespace metadata {
