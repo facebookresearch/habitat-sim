@@ -37,6 +37,8 @@ set(
   managers/AOAttributesManager.cpp
   managers/AssetAttributesManager.h
   managers/AssetAttributesManager.cpp
+  managers/DatasetDiagnosticsTool.h
+  managers/DatasetDiagnosticsTool.cpp
   managers/LightLayoutAttributesManager.h
   managers/LightLayoutAttributesManager.cpp
   managers/ObjectAttributesManager.h
