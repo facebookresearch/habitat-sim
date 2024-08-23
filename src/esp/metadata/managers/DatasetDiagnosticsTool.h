@@ -44,10 +44,13 @@ enum class DSDiagnosticType : uint32_t {
   TestForDuplicateRegions = (1U << 2),
 
   /**
-   * @brief End cap value - no Dataset Diagnostic Type enums should be
-   * defined at or past this enum.
+   * @brief Perform all diagnostics but do not save corrected results.
    */
-  EndDSDiagnosticTypesType = (1U << 31),
+  AllDiagnostics = ~SaveCorrected,
+  /**
+   * @brief Perform all diagnostics and save corrected results
+   */
+  AllDiagnosticsSaveCorrected = ~0U
 };
 
 /**
