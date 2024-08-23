@@ -9,6 +9,7 @@
  * @brief Class Template @ref esp::metadata::managers::AbstractAttributesManager
  */
 
+#include "DatasetDiagnosticsTool.h"
 #include "esp/metadata/attributes/AbstractAttributes.h"
 
 #include "esp/core/managedContainers/ManagedFileBasedContainer.h"
@@ -64,7 +65,8 @@ class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
                             const std::string& JSONTypeExt)
       : ManagedFileBasedContainer<T, Access>::ManagedFileBasedContainer(
             attrType,
-            JSONTypeExt) {}
+            JSONTypeExt),
+        _DSDiagnostics(DatasetDiagnosticsTool::create_unique()) {}
   ~AbstractAttributesManager() override = default;
 
   /**
@@ -186,6 +188,23 @@ class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
    */
   virtual void setValsFromJSONDoc(AttribsPtr attribs,
                                   const io::JsonGenericValue& jsonConfig) = 0;
+
+  /**
+   * @brief Configure @ref _DSDiagnostics tool based on if passsed jsonConfig
+   * requests them.
+   */
+  bool setDSDiagnostics(AttribsPtr attribs,
+                        const io::JsonGenericValue& jsonConfig) {
+    io::JsonGenericValue::ConstMemberIterator jsonIter =
+        jsonConfig.FindMember("request_diagnostics");
+    if (jsonIter == jsonConfig.MemberEnd()) {
+      return false;
+    }
+    return this->_DSDiagnostics->setDiagnosticesFromJson(
+        jsonIter->value, Cr::Utility::formatString(
+                             "(setDSDiagnostics) <{}> : {}", this->objectType_,
+                             attribs->getSimplifiedHandle()));
+  }  // setDSDiagnostics
 
   /**
    * @brief This function takes the json block specifying user-defined values
@@ -395,6 +414,12 @@ class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
       const AttribsPtr& attributes,
       const std::string& srcAssetHandle,
       const std::function<void(const std::string&)>& handleSetter);
+
+  /**
+   * @brief Diagnostics tool that governs whether certain diagnostic operations
+   * should occur.
+   */
+  DatasetDiagnosticsTool::uptr _DSDiagnostics;
 
  public:
   ESP_SMART_POINTERS(AbstractAttributesManager<T, Access>)
