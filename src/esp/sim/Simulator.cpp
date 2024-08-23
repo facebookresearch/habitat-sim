@@ -705,6 +705,8 @@ Simulator::buildCurrentStateSceneAttributes() const {
   // current scene setup - stage instance, object instances and articulated
   // object instances
   physicsManager_->buildCurrentStateSceneAttributes(initSceneInstanceAttr);
+  // NOTE This copy now is different from the registered original in the
+  // SceneInstanceAttributesManager.
 
   // 3. Return the copy
   return initSceneInstanceAttr;
