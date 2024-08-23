@@ -78,7 +78,7 @@ class DatasetDiagnosticsTool {
    * attributes/config responsible for this call, for use in debug messages.
    * @return Whether the diagnostic values were set successfully or not.
    */
-  bool setDiagnosticesFromJson(const io::JsonGenericValue& jsonObj,
+  bool setDiagnosticesFromJSON(const io::JsonGenericValue& jsonObj,
                                const std::string& msgStr);
 
   /**
@@ -137,8 +137,7 @@ class DatasetDiagnosticsTool {
   }
 
   /**
-   * @brief Set that a save is required. This value should be reset to false
-   * after it is accessed one time.  This is to bridge from reading the json
+   * @brief Set that a save is required. This is to bridge from reading the json
    * file into the attributes and registering the attributes to the
    * post-registration code.
    */
@@ -146,16 +145,11 @@ class DatasetDiagnosticsTool {
     _requiresCorrectedSave = saveRequired;
   }
   /**
-   * @brief Get whether a save is required. This value should be reset to false
-   * after it is accessed one time. This is to bridge from reading the json
-   * file into the attributes and registering the attributes to the
+   * @brief Get whether a save is required. This is to bridge from reading the
+   * json file into the attributes and registering the attributes to the
    * post-registration code.
    */
-  bool saveRequired() {
-    bool retVal = _requiresCorrectedSave;
-    clearDiagnostics();
-    return retVal;
-  }
+  bool saveRequired() { return _requiresCorrectedSave; }
 
   /**
    * @brief Clear any flags set due to specific diagnostics
