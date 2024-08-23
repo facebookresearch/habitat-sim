@@ -16,6 +16,9 @@ const std::map<std::string, DSDiagnosticType> DSDiagnosticTypeMap = {
      DSDiagnosticType::TestForDuplicateInstances},
     {"testforsemanticregionduplicates",
      DSDiagnosticType::TestForDuplicateRegions},
+    // Future diagnostics should be listed here
+    {"all", DSDiagnosticType::AllDiagnostics},
+    {"allsavecorrected", DSDiagnosticType::AllDiagnosticsSaveCorrected},
 };
 
 bool DatasetDiagnosticsTool::setDiagnosticesFromJson(
@@ -53,6 +56,7 @@ bool DatasetDiagnosticsTool::setNamedDiagnostic(const std::string& diagnostic,
                                                 bool val,
                                                 bool abortOnFail) {
   const std::string diagnosticLC = Cr::Utility::String::lowercase(diagnostic);
+
   auto mapIter = DSDiagnosticTypeMap.find(diagnosticLC);
   if (abortOnFail) {
     // If not found then abort.
