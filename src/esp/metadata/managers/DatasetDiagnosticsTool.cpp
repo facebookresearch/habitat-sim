@@ -11,28 +11,28 @@ namespace metadata {
 namespace managers {
 
 const std::map<std::string, DSDiagnosticType> DSDiagnosticTypeMap = {
-    {"SaveCorrected", DSDiagnosticType::SaveCorrected},
-    {"TestForSceneInstanceDuplicates",
+    {"savecorrected", DSDiagnosticType::SaveCorrected},
+    {"testforsceneinstanceduplicates",
      DSDiagnosticType::TestForDuplicateInstances},
-    {"TestForSemanticRegionDuplicates",
+    {"testforsemanticregionduplicates",
      DSDiagnosticType::TestForDuplicateRegions},
 };
 
 bool DatasetDiagnosticsTool::setDiagnosticesFromJson(
-    const io::JsonGenericValue& _jsonObj,
-    const std::string& _msgStr) {
-  if (_jsonObj.IsString()) {
+    const io::JsonGenericValue& jsonObj,
+    const std::string& msgStr) {
+  if (jsonObj.IsString()) {
     // Single diagnostic string specified.
-    return setNamedDiagnostic(_jsonObj.GetString(), true, true);
+    return setNamedDiagnostic(jsonObj.GetString(), true, true);
   }
-  if (_jsonObj.IsArray()) {
+  if (jsonObj.IsArray()) {
     bool success = false;
-    for (rapidjson::SizeType i = 0; i < _jsonObj.Size(); ++i) {
-      if (_jsonObj[i].IsString()) {
-        success = setNamedDiagnostic(_jsonObj[i].GetString(), true, true);
+    for (rapidjson::SizeType i = 0; i < jsonObj.Size(); ++i) {
+      if (jsonObj[i].IsString()) {
+        success = setNamedDiagnostic(jsonObj[i].GetString(), true, true);
       } else {
         ESP_ERROR(Mn::Debug::Flag::NoSpace)
-            << _msgStr
+            << msgStr
             << " configuration specifies `request_diagnostics` array with a "
                "non-string element @idx "
             << i << ". Skipping unknown element.";
@@ -43,31 +43,32 @@ bool DatasetDiagnosticsTool::setDiagnosticesFromJson(
   // else json object support? tag->boolean map in json?
   // Tag present but referneces neither a string nor an array
   ESP_ERROR(Mn::Debug::Flag::NoSpace)
-      << _msgStr
+      << msgStr
       << " configuration specifies `request_diagnostics` but specification "
          "is unable to be parsed, so diagnostics request is ignored.";
   return false;
 }  // DatasetDiagnosticsTool::setDiagnosticesFromJson
 
-bool DatasetDiagnosticsTool::setNamedDiagnostic(const std::string& _diagnostic,
-                                                bool _val,
-                                                bool _abortOnFail) {
-  auto mapIter = DSDiagnosticTypeMap.find(_diagnostic);
-  if (_abortOnFail) {
+bool DatasetDiagnosticsTool::setNamedDiagnostic(const std::string& diagnostic,
+                                                bool val,
+                                                bool abortOnFail) {
+  const std::string diagnosticLC = Cr::Utility::String::lowercase(diagnostic);
+  auto mapIter = DSDiagnosticTypeMap.find(diagnosticLC);
+  if (abortOnFail) {
     // If not found then abort.
     ESP_CHECK(mapIter != DSDiagnosticTypeMap.end(),
               "Unknown Diagnostic Test requested to be "
-                  << (_val ? "Enabled" : "Disabled") << " :" << _diagnostic
+                  << (val ? "Enabled" : "Disabled") << " :" << diagnostic
                   << ". Aborting.");
   } else {
     if (mapIter == DSDiagnosticTypeMap.end()) {
       ESP_ERROR() << "Unknown Diagnostic Test requested to be "
-                  << (_val ? "Enabled" : "Disabled") << " :" << _diagnostic
+                  << (val ? "Enabled" : "Disabled") << " :" << diagnostic
                   << " so ignoring request.";
       return false;
     }
   }
-  _setFlags(mapIter->second, _val);
+  setFlags(mapIter->second, val);
   return true;
 }  // DatasetDiagnosticsTool::setNamedDiagnostic
 
