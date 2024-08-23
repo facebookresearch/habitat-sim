@@ -69,6 +69,9 @@ SceneDatasetAttributesManager::initNewObjectInternal(
 void SceneDatasetAttributesManager::setValsFromJSONDoc(
     attributes::SceneDatasetAttributes::ptr dsAttribs,
     const io::JsonGenericValue& jsonConfig) {
+  // check for diagnostics requests
+  this->setDSDiagnostics(dsAttribs, jsonConfig);
+
   // dataset root directory to build paths from
   std::string dsDir = dsAttribs->getFileDirectory();
   // process stages
