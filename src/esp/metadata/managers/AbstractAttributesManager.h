@@ -191,7 +191,7 @@ class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
   void setValsFromJSONDoc(AttribsPtr attribs,
                           const io::JsonGenericValue& jsonConfig) {
     // Clear diagnostic flags from previous run
-    this->_DSDiagnostics->clearDiagnostics();
+    this->_DSDiagnostics->clearSaveRequired();
     this->setValsFromJSONDocInternal(attribs, jsonConfig);
     if (this->_DSDiagnostics->saveRequired()) {
       ESP_WARNING(Mn::Debug::Flag::NoSpace)

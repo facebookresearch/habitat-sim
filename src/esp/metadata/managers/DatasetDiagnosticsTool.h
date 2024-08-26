@@ -8,6 +8,7 @@
 
 #include "esp/core/Esp.h"
 #include "esp/io/Json.h"
+#include "esp/metadata/attributes/AbstractAttributes.h"
 
 namespace esp {
 namespace metadata {
@@ -56,6 +57,69 @@ enum class DSDiagnosticType : uint32_t {
 };
 
 /**
+ * @brief Construct to record the results of a series of diagnostics against a
+ * single attributes.
+ */
+template <class T>
+class DSDiagnosticRecord {
+ public:
+  static_assert(
+      std::is_base_of<esp::metadata::attributes::AbstractAttributes, T>::value,
+      "AbstractManagedPhysicsObject :: Managed physics object type must be "
+      "derived from esp::physics::PhysicsObjectBase");
+
+  typedef std::weak_ptr<T> WeakObjRef;
+
+  DSDiagnosticRecord(uint32_t diagnosticsFlags)
+      : _diagnosticsFlags(diagnosticsFlags) {}
+
+  /**
+   * @brief set the reference to this diagnostic record's subject
+   */
+  void setObjectRef(const std::shared_ptr<T>& objRef) { weakObjRef_ = objRef; }
+
+  inline void setFlags(DSDiagnosticType _flag, bool _val) {
+    if (_val) {
+      _diagnosticsFlags |= static_cast<uint32_t>(_flag);
+    } else {
+      _diagnosticsFlags &= ~static_cast<uint32_t>(_flag);
+    }
+  }
+
+  inline bool getFlags(DSDiagnosticType _flag) const {
+    return (_diagnosticsFlags & static_cast<uint32_t>(_flag)) ==
+           static_cast<uint32_t>(_flag);
+  }
+
+ protected:
+  /**
+   * @brief This function accesses the underlying shared pointer of this
+   * object's @p weakObjRef_ if it exists; if not, it provides a message.
+   * @return Either a shared pointer of this record's object, or nullptr if
+   * dne.
+   */
+  std::shared_ptr<T> inline getObjectReference() const {
+    std::shared_ptr<T> sp = weakObjRef_.lock();
+    if (!sp) {
+      ESP_ERROR()
+          << "This attributes no longer exists. Please delete any variable "
+             "references.";
+    }
+    return sp;
+  }  // getObjectReference
+
+  // Non-owning reference to attributes this record pertains to.
+  WeakObjRef weakObjRef_;
+
+ private:
+  uint32_t _diagnosticsFlags = 0u;
+
+ public:
+  ESP_SMART_POINTERS(DSDiagnosticRecord)
+
+};  // struct DSDiagnosticRecord
+
+/**
  * @brief Constant map to provide mappings from string tags to @ref
  * DSDiagnosticType values. This will be used to match values set
  * in json for requested dataset diagnostics to @ref DSDiagnosticType values.
@@ -85,7 +149,8 @@ class DatasetDiagnosticsTool {
 
   /**
    * @brief Merge the passed @ref DatasetDiagnosticsTool's @p _diagnosticsFlag
-   * settings into this one's, preserving this one's state.
+   * settings into this one's, preserving this one's diagnostic requests as
+   * well.
    */
   void mergeDiagnosticsTool(const DatasetDiagnosticsTool& tool) {
     _diagnosticsFlags |= tool._diagnosticsFlags;
@@ -147,17 +212,18 @@ class DatasetDiagnosticsTool {
   void setSaveRequired(bool saveRequired) {
     _requiresCorrectedSave = saveRequired;
   }
+
+  /**
+   * @brief Clear any flags set due to specific diagnostics
+   */
+  void clearSaveRequired() { _requiresCorrectedSave = false; }
+
   /**
    * @brief Get whether a save is required. This is to bridge from reading the
    * json file into the attributes and registering the attributes to the
    * post-registration code.
    */
   bool saveRequired() const { return _requiresCorrectedSave; }
-
-  /**
-   * @brief Clear any flags set due to specific diagnostics
-   */
-  void clearDiagnostics() { _requiresCorrectedSave = false; }
 
   /**
    * @brief Specify whether or not to test for duplicate scene object instances
