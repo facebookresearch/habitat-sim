@@ -148,10 +148,6 @@ venv.bak/
 
 .DS_Store
 
-/test.*
-/test_semantic.glb
-/test_semantic.ply
-
 compile_commands.json
 .vimtags
 .ycm*
@@ -164,20 +160,33 @@ run_example
 .lvimrc
 .ccls-cache/
 
+*.zip
+*.mp4
+
+.setuppy_args_cache.json
+
+pre-commit-deps.txt
+
 # Vim swap files
 *.swp
 
-tests/17DRP5sb8fy
-/data/datasets/
-/data/humanoids/
-/data/objects/
-/data/scene_datasets/
-/data/versioned_data/
-*.zip
-*.mp4
-src_python/habitat_sim/_ext
+# Ignore all in data directory
+/data/*
+# ...except these necessary subdirectories...
+!/data/fonts/
+!/data/hm3d_semantics/
+!/data/matterport_semantics/
+!/data/pbr/
+!/data/test_assets/
+# ...and files
+!/data/default.pbr_config.json
+!/data/default.physics_config.json
 
-.setuppy_args_cache.json
+# ignore shortcut to build/tests/configure.h for ccls
+/src/tests/configure.h
+
+/src_python/habitat_sim/_ext
+/tools/qa_scenes/qa_scenes_output/
 
 # JS
 node_modules/
@@ -189,18 +198,6 @@ yarn-error.log*
 coverage_js/
 
 # JS hand demo data, bindings, and web assembly
-examples/web_apps/webxr_hand_demo/data/*
-examples/web_apps/webxr_hand_demo/js/hsim_bindings.js
-examples/web_apps/webxr_hand_demo/js/hsim_bindings.wasm
-
-data/fairmotion/
-
-pre-commit-deps.txt
-
-tools/qa_scenes/qa_scenes_output/
-
-data/replica_cad
-
-data/datasets
-
-data/versioned_data
+/examples/web_apps/webxr_hand_demo/data/*
+/examples/web_apps/webxr_hand_demo/js/hsim_bindings.js
+/examples/web_apps/webxr_hand_demo/js/hsim_bindings.wasm
