@@ -286,9 +286,7 @@ void initSceneBindings(
            &SemanticScene::getWeightedRegionsForPoint,
            R"("Find all SemanticRegions which contain the point and return a
               sorted list of tuple pairs of the region index and a score of that
-              region, derived as
-                    1 - (region_area/ttl_region_area)
-              where ttl_region_area is the area of all the regions containing
+              region, derived as 1 - (region_area/ttl_region_area) where ttl_region_area is the area of all the regions containing
               the point, so that smaller regions are weighted higher. If only
               one region contains the passed point, its weight will be 1.)",
            "point"_a)
