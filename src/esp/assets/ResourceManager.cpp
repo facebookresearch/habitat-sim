@@ -1088,41 +1088,47 @@ void ResourceManager::computeGeneralMeshAreaAndVolume(
     // Determine that all edges have exactly 2 sides ->
     // idxAra describes exactly 2 pairs of the same idxs, a->b and b->a
     std::unordered_map<uint64_t, int> edgeCount;
-    std::unordered_map<uint64_t, int> altEdgeCount;
+    std::unordered_map<uint64_t, int> revEdgeCount;
     scene::DrawableMeshTopology meshTopology =
         scene::DrawableMeshTopology::ClosedManifold;
     for (uint32_t idx = 0; idx < numIdxs; idx += 3) {
+      // First edge index, encoded in 64bit
       uint64_t vals[] = {uint64_t(idxAra[idx]), uint64_t(idxAra[idx + 1]),
                          uint64_t(idxAra[idx + 2])};
       uint64_t shift_vals[] = {vals[0] << 32, vals[1] << 32, vals[2] << 32};
       // for each edge in poly
       for (uint32_t i = 0; i < 3; ++i) {
+        // Second edge index
         uint32_t next_i = (i + 1) % 3;
+        // Encode directed edge vert idxs in single unsigned long
         auto res =
             edgeCount.emplace(std::make_pair(shift_vals[i] + vals[next_i], 0));
+        // Check if duplicate already exists - if so then non-manifold
         if (!res.second) {
+          // Keep count of dupes
           res.first->second += 1;
           // Duplicate edge with same orientation
           meshTopology = scene::DrawableMeshTopology::NonManifold;
         }
-        // Alt edge placement - verify the alternate edge is present
-        altEdgeCount.emplace(std::make_pair(shift_vals[next_i] + vals[i], 0));
+        // Reverse edge placement - verify the reverse edge is present
+        revEdgeCount.emplace(std::make_pair(shift_vals[next_i] + vals[i], 0));
       }
     }
     // If still closed manifold then check that every edge has an alt edge
     // present
     if (meshTopology == scene::DrawableMeshTopology::ClosedManifold) {
       for (const auto entry : edgeCount) {
-        altEdgeCount.erase(entry.first);
+        revEdgeCount.erase(entry.first);
       }
-      if (altEdgeCount.size() > 0) {
+      if (revEdgeCount.size() > 0) {
         meshTopology = scene::DrawableMeshTopology::OpenManifold;
       }
     }
 
-    // Surface area of the mesh : .5 * ba.cross(bc)
+    // Surface area of the mesh M_a : sum(Tri_abc) ( |.5 * ba.cross(bc)|)
     double ttlSurfaceArea = 0.0;
-    // Volume of the mesh : 1/6 * (OA.dot(ba.cross(bc)))
+    // Volume of the mesh M_v = sum(Tri_abc)( 1/3 (area_abc) h_O
+    //                    = sum(Tri_abc)(1/3 * (bO.dot(.5 * (ba.cross(bc)))))
     // Where O is a distant vertex
     // Only applicable on closed manifold meshes (i.e. all edges have exactly
     // 2 faces)
@@ -1130,24 +1136,29 @@ void ResourceManager::computeGeneralMeshAreaAndVolume(
     if (meshTopology == scene::DrawableMeshTopology::ClosedManifold) {
       Mn::Vector3 origin{};
       for (uint32_t idx = 0; idx < numIdxs; idx += 3) {
-        const auto aVert = posArray[idxAra[idx + 1]];
-        Mn::Vector3 aVec = posArray[idxAra[idx]] - aVert;
-        Mn::Vector3 bVec = posArray[idxAra[idx + 2]] - aVert;
-        Mn::Vector3 areaNormVec = 0.5 * Mn::Math::cross(aVec, bVec);
-        double surfArea = areaNormVec.length();
+        const auto bVert = posArray[idxAra[idx + 1]];
+        Mn::Vector3 baVec = posArray[idxAra[idx]] - bVert;
+        Mn::Vector3 bcVec = posArray[idxAra[idx + 2]] - bVert;
+        // Magnitude is 2x tri_abc area, direction is orthogonal to tri_abc
+        // ("height" dir)
+        Mn::Vector3 areaOrthoVec = 0.5 * Mn::Math::cross(baVec, bcVec);
+        double surfArea = areaOrthoVec.length();
         ttlSurfaceArea += surfArea;
-        Mn::Vector3 c = origin - aVert;
-        double signedVol = (Mn::Math::dot(c, areaNormVec)) / 3.0;
+        Mn::Vector3 bO = origin - bVert;
+        // Project along "height" direction
+        double signedVol = (Mn::Math::dot(bO, areaOrthoVec)) / 3.0;
         ttlVolume += signedVol;
       }
     } else {
       // Open or non-manifold meshes won't have an accurate volume calc
       for (uint32_t idx = 0; idx < numIdxs; idx += 3) {
-        const auto aVert = posArray[idxAra[idx + 1]];
-        Mn::Vector3 aVec = posArray[idxAra[idx]] - aVert;
-        Mn::Vector3 bVec = posArray[idxAra[idx + 2]] - aVert;
-        Mn::Vector3 areaNormVec = 0.5 * Mn::Math::cross(aVec, bVec);
-        double surfArea = areaNormVec.length();
+        const auto bVert = posArray[idxAra[idx + 1]];
+        Mn::Vector3 baVec = posArray[idxAra[idx]] - bVert;
+        Mn::Vector3 bcVec = posArray[idxAra[idx + 2]] - bVert;
+        // Magnitude is 2x tri_abc area, direction is orthogonal to tri_abc
+        // ("height" dir)
+        Mn::Vector3 areaOrthoVec = 0.5 * Mn::Math::cross(baVec, bcVec);
+        double surfArea = areaOrthoVec.length();
         ttlSurfaceArea += surfArea;
       }
     }
