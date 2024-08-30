@@ -246,7 +246,7 @@ class MarkerSetsEditor:
                         for link_name, link_set_dict in task_set_dict.items():
                             if link_name not in color_dict[obj_handle][task_name]:
                                 color_dict[obj_handle][task_name][link_name] = {}
-                            if link_name == "root":
+                            if link_name in ["root", "body"]:
                                 link_id = -1
                             else:
                                 link_id = obj.get_link_id_from_name(link_name)
@@ -353,7 +353,7 @@ class MarkerSetsEditor:
                 new_task_dict = {}
                 # for every link
                 for link_name, link_dict in task_dict.items():
-                    if link_name == "root":
+                    if link_name in ["root", "body"]:
                         link_id = -1
                     else:
                         # articulated object
