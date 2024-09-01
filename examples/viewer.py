@@ -3,6 +3,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import ctypes
+import json
 import math
 import os
 import string
@@ -14,8 +15,12 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
+import habitat.datasets.rearrange.samplers.receptacle as hab_receptacle
+import habitat.sims.habitat_simulator.sim_utilities as sutils
 import magnum as mn
 import numpy as np
+from habitat.datasets.rearrange.navmesh_utils import get_largest_island_index
+from habitat.datasets.rearrange.samplers.object_sampler import ObjectSampler
 from magnum import shaders, text
 from magnum.platform.glfw import Application
 
@@ -24,6 +29,59 @@ from habitat_sim import ReplayRenderer, ReplayRendererConfiguration, physics
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
+
+# add tools directory so I can import things to try them in the viewer
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../tools"))
+print(sys.path)
+import collision_shape_automation as csa
+
+# CollisionProxyOptimizer initialized before the application
+_cpo: Optional[csa.CollisionProxyOptimizer] = None
+_cpo_threads = []
+
+
+def _cpo_initialized():
+    global _cpo
+    global _cpo_threads
+    if _cpo is None:
+        return False
+    return all(not thread.is_alive() for thread in _cpo_threads)
+
+
+class RecColorMode(Enum):
+    """
+    Defines the coloring mode for receptacle debug drawing.
+    """
+
+    DEFAULT = 0  # all magenta
+    GT_ACCESS = 1  # red to green
+    GT_STABILITY = 2
+    PR_ACCESS = 3
+    PR_STABILITY = 4
+    FILTERING = 5  # colored by filter status (green=active, yellow=manually filtered, red=automatically filtered (access), magenta=automatically filtered (access), blue=automatically filtered (height))
+
+
+class ColorLERP:
+    """
+    xyz lerp between two colors.
+    """
+
+    def __init__(self, c0: mn.Color4, c1: mn.Color4):
+        self.c0 = c0.to_xyz()
+        self.c1 = c1.to_xyz()
+        self.delta = self.c1 - self.c0
+
+    def at(self, t: float) -> mn.Color4:
+        """
+        Compute the LERP at time t [0,1].
+        """
+        assert t >= 0 and t <= 1, "Extrapolation not recommended in color space."
+        t_color_xyz = self.c0 + self.delta * t
+        return mn.Color4.from_xyz(t_color_xyz)
+
+
+# red to green lerp for heatmaps
+rg_lerp = ColorLERP(mn.Color4.red(), mn.Color4.green())
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -44,7 +102,11 @@ class HabitatSimInteractiveViewer(Application):
     # CPU and GPU usage info
     DISPLAY_FONT_SIZE = 16.0
 
-    def __init__(self, sim_settings: Dict[str, Any]) -> None:
+    def __init__(
+        self,
+        sim_settings: Dict[str, Any],
+        mm: Optional[habitat_sim.metadata.MetadataMediator] = None,
+    ) -> None:
         self.sim_settings: Dict[str:Any] = sim_settings
 
         self.enable_batch_renderer: bool = self.sim_settings["enable_batch_renderer"]
@@ -166,7 +228,38 @@ class HabitatSimInteractiveViewer(Application):
         self.previous_mouse_point = None
 
         # toggle physics simulation on/off
-        self.simulating = True
+        self.simulating = False
+
+        # receptacle visualization
+        self.receptacles = None
+        self.display_receptacles = False
+        global _cpo
+        self._cpo = _cpo
+        self.cpo_initialized = False
+        self.show_filtered = True
+        self.rec_access_filter_threshold = 0.12  # empirically chosen
+        self.rec_color_mode = RecColorMode.FILTERING
+        # map receptacle to parent objects
+        self.rec_to_poh: Dict[hab_receptacle.Receptacle, str] = {}
+        # contains filtering metadata and classification of meshes filtered automatically and manually
+        self.rec_filter_data = None
+        self.rec_filter_path = self.sim_settings["rec_filter_file"]
+
+        # display stability samples for selected object w/ receptacle
+        self.display_selected_stability_samples = True
+
+        # collision proxy visualization
+        self.col_proxy_objs = None
+        self.col_proxies_visible = True
+        self.original_objs_visible = True
+        self.proxy_obj_postfix = "_collision_stand-in"
+
+        # mouse raycast visualization
+        self.mouse_cast_results = None
+        # last clicked or None for stage
+        self.selected_object = None
+        self.selected_rec = None
+        self.ao_link_map = None
 
         # toggle a single simulation step at the next opportunity if not
         # simulating continuously.
@@ -178,13 +271,39 @@ class HabitatSimInteractiveViewer(Application):
         self.tiled_sims: list[habitat_sim.simulator.Simulator] = None
         self.replay_renderer_cfg: Optional[ReplayRendererConfiguration] = None
         self.replay_renderer: Optional[ReplayRenderer] = None
-        self.reconfigure_sim()
+        self.reconfigure_sim(mm)
         self.debug_semantic_colors = {}
+        self.load_scene_filter_file()
+
+        # -----------------------------------------
+        # Clutter Generation Integration:
+        self.clutter_object_set = [
+            "002_master_chef_can",
+            "003_cracker_box",
+            "004_sugar_box",
+            "005_tomato_soup_can",
+            "007_tuna_fish_can",
+            "008_pudding_box",
+            "009_gelatin_box",
+            "010_potted_meat_can",
+            "024_bowl",
+        ]
+        self.clutter_object_handles = []
+        self.clutter_object_instances = []
+        # cache initial states for classification of unstable objects
+        self.clutter_object_initial_states = []
+        self.num_unstable_objects = 0
+        # add some clutter objects to the MM
+        self.sim.metadata_mediator.object_template_manager.load_configs(
+            "data/objects/ycb/configs/"
+        )
+        # -----------------------------------------
 
         # compute NavMesh if not already loaded by the scene.
         if (
             not self.sim.pathfinder.is_loaded
             and self.cfg.sim_cfg.scene_id.lower() != "none"
+            and not self.sim_settings["viewer_ignore_navmesh"]
         ):
             self.navmesh_config_and_recompute()
 
@@ -192,6 +311,248 @@ class HabitatSimInteractiveViewer(Application):
         LoggingContext.reinitialize_from_env()
         logger.setLevel("INFO")
         self.print_help_text()
+
+    def modify_param_from_term(self):
+        """
+        Prompts the user to enter an attribute name and new value.
+        Attempts to fulfill the user's request.
+        """
+        # first get an attribute
+        user_attr = input("++++++++++++\nProvide an attribute to edit: ")
+        if not hasattr(self, user_attr):
+            print(f" The '{user_attr}' attribute does not exist.")
+            return
+
+        # then get a value
+        user_val = input(f"Now provide a value for '{user_attr}': ")
+        cur_attr_val = getattr(self, user_attr)
+        if cur_attr_val is not None:
+            try:
+                # try type conversion
+                new_val = type(cur_attr_val)(user_val)
+
+                # special handling for bool because all strings become True with cast
+                if isinstance(cur_attr_val, bool):
+                    if user_val.lower() == "false":
+                        new_val = False
+                    elif user_val.lower() == "true":
+                        new_val = True
+
+                setattr(self, user_attr, new_val)
+                print(
+                    f"attr '{user_attr}' set to '{getattr(self, user_attr)}' (type={type(new_val)})."
+                )
+            except Exception:
+                print(f"Failed to cast '{user_val}' to {type(cur_attr_val)}.")
+        else:
+            print("That attribute is unset, so I don't know the type.")
+
+    def load_scene_filter_file(self):
+        """
+        Load the filter file for a scene from config.
+        """
+
+        scene_user_defined = self.sim.metadata_mediator.get_scene_user_defined(
+            self.sim.curr_scene_name
+        )
+        if scene_user_defined is not None and scene_user_defined.has_value(
+            "scene_filter_file"
+        ):
+            scene_filter_file = scene_user_defined.get("scene_filter_file")
+            # construct the dataset level path for the filter data file
+            scene_filter_file = os.path.join(
+                os.path.dirname(mm.active_dataset), scene_filter_file
+            )
+            print(f"scene_filter_file = {scene_filter_file}")
+            self.load_receptacles()
+            self.load_filtered_recs(scene_filter_file)
+            self.rec_filter_path = scene_filter_file
+        else:
+            print(
+                f"WARNING: No rec filter file configured for scene {self.sim.curr_scene_name}."
+            )
+
+    def get_rec_instance_name(self, receptacle: hab_receptacle.Receptacle) -> str:
+        """
+        Gets a unique string name for the Receptacle instance.
+        Multiple Receptacles can share a name (e.g. if the object has multiple instances in the scene).
+        The unique name is constructed as '<object instance name>|<receptacle name>'.
+        """
+        rec_unique_name = receptacle.parent_object_handle + "|" + receptacle.name
+        return rec_unique_name
+
+    def get_closest_tri_receptacle(
+        self, pos: mn.Vector3, max_dist: float = 3.5
+    ) -> Optional[hab_receptacle.TriangleMeshReceptacle]:
+        """
+        Return the closest receptacle to the given position or None.
+
+        :param pos: The point to compare with receptacle verts.
+        :param max_dist: The maximum allowable distance to the receptacle to count.
+
+        :return: None if failed or closest receptacle.
+        """
+        if self.receptacles is None or not self.display_receptacles:
+            return None
+        closest_rec = None
+        closest_rec_dist = max_dist
+        for receptacle in self.receptacles:
+            g_trans = receptacle.get_global_transform(self.sim)
+            # transform the query point once instead of all verts
+            local_point = g_trans.inverted().transform_point(pos)
+            if (g_trans.translation - pos).length() < max_dist:
+                # receptacles object transform should be close to the point
+                for vert in receptacle.mesh_data.attribute(
+                    mn.trade.MeshAttribute.POSITION
+                ):
+                    v_dist = (local_point - vert).length()
+                    if v_dist < closest_rec_dist:
+                        closest_rec_dist = v_dist
+                        closest_rec = receptacle
+        return closest_rec
+
+    def compute_rec_filter_state(
+        self,
+        access_threshold: float = 0.12,
+        stab_threshold: float = 0.5,
+        filter_shape: str = "pr0",
+    ) -> None:
+        """
+        Check all receptacles against automated filters to fill the
+
+        :param access_threshold: Access threshold for filtering. Roughly % of sample points with some raycast access.
+        :param stab_threshold: Stability threshold for filtering. Roughly % of sample points with stable object support.
+        :param filter_shape: Which shape metrics to use for filter. Choices typically "gt"(ground truth) or "pr0"(proxy shape).
+        """
+        # load receptacles if not done
+        if self.receptacles is None:
+            self.load_receptacles()
+        assert (
+            self._cpo is not None
+        ), "Must initialize the CPO before automatic filtering. Re-run with '--init-cpo'."
+
+        # initialize if necessary
+        if self.rec_filter_data is None:
+            self.rec_filter_data = {
+                "active": [],
+                "manually_filtered": [],
+                "access_filtered": [],
+                "access_threshold": access_threshold,  # set in filter procedure
+                "stability_filtered": [],
+                "stability threshold": stab_threshold,  # set in filter procedure
+                # TODO:
+                "height_filtered": [],
+                "max_height": 0,
+                "min_height": 0,
+            }
+
+        for rec in self.receptacles:
+            rec_unique_name = self.get_rec_instance_name(rec)
+            # respect already marked receptacles
+            if rec_unique_name not in self.rec_filter_data["manually_filtered"]:
+                rec_dat = self._cpo.gt_data[self.rec_to_poh[rec]]["receptacles"][
+                    rec.name
+                ]
+                rec_shape_data = rec_dat["shape_id_results"][filter_shape]
+                # filter by access
+                if (
+                    "access_results" in rec_shape_data
+                    and rec_shape_data["access_results"]["receptacle_access_score"]
+                    < access_threshold
+                ):
+                    self.rec_filter_data["access_filtered"].append(rec_unique_name)
+                # filter by stability
+                elif (
+                    "stability_results" in rec_shape_data
+                    and rec_shape_data["stability_results"]["success_ratio"]
+                    < stab_threshold
+                ):
+                    self.rec_filter_data["stability_filtered"].append(rec_unique_name)
+                # TODO: add more filters
+                # TODO: 1. filter by height relative to the floor
+                # TODO: 2. filter outdoor (raycast up)
+                # TODO: 3/4: filter by access/stability in scene context (relative to other objects)
+                # remaining receptacles are active
+                else:
+                    self.rec_filter_data["active"].append(rec_unique_name)
+
+    def export_filtered_recs(self, filepath: Optional[str] = None) -> None:
+        """
+        Save a JSON with filtering metadata and filtered Receptacles for a scene.
+
+        :param filepath: Defines the output filename for this JSON. If omitted, defaults to "./rec_filter_data.json".
+        """
+        if filepath is None:
+            filepath = "rec_filter_data.json"
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        with open(filepath, "w") as f:
+            f.write(json.dumps(self.rec_filter_data, indent=2))
+        print(f"Exported filter annotations to {filepath}.")
+
+    def load_filtered_recs(self, filepath: Optional[str] = None) -> None:
+        """
+        Load a Receptacle filtering metadata JSON to visualize the state of the scene.
+
+        :param filepath: Defines the input filename for this JSON. If omitted, defaults to "./rec_filter_data.json".
+        """
+        if filepath is None:
+            filepath = "rec_filter_data.json"
+        if not os.path.exists(filepath):
+            print(f"Filtered rec metadata file {filepath} does not exist. Cannot load.")
+            return
+        with open(filepath, "r") as f:
+            self.rec_filter_data = json.load(f)
+
+        # assert the format is correct
+        assert "active" in self.rec_filter_data
+        assert "manually_filtered" in self.rec_filter_data
+        assert "access_filtered" in self.rec_filter_data
+        assert "stability_filtered" in self.rec_filter_data
+        assert "height_filtered" in self.rec_filter_data
+        print(f"Loaded filter annotations from {filepath}")
+
+    def load_receptacles(self):
+        """
+        Load all receptacle data and setup helper datastructures.
+        """
+        self.receptacles = hab_receptacle.find_receptacles(self.sim)
+        self.receptacles = [
+            rec
+            for rec in self.receptacles
+            if "collision_stand-in" not in rec.parent_object_handle
+        ]
+        for receptacle in self.receptacles:
+            if receptacle not in self.rec_to_poh:
+                po_handle = sutils.get_obj_from_handle(
+                    self.sim, receptacle.parent_object_handle
+                ).creation_attributes.handle
+                self.rec_to_poh[receptacle] = po_handle
+
+    def add_col_proxy_object(
+        self, obj_instance: habitat_sim.physics.ManagedRigidObject
+    ) -> habitat_sim.physics.ManagedRigidObject:
+        """
+        Add a collision object visualization proxy to the scene overlapping with the given object.
+        Return the new proxy object.
+        """
+        # replace the object with a collision_object
+        obj_temp_handle = obj_instance.creation_attributes.handle
+        otm = self.sim.get_object_template_manager()
+        object_template = otm.get_template_by_handle(obj_temp_handle)
+        object_template.scale = obj_instance.scale + np.ones(3) * 0.01
+        object_template.render_asset_handle = object_template.collision_asset_handle
+        object_template.is_collidable = False
+        reg_id = otm.register_template(
+            object_template,
+            object_template.handle + self.proxy_obj_postfix,
+        )
+        ro_mngr = self.sim.get_rigid_object_manager()
+        new_obj = ro_mngr.add_object_by_template_id(reg_id)
+        new_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+        new_obj.translation = obj_instance.translation
+        new_obj.rotation = obj_instance.rotation
+        self.sim.set_object_bb_draw(True, new_obj.object_id)
+        return new_obj
 
     def draw_contact_debug(self, debug_line_render: Any):
         """
@@ -245,6 +606,7 @@ class HabitatSimInteractiveViewer(Application):
         """
         Additional draw commands to be called during draw_event.
         """
+        self.sim.get_rigid_object_manager()
         if self.debug_bullet_draw:
             render_cam = self.render_camera.render_camera
             proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
@@ -253,7 +615,6 @@ class HabitatSimInteractiveViewer(Application):
         debug_line_render = self.sim.get_debug_line_render()
         if self.contact_debug_draw:
             self.draw_contact_debug(debug_line_render)
-
         if self.semantic_region_debug_draw:
             if len(self.debug_semantic_colors) != len(self.sim.semantic_scene.regions):
                 for region in self.sim.semantic_scene.regions:
@@ -261,6 +622,164 @@ class HabitatSimInteractiveViewer(Application):
                         mn.Vector3(np.random.random(3))
                     )
             self.draw_region_debug(debug_line_render)
+        if self.receptacles is not None and self.display_receptacles:
+            if self.rec_filter_data is None and self.cpo_initialized:
+                self.compute_rec_filter_state(
+                    access_threshold=self.rec_access_filter_threshold
+                )
+            c_pos = self.render_camera.node.absolute_translation
+            c_forward = (
+                self.render_camera.node.absolute_transformation().transform_vector(
+                    mn.Vector3(0, 0, -1)
+                )
+            )
+            for receptacle in self.receptacles:
+                rec_unique_name = self.get_rec_instance_name(receptacle)
+                # filter all non-active receptacles
+                if (
+                    self.rec_filter_data is not None
+                    and not self.show_filtered
+                    and rec_unique_name not in self.rec_filter_data["active"]
+                ):
+                    continue
+
+                rec_dat = None
+                if self.cpo_initialized:
+                    rec_dat = self._cpo.gt_data[self.rec_to_poh[receptacle]][
+                        "receptacles"
+                    ][receptacle.name]
+
+                r_trans = receptacle.get_global_transform(self.sim)
+                # display point samples for selected object
+                if (
+                    rec_dat is not None
+                    and self.display_selected_stability_samples
+                    and self.selected_object is not None
+                    and self.selected_object.handle == receptacle.parent_object_handle
+                ):
+                    # display colored circles for stability samples on the selected object
+                    point_metric_dat = rec_dat["shape_id_results"]["gt"][
+                        "access_results"
+                    ]["receptacle_point_access_scores"]
+                    if self.rec_color_mode == RecColorMode.GT_STABILITY:
+                        point_metric_dat = rec_dat["shape_id_results"]["gt"][
+                            "stability_results"
+                        ]["point_stabilities"]
+                    elif self.rec_color_mode == RecColorMode.PR_STABILITY:
+                        point_metric_dat = rec_dat["shape_id_results"]["pr0"][
+                            "stability_results"
+                        ]["point_stabilities"]
+                    elif self.rec_color_mode == RecColorMode.PR_ACCESS:
+                        point_metric_dat = rec_dat["shape_id_results"]["pr0"][
+                            "access_results"
+                        ]["receptacle_point_access_scores"]
+
+                    for point_metric, point in zip(
+                        point_metric_dat,
+                        rec_dat["sample_points"],
+                    ):
+                        self.sim.get_debug_line_render().draw_circle(
+                            translation=r_trans.transform_point(point),
+                            radius=0.02,
+                            normal=mn.Vector3(0, 1, 0),
+                            color=rg_lerp.at(point_metric),
+                            num_segments=12,
+                        )
+
+                rec_obj = sutils.get_obj_from_handle(
+                    self.sim, receptacle.parent_object_handle
+                )
+                key_points = [r_trans.translation]
+                key_points.extend(
+                    sutils.get_bb_corners(rec_obj.root_scene_node.cumulative_bb)
+                )
+
+                in_view = False
+                for ix, key_point in enumerate(key_points):
+                    r_pos = key_point
+                    if ix > 0:
+                        r_pos = rec_obj.transformation.transform_point(key_point)
+                    c_to_r = r_pos - c_pos
+                    # only display receptacles within 4 meters centered in view
+                    if (
+                        c_to_r.length() < 4
+                        and mn.math.dot((c_to_r).normalized(), c_forward) > 0.7
+                    ):
+                        in_view = True
+                        break
+                if in_view:
+                    # handle coloring
+                    rec_color = None
+                    if self.selected_rec == receptacle:
+                        # white
+                        rec_color = mn.Color4.cyan()
+                    elif (
+                        self.rec_filter_data is not None
+                    ) and self.rec_color_mode == RecColorMode.FILTERING:
+                        # blue indicates no filter data for the receptacle, it may be newer than the filter file.
+                        rec_color = mn.Color4.blue()
+                        if rec_unique_name in self.rec_filter_data["active"]:
+                            rec_color = mn.Color4.green()
+                        elif (
+                            rec_unique_name in self.rec_filter_data["manually_filtered"]
+                        ):
+                            rec_color = mn.Color4.yellow()
+                        elif rec_unique_name in self.rec_filter_data["access_filtered"]:
+                            rec_color = mn.Color4.red()
+                        elif (
+                            rec_unique_name
+                            in self.rec_filter_data["stability_filtered"]
+                        ):
+                            rec_color = mn.Color4.magenta()
+                        elif rec_unique_name in self.rec_filter_data["height_filtered"]:
+                            rec_color = mn.Color4.blue()
+                    elif (
+                        self.cpo_initialized
+                        and self.rec_color_mode != RecColorMode.DEFAULT
+                    ):
+                        if self.rec_color_mode == RecColorMode.GT_STABILITY:
+                            rec_color = rg_lerp.at(
+                                rec_dat["shape_id_results"]["gt"]["stability_results"][
+                                    "success_ratio"
+                                ]
+                            )
+                        elif self.rec_color_mode == RecColorMode.GT_ACCESS:
+                            rec_color = rg_lerp.at(
+                                rec_dat["shape_id_results"]["gt"]["access_results"][
+                                    "receptacle_access_score"
+                                ]
+                            )
+                        elif self.rec_color_mode == RecColorMode.PR_STABILITY:
+                            rec_color = rg_lerp.at(
+                                rec_dat["shape_id_results"]["pr0"]["stability_results"][
+                                    "success_ratio"
+                                ]
+                            )
+                        elif self.rec_color_mode == RecColorMode.PR_ACCESS:
+                            rec_color = rg_lerp.at(
+                                rec_dat["shape_id_results"]["pr0"]["access_results"][
+                                    "receptacle_access_score"
+                                ]
+                            )
+
+                    receptacle.debug_draw(self.sim, color=rec_color)
+                    if True:
+                        dblr = self.sim.get_debug_line_render()
+                        t_form = receptacle.get_global_transform(self.sim)
+                        dblr.push_transform(t_form)
+                        dblr.draw_transformed_line(
+                            mn.Vector3(0), receptacle.up, mn.Color4.cyan()
+                        )
+                        dblr.pop_transform()
+        # mouse raycast circle
+        white = mn.Color4(mn.Vector3(1.0), 1.0)
+        if self.mouse_cast_results is not None and self.mouse_cast_results.has_hits():
+            self.sim.get_debug_line_render().draw_circle(
+                translation=self.mouse_cast_results.hits[0].point,
+                radius=0.005,
+                color=white,
+                normal=self.mouse_cast_results.hits[0].normal,
+            )
 
     def draw_event(
         self,
@@ -272,6 +791,10 @@ class HabitatSimInteractiveViewer(Application):
         Calls continuously to re-render frames and swap the two frame buffers
         at a fixed rate.
         """
+        # until cpo initialization is finished, keep checking
+        if not self.cpo_initialized:
+            self.cpo_initialized = _cpo_initialized()
+
         agent_acts_per_sec = self.fps
 
         mn.gl.default_framebuffer.clear(
@@ -290,6 +813,17 @@ class HabitatSimInteractiveViewer(Application):
                 self.simulate_single_step = False
                 if simulation_call is not None:
                     simulation_call()
+                # compute object stability after physics step
+                self.num_unstable_objects = 0
+                for obj_initial_state, obj in zip(
+                    self.clutter_object_initial_states, self.clutter_object_instances
+                ):
+                    translation_error = (
+                        obj_initial_state[0] - obj.translation
+                    ).length()
+                    if translation_error > 0.1:
+                        self.num_unstable_objects += 1
+
             if global_call is not None:
                 global_call()
 
@@ -362,7 +896,9 @@ class HabitatSimInteractiveViewer(Application):
         )
         return agent_config
 
-    def reconfigure_sim(self) -> None:
+    def reconfigure_sim(
+        self, mm: Optional[habitat_sim.metadata.MetadataMediator] = None
+    ) -> None:
         """
         Utilizes the current `self.sim_settings` to configure and set up a new
         `habitat_sim.Simulator`, and then either starts a simulation instance, or replaces
@@ -370,6 +906,7 @@ class HabitatSimInteractiveViewer(Application):
         """
         # configure our sim_settings but then set the agent to our default
         self.cfg = make_cfg(self.sim_settings)
+        self.cfg.metadata_mediator = mm
         self.agent_id: int = self.sim_settings["default_agent"]
         self.cfg.agents[self.agent_id] = self.default_agent_config()
 
@@ -428,6 +965,8 @@ class HabitatSimInteractiveViewer(Application):
                 for composite_file in sim_settings["composite_files"]:
                     self.replay_renderer.preload_file(composite_file)
 
+        self.ao_link_map = sutils.get_ao_link_id_map(self.sim)
+
         Timer.start()
         self.step = -1
 
@@ -457,10 +996,9 @@ class HabitatSimInteractiveViewer(Application):
         if repetitions == 0:
             return
 
-        key = Application.KeyEvent.Key
         agent = self.sim.agents[self.agent_id]
-        press: Dict[key.key, bool] = self.pressed
-        act: Dict[key.key, str] = self.key_to_action
+        press: Dict[Application.KeyEvent.Key.key, bool] = self.pressed
+        act: Dict[Application.KeyEvent.Key.key, str] = self.key_to_action
 
         action_queue: List[str] = [act[k] for k, v in press.items() if v]
 
@@ -573,57 +1111,195 @@ class HabitatSimInteractiveViewer(Application):
                 # TODO: add a nice log message with concise contact pair naming.
 
         elif key == pressed.T:
-            # load URDF
-            fixed_base = alt_pressed
-            urdf_file_path = ""
-            if shift_pressed and self.cached_urdf:
-                urdf_file_path = self.cached_urdf
-            else:
-                urdf_file_path = input("Load URDF: provide a URDF filepath:").strip()
+            self.modify_param_from_term()
 
-            if not urdf_file_path:
-                logger.warn("Load URDF: no input provided. Aborting.")
-            elif not urdf_file_path.endswith((".URDF", ".urdf")):
-                logger.warn("Load URDF: input is not a URDF. Aborting.")
-            elif os.path.exists(urdf_file_path):
-                self.cached_urdf = urdf_file_path
-                aom = self.sim.get_articulated_object_manager()
-                ao = aom.add_articulated_object_from_urdf(
-                    urdf_file_path,
-                    fixed_base,
-                    1.0,
-                    1.0,
-                    True,
-                    maintain_link_order=False,
-                    intertia_from_urdf=False,
-                )
-                ao.translation = (
-                    self.default_agent.scene_node.transformation.transform_point(
-                        [0.0, 1.0, -1.5]
-                    )
-                )
-                # check removal and auto-creation
-                joint_motor_settings = habitat_sim.physics.JointMotorSettings(
-                    position_target=0.0,
-                    position_gain=1.0,
-                    velocity_target=0.0,
-                    velocity_gain=1.0,
-                    max_impulse=1000.0,
-                )
-                existing_motor_ids = ao.existing_joint_motor_ids
-                for motor_id in existing_motor_ids:
-                    ao.remove_joint_motor(motor_id)
-                ao.create_all_motors(joint_motor_settings)
-            else:
-                logger.warn("Load URDF: input file not found. Aborting.")
+            # load URDF
+            # fixed_base = alt_pressed
+            # urdf_file_path = ""
+            # if shift_pressed and self.cached_urdf:
+            #     urdf_file_path = self.cached_urdf
+            # else:
+            #     urdf_file_path = input("Load URDF: provide a URDF filepath:").strip()
+            # if not urdf_file_path:
+            #     logger.warn("Load URDF: no input provided. Aborting.")
+            # elif not urdf_file_path.endswith((".URDF", ".urdf")):
+            #     logger.warn("Load URDF: input is not a URDF. Aborting.")
+            # elif os.path.exists(urdf_file_path):
+            #     self.cached_urdf = urdf_file_path
+            #     aom = self.sim.get_articulated_object_manager()
+            #     ao = aom.add_articulated_object_from_urdf(
+            #         urdf_file_path,
+            #         fixed_base,
+            #         1.0,
+            #         1.0,
+            #         True,
+            #         maintain_link_order=False,
+            #         intertia_from_urdf=False,
+            #     )
+            #     ao.translation = (
+            #         self.default_agent.scene_node.transformation.transform_point(
+            #             [0.0, 1.0, -1.5]
+            #         )
+            #     )
+            #     # check removal and auto-creation
+            #     joint_motor_settings = habitat_sim.physics.JointMotorSettings(
+            #         position_target=0.0,
+            #         position_gain=1.0,
+            #         velocity_target=0.0,
+            #         velocity_gain=1.0,
+            #         max_impulse=1000.0,
+            #     )
+            #     existing_motor_ids = ao.existing_joint_motor_ids
+            #     for motor_id in existing_motor_ids:
+            #         ao.remove_joint_motor(motor_id)
+            #     ao.create_all_motors(joint_motor_settings)
+            # else:
+            #     logger.warn("Load URDF: input file not found. Aborting.")
 
         elif key == pressed.M:
             self.cycle_mouse_mode()
             logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
 
         elif key == pressed.V:
-            self.invert_gravity()
-            logger.info("Command: gravity inverted")
+            # load receptacles and toggle visibilty or color mode (+SHIFT)
+            if self.receptacles is None:
+                self.load_receptacles()
+
+            if shift_pressed:
+                self.rec_color_mode = RecColorMode(
+                    (self.rec_color_mode.value + 1) % len(RecColorMode)
+                )
+                print(f"self.rec_color_mode = {self.rec_color_mode}")
+                self.display_receptacles = True
+            else:
+                self.display_receptacles = not self.display_receptacles
+                print(f"self.display_receptacles = {self.display_receptacles}")
+
+        elif key == pressed.F:
+            # toggle, load(+ALT), or save(+SHIFT) filtering
+            if shift_pressed and self.rec_filter_data is not None:
+                self.export_filtered_recs(self.rec_filter_path)
+            elif alt_pressed:
+                self.load_filtered_recs(self.rec_filter_path)
+            else:
+                self.show_filtered = not self.show_filtered
+                print(f"self.show_filtered = {self.show_filtered}")
+
+        elif key == pressed.U:
+            rom = self.sim.get_rigid_object_manager()
+            # add objects to the selected receptacle or remove al objects
+            if shift_pressed:
+                # remove all
+                print(f"Removing {len(self.clutter_object_instances)} clutter objects.")
+                for obj in self.clutter_object_instances:
+                    rom.remove_object_by_handle(obj.handle)
+                self.clutter_object_initial_states.clear()
+                self.clutter_object_instances.clear()
+            else:
+                # try to sample an object from the selected object receptacles
+                rec_set = None
+                if alt_pressed:
+                    # use all active filter recs
+                    rec_set = [
+                        rec
+                        for rec in self.receptacles
+                        if rec.unique_name in self.rec_filter_data["active"]
+                    ]
+                elif self.selected_rec is not None:
+                    rec_set = [self.selected_rec]
+                elif self.selected_object is not None:
+                    rec_set = [
+                        rec
+                        for rec in self.receptacles
+                        if self.selected_object.handle == rec.parent_object_handle
+                    ]
+                if rec_set is not None:
+                    if len(self.clutter_object_handles) == 0:
+                        for obj_name in self.clutter_object_set:
+                            matching_handles = self.sim.metadata_mediator.object_template_manager.get_template_handles(
+                                obj_name
+                            )
+                            assert (
+                                len(matching_handles) > 0
+                            ), f"No matching template for '{obj_name}' in the dataset."
+                            self.clutter_object_handles.append(matching_handles[0])
+
+                    rec_set_unique_names = [rec.unique_name for rec in rec_set]
+                    obj_samp = ObjectSampler(
+                        self.clutter_object_handles,
+                        ["rec set"],
+                        orientation_sample="up",
+                        num_objects=(1, 10),
+                    )
+                    rec_set_obj = hab_receptacle.ReceptacleSet(
+                        "rec set", [""], [], rec_set_unique_names, []
+                    )
+                    obj_count_dict = {rec.unique_name: 200 for rec in rec_set}
+                    recep_tracker = hab_receptacle.ReceptacleTracker(
+                        obj_count_dict,
+                        {"rec set": rec_set_obj},
+                    )
+                    new_objs = obj_samp.sample(
+                        self.sim, recep_tracker, [], snap_down=True
+                    )
+                    for obj, rec in new_objs:
+                        self.clutter_object_instances.append(obj)
+                        self.clutter_object_initial_states.append(
+                            (obj.translation, obj.rotation)
+                        )
+                        print(f"Sampled '{obj.handle}' in '{rec.unique_name}'")
+                else:
+                    print("No object selected, cannot sample clutter.")
+
+        elif key == pressed.O:
+            if shift_pressed:
+                # move non-proxy objects in/out of visible space
+                self.original_objs_visible = not self.original_objs_visible
+                print(f"self.original_objs_visible = {self.original_objs_visible}")
+                if not self.original_objs_visible:
+                    for _obj_handle, obj in (
+                        self.sim.get_rigid_object_manager()
+                        .get_objects_by_handle_substring()
+                        .items()
+                    ):
+                        if self.proxy_obj_postfix not in obj.creation_attributes.handle:
+                            obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+                            obj.translation = obj.translation + mn.Vector3(200, 0, 0)
+                            obj.motion_type = habitat_sim.physics.MotionType.STATIC
+                else:
+                    for _obj_handle, obj in (
+                        self.sim.get_rigid_object_manager()
+                        .get_objects_by_handle_substring()
+                        .items()
+                    ):
+                        if self.proxy_obj_postfix not in obj.creation_attributes.handle:
+                            obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+                            obj.translation = obj.translation - mn.Vector3(200, 0, 0)
+                            obj.motion_type = habitat_sim.physics.MotionType.STATIC
+
+            else:
+                if self.col_proxy_objs is None:
+                    self.col_proxy_objs = []
+                    for _obj_handle, obj in (
+                        self.sim.get_rigid_object_manager()
+                        .get_objects_by_handle_substring()
+                        .items()
+                    ):
+                        if self.proxy_obj_postfix not in obj.creation_attributes.handle:
+                            # add a new proxy object
+                            self.col_proxy_objs.append(self.add_col_proxy_object(obj))
+                else:
+                    self.col_proxies_visible = not self.col_proxies_visible
+                    print(f"self.col_proxies_visible = {self.col_proxies_visible}")
+
+                    # make the proxies visible or not by moving them
+                    if not self.col_proxies_visible:
+                        for obj in self.col_proxy_objs:
+                            obj.translation = obj.translation + mn.Vector3(200, 0, 0)
+                    else:
+                        for obj in self.col_proxy_objs:
+                            obj.translation = obj.translation - mn.Vector3(200, 0, 0)
+
         elif key == pressed.N:
             # (default) - toggle navmesh visualization
             # NOTE: (+ALT) - re-sample the agent position on the NavMesh
@@ -632,8 +1308,16 @@ class HabitatSimInteractiveViewer(Application):
                 logger.info("Command: resample agent state from navmesh")
                 if self.sim.pathfinder.is_loaded:
                     new_agent_state = habitat_sim.AgentState()
+                    largest_island_ix = get_largest_island_index(
+                        pathfinder=self.sim.pathfinder,
+                        sim=self.sim,
+                        allow_outdoor=False,
+                    )
+                    print(f"Largest indoor island index = {largest_island_ix}")
                     new_agent_state.position = (
-                        self.sim.pathfinder.get_random_navigable_point()
+                        self.sim.pathfinder.get_random_navigable_point(
+                            island_index=largest_island_ix
+                        )
                     )
                     new_agent_state.rotation = quat_from_angle_axis(
                         self.sim.random.uniform_float(0, 2.0 * np.pi),
@@ -680,6 +1364,11 @@ class HabitatSimInteractiveViewer(Application):
         mouse button to steer the agent's facing direction. When in GRAB mode,
         continues to update the grabber's object position with our agents position.
         """
+
+        render_camera = self.render_camera.render_camera
+        ray = render_camera.unproject(self.get_mouse_position(event.position))
+        self.mouse_cast_results = self.sim.cast_ray(ray=ray)
+
         button = Application.MouseMoveEvent.Buttons
         # if interactive mode -> LOOK MODE
         if event.buttons == button.LEFT and self.mouse_interaction == MouseMode.LOOK:
@@ -712,6 +1401,9 @@ class HabitatSimInteractiveViewer(Application):
         """
         button = Application.MouseEvent.Button
         physics_enabled = self.sim.get_physics_simulation_library()
+        mod = Application.InputEvent.Modifier
+        shift_pressed = bool(event.modifiers & mod.SHIFT)
+        alt_pressed = bool(event.modifiers & mod.ALT)
 
         # if interactive mode is True -> GRAB MODE
         if self.mouse_interaction == MouseMode.GRAB and physics_enabled:
@@ -720,83 +1412,145 @@ class HabitatSimInteractiveViewer(Application):
             raycast_results = self.sim.cast_ray(ray=ray)
 
             if raycast_results.has_hits():
-                hit_object, ao_link = -1, -1
+                ao_link = -1
                 hit_info = raycast_results.hits[0]
 
                 if hit_info.object_id > habitat_sim.stage_id:
-                    # we hit an non-staged collision object
-                    ro_mngr = self.sim.get_rigid_object_manager()
-                    ao_mngr = self.sim.get_articulated_object_manager()
-                    ao = ao_mngr.get_object_by_id(hit_info.object_id)
-                    ro = ro_mngr.get_object_by_id(hit_info.object_id)
+                    obj = sutils.get_obj_from_id(
+                        self.sim, hit_info.object_id, self.ao_link_map
+                    )
 
-                    if ro:
-                        # if grabbed an object
-                        hit_object = hit_info.object_id
-                        object_pivot = ro.transformation.inverted().transform_point(
+                    if obj is None:
+                        raise AssertionError(
+                            "hit object_id is not valid. Did not find object or link."
+                        )
+
+                    if obj.object_id == hit_info.object_id:
+                        # ro or ao base
+                        object_pivot = obj.transformation.inverted().transform_point(
                             hit_info.point
                         )
-                        object_frame = ro.rotation.inverted()
-                    elif ao:
-                        # if grabbed the base link
-                        hit_object = hit_info.object_id
-                        object_pivot = ao.transformation.inverted().transform_point(
-                            hit_info.point
+                        object_frame = obj.rotation.inverted()
+                    elif isinstance(obj, physics.ManagedArticulatedObject):
+                        # link
+                        ao_link = obj.link_object_ids[hit_info.object_id]
+                        object_pivot = (
+                            obj.get_link_scene_node(ao_link)
+                            .transformation.inverted()
+                            .transform_point(hit_info.point)
                         )
-                        object_frame = ao.rotation.inverted()
-                    else:
-                        for ao_handle in ao_mngr.get_objects_by_handle_substring():
-                            ao = ao_mngr.get_object_by_handle(ao_handle)
-                            link_to_obj_ids = ao.link_object_ids
+                        object_frame = obj.get_link_scene_node(
+                            ao_link
+                        ).rotation.inverted()
 
-                            if hit_info.object_id in link_to_obj_ids:
-                                # if we got a link
-                                ao_link = link_to_obj_ids[hit_info.object_id]
-                                object_pivot = (
-                                    ao.get_link_scene_node(ao_link)
-                                    .transformation.inverted()
-                                    .transform_point(hit_info.point)
-                                )
-                                object_frame = ao.get_link_scene_node(
-                                    ao_link
-                                ).rotation.inverted()
-                                hit_object = ao.object_id
-                                break
-                    # done checking for AO
+                    print(f"Grabbed object {obj.handle}")
+                    if ao_link >= 0:
+                        print(f"    link id {ao_link}")
 
-                    if hit_object >= 0:
-                        node = self.default_agent.scene_node
-                        constraint_settings = physics.RigidConstraintSettings()
+                    # setup the grabbing constraints
+                    node = self.default_agent.scene_node
+                    constraint_settings = physics.RigidConstraintSettings()
 
-                        constraint_settings.object_id_a = hit_object
-                        constraint_settings.link_id_a = ao_link
-                        constraint_settings.pivot_a = object_pivot
-                        constraint_settings.frame_a = (
-                            object_frame.to_matrix() @ node.rotation.to_matrix()
+                    constraint_settings.object_id_a = obj.object_id
+                    constraint_settings.link_id_a = ao_link
+                    constraint_settings.pivot_a = object_pivot
+                    constraint_settings.frame_a = (
+                        object_frame.to_matrix() @ node.rotation.to_matrix()
+                    )
+                    constraint_settings.frame_b = node.rotation.to_matrix()
+                    constraint_settings.pivot_b = hit_info.point
+
+                    # by default use a point 2 point constraint
+                    if event.button == button.RIGHT:
+                        constraint_settings.constraint_type = (
+                            physics.RigidConstraintType.Fixed
                         )
-                        constraint_settings.frame_b = node.rotation.to_matrix()
-                        constraint_settings.pivot_b = hit_info.point
 
-                        # by default use a point 2 point constraint
-                        if event.button == button.RIGHT:
-                            constraint_settings.constraint_type = (
-                                physics.RigidConstraintType.Fixed
-                            )
+                    grip_depth = (
+                        hit_info.point - render_camera.node.absolute_translation
+                    ).length()
 
-                        grip_depth = (
-                            hit_info.point - render_camera.node.absolute_translation
-                        ).length()
+                    self.mouse_grabber = MouseGrabber(
+                        constraint_settings,
+                        grip_depth,
+                        self.sim,
+                    )
 
-                        self.mouse_grabber = MouseGrabber(
-                            constraint_settings,
-                            grip_depth,
-                            self.sim,
-                        )
-                    else:
-                        logger.warn("Oops, couldn't find the hit object. That's odd.")
                 # end if didn't hit the scene
             # end has raycast hit
         # end has physics enabled
+        elif (
+            self.mouse_interaction == MouseMode.LOOK
+            and physics_enabled
+            and self.mouse_cast_results is not None
+            and self.mouse_cast_results.has_hits()
+            and event.button == button.RIGHT
+        ):
+            self.selected_object = None
+            self.selected_rec = None
+            hit_id = self.mouse_cast_results.hits[0].object_id
+            # right click in look mode to print object information
+            if hit_id == habitat_sim.stage_id:
+                print("This is the stage.")
+            else:
+                obj = sutils.get_obj_from_id(self.sim, hit_id)
+                self.selected_object = obj
+                print(f"Object: {obj.handle}")
+                if self.receptacles is not None:
+                    for rec in self.receptacles:
+                        if rec.parent_object_handle == obj.handle:
+                            print(f"    - Receptacle: {rec.name}")
+                if shift_pressed:
+                    self.selected_rec = self.get_closest_tri_receptacle(
+                        self.mouse_cast_results.hits[0].point
+                    )
+                    if self.selected_rec is not None:
+                        print(f"Selected Receptacle: {self.selected_rec.name}")
+                elif alt_pressed:
+                    filtered_rec = self.get_closest_tri_receptacle(
+                        self.mouse_cast_results.hits[0].point
+                    )
+                    if filtered_rec is not None:
+                        filtered_rec_name = self.get_rec_instance_name(filtered_rec)
+                        print(f"Modified Receptacle Filter State: {filtered_rec_name}")
+                        if (
+                            filtered_rec_name
+                            in self.rec_filter_data["manually_filtered"]
+                        ):
+                            print(" remove from manual filter")
+                            # this was manually filtered, remove it and try to make active
+                            self.rec_filter_data["manually_filtered"].remove(
+                                filtered_rec_name
+                            )
+                            add_to_active = True
+                            for other_out_set in [
+                                "access_filtered",
+                                "stability_filtered",
+                                "height_filtered",
+                            ]:
+                                if (
+                                    filtered_rec_name
+                                    in self.rec_filter_data[other_out_set]
+                                ):
+                                    print(f"     is in {other_out_set}")
+                                    add_to_active = False
+                                    break
+                            if add_to_active:
+                                print("     is active")
+                                self.rec_filter_data["active"].append(filtered_rec_name)
+                        elif filtered_rec_name in self.rec_filter_data["active"]:
+                            print(" remove from active, add manual filter")
+                            # this was active, remove it and mark manually filtered
+                            self.rec_filter_data["active"].remove(filtered_rec_name)
+                            self.rec_filter_data["manually_filtered"].append(
+                                filtered_rec_name
+                            )
+                        else:
+                            print(" add to manual filter, but has other filter")
+                            # this is already filtered, but add it to manual filters
+                            self.rec_filter_data["manually_filtered"].append(
+                                filtered_rec_name
+                            )
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
@@ -947,9 +1701,11 @@ class HabitatSimInteractiveViewer(Application):
         self.window_text.render(
             f"""
 {self.fps} FPS
+Scene ID : {os.path.split(self.cfg.sim_cfg.scene_id)[1].split('.scene_instance')[0]}
 Sensor Type: {sensor_type_string}
 Sensor Subtype: {sensor_subtype_string}
 Mouse Interaction Mode: {mouse_mode_string}
+Unstable Objects: {self.num_unstable_objects} of {len(self.clutter_object_instances)}
             """
         )
         self.shader.draw(self.window_text.mesh)
@@ -973,7 +1729,10 @@ In LOOK mode (default):
         Click and drag to rotate the agent and look up/down.
     WHEEL:
         Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
-
+    RIGHT:
+        Click an object to select the object. Prints object name and attached receptacle names. Selected object displays sample points when cpo is initialized.
+        (+SHIFT) select a receptacle.
+        (+ALT) add or remove a receptacle from the "manual filter set".
 In GRAB mode (with 'enable-physics'):
     LEFT:
         Click and drag to pickup and move an object with a point-to-point constraint (e.g. ball joint).
@@ -1011,10 +1770,20 @@ Key Commands:
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
     '.':        Take a single simulation step if not simulating continuously.
-    'v':        (physics) Invert gravity.
-    't':        Load URDF from filepath
-                (+SHIFT) quick re-load the previously specified URDF
-                (+ALT) load the URDF with fixed base
+
+    Receptacle Evaluation Tool UI:
+    'v':        Load all Receptacles for the scene and toggle Receptacle visibility.
+                (+SHIFT) Iterate through receptacle color modes.
+    'f':        Toggle Receptacle view filtering. When on, only non-filtered Receptacles are visible.
+                (+SHIFT) Export current filter metadata to file.
+                (+ALT) Import filter metadata from file.
+    'o':        Toggle display of collision proxy shapes for the scene.
+                (+SHIFT) Toggle display of original render shapes (and Receptacles).
+    't':        CLI for modifying un-bound viewer parameters during runtime.
+    'u':        Sample an object placement from the currently selected object or receptacle.
+                (+SHIFT) Remove all previously sampled objects.
+                (+ALT) Sample from all "active" unfiltered Receptacles.
+
 =====================================================
 """
         )
@@ -1133,6 +1902,45 @@ class Timer:
         Timer.prev_frame_time = time.time()
 
 
+def init_cpo_for_scene(sim_settings, mm: habitat_sim.metadata.MetadataMediator):
+    """
+    Initialize and run th CPO for all objects in the scene.
+    """
+    global _cpo
+    global _cpo_threads
+
+    _cpo = csa.CollisionProxyOptimizer(sim_settings, None, mm)
+
+    # get object handles from a specific scene
+    objects_in_scene = csa.get_objects_in_scene(
+        dataset_path=sim_settings["scene_dataset_config_file"],
+        scene_handle=sim_settings["scene"],
+        mm=_cpo.mm,
+    )
+    # get a subset with receptacles defined
+    objects_in_scene = [
+        objects_in_scene[i]
+        for i in range(len(objects_in_scene))
+        if csa.object_has_receptacles(objects_in_scene[i], mm.object_template_manager)
+    ]
+
+    def run_cpo_for_obj(obj_handle):
+        _cpo.setup_obj_gt(obj_handle)
+        _cpo.compute_receptacle_stability(obj_handle, use_gt=True)
+        _cpo.compute_receptacle_stability(obj_handle)
+        _cpo.compute_receptacle_access_metrics(obj_handle, use_gt=True)
+        _cpo.compute_receptacle_access_metrics(obj_handle, use_gt=False)
+
+    # run CPO initialization multi-threaded to unblock viewer initialization and use
+
+    threads = []
+    for obj_handle in objects_in_scene:
+        run_cpo_for_obj(obj_handle)
+        # threads.append(threading.Thread(target=run_cpo_for_obj, args=(obj_handle,)))
+    for thread in threads:
+        thread.start()
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -1151,6 +1959,17 @@ if __name__ == "__main__":
         type=str,
         metavar="DATASET",
         help='dataset configuration file to use (default: "default")',
+    )
+    parser.add_argument(
+        "--rec-filter-file",
+        default="./rec_filter_data.json",
+        type=str,
+        help='Receptacle filtering metadata (default: "./rec_filter_data.json")',
+    )
+    parser.add_argument(
+        "--init-cpo",
+        action="store_true",
+        help="Initialize and run the CPO for the current scene.",
     )
     parser.add_argument(
         "--disable-physics",
@@ -1185,14 +2004,20 @@ if __name__ == "__main__":
         help="Composite files that the batch renderer will use in-place of simulation assets to improve memory usage and performance. If none is specified, the original scene files will be loaded from disk.",
     )
     parser.add_argument(
+        "--no-navmesh",
+        default=False,
+        action="store_true",
+        help="Don't build navmesh.",
+    )
+    parser.add_argument(
         "--width",
-        default=800,
+        default=1080,
         type=int,
         help="Horizontal resolution of the window.",
     )
     parser.add_argument(
         "--height",
-        default=600,
+        default=720,
         type=int,
         help="Vertical resolution of the window.",
     )
@@ -1217,8 +2042,20 @@ if __name__ == "__main__":
     sim_settings["composite_files"] = args.composite_files
     sim_settings["window_width"] = args.width
     sim_settings["window_height"] = args.height
-    sim_settings["default_agent_navmesh"] = False
+    sim_settings["rec_filter_file"] = args.rec_filter_file
     sim_settings["enable_hbao"] = args.hbao
+    sim_settings["viewer_ignore_navmesh"] = args.no_navmesh
+
+    # don't need auto-navmesh
+    sim_settings["default_agent_navmesh"] = False
+
+    mm = habitat_sim.metadata.MetadataMediator()
+    mm.active_dataset = sim_settings["scene_dataset_config_file"]
+
+    # initialize the CPO.
+    # this will be done in parallel to viewer setup via multithreading
+    if args.init_cpo:
+        init_cpo_for_scene(sim_settings, mm)
 
     # start the application
-    HabitatSimInteractiveViewer(sim_settings).exec()
+    HabitatSimInteractiveViewer(sim_settings, mm).exec()
