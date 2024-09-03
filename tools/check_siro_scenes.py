@@ -398,6 +398,29 @@ def navmesh_config_and_recompute(sim) -> None:
     )
 
 
+def read_split_yaml(split_yaml: str) -> Dict[str, List[str]]:
+    """
+    Parses the split yaml file to get a dict of split -> scene ids.
+    """
+    import yaml
+
+    assert os.path.exists(split_yaml), f"split yaml: '{split_yaml}' does not exist."
+    # read yaml file
+    with open(split_yaml, "r") as f:
+        scene_splits = yaml.safe_load(f)
+        return scene_splits
+
+
+def get_split(sim, splits):
+    """
+    Get the split of the current scene
+    """
+    for label in splits:
+        if sim.curr_scene_name in splits[label]:
+            return label
+    return "test"
+
+
 def initialize_clutter_object_set(sim) -> None:
     """
     Get the template handles for configured clutter objects.
@@ -535,6 +558,80 @@ def run_rec_filter_analysis(
     write_rec_filter_json(filter_filepath, rec_filter_dict)
 
 
+def try_load_rec_filter(sim):
+    """
+    Attempt to find and load the receptacle filter file configured for the current scene.
+    Return whether or not the filter file was successfully loaded.
+    """
+    rec_filter_filepath = hab_receptacle.get_scene_rec_filter_filepath(
+        sim.metadata_mediator, sim.curr_scene_name
+    )
+    if rec_filter_filepath is None:
+        return False
+    rec_filter_paths = hab_receptacle.get_excluded_recs_from_filter_file(
+        rec_filter_filepath
+    )
+    if len(rec_filter_paths) > 0:
+        return True
+    return False
+
+
+def try_find_faucets(sim) -> Tuple[bool, int, int, int]:
+    """
+    Try to get faucets on objects in the scene.
+    :return: boolean whether or not there are faucet annotations, number of faucet objects, number of faucet objects with receptacles, number of faucet objects with active receptacles
+    """
+
+    # first find all faucet annotations
+    objs = sutils.get_all_objects(sim)
+    obj_markersets: Dict[str, List[mn.Vector3]] = {}
+    for obj in objs:
+        all_obj_marker_sets = obj.marker_sets
+        if all_obj_marker_sets.has_taskset("faucets"):
+            # this object has faucet annotations
+            obj_markersets[obj.handle] = []
+            faucet_marker_sets = all_obj_marker_sets.get_taskset_points("faucets")
+            for link_name, link_faucet_markers in faucet_marker_sets.items():
+                link_id = -1
+                if link_name != "root":
+                    link_id = obj.get_link_id_from_name(link_name)
+                for _marker_subset_name, points in link_faucet_markers.items():
+                    global_points = obj.transform_local_pts_to_world(points, link_id)
+                    obj_markersets[obj.handle].extend(global_points)
+    objs_w_faucets = obj_markersets.keys()
+    objs_w_faucets = list(set(objs_w_faucets))
+
+    if len(objs_w_faucets) == 0:
+        return False, 0, 0
+
+    # then find all receptacles
+    all_recs = hab_receptacle.find_receptacles(sim)
+    all_rec_objs = [rec.parent_object_handle for rec in all_recs]
+    all_rec_objs = list(set(all_rec_objs))
+
+    # also check the filtered recs
+    rec_filter_filepath = hab_receptacle.get_scene_rec_filter_filepath(
+        sim.metadata_mediator, sim.curr_scene_name
+    )
+    rec_filter_paths = hab_receptacle.get_excluded_recs_from_filter_file(
+        rec_filter_filepath
+    )
+    filtered_rec_objs = [
+        rec.parent_object_handle
+        for rec in all_recs
+        if rec.unique_name not in rec_filter_paths
+    ]
+    filtered_rec_objs = list(set(filtered_rec_objs))
+
+    all_faucet_recs = [
+        obj_handle for obj_handle in objs_w_faucets if obj_handle in all_rec_objs
+    ]
+    filtered_faucet_recs = [
+        obj_handle for obj_handle in objs_w_faucets if obj_handle in filtered_rec_objs
+    ]
+    return True, len(objs_w_faucets), len(all_faucet_recs), len(filtered_faucet_recs)
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -579,10 +676,12 @@ if __name__ == "__main__":
     available_check_actions = [
         "rec_unique_names",
         "rec_filters",
+        "faucets",
         "region_counts",
         "joint_popping",
         "visualize_regions",
         "analyze_semantics",
+        "splits",
     ]
 
     target_check_actions = []
@@ -653,12 +752,43 @@ if __name__ == "__main__":
                     "rec_unique_names"
                 ] = unique_names
 
+            if "splits" in target_check_actions:
+                split_file = (
+                    args.dataset[: -len(args.dataset.split("/")[-1])]
+                    + "scene_splits.yaml"
+                )
+                splits = read_split_yaml(split_file)
+                scene_split = get_split(sim, splits)
+                scene_test_results[sim.curr_scene_name]["split"] = scene_split
+
             ##########################################
             # receptacle filter computation
             if "rec_filters" in target_check_actions:
-                run_rec_filter_analysis(
-                    sim, args.out_dir, open_default_links=True, keep_manual_filters=True
-                )
+                filter_working = try_load_rec_filter(sim)
+                scene_test_results[sim.curr_scene_name][
+                    "rec_filter_working"
+                ] = filter_working
+                # run_rec_filter_analysis(
+                #    sim, args.out_dir, open_default_links=True, keep_manual_filters=True
+                # )
+
+            if "faucets" in target_check_actions:
+                (
+                    has_faucets,
+                    num_faucet_objs,
+                    num_faucet_recs,
+                    num_faucet_active_recs,
+                ) = try_find_faucets(sim)
+                scene_test_results[sim.curr_scene_name]["has_faucets"] = has_faucets
+                scene_test_results[sim.curr_scene_name][
+                    "num_faucet_objs"
+                ] = num_faucet_objs
+                scene_test_results[sim.curr_scene_name][
+                    "num_faucet_recs"
+                ] = num_faucet_recs
+                scene_test_results[sim.curr_scene_name][
+                    "num_faucet_active_recs"
+                ] = num_faucet_active_recs
 
             ##########################################
             # Check region counts
