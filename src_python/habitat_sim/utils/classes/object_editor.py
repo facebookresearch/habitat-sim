@@ -802,10 +802,15 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}{obj_type_disp_str}
                 if new_obj is not None:
                     # set new object location to be above location of copied object
                     new_obj_translation = mn.Vector3(0.0, 1.0, 0.0)
+                    # set new object rotation to match copied object's rotation
+                    new_obj_rotation = obj.rotation * new_obj.rotation.inverted()
                     new_obj.motion_type = obj.motion_type
                     # move new object to appropriate location
                     new_navmesh_dirty = self._move_one_object(
-                        new_obj, navmesh_dirty, new_obj_translation
+                        new_obj,
+                        navmesh_dirty,
+                        translation=new_obj_translation,
+                        rotation=new_obj_rotation,
                     )
                     navmesh_dirty = new_navmesh_dirty or navmesh_dirty
                     res_objs.append(new_obj)
