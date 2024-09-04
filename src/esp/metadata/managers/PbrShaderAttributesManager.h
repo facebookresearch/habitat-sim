@@ -7,7 +7,7 @@
 
 #include <utility>
 
-#include "AttributesManagerBase.h"
+#include "AbstractAttributesManager.h"
 
 #include "esp/gfx/configure.h"
 #include "esp/metadata/attributes/PbrShaderAttributes.h"
@@ -19,14 +19,13 @@ namespace metadata {
 namespace managers {
 
 class PbrShaderAttributesManager
-    : public AttributesManager<attributes::PbrShaderAttributes,
-                               ManagedObjectAccess::Copy> {
+    : public AbstractAttributesManager<attributes::PbrShaderAttributes,
+                                       ManagedObjectAccess::Copy> {
  public:
   PbrShaderAttributesManager()
-      : AttributesManager<
-            attributes::PbrShaderAttributes,
-            ManagedObjectAccess::Copy>::AttributesManager("PBR Rendering",
-                                                          "pbr_config.json") {
+      : AbstractAttributesManager<attributes::PbrShaderAttributes,
+                                  ManagedObjectAccess::Copy>::
+            AbstractAttributesManager("PBR Rendering", "pbr_config.json") {
     this->copyConstructorMap_["PbrShaderAttributes"] =
         &PbrShaderAttributesManager::createObjectCopy<
             attributes::PbrShaderAttributes>;
@@ -127,8 +126,8 @@ class PbrShaderAttributesManager
 
   /**
    * @brief This method will perform any necessary updating that is
-   * attributesManager-specific upon template removal, such as removing a
-   * specific template handle from the list of file-based template handles in
+   * AbstractAttributesManager-specific upon template removal, such as removing
+   * a specific template handle from the list of file-based template handles in
    * ObjectAttributesManager.  This should only be called @ref
    * esp::core::ManagedContainerBase.
    *

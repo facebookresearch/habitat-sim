@@ -10,15 +10,15 @@
 #include "PbrShaderAttributesManager.h"
 #include "PhysicsAttributesManager.h"
 
-#include "AttributesManagerBase.h"
+#include "AbstractAttributesManager.h"
 #include "esp/metadata/attributes/SceneDatasetAttributes.h"
 
 namespace esp {
 namespace metadata {
 namespace managers {
 class SceneDatasetAttributesManager
-    : public AttributesManager<attributes::SceneDatasetAttributes,
-                               ManagedObjectAccess::Share> {
+    : public AbstractAttributesManager<attributes::SceneDatasetAttributes,
+                                       ManagedObjectAccess::Share> {
  public:
   explicit SceneDatasetAttributesManager(
       PhysicsAttributesManager::ptr physicsAttributesMgr,
@@ -121,7 +121,7 @@ class SceneDatasetAttributesManager
   /**
    * @brief Verify a particular subcell exists within the
    * dataset_config.JSON file, and if so, handle reading the possible JSON
-   * sub-cells it might hold, using the passed attributesManager for the
+   * sub-cells it might hold, using the passed AbstractAttributesManager for the
    * dataset being processed.
    * @tparam the type of the attributes manager.
    * @param dsDir The root directory of the dataset attributes being built.
@@ -173,8 +173,8 @@ class SceneDatasetAttributesManager
 
   /**
    * @brief This method will perform any necessary updating that is
-   * attributesManager-specific upon template removal, such as removing a
-   * specific template handle from the list of file-based template handles in
+   * AbstractAttributesManager-specific upon template removal, such as removing
+   * a specific template handle from the list of file-based template handles in
    * ObjectAttributesManager.  This should only be called @ref
    * esp::core::managedContainers::ManagedContainerBase.
    *

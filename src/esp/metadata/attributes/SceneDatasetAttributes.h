@@ -10,7 +10,7 @@
  * relevant data and configurations for a specific dataset.
  */
 
-#include "AttributesBase.h"
+#include "AbstractAttributes.h"
 
 #include "esp/metadata/managers/AOAttributesManager.h"
 #include "esp/metadata/managers/AssetAttributesManager.h"
@@ -35,6 +35,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
     // These are to clear any external refs persisting after this scene dataset
     // is deleted.  Accessing these refs should result in errors instead of
     // leaks/undefined behavior.
+    artObjAttributesManager_ = nullptr;
     assetAttributesManager_ = nullptr;
     lightLayoutAttributesManager_ = nullptr;
     objectAttributesManager_ = nullptr;
@@ -42,7 +43,14 @@ class SceneDatasetAttributes : public AbstractAttributes {
     semanticAttributesManager_ = nullptr;
     stageAttributesManager_ = nullptr;
     navmeshMap_.clear();
-    semanticAttributesManager_ = nullptr;
+  }
+
+  /**
+   * @brief Return manager for construction and access to articulated object
+   * attributes.
+   */
+  const managers::AOAttributesManager::ptr& getAOAttributesManager() const {
+    return artObjAttributesManager_;
   }
 
   /**
@@ -54,26 +62,19 @@ class SceneDatasetAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Return manager for construction and access to object attributes.
-   */
-  const managers::ObjectAttributesManager::ptr& getObjectAttributesManager()
-      const {
-    return objectAttributesManager_;
-  }
-  /**
-   * @brief Return manager for construction and access to articulated object
-   * attributes.
-   */
-  const managers::AOAttributesManager::ptr& getAOAttributesManager() const {
-    return artObjAttributesManager_;
-  }
-
-  /**
    * @brief Return manager for construction and access to light attributes.
    */
   const managers::LightLayoutAttributesManager::ptr&
   getLightLayoutAttributesManager() const {
     return lightLayoutAttributesManager_;
+  }
+
+  /**
+   * @brief Return manager for construction and access to object attributes.
+   */
+  const managers::ObjectAttributesManager::ptr& getObjectAttributesManager()
+      const {
+    return objectAttributesManager_;
   }
 
   /**
@@ -446,6 +447,12 @@ class SceneDatasetAttributes : public AbstractAttributes {
       const std::string& descString);
 
   /**
+   * @brief Manages all construction and access to articulated object attributes
+   * from this dataset.
+   */
+  managers::AOAttributesManager::ptr artObjAttributesManager_ = nullptr;
+
+  /**
    * @brief Reference to AssetAttributesManager to give access to primitive
    * attributes for object construction
    */
@@ -463,12 +470,6 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * dataset.
    */
   managers::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
-
-  /**
-   * @brief Manages all construction and access to articulated object attributes
-   * from this dataset.
-   */
-  managers::AOAttributesManager::ptr artObjAttributesManager_ = nullptr;
 
   /**
    * @brief Manages all construction and access to @ref metadata::attributes::SceneInstanceAttributes

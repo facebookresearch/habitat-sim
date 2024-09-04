@@ -7,7 +7,7 @@
 
 #include <utility>
 
-#include "AttributesManagerBase.h"
+#include "AbstractAttributesManager.h"
 
 #include "esp/metadata/attributes/PhysicsManagerAttributes.h"
 #include "esp/physics/configure.h"
@@ -19,13 +19,14 @@ namespace metadata {
 namespace managers {
 
 class PhysicsAttributesManager
-    : public AttributesManager<attributes::PhysicsManagerAttributes,
-                               ManagedObjectAccess::Copy> {
+    : public AbstractAttributesManager<attributes::PhysicsManagerAttributes,
+                                       ManagedObjectAccess::Copy> {
  public:
   PhysicsAttributesManager()
-      : AttributesManager<attributes::PhysicsManagerAttributes,
-                          ManagedObjectAccess::Copy>::
-            AttributesManager("Physics Manager", "physics_config.json") {
+      : AbstractAttributesManager<attributes::PhysicsManagerAttributes,
+                                  ManagedObjectAccess::Copy>::
+            AbstractAttributesManager("Physics Manager",
+                                      "physics_config.json") {
     this->copyConstructorMap_["PhysicsManagerAttributes"] =
         &PhysicsAttributesManager::createObjectCopy<
             attributes::PhysicsManagerAttributes>;
@@ -100,8 +101,8 @@ class PhysicsAttributesManager
 
   /**
    * @brief This method will perform any necessary updating that is
-   * attributesManager-specific upon template removal, such as removing a
-   * specific template handle from the list of file-based template handles in
+   * AbstractAttributesManager-specific upon template removal, such as removing
+   * a specific template handle from the list of file-based template handles in
    * ObjectAttributesManager.  This should only be called @ref
    * esp::core::managedContainers::ManagedContainerBase.
    *

@@ -8,7 +8,7 @@
 
 #include "esp/metadata/MetadataMediator.h"
 #include "esp/metadata/managers/AOAttributesManager.h"
-#include "esp/metadata/managers/AttributesManagerBase.h"
+#include "esp/metadata/managers/AbstractAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/PbrShaderAttributesManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
@@ -30,7 +30,7 @@ using esp::metadata::PrimObjTypes;
 
 using esp::physics::MotionType;
 
-using AttrMgrs::AttributesManager;
+using AttrMgrs::AbstractAttributesManager;
 using Attrs::ArticulatedObjectAttributes;
 using Attrs::MarkerSets;
 using Attrs::ObjectAttributes;

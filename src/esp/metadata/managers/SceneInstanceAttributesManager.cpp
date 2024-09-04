@@ -111,7 +111,8 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
                     << "` so no Stage can be created for this Scene.");
     }
   }
-
+  // TODO : drive by diagnostics when implemented
+  bool validateUnique = false;
   // Check for object instances existence
   io::JsonGenericValue::ConstMemberIterator objJSONIter =
       jsonConfig.FindMember("object_instances");
@@ -123,7 +124,7 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
         const auto& objCell = objectArray[i];
         if (objCell.IsObject()) {
           attribs->addObjectInstanceAttrs(
-              createInstanceAttributesFromJSON(objCell));
+              createInstanceAttributesFromJSON(objCell), validateUnique);
         } else {
           ESP_WARNING(Mn::Debug::Flag::NoSpace)
               << "Object instance issue in Scene Instance `" << attribsDispName
@@ -161,7 +162,7 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
 
         if (artObjCell.IsObject()) {
           attribs->addArticulatedObjectInstanceAttrs(
-              createAOInstanceAttributesFromJSON(artObjCell));
+              createAOInstanceAttributesFromJSON(artObjCell), validateUnique);
         } else {
           ESP_WARNING(Mn::Debug::Flag::NoSpace)
               << "Articulated Object specification error in Scene Instance `"

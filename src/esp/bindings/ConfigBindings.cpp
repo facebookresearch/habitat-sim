@@ -181,7 +181,9 @@ void initConfigBindings(py::module& m) {
            R"(Save a subconfiguration with the given name.)", "name"_a,
            "subconfig"_a)
       .def(
-          "has_subconfig", &Configuration::hasSubconfig,
+          "has_subconfig",
+          static_cast<bool (Configuration::*)(const std::string&) const>(
+              &Configuration::hasSubconfig),
           R"(Returns true if specified key references an existing subconfiguration within this configuration.)")
       .def(
           "remove_subconfig", &Configuration::removeSubconfig,
