@@ -5,7 +5,7 @@
 #ifndef ESP_METADATA_MANAGERS_SCENEINSTANCEATTRIBUTEMANAGER_H_
 #define ESP_METADATA_MANAGERS_SCENEINSTANCEATTRIBUTEMANAGER_H_
 
-#include "AttributesManagerBase.h"
+#include "AbstractAttributesManager.h"
 #include "esp/metadata/attributes/SceneInstanceAttributes.h"
 
 namespace esp {
@@ -15,13 +15,13 @@ namespace managers {
 using esp::core::managedContainers::ManagedObjectAccess;
 
 class SceneInstanceAttributesManager
-    : public AttributesManager<attributes::SceneInstanceAttributes,
-                               ManagedObjectAccess::Copy> {
+    : public AbstractAttributesManager<attributes::SceneInstanceAttributes,
+                                       ManagedObjectAccess::Copy> {
  public:
   SceneInstanceAttributesManager()
-      : AttributesManager<attributes::SceneInstanceAttributes,
-                          ManagedObjectAccess::Copy>::
-            AttributesManager("Scene Instance", "scene_instance.json") {
+      : AbstractAttributesManager<attributes::SceneInstanceAttributes,
+                                  ManagedObjectAccess::Copy>::
+            AbstractAttributesManager("Scene Instance", "scene_instance.json") {
     // build this manager's copy constructor map
     this->copyConstructorMap_["SceneInstanceAttributes"] =
         &SceneInstanceAttributesManager::createObjectCopy<
@@ -176,8 +176,8 @@ class SceneInstanceAttributesManager
 
   /**
    * @brief This method will perform any necessary updating that is
-   * attributesManager-specific upon template removal, such as removing a
-   * specific template handle from the list of file-based template handles in
+   * AbstractAttributesManager-specific upon template removal, such as removing
+   * a specific template handle from the list of file-based template handles in
    * ObjectAttributesManager.  This should only be called @ref
    * esp::core::managedContainers::ManagedContainerBase.
    *

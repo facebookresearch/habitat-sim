@@ -7,8 +7,8 @@
 
 #include <utility>
 
+#include "AbstractAttributesManager.h"
 #include "AssetAttributesManager.h"
-#include "AttributesManagerBase.h"
 
 namespace esp {
 namespace metadata {
@@ -40,10 +40,9 @@ const std::map<PrimObjTypes, const char*>
         {PrimObjTypes::END_PRIM_OBJ_TYPES, "NONE DEFINED"}};
 
 AssetAttributesManager::AssetAttributesManager()
-    : AttributesManager<
-          attributes::AbstractPrimitiveAttributes,
-          ManagedObjectAccess::Copy>::AttributesManager("Primitive Asset",
-                                                        "prim_config.json") {
+    : AbstractAttributesManager<attributes::AbstractPrimitiveAttributes,
+                                ManagedObjectAccess::Copy>::
+          AbstractAttributesManager("Primitive Asset", "prim_config.json") {
   // function pointers to asset attributes constructors
   primTypeConstructorMap_["capsule3DSolid"] =
       &AssetAttributesManager::createPrimAttributes<

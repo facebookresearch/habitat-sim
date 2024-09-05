@@ -5,7 +5,7 @@
 #ifndef ESP_METADATA_ATTRIBUTES_LIGHTLAYOUTATTRIBUTES_H_
 #define ESP_METADATA_ATTRIBUTES_LIGHTLAYOUTATTRIBUTES_H_
 
-#include "AttributesBase.h"
+#include "AbstractAttributes.h"
 #include "esp/gfx/LightSetup.h"
 
 namespace esp {
@@ -252,7 +252,7 @@ class LightLayoutAttributes : public AbstractAttributes {
    */
   void addLightInstance(LightInstanceAttributes::ptr _lightInstance) {
     this->setSubAttributesInternal<LightInstanceAttributes>(
-        _lightInstance, availableLightIDs_, lightInstConfig_, "");
+        _lightInstance, availableLightIDs_, lightInstConfig_, "", false);
   }
 
   /**

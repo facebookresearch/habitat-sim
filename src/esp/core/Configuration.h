@@ -652,7 +652,7 @@ class ConfigValue {
   friend bool operator!=(const ConfigValue& a, const ConfigValue& b);
 
   ESP_SMART_POINTERS(ConfigValue)
-};  // namespace config
+};  // class ConfigValue
 
 /**
  * @brief provide debug stream support for @ref ConfigValue
@@ -1218,6 +1218,25 @@ class Configuration {
   }
 
   /**
+   * @brief return if passed @p subConfig exists in this Configuration's
+   * subconfig map. Does not compare hidden ConfigValues.
+   */
+  template <typename T>
+  bool hasSubconfig(const std::shared_ptr<T>& subConfig) const {
+    static_assert(std::is_base_of<Configuration, T>::value,
+                  "Configuration : Desired subconfig must be derived from "
+                  "core::config::Configuration");
+    auto cfgIterPair = getSubconfigIterator();
+    for (auto& cfgIter = cfgIterPair.first; cfgIter != cfgIterPair.second;
+         ++cfgIter) {
+      if (*(cfgIter->second) == *subConfig) {
+        return true;
+      }
+    }
+    return false;
+  }  // hasSubconfig
+
+  /**
    * @brief Templated subconfig copy getter. Retrieves a shared pointer to a
    * copy of the subConfig @ref esp::core::config::Configuration that has the
    * passed @p cfgName .
@@ -1661,6 +1680,15 @@ class Configuration {
   ValueMapType valueMap_{};
 
  public:
+  /**
+   * @brief Comparison - Ignores ConfigValues specified as hidden
+   */
+  friend bool operator==(const Configuration& a, const Configuration& b);
+  /**
+   * @brief Inequality Comparison - Ignores ConfigValues specified as hidden
+   */
+  friend bool operator!=(const Configuration& a, const Configuration& b);
+
   ESP_SMART_POINTERS(Configuration)
 };  // class Configuration
 

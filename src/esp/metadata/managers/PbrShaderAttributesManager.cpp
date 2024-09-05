@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "PbrShaderAttributesManager.h"
-#include "AttributesManagerBase.h"
+#include "AbstractAttributesManager.h"
 
 #include "esp/io/Json.h"
 

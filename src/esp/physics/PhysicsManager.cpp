@@ -670,10 +670,14 @@ void PhysicsManager::buildCurrentStateSceneAttributes(
   // 2. Clear existing object instances, and set new ones reflecting current
   // state
   sceneInstanceAttrs->clearObjectInstances();
+
+  // TODO : drive by diagnostics when implemented
+  bool validateUnique = false;
+
   // get each object's current state as a SceneObjectInstanceAttributes
   for (const auto& item : existingObjects_) {
     sceneInstanceAttrs->addObjectInstanceAttrs(
-        item.second->getCurrentStateInstanceAttr());
+        item.second->getCurrentStateInstanceAttr(), validateUnique);
   }
   // 3. Clear existing Articulated object instances, and set new ones reflecting
   // current state
@@ -681,7 +685,7 @@ void PhysicsManager::buildCurrentStateSceneAttributes(
   // get each articulated object's current state as a SceneAOInstanceAttributes
   for (const auto& item : existingArticulatedObjects_) {
     sceneInstanceAttrs->addArticulatedObjectInstanceAttrs(
-        item.second->getCurrentStateInstanceAttr());
+        item.second->getCurrentStateInstanceAttr(), validateUnique);
   }
 
 }  // PhysicsManager::buildCurrentStateSceneAttributes

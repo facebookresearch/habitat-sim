@@ -734,18 +734,15 @@ class ManagedContainer : public ManagedContainerBase {
         (status == ManagedObjectPreregistration::Success_Use_Object_Handle
              ? object->getHandle()
              : objectHandle);
-    // adds template to library, and returns either the ID of the existing
-    // template referenced by stageAttributesHandle, or the next available
-    // ID if not found.
+    // adds template to library, and returns the ID of the existing template
+    // referenced by handleToUse
     int objectID = this->addObjectToLibrary(std::move(object), handleToUse);
     // If registration succeeded then perform post-registration handling
     if (objectID != ID_UNDEFINED) {
       // post registration manager-specific processing.
-      postRegisterObjectHandling(objectID, objectHandle);
+      postRegisterObjectHandling(objectID, handleToUse);
     }
-
     return objectID;
-
   }  // registerObjectInternal
 
   /**

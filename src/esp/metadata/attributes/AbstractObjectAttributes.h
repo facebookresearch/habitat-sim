@@ -5,7 +5,7 @@
 #ifndef ESP_METADATA_ATTRIBUTES_ABSTRACTOBJECTATTRIBUTES_H_
 #define ESP_METADATA_ATTRIBUTES_ABSTRACTOBJECTATTRIBUTES_H_
 
-#include "AttributesBase.h"
+#include "AbstractAttributes.h"
 #include "MarkerSets.h"
 
 namespace esp {

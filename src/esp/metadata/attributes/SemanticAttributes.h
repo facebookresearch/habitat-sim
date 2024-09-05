@@ -5,7 +5,7 @@
 #ifndef ESP_METADATA_ATTRIBUTES_SEMANTICATTRIBUTES_H_
 #define ESP_METADATA_ATTRIBUTES_SEMANTICATTRIBUTES_H_
 
-#include "AttributesBase.h"
+#include "AbstractAttributes.h"
 
 namespace esp {
 namespace metadata {
@@ -372,12 +372,21 @@ class SemanticAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Add an object instance attributes to this scene instance.
+   * @brief Add an object instance attributes to this scene instance.  Returns
+   * false if not added due to a duplicate to @p _regionInstance found in
+   * @p regionAnnotationConfig_ .
+   * @param _regionInstance The region instance to add to the owning
+   * subconfiguration.
+   * @param _validateUnique Whether to validate uniqueness of @p _regionInstance
+   * . Note : hidden fields are ignored for this validation.
+   * @return Whether or not @p _regionInstance was added due to a duplicate
+   * being found.
    */
-  void addRegionInstanceAttrs(SemanticVolumeAttributes::ptr _regionInstance) {
-    setSubAttributesInternal<SemanticVolumeAttributes>(
+  bool addRegionInstanceAttrs(SemanticVolumeAttributes::ptr _regionInstance,
+                              bool _validateUnique) {
+    return setSubAttributesInternal<SemanticVolumeAttributes>(
         _regionInstance, availableRegionInstIDs_, regionAnnotationConfig_,
-        "region_desc_");
+        "region_desc_", _validateUnique);
   }
 
   /**

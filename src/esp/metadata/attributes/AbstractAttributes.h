@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_METADATA_ATTRIBUTES_ATTRIBUTESBASE_H_
-#define ESP_METADATA_ATTRIBUTES_ATTRIBUTESBASE_H_
+#ifndef ESP_METADATA_ATTRIBUTES_ABSTRACTATTRIBUTES_H_
+#define ESP_METADATA_ATTRIBUTES_ABSTRACTATTRIBUTES_H_
 
 #include <Corrade/Utility/Path.h>
 #include <deque>
@@ -177,7 +177,7 @@ class AbstractAttributes
   using Configuration::set;
 
   /**
-   * @brief return a vector of shared pointers to const @ref AttributesBase
+   * @brief return a vector of shared pointers to const @ref AbstractAttributes
    * sub-configurations.
    * @param subAttrConfig The subconfiguration from which to aquire the
    * subconfigs.
@@ -229,7 +229,7 @@ class AbstractAttributes
   }
 
   /**
-   * @brief Returns a shared pointer to the named @ref AttributesBase
+   * @brief Returns a shared pointer to the named @ref AbstractAttributes
    * sub-configurations member of the passed @p subAttrConfig.
    */
   template <class T>
@@ -239,9 +239,9 @@ class AbstractAttributes
 
   /**
    * @brief Removes and returns a shared pointer to the named @ref
-   * AttributesBase sub-configurations member of the passed @p subAttrConfig.
-   * The object's ID is freed as part of this process, to be used by other
-   * objects.
+   * AbstractAttributes sub-configurations member of the passed @p
+   * subAttrConfig. The object's ID is freed as part of this process, to be used
+   * by other objects.
    * @tparam The desired type of the removed Configuration
    * @param name The name of the object to remove.
    * @param availableIDs A deque of the IDs that this configuration has
@@ -255,8 +255,9 @@ class AbstractAttributes
       const std::shared_ptr<Configuration>& subAttrConfig);
 
   /**
-   * @brief Add the passed shared pointer to @ref AbstractAttributes , @p
-   * objInst , to the appropriate sub-config using the passed name.
+   * @brief Add the passed shared pointer to @ref AbstractAttributes ,
+   * @p objInst , to the passed sub-config building a name from the passed
+   * @p objInstNamePrefix .
    *
    * @tparam The type of smartpointer object instance attributes
    * @param objInst The subAttributes Configuration pointer
@@ -265,13 +266,19 @@ class AbstractAttributes
    * @param subAttrConfig The subconfig to place @p objInst in.
    * @param objInstNamePrefix The prefix to use to construct the key to store
    * the instance in the subconfig. If empty, will use @p objInst->getHandle().
+   * @param verifyUnique Verify that the new subconfiguration holds unique data
+   * (i.e. no other subconfig exists that has the same data). If this is true
+   * and the passed @p objInst is not unique, it will not be saved.
+   * @return whether the passed @p objInst was added. Only returns false if
+   * @p verifyUnique is true and the objInst is not unique.
    */
   template <class T>
-  void setSubAttributesInternal(
+  bool setSubAttributesInternal(
       std::shared_ptr<T>& objInst,
       std::deque<int>& availableIDs,
       const std::shared_ptr<Configuration>& subAttrConfig,
-      const std::string& objInstNamePrefix);
+      const std::string& objInstNamePrefix,
+      bool verifyUnique);
 
   /**
    * @brief Retrieve a comma-separated string holding the header values for
@@ -394,15 +401,29 @@ std::shared_ptr<T> AbstractAttributes::removeNamedSubAttributesInternal(
 }  // AbstractAttributes::removeNamedSubAttributesInternal
 
 template <class T>
-void AbstractAttributes::setSubAttributesInternal(
+bool AbstractAttributes::setSubAttributesInternal(
     std::shared_ptr<T>& objInst,
     std::deque<int>& availableIDs,
     const std::shared_ptr<Configuration>& subAttrConfig,
-    const std::string& objInstNamePrefix) {
+    const std::string& objInstNamePrefix,
+    bool verifyUnique) {
   static_assert(
       std::is_base_of<AbstractAttributes, T>::value,
       "AbstractAttributes : Desired subconfig type must be derived from "
       "esp::metadata::AbstractAttributes");
+  // check uniqueness if verifyUnique is true. If not unique, do not add
+  // subconfig
+  if (verifyUnique) {
+    // Check if subAttrConfig contains a duplicate entry to objInst, other than
+    // hidden/internal fields like ID
+    if (subAttrConfig->hasSubconfig(objInst)) {
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
+          << "An identical subconfig to subconfig :`" << objInst->getHandle()
+          << "` was found in existing subconfig collection, so duplicate was "
+             "not added.";
+      return false;
+    }
+  }
   // set id
   if (!availableIDs.empty()) {
     // use saved value and then remove from storage
@@ -420,6 +441,7 @@ void AbstractAttributes::setSubAttributesInternal(
                                       objInstNamePrefix,
                                       objInst->getSimplifiedHandle()),
       objInst);
+  return true;
 }  // AbstractAttributes::setSubAttributesInternal
 
 template <class T>
@@ -457,4 +479,4 @@ void AbstractAttributes::copySubconfigIntoMe(
 }  // namespace metadata
 }  // namespace esp
 
-#endif  // ESP_METADATA_ATTRIBUTES_ATTRIBUTESBASE_H_
+#endif  // ESP_METADATA_ATTRIBUTES_ABSTRACTATTRIBUTES_H_

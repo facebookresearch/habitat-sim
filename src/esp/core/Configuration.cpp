@@ -209,14 +209,8 @@ bool operator==(const ConfigValue& a, const ConfigValue& b) {
   }
   // Pointer-backed data types need to have _data dereffed
   if (isConfigValTypePointerBased(a.getType())) {
-    // Pointer-backed data (i.e. nontrival types)
-    if (a.getType() == ConfigValType::String) {
-      return a.get<std::string>() == b.get<std::string>();
-    } else {
-      // Shouldn't get here
-      CORRADE_ASSERT_UNREACHABLE(
-          "Unknown/unsupported Type in ConfigValue equality check", false);
-    }
+    return pointerBasedConfigTypeHandlerFor(a.getType())
+        .comparator(a._data, b._data);
   }
 
   // Trivial type : a._data holds the actual value
@@ -822,6 +816,37 @@ std::string Configuration::getAllValsAsString(
 
 Mn::Debug& operator<<(Mn::Debug& debug, const Configuration& cfg) {
   return debug << cfg.getAllValsAsString();
+}
+
+bool operator==(const Configuration& a, const Configuration& b) {
+  if ((a.getNumSubconfigs() != b.getNumSubconfigs()) ||
+      (a.getNumValues() != b.getNumValues())) {
+    return false;
+  }
+  for (const auto& entry : a.configMap_) {
+    const auto bEntry = b.configMap_.find(entry.first);
+    if ((bEntry == b.configMap_.end()) ||
+        (*(bEntry->second) != *(entry.second))) {
+      // not found or not the same value
+      return false;
+    }
+  }
+  for (const auto& entry : a.valueMap_) {
+    if (entry.second.isHiddenVal()) {
+      // Don't compare hidden values
+      continue;
+    }
+    const auto bEntry = b.valueMap_.find(entry.first);
+    if ((bEntry == b.valueMap_.end()) || (bEntry->second != entry.second)) {
+      // not found or not the same value
+      return false;
+    }
+  }
+  return true;
+}
+
+bool operator!=(const Configuration& a, const Configuration& b) {
+  return !(a == b);
 }
 
 }  // namespace config
