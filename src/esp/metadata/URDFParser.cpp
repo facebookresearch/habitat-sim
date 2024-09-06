@@ -675,6 +675,16 @@ bool Parser::parseGeometry(Geometry& geom, const XMLElement* g) {
       return false;
     } else {
       parseVector3(geom.m_boxSize, shape->Attribute("size"));
+      if (geom.m_boxSize.min() == 0) {
+        ESP_ERROR() << "Collision box primitive with 0 scale detected "
+                    << geom.m_boxSize
+                    << ". Replacing zeros with 0.001 and continuing.";
+        for (int i = 0; i < 3; ++i) {
+          if (geom.m_boxSize[i] == 0) {
+            geom.m_boxSize[i] = 0.001;
+          }
+        }
+      }
     }
   } else if (type_name == "cylinder") {
     geom.m_type = GEOM_CYLINDER;
