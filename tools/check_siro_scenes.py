@@ -16,6 +16,7 @@ from dataset_generation.benchmark_generation.generate_episodes import (
     default_metadata_dict,
 )
 from habitat.datasets.rearrange.navmesh_utils import (
+    embodied_unoccluded_navmesh_snap,
     get_largest_island_index,
     unoccluded_navmesh_snap,
 )
@@ -24,7 +25,7 @@ from habitat.sims.habitat_simulator.debug_visualizer import DebugVisualizer
 
 from habitat_sim import NavMeshSettings, Simulator
 from habitat_sim.metadata import MetadataMediator
-from habitat_sim.physics import ManagedArticulatedObject
+from habitat_sim.physics import MotionType
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
 rand_colors = [mn.Color4(mn.Vector3(np.random.random(3))) for _ in range(100)]
@@ -241,8 +242,8 @@ def check_rec_accessibility(
         )
         return False, "height_filtered"
 
-    # try to sample 10 objects on the receptacle
-    target_number = 10
+    # try to sample 20 objects on the receptacle
+    target_number = 20
     obj_samp = ObjectSampler(
         clutter_object_handles,
         ["rec set"],
@@ -392,10 +393,25 @@ def navmesh_config_and_recompute(sim) -> None:
     navmesh_settings.agent_height = 1.3  # spot
     navmesh_settings.agent_radius = 0.3  # human || spot
     navmesh_settings.include_static_objects = True
+
+    # first cache AO motion types and set to STATIC for navmesh
+    ao_motion_types = []
+    for ao in (
+        sim.get_articulated_object_manager().get_objects_by_handle_substring().values()
+    ):
+        # ignore the robot
+        if "hab_spot" not in ao.handle:
+            ao_motion_types.append((ao, ao.motion_type))
+            ao.motion_type = MotionType.STATIC
+
     sim.recompute_navmesh(
         sim.pathfinder,
         navmesh_settings,
     )
+
+    # reset AO motion types from cache
+    for ao, ao_orig_motion_type in ao_motion_types:
+        ao.motion_type = ao_orig_motion_type
 
 
 def read_split_yaml(split_yaml: str) -> Dict[str, List[str]]:
@@ -411,12 +427,12 @@ def read_split_yaml(split_yaml: str) -> Dict[str, List[str]]:
         return scene_splits
 
 
-def get_split(sim, splits):
+def get_split(curr_scene_name, splits):
     """
     Get the split of the current scene
     """
     for label in splits:
-        if sim.curr_scene_name in splits[label]:
+        if curr_scene_name in splits[label]:
             return label
     return "test"
 
@@ -492,7 +508,6 @@ def run_rec_filter_analysis(
     recs = hab_receptacle.find_receptacles(
         sim, exclude_filter_strings=rec_filter_dict["manually_filtered"]
     )
-
     # compute a map from parent object to Receptacles
     parent_handle_to_rec: Dict[str, List[hab_receptacle.Receptacle]] = defaultdict(
         lambda: []
@@ -521,10 +536,11 @@ def run_rec_filter_analysis(
     within_set: List[hab_receptacle.Receptacle] = []
     if open_default_links:
         all_objects = sutils.get_all_objects(sim)
-        aos = [obj for obj in all_objects if isinstance(obj, ManagedArticulatedObject)]
+        aos = [obj for obj in all_objects if obj.is_articulated]
         for aoix, ao in enumerate(aos):
             default_link = sutils.get_ao_default_link(ao, True)
             if default_link is not None:
+                # print(f"found default_link = {default_link}")
                 sutils.open_link(ao, default_link)
                 # recompute accessibility
                 for child_rec in parent_handle_to_rec[ao.handle]:
@@ -576,10 +592,87 @@ def try_load_rec_filter(sim):
     return False
 
 
-def try_find_faucets(sim) -> Tuple[bool, int, int, int]:
+def draw_receptacles(sim, receptacles, selected_rec_unique_name: Optional[str] = None):
+    """Debug draw callback for dbv to render the Receptacles."""
+    scene_filter_file = hab_receptacle.get_scene_rec_filter_filepath(
+        sim.metadata_mediator, sim.curr_scene_name
+    )
+    filter_strings = hab_receptacle.get_excluded_recs_from_filter_file(
+        scene_filter_file
+    )
+    for rec in receptacles:
+        color = mn.Color4.green()
+        if rec.unique_name == selected_rec_unique_name:
+            color = mn.Color4.cyan()
+        elif rec.unique_name in filter_strings:
+            color = mn.Color4.red()
+        rec.debug_draw(sim, color=color)
+
+
+def flag_non_default_link_active_recs(
+    sim: Simulator,
+) -> List[hab_receptacle.Receptacle]:
+    """
+    Detects any Receptacles attached to moveable ArticulatedLinks which are not the "default link".
+    These Receptacles may be edge cases of the automated accessibility checks in "run_rec_filter_analysis" because, for example, they have open-fronted drawers.
+    :return: The list of Receptacles triggering this flag if any are found.
+    """
+    # rec_filter_filepath = hab_receptacle.get_scene_rec_filter_filepath(
+    #    sim.metadata_mediator, sim.curr_scene_name
+    # )
+    # NOTE: redirected to output of previous process
+    rec_filter_filepath = (
+        f"siro_test_results/scene_filter_files/{sim.curr_scene_name}.rec_filter.json"
+    )
+    if rec_filter_filepath is None:
+        return []
+    deactivated_rec_unique_names = hab_receptacle.get_excluded_recs_from_filter_file(
+        rec_filter_filepath
+    )
+    non_default_active_recs = []
+    recs = hab_receptacle.find_receptacles(sim)
+    for rec in recs:
+        if (
+            rec.parent_link is not None
+            and rec.parent_link > 0
+            and rec.unique_name not in deactivated_rec_unique_names
+        ):
+            # this is an active Receptacle on a non-body link
+            rec_parent = sutils.get_obj_from_handle(sim, rec.parent_object_handle)
+            ao_default_link = sutils.get_ao_default_link(
+                rec_parent, compute_if_not_found=True
+            )
+            if ao_default_link != rec.parent_link:
+                print(
+                    f"ao_default_link = {ao_default_link}, this link = {rec.parent_link}"
+                )
+                non_default_active_recs.append(rec)
+                dbv = DebugVisualizer(sim)
+                relevant_recs = [
+                    _rec
+                    for _rec in recs
+                    if _rec.parent_object_handle == rec.parent_object_handle
+                ]
+                dbv.dblr_callback = draw_receptacles
+                dbv.dblr_callback_params = {
+                    "sim": sim,
+                    "receptacles": relevant_recs,
+                    "selected_rec_unique_name": rec.unique_name,
+                }
+                # dbv.peek(rec_parent, peek_all_axis=True).show()
+                dbv.peek(rec_parent, peek_all_axis=True).save(
+                    "siro_test_results/non_default_active_recs/", prefix=rec.unique_name
+                )
+                # breakpoint()
+                dbv.remove_dbv_agent()
+
+    return non_default_active_recs
+
+
+def try_find_faucets(sim) -> Tuple[bool, int, int, int, int]:
     """
     Try to get faucets on objects in the scene.
-    :return: boolean whether or not there are faucet annotations, number of faucet objects, number of faucet objects with receptacles, number of faucet objects with active receptacles
+    :return: boolean whether or not there are faucet annotations, number of faucet objects, number of faucet objects with receptacles, number of faucet objects with active receptacles, number of navigable faucet objs
     """
 
     # first find all faucet annotations
@@ -603,6 +696,18 @@ def try_find_faucets(sim) -> Tuple[bool, int, int, int]:
 
     if len(objs_w_faucets) == 0:
         return False, 0, 0
+
+    navigable_faucet_objs = []
+    if True:
+        largest_island_ix = get_largest_island_index(
+            pathfinder=sim.pathfinder,
+            sim=sim,
+            allow_outdoor=False,
+        )
+        for obj_handle in objs_w_faucets:
+            is_navigable = try_nav_faucet_point(sim, obj_handle, largest_island_ix)
+            if is_navigable:
+                navigable_faucet_objs.append(obj_handle)
 
     # then find all receptacles
     all_recs = hab_receptacle.find_receptacles(sim)
@@ -629,7 +734,51 @@ def try_find_faucets(sim) -> Tuple[bool, int, int, int]:
     filtered_faucet_recs = [
         obj_handle for obj_handle in objs_w_faucets if obj_handle in filtered_rec_objs
     ]
-    return True, len(objs_w_faucets), len(all_faucet_recs), len(filtered_faucet_recs)
+    return (
+        True,
+        len(objs_w_faucets),
+        len(all_faucet_recs),
+        len(filtered_faucet_recs),
+        len(navigable_faucet_objs),
+    )
+
+
+def try_nav_faucet_point(sim, faucet_obj_handle, largest_island_ix):
+    """
+    Use nav utils to try finding a placement for the spot robot which can access a faucet
+    """
+    robot_body_offsets = [[0.0, 0.0], [0.25, 0.0], [-0.25, 0.0]]
+    faucet_obj = sutils.get_obj_from_handle(sim, faucet_obj_handle)
+
+    faucet_points = []
+    all_obj_marker_sets = faucet_obj.marker_sets
+    if all_obj_marker_sets.has_taskset("faucets"):
+        # this object has faucet annotations
+        faucet_marker_sets = all_obj_marker_sets.get_taskset_points("faucets")
+        for link_name, link_faucet_markers in faucet_marker_sets.items():
+            link_id = -1
+            if link_name != "root":
+                link_id = faucet_obj.get_link_id_from_name(link_name)
+            for _marker_subset_name, points in link_faucet_markers.items():
+                global_points = faucet_obj.transform_local_pts_to_world(points, link_id)
+                faucet_points.extend(global_points)
+    if len(faucet_points) == 0:
+        return False
+    obj_ids = [faucet_obj.object_id]
+    if faucet_obj.is_articulated:
+        obj_ids.extend(list(faucet_obj.link_object_ids.keys()))
+    point_navigability = []
+    for point in faucet_points:
+        nav_point, orientation, success = embodied_unoccluded_navmesh_snap(
+            target_position=point,
+            height=1.3,
+            sim=sim,
+            ignore_object_ids=obj_ids,
+            embodiment_heuristic_offsets=robot_body_offsets,
+            island_id=largest_island_ix,
+        )
+        point_navigability.append(success)
+    return any(point_navigability)
 
 
 if __name__ == "__main__":
@@ -718,6 +867,19 @@ if __name__ == "__main__":
     target_scenes = mm.get_scene_handles()
     if args.scenes is not None:
         target_scenes = args.scenes
+
+    ##########################################
+    # get each scene's split
+    scene_splits = {}
+    split_file = args.dataset[: -len(args.dataset.split("/")[-1])] + "scene_splits.yaml"
+    splits = read_split_yaml(split_file)
+    for _s_ix, scene_handle in enumerate(target_scenes):
+        scene_name = scene_handle.split("/")[-1].split(".")[0]
+        scene_split = get_split(scene_name, splits)
+        scene_splits[scene_name] = scene_split
+
+    # NOTE: hack to limit scenes to a particular split
+    # target_scenes = [scene_handle for scene_handle in target_scenes if scene_splits[scene_handle.split("/")[-1].split(".")[0]]=="test"]
     num_scenes = len(target_scenes)
 
     # for each scene, initialize a fresh simulator and run tests
@@ -733,6 +895,8 @@ if __name__ == "__main__":
 
             mi.refresh_scene_caches(sim)
 
+            navmesh_config_and_recompute(sim)
+
             scene_test_results[sim.curr_scene_name] = {}
             scene_test_results[sim.curr_scene_name][
                 "ros"
@@ -743,6 +907,12 @@ if __name__ == "__main__":
 
             scene_out_dir = os.path.join(args.out_dir, f"{sim.curr_scene_name}/")
 
+            # cache scene split metadata
+            if "splits" in target_check_actions:
+                scene_test_results[sim.curr_scene_name]["split"] = scene_splits[
+                    sim.curr_scene_name
+                ]
+
             ##########################################
             # gather all Receptacle.unique_name in the scene
             if "rec_unique_names" in target_check_actions:
@@ -752,32 +922,34 @@ if __name__ == "__main__":
                     "rec_unique_names"
                 ] = unique_names
 
-            if "splits" in target_check_actions:
-                split_file = (
-                    args.dataset[: -len(args.dataset.split("/")[-1])]
-                    + "scene_splits.yaml"
-                )
-                splits = read_split_yaml(split_file)
-                scene_split = get_split(sim, splits)
-                scene_test_results[sim.curr_scene_name]["split"] = scene_split
-
             ##########################################
             # receptacle filter computation
             if "rec_filters" in target_check_actions:
+                # check for functional filter file
                 filter_working = try_load_rec_filter(sim)
                 scene_test_results[sim.curr_scene_name][
                     "rec_filter_working"
                 ] = filter_working
-                # run_rec_filter_analysis(
-                #    sim, args.out_dir, open_default_links=True, keep_manual_filters=True
-                # )
 
+                # run the accessibility check and produce a filter file
+                run_rec_filter_analysis(
+                    sim, args.out_dir, open_default_links=True, keep_manual_filters=True
+                )
+
+                # check non-default active Receptacles
+                # non_default_active_recs = flag_non_default_link_active_recs(sim)
+                # if len(non_default_active_recs) > 0:
+                #     scene_test_results[sim.curr_scene_name]["non_default_active_recs"] = [rec.unique_name for rec in non_default_active_recs]
+
+            ##########################################
+            # faucet validation
             if "faucets" in target_check_actions:
                 (
                     has_faucets,
                     num_faucet_objs,
                     num_faucet_recs,
                     num_faucet_active_recs,
+                    num_navigable_faucets,
                 ) = try_find_faucets(sim)
                 scene_test_results[sim.curr_scene_name]["has_faucets"] = has_faucets
                 scene_test_results[sim.curr_scene_name][
@@ -789,6 +961,9 @@ if __name__ == "__main__":
                 scene_test_results[sim.curr_scene_name][
                     "num_faucet_active_recs"
                 ] = num_faucet_active_recs
+                scene_test_results[sim.curr_scene_name][
+                    "num_navigable_faucets"
+                ] = num_navigable_faucets
 
             ##########################################
             # Check region counts
