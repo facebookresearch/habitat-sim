@@ -48,7 +48,6 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
 
   py::bind_map<std::map<std::string, std::string>>(m, "MapStringString");
 
-  esp::initEspBindings(m);
   esp::core::config::initConfigBindings(m);
   esp::core::initCoreBindings(m);
   esp::geo::initGeoBindings(m);
