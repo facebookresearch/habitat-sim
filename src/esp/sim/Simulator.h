@@ -419,12 +419,16 @@ class Simulator {
    * distances will be in units of ray length.
    * @param maxDistance The maximum distance along the ray direction to search.
    * In units of ray length.
+   * @param bufferDistance The casts the ray from this distance behind the
+   * origin in the inverted ray direction to avoid errors related to casting
+   * rays inside a collision shape's margin.
    * @return Raycast results sorted by distance.
    */
   esp::physics::RaycastResults castRay(const esp::geo::Ray& ray,
-                                       double maxDistance = 100.0) {
+                                       double maxDistance = 100.0,
+                                       double bufferDistance = 0.08) {
     if (sceneHasPhysics()) {
-      return physicsManager_->castRay(ray, maxDistance);
+      return physicsManager_->castRay(ray, maxDistance, bufferDistance);
     }
     return esp::physics::RaycastResults();
   }
