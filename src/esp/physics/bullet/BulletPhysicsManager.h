@@ -193,10 +193,14 @@ class BulletPhysicsManager : public PhysicsManager {
    * distances will be in units of ray length.
    * @param maxDistance The maximum distance along the ray direction to search.
    * In units of ray length.
+   * @param bufferDistance The casts the ray from this distance behind the
+   * origin in the inverted ray direction to avoid errors related to casting
+   * rays inside a collision shape's margin.
    * @return The raycast results sorted by distance.
    */
   RaycastResults castRay(const esp::geo::Ray& ray,
-                         double maxDistance = 100.0) override;
+                         double maxDistance = 100.0,
+                         double bufferDistance = 0.08) override;
 
   /**
    * @brief Query the number of contact points that were active during the
