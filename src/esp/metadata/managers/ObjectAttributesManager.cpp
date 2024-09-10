@@ -362,7 +362,7 @@ void ObjectAttributesManager::postRegisterObjectHandling(
   if (mapToAddTo_ != nullptr) {
     mapToAddTo_->emplace(objectTemplateID, objectTemplateHandle);
   }
-  if (this->_DSDiagnostics->saveRequired()) {
+  if (this->datasetDiagnostics_->saveRequired()) {
     this->saveManagedObjectToFile(objectTemplateHandle, true);
   }
 }  // ObjectAttributesManager::postRegisterObjectHandling

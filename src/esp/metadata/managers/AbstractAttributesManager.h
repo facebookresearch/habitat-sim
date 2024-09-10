@@ -66,7 +66,7 @@ class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
       : ManagedFileBasedContainer<T, Access>::ManagedFileBasedContainer(
             attrType,
             JSONTypeExt),
-        _DSDiagnostics(DatasetDiagnosticsTool::create_unique()) {}
+        datasetDiagnostics_(DatasetDiagnosticsTool::create_unique()) {}
   ~AbstractAttributesManager() override = default;
 
   /**
@@ -191,9 +191,9 @@ class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
   void setValsFromJSONDoc(AttribsPtr attribs,
                           const io::JsonGenericValue& jsonConfig) {
     // Clear diagnostic flags from previous run
-    this->_DSDiagnostics->clearSaveRequired();
+    this->datasetDiagnostics_->clearSaveRequired();
     this->setValsFromJSONDocInternal(attribs, jsonConfig);
-    if (this->_DSDiagnostics->saveRequired()) {
+    if (this->datasetDiagnostics_->saveRequired()) {
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
           << "<" << this->objectType_
           << "> : Diagnostics exposed issues in loaded attributes : `"
@@ -204,7 +204,7 @@ class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
   }  // setValsFromJSONDoc
 
   /**
-   * @brief Configure @ref _DSDiagnostics tool based on if passsed jsonConfig
+   * @brief Configure @ref datasetDiagnostics_ tool based on if passsed jsonConfig
    * requests them.
    */
   bool setDSDiagnostics(AttribsPtr attribs,
@@ -214,7 +214,7 @@ class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
     if (jsonIter == jsonConfig.MemberEnd()) {
       return false;
     }
-    return this->_DSDiagnostics->setDiagnosticesFromJSON(
+    return this->datasetDiagnostics_->setDiagnosticesFromJSON(
         jsonIter->value, Cr::Utility::formatString(
                              "(setDSDiagnostics) <{}> : {}", this->objectType_,
                              attribs->getSimplifiedHandle()));
@@ -222,11 +222,11 @@ class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
 
   /**
    * @brief Merge the passed DatasetDiagnosticsTool settings into
-   * @p _DSDiagnostics nondestructively (i.e. retaining this one's enabled
+   * @p datasetDiagnostics_ nondestructively (i.e. retaining this one's enabled
    * diagnostics)
    */
   void mergeDSDiagnosticsTool(const DatasetDiagnosticsTool& _tool) {
-    this->_DSDiagnostics->mergeDiagnosticsTool(_tool);
+    this->datasetDiagnostics_->mergeDiagnosticsTool(_tool);
   }
 
   /**
@@ -452,7 +452,7 @@ class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
    * @brief Diagnostics tool that governs whether certain diagnostic operations
    * should occur.
    */
-  DatasetDiagnosticsTool::uptr _DSDiagnostics;
+  DatasetDiagnosticsTool::uptr datasetDiagnostics_;
 
  public:
   ESP_SMART_POINTERS(AbstractAttributesManager<T, Access>)

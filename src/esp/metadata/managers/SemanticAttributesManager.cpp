@@ -204,12 +204,12 @@ void SemanticAttributesManager::setValsFromJSONDocInternal(
   // filtering dataset
   // Whether uniqueness validation should be performed
   bool validateUniqueness =
-      this->_DSDiagnostics->testDuplicateSemanticRegions();
+      this->datasetDiagnostics_->testDuplicateSemanticRegions();
 
   // Only resave if instance attributes' attempt to be added reveals duplicate
   // attributes
   bool saveValidationResults =
-      validateUniqueness && this->_DSDiagnostics->shouldSaveCorrected();
+      validateUniqueness && this->datasetDiagnostics_->shouldSaveCorrected();
 
   // Whether this scene instance should be resaved or not.
   bool resaveAttributes = false;
@@ -254,8 +254,8 @@ void SemanticAttributesManager::setValsFromJSONDocInternal(
   this->parseUserDefinedJsonVals(semanticAttribs, jsonConfig);
 
   // If we want to save corrected, and we need to due to corrections happening
-  this->_DSDiagnostics->setSaveRequired(saveValidationResults &&
-                                        resaveAttributes);
+  this->datasetDiagnostics_->setSaveRequired(saveValidationResults &&
+                                             resaveAttributes);
 
 }  // SemanticAttributesManager::setValsFromJSONDoc
 

@@ -231,7 +231,7 @@ class SceneInstanceAttributesManager
    */
   void postRegisterObjectHandling(CORRADE_UNUSED int objectID,
                                   const std::string& objectHandle) override {
-    if (this->_DSDiagnostics->saveRequired()) {
+    if (this->datasetDiagnostics_->saveRequired()) {
       this->saveManagedObjectToFile(objectHandle, true);
     }
   }
