@@ -115,12 +115,13 @@ void SceneInstanceAttributesManager::setValsFromJSONDocInternal(
   // Set this via configuration value - should only be called when explicitly
   // filtering dataset
   // Whether uniqueness validation should be performed
-  bool validateUniqueness = this->_DSDiagnostics->testDuplicateSceneInstances();
+  bool validateUniqueness =
+      this->datasetDiagnostics_->testDuplicateSceneInstances();
 
   // Only resave if instance attributes' attempt to be added reveals duplicate
   // attributes
   bool saveValidationResults =
-      validateUniqueness && this->_DSDiagnostics->shouldSaveCorrected();
+      validateUniqueness && this->datasetDiagnostics_->shouldSaveCorrected();
 
   // Whether this scene instance should be resaved or not.
   bool resaveAttributes = false;
@@ -303,8 +304,8 @@ void SceneInstanceAttributesManager::setValsFromJSONDocInternal(
   this->parseUserDefinedJsonVals(attribs, jsonConfig);
 
   // If we want to save corrected, and we need to due to corrections happening
-  this->_DSDiagnostics->setSaveRequired(saveValidationResults &&
-                                        resaveAttributes);
+  this->datasetDiagnostics_->setSaveRequired(saveValidationResults &&
+                                             resaveAttributes);
 }  // SceneInstanceAttributesManager::setValsFromJSONDoc
 
 SceneObjectInstanceAttributes::ptr
