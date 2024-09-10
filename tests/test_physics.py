@@ -555,7 +555,7 @@ def test_raycast():
                 np.array([-0.999587, 0.0222882, -0.0181424]),
                 atol=0.07,
             )
-            assert abs(raycast_results.hits[0].ray_distance - 6.831) < 0.001
+            assert abs(raycast_results.hits[0].ray_distance - 6.8306) < 0.001
             # hit stage
             assert raycast_results.hits[0].object_id == habitat_sim.stage_id
 
@@ -583,6 +583,46 @@ def test_raycast():
             )
             assert abs(raycast_results.hits[0].ray_distance - 1.89) < 0.001
             assert raycast_results.hits[0].object_id == cube_obj.object_id
+
+            #############################################
+            # test raycasting with buffer:
+            # - test raycasting from within the cube's collision margin with and without buffering
+            # - NOTE: primitive collision margin is much smaller than a convex shape, so we need to get very close to
+            test_ray_2 = habitat_sim.geo.Ray()
+            test_ray_2.origin = cube_obj.translation + mn.Vector3(
+                cube_obj.collision_shape_aabb.size_x(), 0, 0
+            )
+            test_ray_2.direction = mn.Vector3(-1, 0, 0)
+            raycast_results = sim.cast_ray(test_ray_2)
+            assert raycast_results.has_hits()
+            assert raycast_results.hits[0].object_id == cube_obj.object_id
+            # move the ray to just within 1cm of the hit point
+            test_ray_2.origin = raycast_results.hits[0].point + mn.Vector3(0.009, 0, 0)
+            # cast ray with no buffer
+            raycast_results_no_buffer = sim.cast_ray(test_ray_2, buffer_distance=0)
+            # cast ray with buffer
+            raycast_results_buffer = sim.cast_ray(
+                test_ray_2
+            )  # default buffer_distance==0.08
+
+            assert raycast_results_no_buffer.has_hits()
+            assert raycast_results_buffer.has_hits()
+            # the unbuffered raycast misses from within 1cm of the object surface
+            assert raycast_results_no_buffer.hits[0].object_id != cube_obj.object_id
+            # the buffered raycast correctly detects the hit point
+            assert raycast_results_buffer.hits[0].object_id == cube_obj.object_id
+            assert (
+                raycast_results_buffer.hits[0].point - raycast_results.hits[0].point
+            ).length() < 0.0001
+
+            # test another point within the object, but with buffer outside and guarantee no negative hits are registered
+            test_ray_2.origin = raycast_results.hits[0].point - mn.Vector3(0.01, 0, 0)
+            raycast_results_buffer = sim.cast_ray(
+                test_ray_2
+            )  # default buffer_distance==0.08
+            # the ray cast was cast from
+            assert raycast_results_buffer.hits[0].ray_distance > 0
+            assert raycast_results_buffer.hits[0].object_id != cube_obj.object_id
 
             # test raycast against a non-collidable object.
             # should not register a hit with the object.

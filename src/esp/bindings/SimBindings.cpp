@@ -296,6 +296,7 @@ void initSimBindings(py::module& m) {
           R"(Perform discrete collision detection for the scene. Physics must be enabled. Warning: may break simulation determinism.)")
       .def(
           "cast_ray", &Simulator::castRay, "ray"_a, "max_distance"_a = 100.0,
+          "buffer_distance"_a = 0.08,
           R"(Cast a ray into the collidable scene and return hit results. Physics must be enabled. max_distance in units of ray length.)")
       .def("set_object_bb_draw", &Simulator::setObjectBBDraw, "draw_bb"_a,
            "object_id"_a,

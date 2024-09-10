@@ -792,10 +792,14 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * distances will be in units of ray length.
    * @param maxDistance The maximum distance along the ray direction to
    * search. In units of ray length.
+   * @param bufferDistance The casts the ray from this distance behind the
+   * origin in the inverted ray direction to avoid errors related to casting
+   * rays inside a collision shape's margin.
    * @return The raycast results sorted by distance.
    */
   virtual RaycastResults castRay(const esp::geo::Ray& ray,
-                                 CORRADE_UNUSED double maxDistance = 100.0) {
+                                 CORRADE_UNUSED double maxDistance = 100.0,
+                                 CORRADE_UNUSED double bufferDistance = 0.08) {
     ESP_ERROR() << "Not implemented in base PhysicsManager. Install with "
                    "--bullet to use this feature.";
     RaycastResults results;

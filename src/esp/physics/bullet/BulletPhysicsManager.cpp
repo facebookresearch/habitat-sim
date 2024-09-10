@@ -484,7 +484,8 @@ void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) const {
 }
 
 RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
-                                             double maxDistance) {
+                                             double maxDistance,
+                                             double bufferDistance) {
   RaycastResults results;
   results.ray = ray;
   double rayLength = static_cast<double>(ray.direction.length());
@@ -492,8 +493,10 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
     ESP_ERROR() << "Cannot cast ray with zero length, aborting.";
     return results;
   }
-  btVector3 from(ray.origin);
+  btVector3 from(ray.origin - ((ray.direction / rayLength) * bufferDistance));
   btVector3 to(ray.origin + ray.direction * maxDistance);
+  double totalLength = (rayLength * maxDistance) + bufferDistance;
+  double scaledBuffer = bufferDistance / (totalLength);
 
   btCollisionWorld::AllHitsRayResultCallback allResults(from, to);
   bWorld_->rayTest(from, to, allResults);
@@ -505,7 +508,13 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
     hit.normal = Magnum::Vector3{allResults.m_hitNormalWorld[i]};
     hit.point = Magnum::Vector3{allResults.m_hitPointWorld[i]};
     hit.rayDistance =
-        (static_cast<double>(allResults.m_hitFractions[i]) * maxDistance);
+        (static_cast<double>((allResults.m_hitFractions[i])) - scaledBuffer) *
+        totalLength / rayLength;
+    if (hit.rayDistance < 0) {
+      // We cast the the ray from bufferDistance behind the origin, so we'll
+      // throw away hits in the intermediate space.
+      continue;
+    }
     // default to RIGID_STAGE_ID for "scene collision" if we don't know which
     // object was involved
     hit.objectId = RIGID_STAGE_ID;
