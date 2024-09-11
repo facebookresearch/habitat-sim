@@ -593,33 +593,57 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     return res;
   }  // getMarkerPointsGlobal
 
-  /** @brief Get the scale of the object set during initialization.
+  /**
+   * @brief Get the scale of the object set during initialization.
    * @return The scaling for the object relative to its initially loaded meshes.
    */
   virtual Magnum::Vector3 getScale() const { return _creationScale; }
 
-  /** @brief Return whether or not this object is articulated. Override in
-   * ArticulatedObject */
+  /**
+   * @brief Return whether or not this object is articulated. Override in
+   * ArticulatedObject
+   */
   bool isArticulated() const { return _isArticulated; }
 
   /** @brief Return the local axis-aligned bounding box of the this object.*/
   virtual const Mn::Range3D& getAabb() { return node().getCumulativeBB(); }
 
  protected:
+  /**
+   * @brief Used Internally on object creation. Set whether or not this object
+   * is articulated.
+   */
   void setIsArticulated(bool isArticulated) { _isArticulated = isArticulated; }
 
-  /** @brief Accessed internally. Get an appropriately cast copy of the @ref
+  /**
+   * @brief Accessed internally. Get an appropriately cast copy of the @ref
    * metadata::attributes::SceneObjectInstanceAttributes used to place the
    * object within the scene.
    * @return A copy of the initialization template used to create this object
    * instance or nullptr if no template exists.
    */
   template <class T>
-  std::shared_ptr<T> getInitObjectInstanceAttrInternal() const {
+  std::shared_ptr<T> getInitObjectInstanceAttrCopyInternal() const {
     if (!_initObjInstanceAttrs) {
       return nullptr;
     }
     return T::create(*(static_cast<const T*>(_initObjInstanceAttrs.get())));
+  }
+
+  /**
+   * @brief Accessed internally. Get the
+   * @ref metadata::attributes::SceneObjectInstanceAttributes used to
+   * create and place the object within the scene, appropriately cast for
+   * object type.
+   * @return A copy of the initialization template used to create this object
+   * instance or nullptr if no template exists.
+   */
+  template <class T>
+  std::shared_ptr<const T> getInitObjectInstanceAttrInternal() const {
+    if (!_initObjInstanceAttrs) {
+      return nullptr;
+    }
+    return std::static_pointer_cast<const T>(_initObjInstanceAttrs);
   }
 
   /**
