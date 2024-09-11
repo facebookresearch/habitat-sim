@@ -616,12 +616,6 @@ bool Simulator::instanceObjectsForSceneAttributes(
   // node to attach object to
   scene::SceneNode* attachmentNode = nullptr;
 
-  // whether or not to correct for COM shift - only do for blender-sourced
-  // scene attributes
-  bool defaultCOMCorrection =
-      (curSceneInstanceAttributes_->getTranslationOrigin() ==
-       metadata::attributes::SceneInstanceTranslationOrigin::AssetLocal);
-
   // Iterate through instances, create object and implement initial
   // transformation.
   for (const auto& objInst : objectInstances) {
@@ -635,8 +629,8 @@ bool Simulator::instanceObjectsForSceneAttributes(
             config_.activeSceneName));
 
     // objID =
-    physicsManager_->addObjectInstance(objInst, defaultCOMCorrection,
-                                       &getDrawableGroup(), attachmentNode,
+    physicsManager_->addObjectInstance(objInst, &getDrawableGroup(),
+                                       attachmentNode,
                                        config_.sceneLightSetupKey);
   }  // for each object attributes
   return true;
