@@ -49,13 +49,15 @@ bool PhysicsManager::initPhysicsFinalize() {
   //! Create new scene node
   staticStageObject_ = physics::RigidStage::create(&physicsNode_->createChild(),
                                                    resourceManager_);
-
   return true;
 }
 
 PhysicsManager::~PhysicsManager() {
   ESP_DEBUG() << "Deconstructing PhysicsManager";
 }
+
+/////////////////////////////////
+// Stage Creation
 
 bool PhysicsManager::addStageInstance(
     const metadata::attributes::StageAttributes::ptr& initAttributes,
@@ -123,7 +125,6 @@ int PhysicsManager::addObject(int attributesID,
 int PhysicsManager::addObjectInstance(
     const esp::metadata::attributes::SceneObjectInstanceAttributes::cptr&
         objInstAttributes,
-    bool defaultCOMCorrection,
     DrawableGroup* drawables,
     scene::SceneNode* attachmentNode,
     const std::string& lightSetup) {
@@ -194,8 +195,7 @@ int PhysicsManager::addObjectInstance(
                          objInstAttributes->getMassScale());
 
   return addObjectAndSaveAttributes(objAttributes, drawables, attachmentNode,
-                                    lightSetup, defaultCOMCorrection,
-                                    objInstAttributes);
+                                    lightSetup, objInstAttributes);
 
 }  // PhysicsManager::addObjectInstance
 
@@ -216,9 +216,9 @@ int PhysicsManager::cloneExistingObject(int objectID) {
   // TODO initialize with current state of cloned object
 
   // Create object instance
-  int newObjID = addObjectInstance(objInstAttrs, objPtr->isCOMCorrected(),
-                                   &simulator_->getDrawableGroup(), nullptr,
-                                   simulator_->getCurrentLightSetupKey());
+  int newObjID =
+      addObjectInstance(objInstAttrs, &simulator_->getDrawableGroup(), nullptr,
+                        simulator_->getCurrentLightSetupKey());
 
   // Update new object's values if necessary
   // auto newObject = existingObjects_.find(newObjID);
@@ -232,16 +232,20 @@ int PhysicsManager::addObjectAndSaveAttributes(
     DrawableGroup* drawables,
     scene::SceneNode* attachmentNode,
     const std::string& lightSetup,
-    bool defaultCOMCorrection,
     esp::metadata::attributes::SceneObjectInstanceAttributes::cptr
         objInstAttributes) {
-  // If no drawables were passed, and a simulator exists
-  // retrieve a drawable group to use
-  if ((drawables == nullptr) && (simulator_ != nullptr)) {
-    // acquire context if available
-    simulator_->getRenderGLContext();
-    // acquire an appropriate drawable group
-    drawables = &simulator_->getDrawableGroup();
+  bool defaultCOMCorrection = false;
+  if (simulator_ != nullptr) {
+    // get defaultCOMCorrection from simulator
+    defaultCOMCorrection = simulator_->getCurSceneDefaultCOMHandling();
+    // If no drawables were passed, and a simulator exists
+    // retrieve a drawable group to use
+    if (drawables == nullptr) {
+      // acquire context if available
+      simulator_->getRenderGLContext();
+      // acquire an appropriate drawable group
+      drawables = &simulator_->getDrawableGroup();
+    }
   }
 
   if (objInstAttributes == nullptr) {
@@ -389,6 +393,7 @@ int PhysicsManager::addObjectInternal(
 
 /////////////////////////////////
 // Articulated Object Creation
+
 int PhysicsManager::addArticulatedObject(const std::string& attributesHandle,
                                          DrawableGroup* drawables,
                                          bool forceReload,
@@ -808,7 +813,7 @@ void PhysicsManager::removeObject(const int objectId,
     trajVisIDByName.erase(trajVisAssetName);
     // TODO : if object is trajectory visualization, remove its assets as
     // well once this is supported.
-    // resourceManager_->removeResourceByName(trajVisAssetName);
+    // resourceManager_.removeResourceByName(trajVisAssetName);
   }
 }  // PhysicsManager::removeObject
 
