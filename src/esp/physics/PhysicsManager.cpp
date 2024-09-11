@@ -211,8 +211,10 @@ int PhysicsManager::cloneExistingObject(int objectID) {
   }
   auto objPtr = existingObjIter->second;
   // Get object instance attributes copy
-  esp::metadata::attributes::SceneObjectInstanceAttributes::cptr objInstAttrs =
-      objPtr->getInitObjectInstanceAttr();
+  esp::metadata::attributes::SceneObjectInstanceAttributes::ptr objInstAttrs =
+      objPtr->getInitObjectInstanceAttrCopy();
+  // TODO initialize with current state of cloned object
+
   // Create object instance
   int newObjID = addObjectInstance(objInstAttrs, objPtr->isCOMCorrected(),
                                    &simulator_->getDrawableGroup(), nullptr,
@@ -581,8 +583,10 @@ int PhysicsManager::cloneExistingArticulatedObject(int aObjectID) {
   }
   auto aObjPtr = existingAOIter->second;
   // Get object instance attributes copy
-  esp::metadata::attributes::SceneAOInstanceAttributes::cptr artObjInstAttrs =
-      aObjPtr->getInitObjectInstanceAttr();
+  esp::metadata::attributes::SceneAOInstanceAttributes::ptr artObjInstAttrs =
+      aObjPtr->getInitObjectInstanceAttrCopy();
+  // TODO initialize with current state of cloned object
+
   // Create object instance
   int newArtObjID = addArticulatedObjectInstance(
       artObjInstAttrs, &simulator_->getDrawableGroup(),
