@@ -264,16 +264,24 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /**
    * @brief Reset the simulation and physical world.
-   * Sets the @ref worldTime_ to 0.0, changes the physical state of all objects back to their initial states. Only changes motion_type when scene_instance specified a motion type.
+   * Sets the @ref worldTime_ to 0.0, changes the physical
+   * state of all objects back to their initial states.
+   * Only changes motion_type when scene_instance specified a motion type.
+   * @param calledAfterSceneCreate If this is true, this is being called
+   * directly after a new scene was created and all the objects were placed
+   * appropriately, so bypass object placement reset code.
    */
-  virtual void reset() {
+  virtual void reset(bool calledAfterSceneCreate) {
     // reset object states from initial values (e.g. from scene instance)
     worldTime_ = 0.0;
-    for (const auto& bro : existingObjects_) {
-      bro.second->resetStateFromSceneInstanceAttr();
-    }
-    for (const auto& bao : existingArticulatedObjects_) {
-      bao.second->resetStateFromSceneInstanceAttr();
+    if (!calledAfterSceneCreate) {
+      // No need to re-place objects after scene creation
+      for (const auto& bro : existingObjects_) {
+        bro.second->resetStateFromSceneInstanceAttr();
+      }
+      for (const auto& bao : existingArticulatedObjects_) {
+        bao.second->resetStateFromSceneInstanceAttr();
+      }
     }
   }
 
