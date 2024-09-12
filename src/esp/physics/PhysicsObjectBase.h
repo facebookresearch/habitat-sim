@@ -627,6 +627,11 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     if (!_initObjInstanceAttrs) {
       return nullptr;
     }
+    static_assert(
+        std::is_base_of<metadata::attributes::SceneObjectInstanceAttributes,
+                        T>::value,
+        "SceneObjectInstanceAttributes must be base class of desired instance "
+        "attributes class.");
     return T::create(*(static_cast<const T*>(_initObjInstanceAttrs.get())));
   }
 
@@ -643,6 +648,11 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     if (!_initObjInstanceAttrs) {
       return nullptr;
     }
+    static_assert(
+        std::is_base_of<metadata::attributes::SceneObjectInstanceAttributes,
+                        T>::value,
+        "SceneObjectInstanceAttributes must be base class of desired instance "
+        "attributes class.");
     return std::static_pointer_cast<const T>(_initObjInstanceAttrs);
   }
 
