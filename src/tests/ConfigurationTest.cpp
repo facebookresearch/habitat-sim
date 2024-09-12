@@ -47,11 +47,27 @@ struct ConfigurationTest : Cr::TestSuite::Tester {
   void verifySubconfigTree(int countPerDepth,
                            int curDepth,
                            int totalDepth,
-                           Configuration::cptr& config);
+                           Configuration::cptr& config) const;
 
   /**
-   * @brief Verifies that the two passed Configurations hold identical subconfig
-   * hierarchies for both values and structure.
+   * @brief Recursively add or modify the string value of the given key in every
+   * subconfig of @p config with the given value
+   */
+  void addOrModSubconfigTreeVals(const std::string& key,
+                                 const std::string& val,
+                                 Configuration::ptr& config);
+
+  /**
+   * @brief Recursively verify that the given key exists in every subconfig of
+   * @p config with the appropriately modified version of the given value.
+   */
+  void verifySubconfigTreeVals(const std::string& key,
+                               const std::string& val,
+                               Configuration::cptr& config) const;
+
+  /**
+   * @brief Verifies that the two passed Configurations hold identical
+   * subconfig hierarchies for both values and structure.
    */
   void compareSubconfigs(Configuration::cptr& src, Configuration::cptr& target);
 
@@ -67,14 +83,19 @@ struct ConfigurationTest : Cr::TestSuite::Tester {
   void TestSubconfigFind();
 
   /**
-   * @brief Test Configuration find, merge and edit capability. Finds
-   * subconfigs, merges them and verifies results
+   * @brief Test Configuration find, merge and edit capability. Builds
+   * subconfig hierarchy, finds a desired subconfig, duplicates and merges it
+   * with another and verifies results.
    */
   void TestSubconfigFindAndMerge();
 
   /**
-   * @brief
+   * @brief Test Configuration subconfig filtering. Builds two identical
+   * subconfigs, modifies one such that it has changed values and also added
+   * values, then filters it using original copy and verifies that only
+   * new/different values remains.
    */
+  void TestSubconfigFilter();
 
   esp::logging::LoggingContext loggingContext_;
 };  // struct ConfigurationTest
@@ -84,6 +105,7 @@ ConfigurationTest::ConfigurationTest() {
       &ConfigurationTest::TestConfiguration,
       &ConfigurationTest::TestSubconfigFind,
       &ConfigurationTest::TestSubconfigFindAndMerge,
+      &ConfigurationTest::TestSubconfigFilter,
   });
 }
 
@@ -94,7 +116,7 @@ void ConfigurationTest::buildSubconfigsInConfig(int countPerDepth,
   if (curDepth == totalDepth) {
     return;
   }
-  std::string breadcrumb = config->get<std::string>("breakcrumb");
+  std::string breadcrumb = config->get<std::string>("breadcrumb");
   for (int i = 0; i < countPerDepth; ++i) {
     const std::string subconfigKey = Cr::Utility::formatString(
         "breadcrumb_{}_depth_{}_subconfig_{}", breadcrumb, curDepth, i);
@@ -104,7 +126,7 @@ void ConfigurationTest::buildSubconfigsInConfig(int countPerDepth,
     // status
     newCfg->set("depth", curDepth);
     newCfg->set("iter", i);
-    newCfg->set("breakcrumb", Cr::Utility::formatString("{}{}", breadcrumb, i));
+    newCfg->set("breadcrumb", Cr::Utility::formatString("{}{}", breadcrumb, i));
     newCfg->set("key", subconfigKey);
 
     buildSubconfigsInConfig(countPerDepth, curDepth + 1, totalDepth, newCfg);
@@ -114,11 +136,11 @@ void ConfigurationTest::buildSubconfigsInConfig(int countPerDepth,
 void ConfigurationTest::verifySubconfigTree(int countPerDepth,
                                             int curDepth,
                                             int totalDepth,
-                                            Configuration::cptr& config) {
+                                            Configuration::cptr& config) const {
   if (curDepth == totalDepth) {
     return;
   }
-  std::string breadcrumb = config->get<std::string>("breakcrumb");
+  std::string breadcrumb = config->get<std::string>("breadcrumb");
   for (int i = 0; i < countPerDepth; ++i) {
     const std::string subconfigKey = Cr::Utility::formatString(
         "breadcrumb_{}_depth_{}_subconfig_{}", breadcrumb, curDepth, i);
@@ -130,7 +152,7 @@ void ConfigurationTest::verifySubconfigTree(int countPerDepth,
     CORRADE_COMPARE(newCfg->get<int>("depth"), curDepth);
     // Verify iteration and parent iteration
     CORRADE_COMPARE(newCfg->get<int>("iter"), i);
-    CORRADE_COMPARE(newCfg->get<std::string>("breakcrumb"),
+    CORRADE_COMPARE(newCfg->get<std::string>("breadcrumb"),
                     Cr::Utility::formatString("{}{}", breadcrumb, i));
     CORRADE_COMPARE(newCfg->get<std::string>("key"), subconfigKey);
     // Check into tree
@@ -163,6 +185,42 @@ void ConfigurationTest::compareSubconfigs(Configuration::cptr& src,
   }
 
 }  // ConfigurationTest::compareSubconfigs
+
+void ConfigurationTest::addOrModSubconfigTreeVals(const std::string& key,
+                                                  const std::string& val,
+                                                  Configuration::ptr& config) {
+  std::string newVal = val;
+  if (config->hasKeyToValOfType(key,
+                                esp::core::config::ConfigValType::String)) {
+    newVal =
+        Cr::Utility::formatString("{}_{}", config->get<std::string>(key), val);
+  }
+  config->set(key, newVal);
+  auto cfgIterPair = config->getSubconfigIterator();
+  // Get subconfig keys
+  const auto& subsetKeys = config->getSubconfigKeys();
+  for (const auto& subKey : subsetKeys) {
+    auto subconfig = config->editSubconfig<Configuration>(subKey);
+    addOrModSubconfigTreeVals(key, val, subconfig);
+  }
+}  // ConfigurationTest::addOrModSubconfigTreeVals
+
+void ConfigurationTest::verifySubconfigTreeVals(
+    const std::string& key,
+    const std::string& val,
+    Configuration::cptr& config) const {
+  CORRADE_VERIFY(
+      config->hasKeyToValOfType(key, esp::core::config::ConfigValType::String));
+  std::string testVal = config->get<std::string>(key);
+  std::size_t foundLoc = testVal.find(val);
+  CORRADE_VERIFY(foundLoc != std::string::npos);
+  auto srcIterConfigPair = config->getSubconfigIterator();
+  for (auto& cfgIter = srcIterConfigPair.first;
+       cfgIter != srcIterConfigPair.second; ++cfgIter) {
+    Configuration::cptr subCfg = cfgIter->second;
+    verifySubconfigTreeVals(key, val, subCfg);
+  }
+}  // ConfigurationTest::verifySubconfigTreeVals
 
 void ConfigurationTest::TestConfiguration() {
   Configuration cfg;
@@ -264,7 +322,7 @@ void ConfigurationTest::TestSubconfigFindAndMerge() {
   Configuration::ptr cfg = Configuration::create();
   CORRADE_VERIFY(cfg);
   // Set base value for parent iteration
-  cfg->set("breakcrumb", "");
+  cfg->set("breadcrumb", "");
   int depthPlus1 = 5;
   int count = 3;
   // Build subconfig tree 4 levels deep, 3 subconfigs per config
@@ -308,24 +366,27 @@ void ConfigurationTest::TestSubconfigFindAndMerge() {
   // original
   Configuration::ptr cfgToEdit =
       lastConfig->getSubconfigCopy<Configuration>(keyToFind);
+  CORRADE_VERIFY(*cfgToEdit == *viewConfig);
+  // Now modify new subconfig copy and verify the original viewConfig is not
+  // also modified
   const std::string newKey = "edited_subconfig";
   cfgToEdit->set("key", newKey);
   cfgToEdit->set("depth", 0);
-  cfgToEdit->set("breakcrumb", "");
+  cfgToEdit->set("breadcrumb", "");
   cfgToEdit->set("test_string", "this is an added test string");
 
-  // Added edited subconfig to base config
+  // Added edited subconfig to base config (top of hierarchy)
   cfg->setSubconfigPtr(newKey, cfgToEdit);
   CORRADE_VERIFY(cfg->hasSubconfig(newKey));
   // Get an immutable view of this subconfig and verify the data it holds
   Configuration::cptr cfgToVerify = cfg->getSubconfigView(newKey);
-  CORRADE_COMPARE(cfgToVerify->get<std::string>("breakcrumb"), "");
+  CORRADE_COMPARE(cfgToVerify->get<std::string>("breadcrumb"), "");
   CORRADE_COMPARE(cfgToVerify->get<std::string>("test_string"),
                   "this is an added test string");
   CORRADE_COMPARE(cfgToVerify->get<std::string>("key"), newKey);
   CORRADE_COMPARE(cfgToVerify->get<int>("depth"), 0);
   // Make sure original was not modified
-  CORRADE_VERIFY(viewConfig->get<std::string>("breakcrumb") != "");
+  CORRADE_VERIFY(viewConfig->get<std::string>("breadcrumb") != "");
   CORRADE_VERIFY(viewConfig->get<std::string>("key") != newKey);
   CORRADE_VERIFY(viewConfig->get<int>("depth") != 0);
   CORRADE_VERIFY(!viewConfig->hasValue("test_string"));
@@ -338,7 +399,7 @@ void ConfigurationTest::TestSubconfigFindAndMerge() {
   // first set some test values that will be clobbered
   cfgToOverwrite->set("key", mergedKey);
   cfgToOverwrite->set("depth", 11);
-  cfgToOverwrite->set("breakcrumb", "1123");
+  cfgToOverwrite->set("breadcrumb", "1123");
   cfgToOverwrite->set("test_string", "this string will be clobbered");
   // Now add some values that won't be clobbered
   cfgToOverwrite->set("myBool", true);
@@ -357,7 +418,7 @@ void ConfigurationTest::TestSubconfigFindAndMerge() {
   CORRADE_VERIFY(cfg->hasSubconfig(mergedKey));
   // Verify all the overwritten values are correct
   Configuration::cptr cfgToVerifyOverwrite = cfg->getSubconfigView(mergedKey);
-  CORRADE_COMPARE(cfgToVerifyOverwrite->get<std::string>("breakcrumb"), "");
+  CORRADE_COMPARE(cfgToVerifyOverwrite->get<std::string>("breadcrumb"), "");
   CORRADE_COMPARE(cfgToVerifyOverwrite->get<std::string>("test_string"),
                   "this is an added test string");
   CORRADE_COMPARE(cfgToVerifyOverwrite->get<std::string>("key"), newKey);
@@ -375,10 +436,120 @@ void ConfigurationTest::TestSubconfigFindAndMerge() {
   CORRADE_COMPARE(cfgToVerifyOverwrite->get<Mn::Quaternion>("myQuat"),
                   Mn::Quaternion({1.0, 2.0, 3.0}, 0.1));
   CORRADE_COMPARE(cfgToVerifyOverwrite->get<Mn::Rad>("myRad"), Mn::Rad(1.23));
-
+  CORRADE_COMPARE(cfgToVerifyOverwrite->get<std::string>("myString"), "test");
   // Verify overwrite performed properly
   compareSubconfigs(cfgToVerify, cfgToVerifyOverwrite);
 }
+
+void ConfigurationTest::TestSubconfigFilter() {
+  Configuration::ptr cfg = Configuration::create();
+  CORRADE_VERIFY(cfg);
+  // Build and verify hierarchy
+  int depthPlus1 = 5;
+  int count = 3;
+  // build two identical subconfigs and place within base Configuration
+  const std::string filterKey = "cfgToFilterBy";
+  // Get actual subconfig
+  Configuration::ptr cfgToFilterBy =
+      cfg->editSubconfig<Configuration>(filterKey);
+  // add some root values will be present in 'modified' subconfig too
+  cfgToFilterBy->set("baseStrKey", "filterKey");
+  cfgToFilterBy->set("baseIntKey", 1);
+  cfgToFilterBy->set("baseBoolKey", true);
+  cfgToFilterBy->set("baseDoubleKey", 3.14);
+  cfgToFilterBy->set("baseStrKeyToMod", "modFilterKey");
+  cfgToFilterBy->set("baseIntKeyToMod", 11);
+  cfgToFilterBy->set("baseBoolKeyToMod", true);
+  cfgToFilterBy->set("baseDoubleKeyToMod", 2.718);
+  // Build subconfig tree 4 levels deep, 3 subconfigs per config
+  buildSubconfigsInConfig(count, 0, depthPlus1, cfgToFilterBy);
+
+  const std::string modKey = "modifiedSubconfig";
+  // get copy of original filter config
+  Configuration::ptr cfgToModify =
+      cfg->getSubconfigCopy<Configuration>(filterKey);
+  // move copy into cfg
+  cfg->setSubconfigPtr<Configuration>(modKey, cfgToModify);
+  // retrieve pointer to new copy
+  cfgToModify = cfg->editSubconfig<Configuration>(modKey);
+
+  // Build subconfig tree 4 levels deep, 3 subconfigs per config
+  buildSubconfigsInConfig(count, 0, depthPlus1, cfgToModify);
+
+  // compare both configs and verify they are equal
+  {
+    Configuration::cptr baseCompareCfg =
+        std::static_pointer_cast<const Configuration>(cfgToFilterBy);
+    Configuration::cptr modCompareCfg =
+        std::static_pointer_cast<const Configuration>(cfgToModify);
+    // verify both subconfigs are the same
+    compareSubconfigs(baseCompareCfg, modCompareCfg);
+  }
+
+  // modify and save appropriate subconfig, filter using base subconfig, and
+  // then verify expected results
+  // Modify values that are also present in cfgToFilterBy
+  cfgToModify->set("baseStrKeyToMod", "_modified");
+  cfgToModify->set("baseIntKeyToMod", 111);
+  cfgToModify->set("baseBoolKeyToMod", false);
+  cfgToModify->set("baseDoubleKeyToMod", 1234.5);
+  // Add 'mod' string to end of each config's breadcrumb string
+  addOrModSubconfigTreeVals("breadcrumb", "mod", cfgToModify);
+  // Add new string to each config
+  addOrModSubconfigTreeVals("newStrValue", "new string", cfgToModify);
+  // Add values that are not present in cfgToFilterBy
+  cfgToModify->set("myBool", true);
+  cfgToModify->set("myInt", 10);
+  cfgToModify->set("myFloatToDouble", 1.2f);
+  cfgToModify->set("myVec2", Mn::Vector2{1.0, 2.0});
+  cfgToModify->set("myVec3", Mn::Vector3{1.0, 2.0, 3.0});
+  cfgToModify->set("myVec4", Mn::Vector4{1.0, 2.0, 3.0, 4.0});
+  cfgToModify->set("myQuat", Mn::Quaternion{{1.0, 2.0, 3.0}, 0.1});
+  cfgToModify->set("myRad", Mn::Rad{1.23});
+  cfgToModify->set("myString", "test");
+
+  // Now filter the config to not have any data shared ith cfgToFilterBy
+  cfgToModify->filterFromConfig(cfgToFilterBy);
+  // Verify old shared values are gone
+  CORRADE_VERIFY(!cfgToModify->hasValue("baseStrKey"));
+  CORRADE_VERIFY(!cfgToModify->hasValue("baseIntKey"));
+  CORRADE_VERIFY(!cfgToModify->hasValue("baseBoolKey"));
+  CORRADE_VERIFY(!cfgToModify->hasValue("baseDoubleKey"));
+
+  // Verify modified shared values are present
+  CORRADE_VERIFY(cfgToModify->hasValue("baseStrKeyToMod"));
+  CORRADE_VERIFY(cfgToModify->hasValue("baseIntKeyToMod"));
+  CORRADE_VERIFY(cfgToModify->hasValue("baseBoolKeyToMod"));
+  CORRADE_VERIFY(cfgToModify->hasValue("baseDoubleKeyToMod"));
+  // ...and have expected values
+  CORRADE_COMPARE(cfgToModify->get<std::string>("baseStrKeyToMod"),
+                  "_modified");
+  CORRADE_COMPARE(cfgToModify->get<int>("baseIntKeyToMod"), 111);
+  CORRADE_COMPARE(cfgToModify->get<bool>("baseBoolKeyToMod"), false);
+  CORRADE_COMPARE(cfgToModify->get<double>("baseDoubleKeyToMod"), 1234.5);
+
+  // Verify modified values still present
+  CORRADE_COMPARE(cfgToModify->get<bool>("myBool"), true);
+  CORRADE_COMPARE(cfgToModify->get<int>("myInt"), 10);
+  CORRADE_COMPARE(cfgToModify->get<double>("myFloatToDouble"), 1.2f);
+  CORRADE_COMPARE(cfgToModify->get<Mn::Vector2>("myVec2"),
+                  Mn::Vector2(1.0, 2.0));
+  CORRADE_COMPARE(cfgToModify->get<Mn::Vector3>("myVec3"),
+                  Mn::Vector3(1.0, 2.0, 3.0));
+  CORRADE_COMPARE(cfgToModify->get<Mn::Vector4>("myVec4"),
+                  Mn::Vector4(1.0, 2.0, 3.0, 4.0));
+  CORRADE_COMPARE(cfgToModify->get<Mn::Quaternion>("myQuat"),
+                  Mn::Quaternion({1.0, 2.0, 3.0}, 0.1));
+  CORRADE_COMPARE(cfgToModify->get<Mn::Rad>("myRad"), Mn::Rad(1.23));
+  CORRADE_COMPARE(cfgToModify->get<std::string>("myString"), "test");
+
+  Configuration::cptr constModCfg =
+      std::const_pointer_cast<const Configuration>(cfgToModify);
+  // verify breadcrumb mod is present
+  verifySubconfigTreeVals("breadcrumb", "mod", constModCfg);
+  // verify newStrValue is present
+  verifySubconfigTreeVals("newStrValue", "new string", constModCfg);
+}  // ConfigurationTest::TestSubconfigFilter
 
 }  // namespace
 
