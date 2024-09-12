@@ -1163,7 +1163,8 @@ class Configuration {
    * @param desiredType the @ref ConfigValType to compare the value's type to
    * @return Whether @p key references a value that is of @p desiredType.
    */
-  bool hasKeyToValOfType(const std::string& key, ConfigValType desiredType) {
+  bool hasKeyToValOfType(const std::string& key,
+                         ConfigValType desiredType) const {
     ValueMapType::const_iterator mapIter = valueMap_.find(key);
     return (mapIter != valueMap_.end() &&
             (mapIter->second.getType() == desiredType));
