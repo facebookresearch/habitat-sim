@@ -8,15 +8,13 @@
 
 namespace esp {
 namespace metadata {
-namespace managers {
+namespace diagnostics {
 
 const std::map<std::string, DSDiagnosticType> DSDiagnosticTypeMap = {
     {"savecorrected", DSDiagnosticType::SaveCorrected},
-    {"testforsceneinstanceduplicates",
-     DSDiagnosticType::TestForDuplicateInstances},
-    {"testforsemanticregionduplicates",
-     DSDiagnosticType::TestForDuplicateRegions},
-    // Future diagnostics should be listed here
+    {"sceneinstanceduplicates", DSDiagnosticType::TestForDuplicateInstances},
+    {"semanticregionduplicates", DSDiagnosticType::TestForDuplicateRegions},
+    // Future diagnostics should be listed here, before "all"
     {"all", DSDiagnosticType::AllDiagnostics},
     {"allsavecorrected", DSDiagnosticType::AllDiagnosticsSaveCorrected},
 };
@@ -76,6 +74,6 @@ bool DatasetDiagnosticsTool::setNamedDiagnostic(const std::string& diagnostic,
   return true;
 }  // DatasetDiagnosticsTool::setNamedDiagnostic
 
-}  // namespace managers
+}  // namespace diagnostics
 }  // namespace metadata
 }  // namespace esp

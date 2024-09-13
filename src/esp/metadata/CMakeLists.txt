@@ -31,14 +31,14 @@ set(
   attributes/SemanticAttributes.cpp
   attributes/StageAttributes.h
   attributes/StageAttributes.cpp
+  diagnostics/DatasetDiagnosticsTool.h
+  diagnostics/DatasetDiagnosticsTool.cpp
   managers/AbstractAttributesManager.h
   managers/AbstractObjectAttributesManager.h
   managers/AOAttributesManager.h
   managers/AOAttributesManager.cpp
   managers/AssetAttributesManager.h
   managers/AssetAttributesManager.cpp
-  managers/DatasetDiagnosticsTool.h
-  managers/DatasetDiagnosticsTool.cpp
   managers/LightLayoutAttributesManager.h
   managers/LightLayoutAttributesManager.cpp
   managers/ObjectAttributesManager.h

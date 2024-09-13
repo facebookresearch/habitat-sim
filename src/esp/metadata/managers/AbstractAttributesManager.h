@@ -9,8 +9,8 @@
  * @brief Class Template @ref esp::metadata::managers::AbstractAttributesManager
  */
 
-#include "DatasetDiagnosticsTool.h"
 #include "esp/metadata/attributes/AbstractAttributes.h"
+#include "esp/metadata/diagnostics/DatasetDiagnosticsTool.h"
 
 #include "esp/core/managedContainers/ManagedFileBasedContainer.h"
 #include "esp/io/Io.h"
@@ -31,6 +31,7 @@ namespace managers {
 using core::config::Configuration;
 using core::managedContainers::ManagedFileBasedContainer;
 using core::managedContainers::ManagedObjectAccess;
+using diagnostics::DatasetDiagnosticsTool;
 
 /**
  * @brief Class template defining responsibilities and functionality for
