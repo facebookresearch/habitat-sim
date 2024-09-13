@@ -70,7 +70,7 @@ class DSDiagnosticRecord {
 
   typedef std::weak_ptr<T> WeakObjRef;
 
-  DSDiagnosticRecord(uint32_t diagnosticsFlags)
+  explicit DSDiagnosticRecord(uint32_t diagnosticsFlags)
       : _diagnosticsFlags(diagnosticsFlags) {}
 
   /**
