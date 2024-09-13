@@ -20,6 +20,4 @@ typedef Matrix<float, Dynamic, Dynamic, RowMajor> RowMatrixXf;
 
 }  // namespace Eigen
 
-// EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Matrix3f))
-
 #endif  // ESP_CORE_ESPEIGEN_H_
