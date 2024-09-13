@@ -75,8 +75,11 @@ class Simulator {
    * Does not invalidate existing ManagedObject wrappers.
    * Does not add or remove object instances.
    * Only changes motion_type when scene_instance specified a motion type.
+   * @param calledAfterSceneCreate Whether this reset is being called after a
+   * new scene has been created in reconfigure. If so we con't want to
+   * redundantly re-place the newly-placed object positions.
    */
-  void reset();
+  void reset(bool calledAfterSceneCreate = false);
 
   void seed(uint32_t newSeed);
 
