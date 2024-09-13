@@ -74,7 +74,7 @@ if(MagnumPlugins_KtxImageConverter_FOUND)
   target_link_libraries(GfxBatchRendererTest PRIVATE MagnumPlugins::KtxImageConverter)
 endif()
 
-corrade_add_test(CoreTest CoreTest.cpp LIBRARIES core io)
+corrade_add_test(ConfigurationTest ConfigurationTest.cpp LIBRARIES core io)
 
 corrade_add_test(CullingTest CullingTest.cpp LIBRARIES gfx)
 target_include_directories(CullingTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
