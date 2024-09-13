@@ -3,8 +3,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_METADATA_MANAGERS_DATASETDIAGNOSTICSTOOL_H_
-#define ESP_METADATA_MANAGERS_DATASETDIAGNOSTICSTOOL_H_
+#ifndef ESP_METADATA_DIAGNOSTICS_DATASETDIAGNOSTICSTOOL_H_
+#define ESP_METADATA_DIAGNOSTICS_DATASETDIAGNOSTICSTOOL_H_
 
 #include "esp/core/Esp.h"
 #include "esp/io/Json.h"
@@ -12,7 +12,7 @@
 
 namespace esp {
 namespace metadata {
-namespace managers {
+namespace diagnostics {
 
 /**
  * @brief This enum class defines the various dataset diagnostics and remedies
@@ -281,8 +281,8 @@ class DatasetDiagnosticsTool {
 
 };  // class DatasetDiagnosticsTool
 
-}  // namespace managers
+}  // namespace diagnostics
 }  // namespace metadata
 }  // namespace esp
 
-#endif  // ESP_METADATA_MANAGERS_DATASETDIAGNOSTICSTOOL_H_
+#endif  // ESP_METADATA_DIAGNOSTICS_DATASETDIAGNOSTICSTOOL_H_
