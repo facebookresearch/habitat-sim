@@ -164,7 +164,7 @@ void initSimBindings(py::module& m) {
           R"(Use gfx_replay_manager for replay recording and playback.)")
       .def("seed", &Simulator::seed, "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, "configuration"_a)
-      .def("reset", &Simulator::reset)
+      .def("reset", [](Simulator& self) { self.reset(false); })
       .def(
           "close", &Simulator::close, "destroy"_a = true,
           R"(Free all loaded assets and GPU contexts. Use destroy=true except where noted in tutorials/async_rendering.py.)")
