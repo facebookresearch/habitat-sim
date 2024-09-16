@@ -16,6 +16,7 @@ ArticulatedObjectAttributes::ArticulatedObjectAttributes(
 
   init("render_asset", "");
   init("semantic_id", 0);
+  init("is_visible", true);
   // Initialize the default base type to be free joint
   initTranslated("base_type",
                  getAOBaseTypeName(ArticulatedObjectBaseType::Free));

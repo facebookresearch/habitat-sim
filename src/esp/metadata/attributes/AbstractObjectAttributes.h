@@ -77,11 +77,18 @@ class AbstractObjectAttributes : public AbstractAttributes {
   double getUnitsToMeters() const { return get<double>("units_to_meters"); }
 
   /**
-   * @brief If not visible can add dynamic non-rendered object into a scene. If
-   * is not visible then should not add object to drawables.
+   * @brief Set whether visible or not. If not visible can add dynamic
+   * non-rendered object into a scene. If is not visible then should not add
+   * object to drawables.
    */
   void setIsVisible(bool isVisible) { set("is_visible", isVisible); }
+  /**
+   * @brief Get whether visible or not. If not visible can add dynamic
+   * non-rendered object into a scene. If is not visible then should not add
+   * object to drawables.
+   */
   bool getIsVisible() const { return get<bool>("is_visible"); }
+
   void setFrictionCoefficient(double frictionCoefficient) {
     set("friction_coefficient", frictionCoefficient);
   }
