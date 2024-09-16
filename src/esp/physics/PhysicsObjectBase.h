@@ -689,7 +689,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     initAttrs->setRotation(getRotation());
     initAttrs->setMotionType(
         metadata::attributes::getMotionTypeName(objectMotionType_));
-
+    // TODO : Set instance user-defined to be delta from disk-version of
+    // creation config's
     return initAttrs;
   }
 
