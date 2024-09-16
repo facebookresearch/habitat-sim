@@ -21,10 +21,12 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
     : AbstractAttributes(type, handle) {
   // default to unknown for object instances, to use attributes-specified
   // defaults
-  init("shader_type", getShaderTypeName(ObjectInstanceShaderType::Unspecified));
+  initTranslated("shader_type",
+                 getShaderTypeName(ObjectInstanceShaderType::Unspecified));
 
   // defaults to unknown/undefined
-  init("motion_type", getMotionTypeName(esp::physics::MotionType::UNDEFINED));
+  initTranslated("motion_type",
+                 getMotionTypeName(esp::physics::MotionType::UNDEFINED));
   // set to no rotation or translation
   init("rotation", Mn::Quaternion(Mn::Math::IdentityInit));
   init("translation", Mn::Vector3());
@@ -32,8 +34,9 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
   // ID_UNDEFINED
   init("is_instance_visible", ID_UNDEFINED);
   // defaults to unknown so that obj instances use scene instance setting
-  init("translation_origin",
-       getTranslationOriginName(SceneInstanceTranslationOrigin::Unknown));
+  initTranslated(
+      "translation_origin",
+      getTranslationOriginName(SceneInstanceTranslationOrigin::Unknown));
   // set default multiplicative scaling values
   init("uniform_scale", 1.0);
   init("non_uniform_scale", Mn::Vector3{1.0, 1.0, 1.0});
@@ -50,6 +53,9 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
   // to a scene instance.
   // Handle is set via init in base class, which would not be written out to
   // file if we did not explicitly set it.
+  // NOTE : this will not call a virtual override
+  // (SceneAOInstanceAttributes::setHandle) of AbstractAttributes::setHandle due
+  // to virtual dispatch not being available in constructor
   setHandle(handle);
   // set appropriate fields from abstract object attributes
   // Not initialize, since these are not default values
@@ -168,19 +174,21 @@ SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
 
   // Set the instance base type to be unspecified - if not set in instance json,
   // use ao_config value
-  init("base_type", getAOBaseTypeName(ArticulatedObjectBaseType::Unspecified));
+  initTranslated("base_type",
+                 getAOBaseTypeName(ArticulatedObjectBaseType::Unspecified));
   // Set the instance source for the inertia calculation to be unspecified - if
   // not set in instance json, use ao_config value
-  init("inertia_source",
-       getAOInertiaSourceName(ArticulatedObjectInertiaSource::Unspecified));
+  initTranslated(
+      "inertia_source",
+      getAOInertiaSourceName(ArticulatedObjectInertiaSource::Unspecified));
   // Set the instance link order to use as unspecified - if not set in instance
   // json, use ao_config value
-  init("link_order",
-       getAOLinkOrderName(ArticulatedObjectLinkOrder::Unspecified));
+  initTranslated("link_order",
+                 getAOLinkOrderName(ArticulatedObjectLinkOrder::Unspecified));
   // Set render mode to be unspecified - if not set in instance json, use
   // ao_config value
-  init("render_mode",
-       getAORenderModeName(ArticulatedObjectRenderMode::Unspecified));
+  initTranslated("render_mode",
+                 getAORenderModeName(ArticulatedObjectRenderMode::Unspecified));
   editSubconfig<Configuration>("initial_joint_pose");
   editSubconfig<Configuration>("initial_joint_velocities");
 }
