@@ -42,19 +42,19 @@ from habitat_sim.utils.settings import default_sim_settings, make_cfg
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../tools"))
 print(sys.path)
 
-from tools import collision_shape_automation as csa
+# from tools import collision_shape_automation as csa
 
 # CollisionProxyOptimizer initialized before the application
-_cpo: Optional[csa.CollisionProxyOptimizer] = None
-_cpo_threads = []
+# _cpo: Optional[csa.CollisionProxyOptimizer] = None
+# _cpo_threads = []
 
 
-def _cpo_initialized():
-    global _cpo
-    global _cpo_threads
-    if _cpo is None:
-        return False
-    return all(not thread.is_alive() for thread in _cpo_threads)
+# def _cpo_initialized():
+#     global _cpo
+#     global _cpo_threads
+#     if _cpo is None:
+#         return False
+#     return all(not thread.is_alive() for thread in _cpo_threads)
 
 
 class RecColorMode(Enum):
@@ -221,9 +221,9 @@ class HabitatSimInteractiveViewer(Application):
         # variables that track app data and CPU/GPU usage
         self.num_frames_to_track = 60
 
-        global _cpo
-        self._cpo = _cpo
-        self.cpo_initialized = False
+        # global _cpo
+        # self._cpo = _cpo
+        # self.cpo_initialized = False
         self.proxy_obj_postfix = "_collision_stand-in"
 
         # initialization code below here
@@ -478,9 +478,9 @@ class HabitatSimInteractiveViewer(Application):
         # load receptacles if not done
         if self.receptacles is None:
             self.load_receptacles()
-        assert (
-            self._cpo is not None
-        ), "Must initialize the CPO before automatic filtering. Re-run with '--init-cpo'."
+        # assert (
+        #    self._cpo is not None
+        # ), "Must initialize the CPO before automatic filtering. Re-run with '--init-cpo'."
 
         # initialize if necessary
         if self.rec_filter_data is None:
@@ -498,35 +498,35 @@ class HabitatSimInteractiveViewer(Application):
                 "min_height": 0,
             }
 
-        for rec in self.receptacles:
-            rec_unique_name = rec.unique_name
-            # respect already marked receptacles
-            if rec_unique_name not in self.rec_filter_data["manually_filtered"]:
-                rec_dat = self._cpo.gt_data[self.rec_to_poh[rec]]["receptacles"][
-                    rec.name
-                ]
-                rec_shape_data = rec_dat["shape_id_results"][filter_shape]
-                # filter by access
-                if (
-                    "access_results" in rec_shape_data
-                    and rec_shape_data["access_results"]["receptacle_access_score"]
-                    < access_threshold
-                ):
-                    self.rec_filter_data["access_filtered"].append(rec_unique_name)
-                # filter by stability
-                elif (
-                    "stability_results" in rec_shape_data
-                    and rec_shape_data["stability_results"]["success_ratio"]
-                    < stab_threshold
-                ):
-                    self.rec_filter_data["stability_filtered"].append(rec_unique_name)
-                # TODO: add more filters
-                # TODO: 1. filter by height relative to the floor
-                # TODO: 2. filter outdoor (raycast up)
-                # TODO: 3/4: filter by access/stability in scene context (relative to other objects)
-                # remaining receptacles are active
-                else:
-                    self.rec_filter_data["active"].append(rec_unique_name)
+        # for rec in self.receptacles:
+        #     rec_unique_name = rec.unique_name
+        #     # respect already marked receptacles
+        #     if rec_unique_name not in self.rec_filter_data["manually_filtered"]:
+        #         rec_dat = self._cpo.gt_data[self.rec_to_poh[rec]]["receptacles"][
+        #             rec.name
+        #         ]
+        #         rec_shape_data = rec_dat["shape_id_results"][filter_shape]
+        #         # filter by access
+        #         if (
+        #             "access_results" in rec_shape_data
+        #             and rec_shape_data["access_results"]["receptacle_access_score"]
+        #             < access_threshold
+        #         ):
+        #             self.rec_filter_data["access_filtered"].append(rec_unique_name)
+        #         # filter by stability
+        #         elif (
+        #             "stability_results" in rec_shape_data
+        #             and rec_shape_data["stability_results"]["success_ratio"]
+        #             < stab_threshold
+        #         ):
+        #             self.rec_filter_data["stability_filtered"].append(rec_unique_name)
+        #         # TODO: add more filters
+        #         # TODO: 1. filter by height relative to the floor
+        #         # TODO: 2. filter outdoor (raycast up)
+        #         # TODO: 3/4: filter by access/stability in scene context (relative to other objects)
+        #         # remaining receptacles are active
+        #         else:
+        #             self.rec_filter_data["active"].append(rec_unique_name)
 
     def export_filtered_recs(self, filepath: Optional[str] = None) -> None:
         """
@@ -644,10 +644,10 @@ class HabitatSimInteractiveViewer(Application):
             )
 
     def _draw_receptacle_per_obj(self, obj, debug_line_render):
-        if self.rec_filter_data is None and self.cpo_initialized:
-            self.compute_rec_filter_state(
-                access_threshold=self.rec_access_filter_threshold
-            )
+        # if self.rec_filter_data is None and self.cpo_initialized:
+        #    self.compute_rec_filter_state(
+        #        access_threshold=self.rec_access_filter_threshold
+        #    )
         c_pos = self.render_camera.node.absolute_translation
         c_forward = self.render_camera.node.absolute_transformation().transform_vector(
             mn.Vector3(0, 0, -1)
@@ -663,10 +663,10 @@ class HabitatSimInteractiveViewer(Application):
                 continue
 
             rec_dat = None
-            if self.cpo_initialized:
-                rec_dat = self._cpo.gt_data[self.rec_to_poh[receptacle]]["receptacles"][
-                    receptacle.name
-                ]
+            # if self.cpo_initialized:
+            #    rec_dat = self._cpo.gt_data[self.rec_to_poh[receptacle]]["receptacles"][
+            #        receptacle.name
+            #    ]
 
             r_trans = receptacle.get_global_transform(self.sim)
             # display point samples for selected object
@@ -753,33 +753,33 @@ class HabitatSimInteractiveViewer(Application):
                     elif rec_unique_name in self.rec_filter_data["height_filtered"]:
                         # I changed the height filter from orange to dark purple
                         rec_color = mn.Color4(0.5, 0, 0.5, 1.0)
-                elif (
-                    self.cpo_initialized and self.rec_color_mode != RecColorMode.DEFAULT
-                ):
-                    if self.rec_color_mode == RecColorMode.GT_STABILITY:
-                        rec_color = rg_lerp.at(
-                            rec_dat["shape_id_results"]["gt"]["stability_results"][
-                                "success_ratio"
-                            ]
-                        )
-                    elif self.rec_color_mode == RecColorMode.GT_ACCESS:
-                        rec_color = rg_lerp.at(
-                            rec_dat["shape_id_results"]["gt"]["access_results"][
-                                "receptacle_access_score"
-                            ]
-                        )
-                    elif self.rec_color_mode == RecColorMode.PR_STABILITY:
-                        rec_color = rg_lerp.at(
-                            rec_dat["shape_id_results"]["pr0"]["stability_results"][
-                                "success_ratio"
-                            ]
-                        )
-                    elif self.rec_color_mode == RecColorMode.PR_ACCESS:
-                        rec_color = rg_lerp.at(
-                            rec_dat["shape_id_results"]["pr0"]["access_results"][
-                                "receptacle_access_score"
-                            ]
-                        )
+                # elif (
+                #     self.cpo_initialized and self.rec_color_mode != RecColorMode.DEFAULT
+                # ):
+                #     if self.rec_color_mode == RecColorMode.GT_STABILITY:
+                #         rec_color = rg_lerp.at(
+                #             rec_dat["shape_id_results"]["gt"]["stability_results"][
+                #                 "success_ratio"
+                #             ]
+                #         )
+                #     elif self.rec_color_mode == RecColorMode.GT_ACCESS:
+                #         rec_color = rg_lerp.at(
+                #             rec_dat["shape_id_results"]["gt"]["access_results"][
+                #                 "receptacle_access_score"
+                #             ]
+                #         )
+                #     elif self.rec_color_mode == RecColorMode.PR_STABILITY:
+                #         rec_color = rg_lerp.at(
+                #             rec_dat["shape_id_results"]["pr0"]["stability_results"][
+                #                 "success_ratio"
+                #             ]
+                #         )
+                #     elif self.rec_color_mode == RecColorMode.PR_ACCESS:
+                #         rec_color = rg_lerp.at(
+                #             rec_dat["shape_id_results"]["pr0"]["access_results"][
+                #                 "receptacle_access_score"
+                #             ]
+                #         )
 
                 receptacle.debug_draw(self.sim, color=rec_color)
                 if True:
@@ -840,8 +840,8 @@ class HabitatSimInteractiveViewer(Application):
         at a fixed rate.
         """
         # until cpo initialization is finished, keep checking
-        if not self.cpo_initialized:
-            self.cpo_initialized = _cpo_initialized()
+        # if not self.cpo_initialized:
+        #    self.cpo_initialized = _cpo_initialized()
 
         agent_acts_per_sec = self.fps
 
@@ -2302,43 +2302,43 @@ class Timer:
         Timer.prev_frame_time = time.time()
 
 
-def init_cpo_for_scene(sim_settings, mm: habitat_sim.metadata.MetadataMediator):
-    """
-    Initialize and run the CPO for all objects in the scene.
-    """
-    global _cpo
-    global _cpo_threads
+# def init_cpo_for_scene(sim_settings, mm: habitat_sim.metadata.MetadataMediator):
+#     """
+#     Initialize and run the CPO for all objects in the scene.
+#     """
+#     global _cpo
+#     global _cpo_threads
 
-    _cpo = csa.CollisionProxyOptimizer(sim_settings, None, mm)
+#     _cpo = csa.CollisionProxyOptimizer(sim_settings, None, mm)
 
-    # get object handles from a specific scene
-    objects_in_scene = csa.get_objects_in_scene(
-        dataset_path=sim_settings["scene_dataset_config_file"],
-        scene_handle=sim_settings["scene"],
-        mm=_cpo.mm,
-    )
-    # get a subset with receptacles defined
-    objects_in_scene = [
-        objects_in_scene[i]
-        for i in range(len(objects_in_scene))
-        if csa.object_has_receptacles(objects_in_scene[i], mm.object_template_manager)
-    ]
+#     # get object handles from a specific scene
+#     objects_in_scene = csa.get_objects_in_scene(
+#         dataset_path=sim_settings["scene_dataset_config_file"],
+#         scene_handle=sim_settings["scene"],
+#         mm=_cpo.mm,
+#     )
+#     # get a subset with receptacles defined
+#     objects_in_scene = [
+#         objects_in_scene[i]
+#         for i in range(len(objects_in_scene))
+#         if csa.object_has_receptacles(objects_in_scene[i], mm.object_template_manager)
+#     ]
 
-    def run_cpo_for_obj(obj_handle):
-        _cpo.setup_obj_gt(obj_handle)
-        _cpo.compute_receptacle_stability(obj_handle, use_gt=True)
-        _cpo.compute_receptacle_stability(obj_handle)
-        _cpo.compute_receptacle_access_metrics(obj_handle, use_gt=True)
-        _cpo.compute_receptacle_access_metrics(obj_handle, use_gt=False)
+#     def run_cpo_for_obj(obj_handle):
+#         _cpo.setup_obj_gt(obj_handle)
+#         _cpo.compute_receptacle_stability(obj_handle, use_gt=True)
+#         _cpo.compute_receptacle_stability(obj_handle)
+#         _cpo.compute_receptacle_access_metrics(obj_handle, use_gt=True)
+#         _cpo.compute_receptacle_access_metrics(obj_handle, use_gt=False)
 
-    # run CPO initialization multi-threaded to unblock viewer initialization and use
+#     # run CPO initialization multi-threaded to unblock viewer initialization and use
 
-    threads = []
-    for obj_handle in objects_in_scene:
-        run_cpo_for_obj(obj_handle)
-        # threads.append(threading.Thread(target=run_cpo_for_obj, args=(obj_handle,)))
-    for thread in threads:
-        thread.start()
+#     threads = []
+#     for obj_handle in objects_in_scene:
+#         run_cpo_for_obj(obj_handle)
+#         # threads.append(threading.Thread(target=run_cpo_for_obj, args=(obj_handle,)))
+#     for thread in threads:
+#         thread.start()
 
 
 if __name__ == "__main__":
@@ -2454,8 +2454,8 @@ if __name__ == "__main__":
 
     # initialize the CPO.
     # this will be done in parallel to viewer setup via multithreading
-    if args.init_cpo:
-        init_cpo_for_scene(sim_settings, mm)
+    # if args.init_cpo:
+    #    init_cpo_for_scene(sim_settings, mm)
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings, mm).exec()
