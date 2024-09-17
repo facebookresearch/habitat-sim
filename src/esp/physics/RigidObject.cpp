@@ -91,7 +91,7 @@ void RigidObject::resetStateFromSceneInstanceAttr() {
 
   // set object's motion type if different than set value
   const physics::MotionType attrObjMotionType =
-      static_cast<physics::MotionType>(sceneInstanceAttr->getMotionType());
+      sceneInstanceAttr->getMotionType();
   if (attrObjMotionType != physics::MotionType::UNDEFINED) {
     this->setMotionType(attrObjMotionType);
   }

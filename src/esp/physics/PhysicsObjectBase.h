@@ -683,16 +683,31 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
         "PhysicsObjectBase : Cast of SceneObjectInstanceAttributes must be to "
         "class that inherits from SceneObjectInstanceAttributes");
 
-    std::shared_ptr<T> initAttrs = std::const_pointer_cast<T>(
+    std::shared_ptr<T> initObjInstAttrsCopy = std::const_pointer_cast<T>(
         T::create(*(static_cast<const T*>(_objInstanceInitAttributes.get()))));
     // set values
-    initAttrs->setTranslation(getUncorrectedTranslation());
-    initAttrs->setRotation(getRotation());
-    initAttrs->setMotionType(
-        metadata::attributes::getMotionTypeName(objectMotionType_));
-    // TODO : Set instance user-defined to be delta from disk-version of
-    // creation config's
-    return initAttrs;
+    initObjInstAttrsCopy->setTranslation(getUncorrectedTranslation());
+    initObjInstAttrsCopy->setRotation(getRotation());
+    // only change if different
+    if (initObjInstAttrsCopy->getMotionType() != objectMotionType_) {
+      initObjInstAttrsCopy->setMotionType(
+          metadata::attributes::getMotionTypeName(objectMotionType_));
+    }
+
+    // temp copy of object's user attributes. Treated as ground truth for user
+    // attributes.
+    core::config::Configuration::ptr tmpUserAttrs =
+        core::config::Configuration::create(*userAttributes_);
+
+    // now filter this by the creation attributes' copy.  NOTE if the creation
+    // attributes themselves are different than the same-named versions on disk,
+    // these values may be out of sync.
+    tmpUserAttrs->filterFromConfig(
+        objInitAttributes_->getUserConfigurationView());
+    // copy these over the existing user defined fields
+    // in the instance
+    initObjInstAttrsCopy->setUserConfiguration(tmpUserAttrs);
+    return initObjInstAttrsCopy;
   }
 
   /**

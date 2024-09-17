@@ -210,18 +210,14 @@ int PhysicsManager::cloneExistingObject(int objectID) {
     return ID_UNDEFINED;
   }
   auto objPtr = existingObjIter->second;
-  // Get object instance attributes copy
-  esp::metadata::attributes::SceneObjectInstanceAttributes::ptr objInstAttrs =
-      objPtr->getInitObjectInstanceAttrCopy();
-  // TODO initialize with current state of cloned object
+  // Get object instance attributes copy with current state of object instance
+  esp::metadata::attributes::SceneObjectInstanceAttributes::ptr
+      newObjInstAttrs = objPtr->getCurrentStateInstanceAttr();
 
   // Create object instance
   int newObjID =
-      addObjectInstance(objInstAttrs, &simulator_->getDrawableGroup(), nullptr,
-                        simulator_->getCurrentLightSetupKey());
-
-  // Update new object's values if necessary
-  // auto newObject = existingObjects_.find(newObjID);
+      addObjectInstance(newObjInstAttrs, &simulator_->getDrawableGroup(),
+                        nullptr, simulator_->getCurrentLightSetupKey());
 
   return newObjID;
 
@@ -587,18 +583,14 @@ int PhysicsManager::cloneExistingArticulatedObject(int aObjectID) {
     return ID_UNDEFINED;
   }
   auto aObjPtr = existingAOIter->second;
-  // Get object instance attributes copy
+  // Get articulated object instance attributes copy with current state of AO
   esp::metadata::attributes::SceneAOInstanceAttributes::ptr artObjInstAttrs =
-      aObjPtr->getInitObjectInstanceAttrCopy();
-  // TODO initialize with current state of cloned object
+      aObjPtr->getCurrentStateInstanceAttr();
 
   // Create object instance
   int newArtObjID = addArticulatedObjectInstance(
       artObjInstAttrs, &simulator_->getDrawableGroup(),
       simulator_->getCurrentLightSetupKey());
-
-  // Update new object's values if necessary
-  // auto newArtObj = existingArticulatedObjects_.find(newArtObjID);
 
   return newArtObjID;
 
