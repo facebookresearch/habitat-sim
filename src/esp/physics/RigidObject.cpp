@@ -15,7 +15,7 @@ RigidObject::RigidObject(scene::SceneNode* rigidBodyNode,
 
 bool RigidObject::initialize(
     metadata::attributes::AbstractObjectAttributes::ptr initAttributes) {
-  if (initializationAttributes_ != nullptr) {
+  if (objInitAttributes_ != nullptr) {
     ESP_ERROR() << "Cannot initialize a RigidObject more than once";
     return false;
   }
@@ -26,7 +26,7 @@ bool RigidObject::initialize(
   // time
   setUserAttributes(initAttributes->getUserConfiguration());
   setMarkerSets(initAttributes->getMarkerSetsConfiguration());
-  initializationAttributes_ = std::move(initAttributes);
+  objInitAttributes_ = std::move(initAttributes);
 
   return initialization_LibSpecific();
 }  // RigidObject::initialize
@@ -37,7 +37,7 @@ bool RigidObject::finalizeObject() {
   // cast initialization attributes
   metadata::attributes::ObjectAttributes::cptr ObjectAttributes =
       std::dynamic_pointer_cast<const metadata::attributes::ObjectAttributes>(
-          initializationAttributes_);
+          objInitAttributes_);
 
   if (!ObjectAttributes->getComputeCOMFromShape()) {
     // will be false if the COM is provided; shift by that COM
