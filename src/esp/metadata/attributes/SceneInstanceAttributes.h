@@ -94,6 +94,13 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   }
 
   /**
+   * @brief Get string representation of translation origin
+   */
+  std::string getTranslationOriginStr() const {
+    return get<std::string>("translation_origin");
+  }
+
+  /**
    * @brief Set the rotation of the object
    */
   void setRotation(const Mn::Quaternion& rotation) {

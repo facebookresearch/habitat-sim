@@ -686,8 +686,14 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     std::shared_ptr<T> initObjInstAttrsCopy = std::const_pointer_cast<T>(
         T::create(*(static_cast<const T*>(_objInstanceInitAttributes.get()))));
     // set values
-    initObjInstAttrsCopy->setTranslation(getUncorrectedTranslation());
-    initObjInstAttrsCopy->setRotation(getRotation());
+    const auto translation = getUncorrectedTranslation();
+    if (initObjInstAttrsCopy->getTranslation() != translation) {
+      initObjInstAttrsCopy->setTranslation(translation);
+    }
+    const auto rotation = getRotation();
+    if (initObjInstAttrsCopy->getRotation() != rotation) {
+      initObjInstAttrsCopy->setRotation(rotation);
+    }
     // only change if different
     if (initObjInstAttrsCopy->getMotionType() != objectMotionType_) {
       initObjInstAttrsCopy->setMotionType(
