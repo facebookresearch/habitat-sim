@@ -224,7 +224,7 @@ void PhysicsTest::testJoinCompound() {
         objectTemplate->setJoinCollisionMeshes(true);
       }
       objectAttributesManager->registerObject(objectTemplate);
-      physicsManager_->reset();
+      physicsManager_->reset(false);
 
       // add and simulate objects
       int num_objects = 7;
@@ -302,7 +302,7 @@ void PhysicsTest::testCollisionBoundingBox() {
         objectTemplate->setBoundingBoxCollisions(true);
       }
       objectAttributesManager->registerObject(objectTemplate);
-      physicsManager_->reset();
+      physicsManager_->reset(false);
 
       auto objectWrapper = makeObjectGetWrapper(
           objectFile, &sceneManager_->getSceneGraph(sceneID_).getDrawables());
@@ -612,7 +612,7 @@ void PhysicsTest::testMotionTypes() {
 
       // reset the scene
       rigidObjectManager_->removeAllObjects();
-      physicsManager_->reset();  // time=0
+      physicsManager_->reset(false);  // time=0
     }
   }
 }  // PhysicsTest::testMotionTypes

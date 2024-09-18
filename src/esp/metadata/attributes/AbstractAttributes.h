@@ -122,13 +122,33 @@ class AbstractAttributes
   }
 
   /**
+   * @brief Gets a const smart pointer reference to a view of the user-specified
+   * configuration data from config file. Habitat does not parse or process this
+   * data, but it will be available to the user via python bindings for each
+   * object.
+   */
+  std::shared_ptr<const Configuration> getUserConfigurationView() const {
+    return getSubconfigView("user_defined");
+  }
+
+  /**
    * @brief Gets a smart pointer reference to the actual user-specified
    * configuration data from config file. Habitat does not parse or process this
    * data, but it will be available to the user via python bindings for each
-   * object.  This method is for editing the configuration.
+   * object. This method is for editing the configuration.
    */
   std::shared_ptr<Configuration> editUserConfiguration() {
     return editSubconfig<Configuration>("user_defined");
+  }
+
+  /**
+   * @brief Move an existing user_defined subconfiguration into this
+   * configuration, overwriting the existing copy if it exists. Habitat does not
+   * parse or process this data, but it will be available to the user via python
+   * bindings for each object. This method is for editing the configuration.
+   */
+  void setUserConfiguration(std::shared_ptr<Configuration>& userAttr) {
+    setSubconfigPtr("user_defined", userAttr);
   }
 
   /**

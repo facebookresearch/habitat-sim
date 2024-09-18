@@ -783,6 +783,52 @@ std::vector<std::string> Configuration::findValue(
   return breadcrumbs;
 }
 
+void Configuration::overwriteWithConfig(
+    const std::shared_ptr<const Configuration>& src) {
+  if (src->getNumEntries() == 0) {
+    return;
+  }
+  // copy every element over from src
+  for (const auto& elem : src->valueMap_) {
+    valueMap_[elem.first] = elem.second;
+  }
+  // merge subconfigs
+  for (const auto& subConfig : src->configMap_) {
+    const auto name = subConfig.first;
+    // make if DNE and merge src subconfig
+    addOrEditSubgroup<Configuration>(name).first->second->overwriteWithConfig(
+        subConfig.second);
+  }
+}  // Configuration::overwriteWithConfig
+
+void Configuration::filterFromConfig(
+    const std::shared_ptr<const Configuration>& src) {
+  if (src->getNumEntries() == 0) {
+    return;
+  }
+  // filter out every element that is present with the same value in both src
+  // and this.
+  for (const auto& elem : src->valueMap_) {
+    ValueMapType::const_iterator mapIter = valueMap_.find(elem.first);
+    // if present and has the same data, erase this configuration's data
+    if ((mapIter != valueMap_.end()) && (mapIter->second == elem.second)) {
+      valueMap_.erase(mapIter);
+    }
+  }
+  // repeat process on all subconfigs of src that are present in this.
+  for (const auto& subConfig : src->configMap_) {
+    // find if this has subconfig of same name
+    ConfigMapType::iterator mapIter = configMap_.find(subConfig.first);
+    if (mapIter != configMap_.end()) {
+      mapIter->second->filterFromConfig(subConfig.second);
+      // remove the subconfig if it has no entries after filtering
+      if (mapIter->second->getNumEntries() == 0) {
+        configMap_.erase(mapIter);
+      }
+    }
+  }
+}  // Configuration::filterFromConfig
+
 Configuration& Configuration::operator=(const Configuration& otr) {
   if (this != &otr) {
     configMap_.clear();

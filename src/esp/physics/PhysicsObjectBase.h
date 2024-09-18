@@ -97,10 +97,10 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   template <class T>
   std::shared_ptr<T> getInitializationAttributes() const {
-    if (!initializationAttributes_) {
+    if (!objInitAttributes_) {
       return nullptr;
     }
-    return T::create(*(static_cast<const T*>(initializationAttributes_.get())));
+    return T::create(*(static_cast<const T*>(objInitAttributes_.get())));
   }
 
   /**
@@ -479,7 +479,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   template <class U>
   void setSceneInstanceAttr(std::shared_ptr<U> instanceAttr) {
-    _initObjInstanceAttrs = std::move(instanceAttr);
+    _objInstanceInitAttributes = std::move(instanceAttr);
   }  // setSceneInstanceAttr
 
   /**
@@ -593,33 +593,68 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     return res;
   }  // getMarkerPointsGlobal
 
-  /** @brief Get the scale of the object set during initialization.
+  /**
+   * @brief Get the scale of the object set during initialization.
    * @return The scaling for the object relative to its initially loaded meshes.
    */
   virtual Magnum::Vector3 getScale() const { return _creationScale; }
 
-  /** @brief Return whether or not this object is articulated. Override in
-   * ArticulatedObject */
+  /**
+   * @brief Return whether or not this object is articulated. Override in
+   * ArticulatedObject
+   */
   bool isArticulated() const { return _isArticulated; }
 
   /** @brief Return the local axis-aligned bounding box of the this object.*/
   virtual const Mn::Range3D& getAabb() { return node().getCumulativeBB(); }
 
  protected:
+  /**
+   * @brief Used Internally on object creation. Set whether or not this object
+   * is articulated.
+   */
   void setIsArticulated(bool isArticulated) { _isArticulated = isArticulated; }
 
-  /** @brief Accessed internally. Get an appropriately cast copy of the @ref
+  /**
+   * @brief Accessed internally. Get an appropriately cast copy of the @ref
    * metadata::attributes::SceneObjectInstanceAttributes used to place the
    * object within the scene.
    * @return A copy of the initialization template used to create this object
    * instance or nullptr if no template exists.
    */
   template <class T>
-  std::shared_ptr<T> getInitObjectInstanceAttrInternal() const {
-    if (!_initObjInstanceAttrs) {
+  std::shared_ptr<T> getInitObjectInstanceAttrCopyInternal() const {
+    if (!_objInstanceInitAttributes) {
       return nullptr;
     }
-    return T::create(*(static_cast<const T*>(_initObjInstanceAttrs.get())));
+    static_assert(
+        std::is_base_of<metadata::attributes::SceneObjectInstanceAttributes,
+                        T>::value,
+        "SceneObjectInstanceAttributes must be base class of desired instance "
+        "attributes class.");
+    return T::create(
+        *(static_cast<const T*>(_objInstanceInitAttributes.get())));
+  }
+
+  /**
+   * @brief Accessed internally. Get the
+   * @ref metadata::attributes::SceneObjectInstanceAttributes used to
+   * create and place the object within the scene, appropriately cast for
+   * object type.
+   * @return A copy of the initialization template used to create this object
+   * instance or nullptr if no template exists.
+   */
+  template <class T>
+  std::shared_ptr<const T> getInitObjectInstanceAttrInternal() const {
+    if (!_objInstanceInitAttributes) {
+      return nullptr;
+    }
+    static_assert(
+        std::is_base_of<metadata::attributes::SceneObjectInstanceAttributes,
+                        T>::value,
+        "SceneObjectInstanceAttributes must be base class of desired instance "
+        "attributes class.");
+    return std::static_pointer_cast<const T>(_objInstanceInitAttributes);
   }
 
   /**
@@ -639,7 +674,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   template <class T>
   std::shared_ptr<T> getCurrentObjectInstanceAttrInternal() {
-    if (!_initObjInstanceAttrs) {
+    if (!_objInstanceInitAttributes) {
       return nullptr;
     }
     static_assert(
@@ -648,15 +683,37 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
         "PhysicsObjectBase : Cast of SceneObjectInstanceAttributes must be to "
         "class that inherits from SceneObjectInstanceAttributes");
 
-    std::shared_ptr<T> initAttrs = std::const_pointer_cast<T>(
-        T::create(*(static_cast<const T*>(_initObjInstanceAttrs.get()))));
+    std::shared_ptr<T> initObjInstAttrsCopy = std::const_pointer_cast<T>(
+        T::create(*(static_cast<const T*>(_objInstanceInitAttributes.get()))));
     // set values
-    initAttrs->setTranslation(getUncorrectedTranslation());
-    initAttrs->setRotation(getRotation());
-    initAttrs->setMotionType(
-        metadata::attributes::getMotionTypeName(objectMotionType_));
+    const auto translation = getUncorrectedTranslation();
+    if (initObjInstAttrsCopy->getTranslation() != translation) {
+      initObjInstAttrsCopy->setTranslation(translation);
+    }
+    const auto rotation = getRotation();
+    if (initObjInstAttrsCopy->getRotation() != rotation) {
+      initObjInstAttrsCopy->setRotation(rotation);
+    }
+    // only change if different
+    if (initObjInstAttrsCopy->getMotionType() != objectMotionType_) {
+      initObjInstAttrsCopy->setMotionType(
+          metadata::attributes::getMotionTypeName(objectMotionType_));
+    }
 
-    return initAttrs;
+    // temp copy of object's user attributes. Treated as ground truth for user
+    // attributes.
+    core::config::Configuration::ptr tmpUserAttrs =
+        core::config::Configuration::create(*userAttributes_);
+
+    // now filter this by the creation attributes' copy.  NOTE if the creation
+    // attributes themselves are different than the same-named versions on disk,
+    // these values may be out of sync.
+    tmpUserAttrs->filterFromConfig(
+        objInitAttributes_->getUserConfigurationView());
+    // copy these over the existing user defined fields
+    // in the instance
+    initObjInstAttrsCopy->setUserConfiguration(tmpUserAttrs);
+    return initObjInstAttrsCopy;
   }
 
   /**
@@ -711,8 +768,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief Saved template attributes when the object was initialized.
    */
-  metadata::attributes::AbstractAttributes::cptr initializationAttributes_ =
-      nullptr;
+  metadata::attributes::AbstractAttributes::cptr objInitAttributes_ = nullptr;
 
   /**
    * @brief Set the object's creation scale
@@ -727,7 +783,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * creation.
    */
   std::shared_ptr<const metadata::attributes::SceneObjectInstanceAttributes>
-      _initObjInstanceAttrs = nullptr;
+      _objInstanceInitAttributes = nullptr;
 
   /**
    * @brief The scale applied to this object on creation

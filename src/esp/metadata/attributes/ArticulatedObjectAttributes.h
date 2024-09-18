@@ -100,6 +100,19 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
   double getMassScale() const { return get<double>("mass_scale"); }
 
   /**
+   * @brief Set whether visible or not. If not visible can add dynamic
+   * non-rendered object into a scene. If is not visible then should not add
+   * object to drawables.
+   */
+  void setIsVisible(bool isVisible) { set("is_visible", isVisible); }
+  /**
+   * @brief Get whether visible or not. If not visible can add dynamic
+   * non-rendered object into a scene. If is not visible then should not add
+   * object to drawables.
+   */
+  bool getIsVisible() const { return get<bool>("is_visible"); }
+
+  /**
    * @brief Set the type of base/root joint to use to add this Articulated
    * Object to the world. Cannot be "UNSPECIFIED"
    */
