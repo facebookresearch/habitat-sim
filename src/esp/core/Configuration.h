@@ -751,6 +751,8 @@ class Configuration {
     return {};
   }
 
+  // ****************** Value Status ******************
+
   /**
    * @brief Return the @ref ConfigValType enum representing the type of the
    * value referenced by the passed @p key or @ref ConfigValType::Unknown
@@ -763,6 +765,46 @@ class Configuration {
     }
     ESP_ERROR() << "Key :" << key << "not present in Configuration.";
     return ConfigValType::Unknown;
+  }
+
+  /**
+   * @brief Returns whether or not the @ref ConfigValue specified
+   * by @p key is a default/initialization value or was intentionally set.
+   */
+  bool isDefaultVal(const std::string& key) const {
+    ValueMapType::const_iterator mapIter = valueMap_.find(key);
+    if (mapIter != valueMap_.end()) {
+      return mapIter->second.isDefaultVal();
+    }
+    ESP_ERROR() << "Key :" << key << "not present in Configuration.";
+    return false;
+  }
+
+  /**
+   * @brief Returns whether or not the @ref ConfigValue specified
+   * by @p key is a hidden value intended to be be only used internally.
+   */
+  bool isHiddenVal(const std::string& key) const {
+    ValueMapType::const_iterator mapIter = valueMap_.find(key);
+    if (mapIter != valueMap_.end()) {
+      return mapIter->second.isHiddenVal();
+    }
+    ESP_ERROR() << "Key :" << key << "not present in Configuration.";
+    return false;
+  }
+
+  /**
+   * @brief Returns whether or not the @ref ConfigValue specified
+   * by @p key is a translated value, meaning a string that corresponds to, and
+   * is translated into, an enum value for consumption.
+   */
+  bool isTranslated(const std::string& key) const {
+    ValueMapType::const_iterator mapIter = valueMap_.find(key);
+    if (mapIter != valueMap_.end()) {
+      return mapIter->second.isTranslated();
+    }
+    ESP_ERROR() << "Key :" << key << "not present in Configuration.";
+    return false;
   }
 
   // ****************** String Conversion ******************

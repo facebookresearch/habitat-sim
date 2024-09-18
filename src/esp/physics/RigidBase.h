@@ -288,6 +288,18 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   }
 
   /**
+   * @brief Returns a mutable copy of the @ref metadata::attributes::SceneObjectInstanceAttributes
+   * used to place this rigid object in the scene.
+   * @return a read-only copy of the @ref metadata::attributes::SceneInstanceAttributes used to place
+   * this object in the scene.
+   */
+  std::shared_ptr<metadata::attributes::SceneObjectInstanceAttributes>
+  getInitObjectInstanceAttrCopy() const {
+    return PhysicsObjectBase::getInitObjectInstanceAttrCopyInternal<
+        metadata::attributes::SceneObjectInstanceAttributes>();
+  }
+
+  /**
    * @brief Return a @ref
    * metadata::attributes::SceneObjectInstanceAttributes reflecting the current
    * state of this Rigid.
