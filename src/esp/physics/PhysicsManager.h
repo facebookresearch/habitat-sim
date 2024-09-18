@@ -264,16 +264,24 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /**
    * @brief Reset the simulation and physical world.
-   * Sets the @ref worldTime_ to 0.0, changes the physical state of all objects back to their initial states. Only changes motion_type when scene_instance specified a motion type.
+   * Sets the @ref worldTime_ to 0.0, changes the physical
+   * state of all objects back to their initial states.
+   * Only changes motion_type when scene_instance specified a motion type.
+   * @param calledAfterSceneCreate If this is true, this is being called
+   * directly after a new scene was created and all the objects were placed
+   * appropriately, so bypass object placement reset code.
    */
-  virtual void reset() {
+  virtual void reset(bool calledAfterSceneCreate) {
     // reset object states from initial values (e.g. from scene instance)
     worldTime_ = 0.0;
-    for (const auto& bro : existingObjects_) {
-      bro.second->resetStateFromSceneInstanceAttr();
-    }
-    for (const auto& bao : existingArticulatedObjects_) {
-      bao.second->resetStateFromSceneInstanceAttr();
+    if (!calledAfterSceneCreate) {
+      // No need to re-place objects after scene creation
+      for (const auto& bro : existingObjects_) {
+        bro.second->resetStateFromSceneInstanceAttr();
+      }
+      for (const auto& bao : existingArticulatedObjects_) {
+        bao.second->resetStateFromSceneInstanceAttr();
+      }
     }
   }
 
@@ -317,7 +325,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   int addObjectInstance(
       const esp::metadata::attributes::SceneObjectInstanceAttributes::cptr&
           objInstAttributes,
-      bool defaultCOMCorrection = false,
       DrawableGroup* drawables = nullptr,
       scene::SceneNode* attachmentNode = nullptr,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
@@ -983,9 +990,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @param attachmentNode If supplied, attach the new physical object to an
    * existing SceneNode.
    * @param lightSetup The string name of the desired lighting setup to use.
-   * @param defaultCOMCorrection The default value of whether COM-based
-   * translation correction needs to occur. Only non-default from
-   * addObjectInstance method.
    * @param objInstAttributes The attributes that describe the desired state to
    * set this object on creation. If nullptr, create an empty default instance
    * and populate it properly based on the object config.
@@ -997,7 +1001,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       DrawableGroup* drawables = nullptr,
       scene::SceneNode* attachmentNode = nullptr,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY,
-      bool defaultCOMCorrection = false,
       esp::metadata::attributes::SceneObjectInstanceAttributes::cptr
           objInstAttributes = nullptr);
 

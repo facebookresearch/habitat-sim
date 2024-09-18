@@ -697,7 +697,7 @@ class Configuration {
       : configMap_(std::move(otr.configMap_)),
         valueMap_(std::move(otr.valueMap_)) {}  // move ctor
 
-  // virtual destructor set to that pybind11 recognizes attributes inheritance
+  // virtual destructor set so that pybind11 recognizes attributes inheritance
   // from Configuration to be polymorphic
   virtual ~Configuration() = default;
 
@@ -751,6 +751,8 @@ class Configuration {
     return {};
   }
 
+  // ****************** Value Status ******************
+
   /**
    * @brief Return the @ref ConfigValType enum representing the type of the
    * value referenced by the passed @p key or @ref ConfigValType::Unknown
@@ -763,6 +765,46 @@ class Configuration {
     }
     ESP_ERROR() << "Key :" << key << "not present in Configuration.";
     return ConfigValType::Unknown;
+  }
+
+  /**
+   * @brief Returns whether or not the @ref ConfigValue specified
+   * by @p key is a default/initialization value or was intentionally set.
+   */
+  bool isDefaultVal(const std::string& key) const {
+    ValueMapType::const_iterator mapIter = valueMap_.find(key);
+    if (mapIter != valueMap_.end()) {
+      return mapIter->second.isDefaultVal();
+    }
+    ESP_ERROR() << "Key :" << key << "not present in Configuration.";
+    return false;
+  }
+
+  /**
+   * @brief Returns whether or not the @ref ConfigValue specified
+   * by @p key is a hidden value intended to be be only used internally.
+   */
+  bool isHiddenVal(const std::string& key) const {
+    ValueMapType::const_iterator mapIter = valueMap_.find(key);
+    if (mapIter != valueMap_.end()) {
+      return mapIter->second.isHiddenVal();
+    }
+    ESP_ERROR() << "Key :" << key << "not present in Configuration.";
+    return false;
+  }
+
+  /**
+   * @brief Returns whether or not the @ref ConfigValue specified
+   * by @p key is a translated value, meaning a string that corresponds to, and
+   * is translated into, an enum value for consumption.
+   */
+  bool isTranslated(const std::string& key) const {
+    ValueMapType::const_iterator mapIter = valueMap_.find(key);
+    if (mapIter != valueMap_.end()) {
+      return mapIter->second.isTranslated();
+    }
+    ESP_ERROR() << "Key :" << key << "not present in Configuration.";
+    return false;
   }
 
   // ****************** String Conversion ******************
@@ -1163,7 +1205,8 @@ class Configuration {
    * @param desiredType the @ref ConfigValType to compare the value's type to
    * @return Whether @p key references a value that is of @p desiredType.
    */
-  bool hasKeyOfType(const std::string& key, ConfigValType desiredType) {
+  bool hasKeyToValOfType(const std::string& key,
+                         ConfigValType desiredType) const {
     ValueMapType::const_iterator mapIter = valueMap_.find(key);
     return (mapIter != valueMap_.end() &&
             (mapIter->second.getType() == desiredType));
@@ -1247,7 +1290,6 @@ class Configuration {
    * @return A pointer to a copy of the Configuration having the requested
    * name, cast to the appropriate type, or nullptr if not found.
    */
-
   template <typename T>
   std::shared_ptr<T> getSubconfigCopy(const std::string& cfgName) const {
     static_assert(std::is_base_of<Configuration, T>::value,
@@ -1371,27 +1413,24 @@ class Configuration {
 
   /**
    * @brief Merges Configuration pointed to by @p src into this
-   * Configuration, including all subconfigs.  Passed config overwrites
+   * Configuration, including all subconfigs. Passed config overwrites
    * existing data in this config.
    * @param src The source of Configuration data we wish to merge into this
    * Configuration.
    */
-  void overwriteWithConfig(const std::shared_ptr<const Configuration>& src) {
-    if (src->getNumEntries() == 0) {
-      return;
-    }
-    // copy every element over from src
-    for (const auto& elem : src->valueMap_) {
-      valueMap_[elem.first] = elem.second;
-    }
-    // merge subconfigs
-    for (const auto& subConfig : src->configMap_) {
-      const auto name = subConfig.first;
-      // make if DNE and merge src subconfig
-      addOrEditSubgroup<Configuration>(name).first->second->overwriteWithConfig(
-          subConfig.second);
-    }
-  }
+  void overwriteWithConfig(const std::shared_ptr<const Configuration>& src);
+
+  /**
+   * @brief Performs the opposite operation to @ref Configuration::overwriteWithConfig.
+   * All values and subconfigs in the passed Configuration will be removed from
+   * this config unless the data they hold is different. Any empty subconfigs
+   * will be removed as well.
+   *
+   * @param src The source of Configuration data we wish to prune from this
+   * Configuration.
+   */
+
+  void filterFromConfig(const std::shared_ptr<const Configuration>& src);
 
   /**
    * @brief Returns a const iterator across the map of values.
