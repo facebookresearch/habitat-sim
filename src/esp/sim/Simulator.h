@@ -478,6 +478,21 @@ class Simulator {
   }
 
   /**
+   * @brief Return whether the @ref
+   * esp::metadata::attributes::SceneInstanceAttributes used to create the scene
+   * currently being simulated/displayed specifies a default COM handling for
+   * rigid objects
+   */
+
+  bool getCurSceneDefaultCOMHandling() const {
+    if (curSceneInstanceAttributes_ == nullptr) {
+      return false;
+    }
+    return (curSceneInstanceAttributes_->getTranslationOrigin() ==
+            metadata::attributes::SceneInstanceTranslationOrigin::AssetLocal);
+  }
+
+  /**
    * @brief Set the gravity in a physical scene.
    */
   void setGravity(const Magnum::Vector3& gravity) {

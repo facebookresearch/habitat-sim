@@ -325,7 +325,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   int addObjectInstance(
       const esp::metadata::attributes::SceneObjectInstanceAttributes::cptr&
           objInstAttributes,
-      bool defaultCOMCorrection = false,
       DrawableGroup* drawables = nullptr,
       scene::SceneNode* attachmentNode = nullptr,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
@@ -991,9 +990,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @param attachmentNode If supplied, attach the new physical object to an
    * existing SceneNode.
    * @param lightSetup The string name of the desired lighting setup to use.
-   * @param defaultCOMCorrection The default value of whether COM-based
-   * translation correction needs to occur. Only non-default from
-   * addObjectInstance method.
    * @param objInstAttributes The attributes that describe the desired state to
    * set this object on creation. If nullptr, create an empty default instance
    * and populate it properly based on the object config.
@@ -1005,7 +1001,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       DrawableGroup* drawables = nullptr,
       scene::SceneNode* attachmentNode = nullptr,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY,
-      bool defaultCOMCorrection = false,
       esp::metadata::attributes::SceneObjectInstanceAttributes::cptr
           objInstAttributes = nullptr);
 
