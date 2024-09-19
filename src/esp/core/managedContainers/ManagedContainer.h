@@ -294,6 +294,9 @@ class ManagedContainer : public ManagedContainerBase {
   std::unordered_map<std::string, std::shared_ptr<U>>
   getObjectsByHandleSubstring(const std::string& subStr = "",
                               bool contains = true) {
+    static_assert(std::is_base_of<T, U>::value,
+                  "ManagedContainer :: Desired type must be derived from "
+                  "Managed object type");
     std::vector<std::string> keys =
         this->getAllObjectHandlesBySubStringPerType(subStr, contains, false);
 
@@ -461,6 +464,9 @@ class ManagedContainer : public ManagedContainerBase {
    */
   template <class U>
   std::shared_ptr<U> getObjectOrCopyByHandle(const std::string& objectHandle) {
+    static_assert(std::is_base_of<T, U>::value,
+                  "ManagedContainer :: Desired type must be derived from "
+                  "Managed object type");
     // call non-template version
     auto res = getObjectOrCopyByHandle(objectHandle);
     if (nullptr == res) {
@@ -544,6 +550,9 @@ class ManagedContainer : public ManagedContainerBase {
    */
   template <class U>
   std::shared_ptr<U> getObjectCopyByID(int managedObjectID) {
+    static_assert(std::is_base_of<T, U>::value,
+                  "ManagedContainer :: Desired type must be derived from "
+                  "Managed object type");
     // call non-template version
     auto res = getObjectCopyByID(managedObjectID);
     if (nullptr == res) {
@@ -563,6 +572,9 @@ class ManagedContainer : public ManagedContainerBase {
    */
   template <class U>
   std::shared_ptr<U> getObjectCopyByHandle(const std::string& objectHandle) {
+    static_assert(std::is_base_of<T, U>::value,
+                  "ManagedContainer :: Desired type must be derived from "
+                  "Managed object type");
     // call non-template version
     auto res = getObjectCopyByHandle(objectHandle);
     if (nullptr == res) {
