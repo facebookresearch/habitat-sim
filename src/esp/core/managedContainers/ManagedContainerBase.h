@@ -330,8 +330,9 @@ class ManagedContainerBase {
                               const std::string& src) const {
     if (!getObjectLibHasHandle(objectHandle)) {
       ESP_ERROR(Magnum::Debug::Flag::NoSpace)
-          << src << ":" << objectType_ << " managed object handle `"
-          << objectHandle << "` not found in ManagedContainer, so aborting.";
+          << "<" + this->objectType_ + ">::" << src
+          << " : Managed object handle `" << objectHandle
+          << "` not found in ManagedContainer, so aborting.";
       return false;
     }
     return true;

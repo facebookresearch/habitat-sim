@@ -193,8 +193,7 @@ class ManagedContainer : public ManagedContainerBase {
    */
   ManagedPtr getObjectByID(int managedObjectID) const {
     std::string objectHandle = getObjectHandleByID(managedObjectID);
-    if (!checkExistsWithMessage(objectHandle,
-                                "<" + this->objectType_ + ">::getObjectByID")) {
+    if (!checkExistsWithMessage(objectHandle, "getObjectByID")) {
       return nullptr;
     }
     return getObjectInternal<T>(objectHandle);
@@ -212,8 +211,7 @@ class ManagedContainer : public ManagedContainerBase {
    * exist
    */
   ManagedPtr getObjectByHandle(const std::string& objectHandle) const {
-    if (!checkExistsWithMessage(
-            objectHandle, "<" + this->objectType_ + ">::getObjectByHandle")) {
+    if (!checkExistsWithMessage(objectHandle, "getObjectByHandle")) {
       return nullptr;
     }
     return getObjectInternal<T>(objectHandle);
@@ -324,13 +322,10 @@ class ManagedContainer : public ManagedContainerBase {
    */
   ManagedPtr removeObjectByID(int objectID) {
     std::string objectHandle = getObjectHandleByID(objectID);
-    if (!checkExistsWithMessage(
-            objectHandle, "<" + this->objectType_ + ">::removeObjectByID")) {
+    if (!checkExistsWithMessage(objectHandle, "removeObjectByID")) {
       return nullptr;
     }
-    return removeObjectInternal(
-        objectID, objectHandle,
-        "<" + this->objectType_ + ">::removeObjectByID");
+    return removeObjectInternal(objectID, objectHandle, "removeObjectByID");
   }
 
   /**
@@ -342,17 +337,14 @@ class ManagedContainer : public ManagedContainerBase {
    * exist
    */
   ManagedPtr removeObjectByHandle(const std::string& objectHandle) {
-    if (!checkExistsWithMessage(objectHandle, "<" + this->objectType_ +
-                                                  ">::removeObjectByHandle")) {
+    if (!checkExistsWithMessage(objectHandle, "removeObjectByHandle")) {
       return nullptr;
     }
     int objectID = this->getObjectIDByHandle(objectHandle);
     if (objectID == ID_UNDEFINED) {
       return nullptr;
     }
-    return removeObjectInternal(
-        objectID, objectHandle,
-        "<" + this->objectType_ + ">::removeObjectByHandle");
+    return removeObjectInternal(objectID, objectHandle, "removeObjectByHandle");
   }
 
   /**
@@ -486,8 +478,7 @@ class ManagedContainer : public ManagedContainerBase {
    */
   ManagedPtr getObjectCopyByID(int managedObjectID) {
     std::string objectHandle = getObjectHandleByID(managedObjectID);
-    if (!checkExistsWithMessage(
-            objectHandle, "<" + this->objectType_ + ">::getObjectCopyByID")) {
+    if (!checkExistsWithMessage(objectHandle, "getObjectCopyByID")) {
       return nullptr;
     }
     auto orig = getObjectInternal<T>(objectHandle);
@@ -502,8 +493,7 @@ class ManagedContainer : public ManagedContainerBase {
    * does not exist
    */
   ManagedPtr getObjectCopyByHandle(const std::string& objectHandle) {
-    if (!checkExistsWithMessage(objectHandle, "<" + this->objectType_ +
-                                                  ">::getObjectCopyByHandle")) {
+    if (!checkExistsWithMessage(objectHandle, "getObjectCopyByHandle")) {
       return nullptr;
     }
     auto orig = getObjectInternal<T>(objectHandle);
@@ -828,8 +818,8 @@ auto ManagedContainer<T, Access>::removeObjectsBySubstring(
       getObjectHandlesBySubstring(subStr, contains);
   for (const std::string& objectHandle : handles) {
     int objID = this->getObjectIDByHandle(objectHandle);
-    ManagedPtr ptr = removeObjectInternal(objID, objectHandle,
-                                          "<" + this->objectType_ + ">");
+    ManagedPtr ptr =
+        removeObjectInternal(objID, objectHandle, "removeObjectsBySubstring");
     if (nullptr != ptr) {
       res.push_back(ptr);
     }
@@ -843,19 +833,23 @@ auto ManagedContainer<T, Access>::removeObjectInternal(
     const std::string& objectHandle,
     const std::string& sourceStr) -> ManagedPtr {
   if (!checkExistsWithMessage(objectHandle, sourceStr)) {
-    ESP_DEBUG() << sourceStr << ": Unable to remove" << objectType_
-                << "managed object" << objectHandle << ": Does not exist.";
+    ESP_DEBUG(Magnum::Debug::Flag::NoSpace)
+        << "<" + this->objectType_ + ">::" << sourceStr
+        << " : Unable to remove requested managed object `" << objectHandle
+        << "` : Does not exist.";
     return nullptr;
   }
   std::string msg;
   if (this->getIsUndeletable(objectHandle)) {
     msg = "Required Undeletable Managed Object";
   } else if (this->getIsUserLocked(objectHandle)) {
-    msg = "User-locked Object.  To delete managed object, unlock it";
+    msg = "User-locked Object. To delete managed object, unlock it";
   }
   if (msg.length() != 0) {
-    ESP_DEBUG() << sourceStr << ": Unable to remove" << objectType_
-                << "managed object" << objectHandle << ":" << msg << ".";
+    ESP_DEBUG(Magnum::Debug::Flag::NoSpace)
+        << "<" + this->objectType_ + ">::" << sourceStr
+        << " : Unable to remove requested managed object `" << objectHandle
+        << "` : Object is a " << msg << ".";
     return nullptr;
   }
   ManagedPtr managedObject = getObjectInternal<T>(objectHandle);

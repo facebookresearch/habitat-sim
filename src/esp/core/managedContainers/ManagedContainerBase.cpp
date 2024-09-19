@@ -15,8 +15,7 @@ namespace managedContainers {
 bool ManagedContainerBase::setLock(const std::string& objectHandle, bool lock) {
   // if managed object does not currently exist then do not attempt to modify
   // its lock state
-  if (!checkExistsWithMessage(objectHandle,
-                              "<" + this->objectType_ + ">::setLock")) {
+  if (!checkExistsWithMessage(objectHandle, "setLock")) {
     return false;
   }
   // if setting lock else clearing lock
