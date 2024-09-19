@@ -163,11 +163,10 @@ class ManagedContainer : public ManagedContainerBase {
              "registration, so registration aborted.";
       return ID_UNDEFINED;
     }
-    if ("" != objectHandle) {
-      return this->registerObjectInternal(std::move(managedObject),
-                                          objectHandle, forceRegistration);
-    }
-    std::string handleToSet = managedObject->getHandle();
+    // If no handle give, query object for handle
+    std::string handleToSet =
+        ("" == objectHandle) ? managedObject->getHandle() : objectHandle;
+    // if still no handle, fail registration
     if ("" == handleToSet) {
       ESP_ERROR(Magnum::Debug::Flag::NoSpace)
           << "<" << this->objectType_
@@ -175,6 +174,7 @@ class ManagedContainer : public ManagedContainerBase {
              "so registration aborted.";
       return ID_UNDEFINED;
     }
+    // Perform actual registration
     return this->registerObjectInternal(std::move(managedObject), handleToSet,
                                         forceRegistration);
   }  // ManagedContainer::registerObject
@@ -770,8 +770,7 @@ class ManagedContainer : public ManagedContainerBase {
     // original
     ManagedPtr managedObjectCopy = copyObject(object);
     // add to libraries
-    setObjectInternal(managedObjectCopy, objectHandle);
-    objectLibKeyByID_.emplace(objectID, objectHandle);
+    setObjectInternal(managedObjectCopy, objectID, objectHandle);
     return objectID;
   }  // ManagedContainer::addObjectToLibrary
 
