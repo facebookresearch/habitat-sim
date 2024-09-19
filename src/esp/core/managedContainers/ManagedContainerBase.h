@@ -296,14 +296,16 @@ class ManagedContainerBase {
   }
 
   /**
-   * @brief Only used from class template AddObject method.  put the passed
+   * @brief Only used from class template AddObject method. put the passed
    * smart poitner in the library.
    * @param ptr the smart pointer to the object being managed
    * @param handle the name (key) to use for the object in the library
    */
   void setObjectInternal(const std::shared_ptr<void>& ptr,
+                         int objId,
                          const std::string& handle) {
     objectLibrary_[handle] = ptr;
+    objectLibKeyByID_.emplace(objId, handle);
   }
 
   /**
