@@ -70,11 +70,14 @@ class PbrShaderAttributesManager
    * to have IBL either on or off.
    */
   void setAllIBLEnabled(bool isIblEnabled) {
-    for (const auto& val : this->objectLibrary_) {
+    auto objIterPair = this->getObjectLibIterator();
+    for (auto& objIter = objIterPair.first; objIter != objIterPair.second;
+         ++objIter) {
+      const std::string objHandle = objIter->first;
       // Don't change system default
-      if (val.first.find(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH) ==
+      if (objHandle.find(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH) ==
           std::string::npos) {
-        this->getObjectByHandle(val.first)->setEnableIBL(isIblEnabled);
+        this->getObjectByHandle(objHandle)->setEnableIBL(isIblEnabled);
       }
     }
   }  // PbrShaderAttributesManager::setAllIBLEnabled
@@ -84,11 +87,14 @@ class PbrShaderAttributesManager
    * to have Direct Ligthing either on or off.
    */
   void setAllDirectLightsEnabled(bool isDirLightEnabled) {
-    for (const auto& val : this->objectLibrary_) {
+    auto objIterPair = this->getObjectLibIterator();
+    for (auto& objIter = objIterPair.first; objIter != objIterPair.second;
+         ++objIter) {
+      const std::string objHandle = objIter->first;
       // Don't change system default
-      if (val.first.find(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH) ==
+      if (objHandle.find(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH) ==
           std::string::npos) {
-        this->getObjectByHandle(val.first)->setEnableDirectLighting(
+        this->getObjectByHandle(objHandle)->setEnableDirectLighting(
             isDirLightEnabled);
       }
     }

@@ -42,7 +42,7 @@ void StageAttributesManager::createDefaultPrimBasedAttributesTemplates() {
   auto tmplt = this->postCreateRegister(
       StageAttributesManager::initNewObjectInternal("NONE", false), true);
   std::string tmpltHandle = tmplt->getHandle();
-  this->undeletableObjectNames_.insert(std::move(tmpltHandle));
+  this->addUndeletableObjectName(std::move(tmpltHandle));
 }  // StageAttributesManager::createDefaultPrimBasedAttributesTemplates
 
 StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(

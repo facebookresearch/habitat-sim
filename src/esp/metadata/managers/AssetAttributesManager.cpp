@@ -95,7 +95,7 @@ AssetAttributesManager::AssetAttributesManager()
   this->copyConstructorMap_["UVSpherePrimitiveAttributes"] =
       &AssetAttributesManager::createObjectCopy<UVSpherePrimitiveAttributes>;
   // no entry added for PrimObjTypes::END_PRIM_OBJ_TYPES
-  this->undeletableObjectNames_.clear();
+  this->clearUndeletableObjectNames();
   // build default AbstractPrimitiveAttributes objects
   for (const std::pair<const PrimObjTypes, const char*>& elem :
        PrimitiveNames3DMap) {
@@ -105,7 +105,7 @@ AssetAttributesManager::AssetAttributesManager()
     auto tmplt = AssetAttributesManager::createObject(elem.second, true);
     std::string tmpltHandle = tmplt->getHandle();
     defaultPrimAttributeHandles_[elem.second] = tmpltHandle;
-    this->undeletableObjectNames_.insert(std::move(tmpltHandle));
+    this->addUndeletableObjectName(std::move(tmpltHandle));
   }
 
   ESP_DEBUG() << "Built default primitive asset templates :"

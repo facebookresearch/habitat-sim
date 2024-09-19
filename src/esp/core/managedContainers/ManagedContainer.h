@@ -250,7 +250,7 @@ class ManagedContainer : public ManagedContainerBase {
   /**
    * @brief Retrieve a map of key= std::string handle; value = copy of
    * ManagedPtr object where the handles match the passed @p .  See @ref
-   * ManagedContainerBase::getObjectHandlesBySubStringPerType.
+   * ManagedContainerBase::getAllObjectHandlesBySubStringPerType.
    * @param subStr substring key to search for within existing managed objects.
    * @param contains whether to search for keys containing, or excluding,
    * passed @p subStr
@@ -260,8 +260,8 @@ class ManagedContainer : public ManagedContainerBase {
   std::unordered_map<std::string, ManagedPtr> getObjectsByHandleSubstring(
       const std::string& subStr = "",
       bool contains = true) {
-    std::vector<std::string> keys = this->getObjectHandlesBySubStringPerType(
-        objectLibKeyByID_, subStr, contains, false);
+    std::vector<std::string> keys =
+        this->getAllObjectHandlesBySubStringPerType(subStr, contains, false);
 
     std::unordered_map<std::string, ManagedPtr> res;
     res.reserve(keys.size());
@@ -280,7 +280,7 @@ class ManagedContainer : public ManagedContainerBase {
   /**
    * @brief Templated version. Retrieve a map of key= std::string handle; value
    * = copy of ManagedPtr object where the handles match the passed @p .  See
-   * @ref ManagedContainerBase::getObjectHandlesBySubStringPerType.
+   * @ref ManagedContainerBase::getAllObjectHandlesBySubStringPerType.
    *
    * @tparam Desired downcast class that inerheits from this ManagedContainer's
    * ManagedObject type.
@@ -294,8 +294,8 @@ class ManagedContainer : public ManagedContainerBase {
   std::unordered_map<std::string, std::shared_ptr<U>>
   getObjectsByHandleSubstring(const std::string& subStr = "",
                               bool contains = true) {
-    std::vector<std::string> keys = this->getObjectHandlesBySubStringPerType(
-        objectLibKeyByID_, subStr, contains, false);
+    std::vector<std::string> keys =
+        this->getAllObjectHandlesBySubStringPerType(subStr, contains, false);
 
     std::unordered_map<std::string, std::shared_ptr<U>> res;
     res.reserve(keys.size());

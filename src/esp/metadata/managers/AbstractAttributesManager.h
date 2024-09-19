@@ -425,7 +425,7 @@ AbstractAttributesManager<T, Access>::loadAllFileBasedTemplates(
       // save handles in list of defaults, so they are not removed, if desired.
       if (saveAsDefaults) {
         std::string tmpltHandle = tmplt->getHandle();
-        this->undeletableObjectNames_.insert(std::move(tmpltHandle));
+        this->addUndeletableObjectName(std::move(tmpltHandle));
       }
       templateIndices[i] = tmplt->getID();
     }

@@ -289,8 +289,11 @@ void AOAttributesManager::finalizeAttrPathsBeforeRegister(
 std::map<std::string, std::string>
 AOAttributesManager::getArticulatedObjectModelFilenames() const {
   std::map<std::string, std::string> articulatedObjPaths;
-  for (const auto& val : this->objectLibrary_) {
-    auto attr = this->getObjectByHandle(val.first);
+
+  auto objIterPair = this->getObjectLibIterator();
+  for (auto& objIter = objIterPair.first; objIter != objIterPair.second;
+       ++objIter) {
+    auto attr = this->getObjectByHandle(objIter->first);
     auto key = attr->getSimplifiedHandle();
     auto urdf = attr->getURDFFullPath();
     articulatedObjPaths[key] = urdf;

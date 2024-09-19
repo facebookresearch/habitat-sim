@@ -67,7 +67,7 @@ void ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates() {
     auto tmplt = createPrimBasedAttributesTemplate(elem, true);
     // save handles in list of defaults, so they are not removed
     std::string tmpltHandle = tmplt->getHandle();
-    this->undeletableObjectNames_.insert(std::move(tmpltHandle));
+    this->addUndeletableObjectName(std::move(tmpltHandle));
   }
 }  // ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates
 
