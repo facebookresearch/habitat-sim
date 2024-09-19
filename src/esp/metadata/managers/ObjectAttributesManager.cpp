@@ -301,7 +301,7 @@ ObjectAttributesManager::preRegisterObjectFinalize(
   // accessors are hidden fields
   this->finalizeAttrPathsBeforeRegister(objectTemplate);
   // Clear dirty flag from when asset handles are changed
-  objectTemplate->setIsClean();
+  objectTemplate->setFilePathsAreClean();
 
   return core::managedContainers::ManagedObjectPreregistration::Success;
 }  // ObjectAttributesManager::preRegisterObjectFinalize

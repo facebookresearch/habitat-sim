@@ -121,7 +121,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   void setRenderAssetHandle(const std::string& renderAssetHandle) {
     set("render_asset", renderAssetHandle);
-    setIsDirty();
+    setFilePathsAreDirty();
   }
 
   /**
@@ -140,7 +140,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   void setRenderAssetFullPath(const std::string& renderAssetHandle) {
     setHidden("__renderAssetFullPath", renderAssetHandle);
-    setIsDirty();
+    setFilePathsAreDirty();
   }
 
   /**
@@ -279,7 +279,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   void setCollisionAssetHandle(const std::string& collisionAssetHandle) {
     set("collision_asset", collisionAssetHandle);
-    setIsDirty();
+    setFilePathsAreDirty();
   }
 
   /**
@@ -298,7 +298,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   void setCollisionAssetFullPath(const std::string& collisionAssetHandle) {
     setHidden("__collisionAssetFullPath", collisionAssetHandle);
-    setIsDirty();
+    setFilePathsAreDirty();
   }
 
   /**
@@ -508,8 +508,8 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   bool getForceFlatShading() const { return get<bool>("force_flat_shading"); }
 
-  bool getIsDirty() const { return get<bool>("__isDirty"); }
-  void setIsClean() { setHidden("__isDirty", false); }
+  bool getFilePathsAreDirty() const { return get<bool>("__fileNamesDirty"); }
+  void setFilePathsAreClean() { setHidden("__fileNamesDirty", false); }
 
   /**
    * @brief Populate a json object with all the first-level values held in this
@@ -594,7 +594,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * @brief get AbstractObject specific info for csv string
    */
   virtual std::string getAbstractObjectInfoInternal() const { return ""; };
-  void setIsDirty() { setHidden("__isDirty", true); }
+  void setFilePathsAreDirty() { setHidden("__fileNamesDirty", true); }
 
  public:
   ESP_SMART_POINTERS(AbstractObjectAttributes)

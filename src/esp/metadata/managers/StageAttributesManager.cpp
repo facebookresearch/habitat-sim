@@ -461,7 +461,7 @@ StageAttributesManager::preRegisterObjectFinalize(
 
   this->finalizeAttrPathsBeforeRegister(stageAttributes);
 
-  stageAttributes->setIsClean();
+  stageAttributes->setFilePathsAreClean();
 
   return core::managedContainers::ManagedObjectPreregistration::Success;
 

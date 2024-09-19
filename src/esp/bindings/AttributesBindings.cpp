@@ -682,8 +682,9 @@ void initAttributesBindings(py::module& m) {
           &ObjectAttributes::setIsCollidable,
           R"(Whether constructions built from this template are collidable upon initialization.)")
       .def_property_readonly(
-          "is_dirty", &AbstractObjectAttributes::getIsDirty,
-          R"(Whether values in this attributes have been changed requiring
+          "filenames_are_dirty",
+          &AbstractObjectAttributes::getFilePathsAreDirty,
+          R"(Whether filenames or paths in this attributes have been changed requiring
           re-registration before they can be used to create an object. )");
 
   // ==== ObjectAttributes ====
