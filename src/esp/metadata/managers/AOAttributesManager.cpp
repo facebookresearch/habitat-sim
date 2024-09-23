@@ -254,6 +254,8 @@ AOAttributesManager::preRegisterObjectFinalize(
   // filter all paths properly so that the handles don't have filepaths and the
   // accessors are hidden fields
   this->finalizeAttrPathsBeforeRegister(AOAttributesTemplate);
+  // Clear dirty flag from when asset handles are changed
+  AOAttributesTemplate->setFilePathsAreClean();
 
   return core::managedContainers::ManagedObjectPreregistration::Success;
 }  // AOAttributesManager::preRegisterObjectFinalize

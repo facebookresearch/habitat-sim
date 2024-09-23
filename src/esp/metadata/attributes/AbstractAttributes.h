@@ -186,7 +186,28 @@ class AbstractAttributes
                                      getObjectInfoInternal());
   }
 
+  /**
+   * @brief Check whether filepath-based fields have been set by user input
+   * but have not been verified to exist (such verification occurs when the
+   * attributes is registered.)
+   */
+  bool getFilePathsAreDirty() const { return get<bool>("__fileNamesDirty"); }
+
+  /**
+   * @brief Clear the flag that specifies that filepath-based fields have been
+   * set but not verfified to exist (such verification occurs when the
+   * attributes is registered.)
+   */
+  void setFilePathsAreClean() { setHidden("__fileNamesDirty", false); }
+
  protected:
+  /**
+   * @brief Used internally only. Set the flag that specifies a filepath-based
+   * field has been set to some value but has not yet been verified to
+   * exist (such verification occurs when the attributes is registered.)
+   */
+  void setFilePathsAreDirty() { setHidden("__fileNamesDirty", true); }
+
   /**
    * @brief Changing access to setter so that Configuration bindings cannot be
    * used to set a reserved value to an incorrect type. The inheritors of this

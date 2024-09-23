@@ -453,7 +453,11 @@ void initAttributesBindings(py::module& m) {
                              R"(Class name of Attributes template.)")
       .def_property_readonly(
           "csv_info", &AbstractAttributes::getObjectInfo,
-          R"(Comma-separated informational string describing this Attributes template)");
+          R"(Comma-separated informational string describing this Attributes template)")
+      .def_property_readonly(
+          "filenames_are_dirty", &AbstractAttributes::getFilePathsAreDirty,
+          R"(Whether filenames or paths in this attributes have been changed requiring
+          re-registration before they can be used to create an object. )");
 
   // Attributes should only use named properties or subconfigurations to set
   // specific values, to guarantee essential value type integrity. This will
@@ -680,12 +684,7 @@ void initAttributesBindings(py::module& m) {
       .def_property(
           "is_collidable", &ObjectAttributes::getIsCollidable,
           &ObjectAttributes::setIsCollidable,
-          R"(Whether constructions built from this template are collidable upon initialization.)")
-      .def_property_readonly(
-          "filenames_are_dirty",
-          &AbstractObjectAttributes::getFilePathsAreDirty,
-          R"(Whether filenames or paths in this attributes have been changed requiring
-          re-registration before they can be used to create an object. )");
+          R"(Whether constructions built from this template are collidable upon initialization.)");
 
   // ==== ObjectAttributes ====
   py::class_<ObjectAttributes, AbstractObjectAttributes, ObjectAttributes::ptr>(

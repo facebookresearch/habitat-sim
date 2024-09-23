@@ -508,9 +508,6 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   bool getForceFlatShading() const { return get<bool>("force_flat_shading"); }
 
-  bool getFilePathsAreDirty() const { return get<bool>("__fileNamesDirty"); }
-  void setFilePathsAreClean() { setHidden("__fileNamesDirty", false); }
-
   /**
    * @brief Populate a json object with all the first-level values held in this
    * configuration.  Default is overridden to handle special cases for
@@ -594,7 +591,6 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * @brief get AbstractObject specific info for csv string
    */
   virtual std::string getAbstractObjectInfoInternal() const { return ""; };
-  void setFilePathsAreDirty() { setHidden("__fileNamesDirty", true); }
 
  public:
   ESP_SMART_POINTERS(AbstractObjectAttributes)

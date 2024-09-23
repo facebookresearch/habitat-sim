@@ -53,6 +53,7 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
    */
   void setRenderAssetHandle(const std::string& renderAsset) {
     set("render_asset", renderAsset);
+    setFilePathsAreDirty();
   }
   /**
    * @brief Gets the string name for the render asset relative path
@@ -68,6 +69,7 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
    */
   void setRenderAssetFullPath(const std::string& renderAssetHandle) {
     setHidden("__renderAssetFullPath", renderAssetHandle);
+    setFilePathsAreDirty();
   }
 
   /**
