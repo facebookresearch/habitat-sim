@@ -223,8 +223,8 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
 core::managedContainers::ManagedObjectPreregistration
 PbrShaderAttributesManager::preRegisterObjectFinalize(
     attributes::PbrShaderAttributes::ptr pbrShaderAttribs,
-    const std::string& objectHandle,
-    bool forceRegistration) {
+    const std::string& /*objectHandle*/,
+    bool /*forceRegistration*/) {
   // TODO : Verify filenames exist as files or as resources
   this->finalizeAttrPathsBeforeRegister(pbrShaderAttribs);
   return core::managedContainers::ManagedObjectPreregistration::Success;
