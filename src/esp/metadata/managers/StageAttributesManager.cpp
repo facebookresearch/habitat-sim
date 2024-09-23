@@ -460,7 +460,7 @@ StageAttributesManager::preRegisterObjectFinalize(
   // accessors are hidden fields
 
   this->finalizeAttrPathsBeforeRegister(stageAttributes);
-
+  // Clear dirty flag from when asset handles are changed
   stageAttributes->setFilePathsAreClean();
 
   return core::managedContainers::ManagedObjectPreregistration::Success;

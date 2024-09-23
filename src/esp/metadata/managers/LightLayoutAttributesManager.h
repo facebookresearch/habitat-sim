@@ -82,7 +82,9 @@ class LightLayoutAttributesManager
       const std::string& lightConfigName);
 
   /**
-   * @brief This function will be called to finalize attributes' paths before
+   * @brief Not required for this manager.
+   *
+   * This function will be called to finalize attributes' paths before
    * registration, moving fully qualified paths to the appropriate hidden
    * attribute fields. This can also be called without registration to make sure
    * the paths specified in an attributes are properly configured.
