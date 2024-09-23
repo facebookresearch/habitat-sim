@@ -1,0 +1,99 @@
+name: Install and test
+on:
+  pull_request: {}
+  push:
+    branches:
+    - main
+
+jobs:
+  python_lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4.1.1
+    - name: Setup python
+      uses: actions/setup-python@v5.0.0
+      with:
+        python-version: '3.9.16'
+    - name: setup
+      run: |-
+        pip install -U pip
+        pip install -U --prefer-binary \
+          black==23.1.0 \
+          flake8 \
+          flake8-bugbear==22.6.22 \
+          flake8-builtins \
+          flake8-comprehensions \
+          flake8-return \
+          flake8-simplify \
+          hypothesis==6.29.3 \
+          isort==5.12.0 \
+          mypy \
+          numpy \
+          pytest \
+          sphinx \
+          tqdm
+        pip install --prefer-binary -r requirements.txt torch --progress-bar off
+    - name: run black
+      run: |-
+        black --version
+        black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(notebooks|nb_python)'  src_python/habitat_sim/. examples/. tests/. setup.py --diff
+        black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(notebooks|nb_python)'  src_python/habitat_sim/. examples/. tests/. setup.py --check
+    - name: run isort
+      run: |-
+        isort --version
+        isort src_python/habitat_sim/. examples/. tests/. setup.py --diff
+        isort src_python/habitat_sim/. examples/. tests/. setup.py --check-only
+    - name: run flake8
+      run: |-
+        flake8 --version
+        flake8 src_python/habitat_sim/. examples/. tests/. setup.py
+    - name: run mypy
+      run: mypy
+
+  install_and_test_ubuntu:
+    runs-on: 4-core-ubuntu-gpu-t4
+    env:
+      FPS_THRESHOLD: 900
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+    - uses: actions/checkout@v4.1.1
+      with:
+        path: "./habitat-sim"
+    - name: CPU info
+      run: cat /proc/cpuinfo
+    - uses: "./habitat-sim/.github/actions/install_ubuntu_deps"
+    - name: Build, install habitat-sim
+      run: |-
+        #give cmake ownership to the runner for installation
+        sudo chown runner -R /opt/cmake312/
+        #activate conda env
+        export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+        conda init
+        source ~/.bashrc
+        conda activate habitat
+        #install habitat-sim
+        cd habitat-sim
+        pip install -r requirements.txt --progress-bar off
+        git submodule update --init --recursive --jobs 8
+        python -u setup.py install --build-type "Release" --lto --headless --bullet
+    - name: Download test data
+      run: |-
+        # Disable clone protection for git lfs
+        export GIT_CLONE_PROTECTION_ACTIVE=false
+
+        sudo apt install git-lfs
+        git --version
+        git-lfs --version
+        export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+        conda init
+        source ~/.bashrc
+        conda activate habitat
+        conda install -y gitpython git-lfs
+        cd habitat-sim
+        git lfs install
+        python src_python/habitat_sim/utils/datasets_download.py --uids ci_test_assets ycb rearrange_dataset_v2 --replace --data-path data/ --no-prune
+        ls -la data/scene_datasets/habitat-test-scenes/
+    - name: Debugging with tmate
+      uses: mxschmitt/action-tmate@v3.18
