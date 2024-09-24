@@ -194,8 +194,9 @@ void BulletURDFImporter::getAllIndices(
   int mbIndex = cache->getMbIndexFromUrdfIndex(urdfLinkIndex);
   cp.m_mbIndex = mbIndex;
   cp.m_parentIndex = parentIndex;
-  int parentMbIndex =
-      parentIndex >= 0 ? cache->getMbIndexFromUrdfIndex(parentIndex) : -1;
+  int parentMbIndex = parentIndex >= 0
+                          ? cache->getMbIndexFromUrdfIndex(parentIndex)
+                          : BASELINK_ID;
   cp.m_parentMBIndex = parentMbIndex;
 
   allIndices.emplace_back(std::move(cp));
@@ -255,9 +256,8 @@ void BulletURDFImporter::initURDFToBulletCache(
     cache->m_urdfLinkIndices2BulletLinkIndices.resize(
         numTotalLinksIncludingBase);
     cache->m_urdfLinkLocalInertialFrames.resize(numTotalLinksIncludingBase);
-
-    cache->m_currentMultiBodyLinkIndex =
-        -1;  // multi body base has 'link' index -1
+    // multi body base has 'link' index BASELINK_ID
+    cache->m_currentMultiBodyLinkIndex = BASELINK_ID;
 
     bool maintainLinkOrder = (flags & CUF_MAINTAIN_LINK_ORDER) != 0;
     if (maintainLinkOrder) {
@@ -327,7 +327,7 @@ void BulletURDFImporter::convertURDFToBullet(
     parentTransforms[urdfLinkIndex] = parentTransformInWorldSpace;
     std::vector<childParentIndex> allIndices;
 
-    getAllIndices(urdfLinkIndex, -1, allIndices);
+    getAllIndices(urdfLinkIndex, BASELINK_ID, allIndices);
     std::sort(allIndices.begin(), allIndices.end(),
               [](const childParentIndex& a, const childParentIndex& b) {
                 return a.m_index < b.m_index;

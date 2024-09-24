@@ -92,10 +92,13 @@ struct RaycastResults {
  * @brief based on Bullet b3ContactPointData
  */
 struct ContactPointData {
-  int objectIdA = -2;  // stage is -1
-  int objectIdB = -2;
-  int linkIndexA = -1;  // -1 if not a multibody
-  int linkIndexB = -1;
+  // Initialize to safe, appropriate values
+  // stage will be lowest object ID in system
+  int objectIdA = RIGID_STAGE_ID - 1;
+  int objectIdB = RIGID_STAGE_ID - 1;
+  // assume not a multibody
+  int linkIndexA = ID_UNDEFINED;
+  int linkIndexB = ID_UNDEFINED;
 
   Magnum::Vector3 positionOnAInWS;  // contact point location on object A, in
                                     // world space coordinates
@@ -160,12 +163,11 @@ struct RigidConstraintSettings {
   /** @brief objectIdB == ID_UNDEFINED indicates "world". */
   int objectIdB = ID_UNDEFINED;
 
-  /** @brief  link of objectA if articulated. ID_UNDEFINED(-1) refers to base.
-   */
-  int linkIdA = ID_UNDEFINED;
+  /** @brief  link of objectA if articulated. @ref BASELINK_ID refers to base.*/
+  int linkIdA = BASELINK_ID;
 
-  /** @brief link of objectB if articulated. ID_UNDEFINED(-1) refers to base.*/
-  int linkIdB = ID_UNDEFINED;
+  /** @brief link of objectB if articulated.  @ref BASELINK_ID refers to base.*/
+  int linkIdB = BASELINK_ID;
 
   /** @brief constraint point in local space of respective objects*/
   Mn::Vector3 pivotA{}, pivotB{};
