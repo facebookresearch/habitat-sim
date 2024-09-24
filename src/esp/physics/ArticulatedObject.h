@@ -327,11 +327,11 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   /**
    * @brief Get a const reference to an ArticulatedLink SceneNode for
    * info query purposes.
-   * @param linkId The ArticulatedLink ID or -1 for the baseLink.
+   * @param linkId The ArticulatedLink ID or @ref BASELINK_ID for the @ref baseLink_.
    * @return Const reference to the SceneNode.
    */
-  const scene::SceneNode& getLinkSceneNode(int linkId = -1) const {
-    if (linkId == ID_UNDEFINED) {
+  const scene::SceneNode& getLinkSceneNode(int linkId = BASELINK_ID) const {
+    if (linkId == BASELINK_ID) {
       // base link
       return baseLink_->node();
     }
@@ -345,12 +345,12 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
 
   /**
    * @brief Get pointers to a link's visual SceneNodes.
-   * @param linkId The ArticulatedLink ID or -1 for the baseLink.
+   * @param linkId The ArticulatedLink ID or @ref BASELINK_ID for the @ref baseLink_.
    * @return vector of pointers to the link's visual scene nodes.
    */
   std::vector<scene::SceneNode*> getLinkVisualSceneNodes(
-      int linkId = -1) const {
-    if (linkId == ID_UNDEFINED) {
+      int linkId = BASELINK_ID) const {
+    if (linkId == BASELINK_ID) {
       // base link
       return baseLink_->visualNodes_;
     }
@@ -404,12 +404,12 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   /**
    * @brief Get a link by index.
    *
-   * @param id The id of the desired link. -1 for base link.
+   * @param id The id of the desired link. @ref BASELINK_ID for the @ref baseLink_.
    * @return The desired link.
    */
   ArticulatedLink& getLink(int id) {
-    // option to get the baseLink_ with id=-1
-    if (id == -1) {
+    // option to get the baseLink_ with id=BASELINK_ID
+    if (id == BASELINK_ID) {
       return *baseLink_.get();
     }
 
@@ -420,14 +420,16 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   }
 
   /**
-   * @brief Get the number of links for this object (not including the base).
+   * @brief Get the number of links for this object (not including the @ref baseLink_
+   * == @ref BASELINK_ID.).
    *
    * @return The number of non-base links.
    */
   int getNumLinks() const { return links_.size(); }
 
   /**
-   * @brief Get a list of link ids, not including the base (-1).
+   * @brief Get a list of link ids, not including the @ref baseLink_
+   * == @ref BASELINK_ID.
    *
    * @return A list of link ids for this object.
    */
@@ -441,14 +443,15 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   }
 
   /**
-   * @brief Get a list of link ids including the base (-1).
+   * @brief Get a list of link ids including the @ref baseLink_
+   * == @ref BASELINK_ID.
    *
    * @return A list of link ids for this object.
    */
   std::vector<int> getLinkIdsWithBase() const {
     std::vector<int> ids;
     ids.reserve(links_.size() + 1);
-    ids.push_back(-1);
+    ids.push_back(BASELINK_ID);
     for (auto it = links_.begin(); it != links_.end(); ++it) {
       ids.push_back(it->first);
     }
@@ -488,14 +491,14 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @brief Given the list of passed points in this object's local space, return
    * those points transformed to world space.
    * @param points vector of points in object local space
-   * @param linkId Internal link index.
+   * @param linkId The ArticulatedLink ID or @ref BASELINK_ID for the @ref baseLink_.
    * @return vector of points transformed into world space
    */
   std::vector<Mn::Vector3> transformLocalPointsToWorld(
       const std::vector<Mn::Vector3>& points,
-      int linkId = -1) const override {
-    if (linkId == -1) {
-      return this->baseLink_->transformLocalPointsToWorld(points, -1);
+      int linkId = BASELINK_ID) const override {
+    if (linkId == BASELINK_ID) {
+      return this->baseLink_->transformLocalPointsToWorld(points, BASELINK_ID);
     }
     auto linkIter = links_.find(linkId);
     ESP_CHECK(linkIter != links_.end(),
@@ -509,14 +512,14 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @brief Given the list of passed points in world space, return
    * those points transformed to this object's local space.
    * @param points vector of points in world space
-   * @param linkId Internal link index.
+   * @param linkId The ArticulatedLink ID or @ref BASELINK_ID for the @ref baseLink_.
    * @return vector of points transformed to be in local space
    */
   std::vector<Mn::Vector3> transformWorldPointsToLocal(
       const std::vector<Mn::Vector3>& points,
-      int linkId = -1) const override {
-    if (linkId == -1) {
-      return this->baseLink_->transformWorldPointsToLocal(points, -1);
+      int linkId = BASELINK_ID) const override {
+    if (linkId == BASELINK_ID) {
+      return this->baseLink_->transformWorldPointsToLocal(points, BASELINK_ID);
     }
     auto linkIter = links_.find(linkId);
     ESP_CHECK(linkIter != links_.end(),
@@ -557,7 +560,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
         int linkId = getLinkIdFromName(linkName);
         // locally access the unique pointer's payload
         const esp::physics::ArticulatedLink* aoLink = nullptr;
-        if (linkId == -1) {
+        if (linkId == BASELINK_ID) {
           aoLink = baseLink_.get();
         } else {
           auto linkIter = links_.find(linkId);
@@ -760,11 +763,11 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   /**
    * @brief Get the name of the link.
    *
-   * @param linkId The link's index. -1 for base link.
+   * @param linkId The link's index. @ref BASELINK_ID for the @ref baseLink_.
    * @return The link's name.
    */
   virtual std::string getLinkName(int linkId) const {
-    if (linkId == -1) {
+    if (linkId == BASELINK_ID) {
       return baseLink_->linkName;
     }
 
@@ -779,15 +782,17 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @brief Get the starting position for this link's parent joint in the global
    * DoFs array.
    *
-   * @param linkId The link's index.
+   * @param linkId The link's index. @ref BASELINK_ID for the @ref baseLink_.
    * @return The link's starting DoF index.
    */
-  virtual int getLinkDoFOffset(CORRADE_UNUSED int linkId) const { return -1; }
+  virtual int getLinkDoFOffset(CORRADE_UNUSED int linkId) const {
+    return ID_UNDEFINED;
+  }
 
   /**
    * @brief Get the number of DoFs for this link's parent joint.
    *
-   * @param linkId The link's index.
+   * @param linkId The link's index. @ref BASELINK_ID for the @ref baseLink_.
    * @return The number of DoFs for this link's parent joint.
    */
   virtual int getLinkNumDoFs(CORRADE_UNUSED int linkId) const { return 0; }
@@ -796,17 +801,17 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @brief Get the starting position for this link's parent joint in the global
    * positions array.
    *
-   * @param linkId The link's index.
+   * @param linkId The link's index. @ref BASELINK_ID for the @ref baseLink_.
    * @return The link's starting position index.
    */
   virtual int getLinkJointPosOffset(CORRADE_UNUSED int linkId) const {
-    return -1;
+    return ID_UNDEFINED;
   }
 
   /**
    * @brief Get the number of positions for this link's parent joint.
    *
-   * @param linkId The link's index.
+   * @param linkId The link's index. @ref BASELINK_ID for the @ref baseLink_.
    * @return The number of positions for this link's parent joint.
    */
   virtual int getLinkNumJointPos(CORRADE_UNUSED int linkId) const { return 0; }

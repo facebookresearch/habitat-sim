@@ -229,7 +229,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   virtual std::vector<Mn::Vector3> transformLocalPointsToWorld(
       const std::vector<Mn::Vector3>& points,
-      CORRADE_UNUSED int linkID = -1) const {
+      CORRADE_UNUSED int linkID = ID_UNDEFINED) const {
     std::vector<Mn::Vector3> wsPoints;
     wsPoints.reserve(points.size());
     Mn::Vector3 objScale = getScale();
@@ -249,7 +249,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   virtual std::vector<Mn::Vector3> transformWorldPointsToLocal(
       const std::vector<Mn::Vector3>& points,
-      CORRADE_UNUSED int linkID = -1) const {
+      CORRADE_UNUSED int linkID = ID_UNDEFINED) const {
     std::vector<Mn::Vector3> lsPoints;
     lsPoints.reserve(points.size());
     Mn::Vector3 objScale = getScale();
@@ -584,7 +584,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
         for (const auto& markersEntry : linkEntry.second) {
           const std::string markersName = markersEntry.first;
           perLinkMap[markersName] =
-              transformLocalPointsToWorld(markersEntry.second, -1);
+              transformLocalPointsToWorld(markersEntry.second, ID_UNDEFINED);
         }
         perTaskMap[linkName] = perLinkMap;
       }

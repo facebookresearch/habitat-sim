@@ -54,7 +54,7 @@ struct URDFToBulletCached {
   std::vector<int> m_urdfLinkIndices2BulletLinkIndices;
   std::vector<btTransform> m_urdfLinkLocalInertialFrames;
 
-  int m_currentMultiBodyLinkIndex{-1};
+  int m_currentMultiBodyLinkIndex{BASELINK_ID};
 
   class btMultiBody* m_bulletMultiBody{nullptr};
 
