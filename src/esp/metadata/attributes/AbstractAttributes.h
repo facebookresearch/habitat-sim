@@ -200,7 +200,21 @@ class AbstractAttributes
    */
   void setFilePathsAreClean() { setHidden("__fileNamesDirty", false); }
 
+  /**
+   * @brief Get whether this ManagedObject has been saved to disk in its current
+   * state. Only applicable to registered ManagedObjects
+   */
+  bool isAttrSaved() const override { return get<bool>("__isAttrSaved"); }
+
  protected:
+  /**
+   * @brief Set this ManagedObject's save status (i.e. whether it matches its
+   * version on disk or not)
+   */
+  void setFileSaveStatus(bool _isSaved) override {
+    setHidden("__isAttrSaved", _isSaved);
+  }
+
   /**
    * @brief Used internally only. Set the flag that specifies a filepath-based
    * field has been set to some value but has not yet been verified to
