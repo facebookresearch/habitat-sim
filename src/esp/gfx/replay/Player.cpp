@@ -297,9 +297,10 @@ void Player::hackProcessDeletions(const Keyframe& keyframe) {
       createdInstances_.erase(deletionInstanceKey);
 
       int rigId = creationRecords_[deletionInstanceKey].creationInfo.rigId;
-      if (rigId != ID_UNDEFINED) {
-        implementation_->deleteRigInstance(rigId);
-      }
+      // temp hack let's never delete rig instances
+    //   if (rigId != ID_UNDEFINED) {
+    //     implementation_->deleteRigInstance(rigId);
+    //   }
       creationRecords_.erase(deletionInstanceKey);
     }
   } else if (keyframe.deletions.size() > 0) {

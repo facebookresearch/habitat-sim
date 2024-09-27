@@ -140,14 +140,14 @@ class AbstractPlayerImplementation {
    * Default implementation does nothing.
    */
   virtual void createRigInstance(int rigId,
-                                 const std::vector<std::string>& boneNames);
+                                 const std::vector<std::string>& boneNames) = 0;
 
   /**
    * @brief Delete and unregister a rig instance.
    *
    * Default implementation does nothing.
    */
-  virtual void deleteRigInstance(int rigId);
+  virtual void deleteRigInstance(int rigId) = 0;
 
   /**
    * @brief Set all bone transforms for a specific rig.

@@ -55,8 +55,14 @@ ClassicReplayRenderer::ClassicReplayRenderer(
     void createRigInstance(int rigId,
                            const std::vector<std::string>& boneNames) override {
       auto& rigManager = self_.resourceManager_->getRigManager();
-      ESP_CHECK(!rigManager.rigInstanceExists(rigId),
-                "A rig instance with the specified ID already exists.");
+      // For various reasons, it's possible that a rig with this id already exists. 
+      if (rigManager.rigInstanceExists(rigId)) {
+        const auto& rig = rigManager.getRigInstance(rigId);
+        ESP_CHECK(rig.boneNames.size() == boneNames.size(), 
+            "A rig instance with id=" << rigId << " already exists and the bone count doesn't match ("
+            << boneNames.size() << " vs " << rig.boneNames.size() << ").");
+        return;
+      }
 
       gfx::Rig rig{};
       for (int i = 0; i < boneNames.size(); ++i) {
@@ -75,7 +81,12 @@ ClassicReplayRenderer::ClassicReplayRenderer(
     }
 
     void deleteRigInstance(int rigId) override {
-      self_.resourceManager_->getRigManager().deleteRigInstance(rigId);
+      auto& rigManager = self_.resourceManager_->getRigManager();
+      // Ownership and lifetime of rig instances is currently not well-defined for
+      // gfx-replay, so let's be cautious and only delete if the rig instance is valid.
+      if (rigManager.rigInstanceExists(rigId)) {
+        rigManager.deleteRigInstance(rigId);
+      }
     }
 
     void setRigPose(int rigId,
