@@ -11,10 +11,10 @@ import magnum as mn
 import numpy as np
 
 # NOTE: (requires habitat-llm) get metadata for semantics
-from dataset_generation.benchmark_generation.generate_episodes import (
-    MetadataInterface,
-    default_metadata_dict,
-)
+# from dataset_generation.benchmark_generation.generate_episodes import (
+#     MetadataInterface,
+#     default_metadata_dict,
+# )
 from habitat.datasets.rearrange.navmesh_utils import (
     embodied_unoccluded_navmesh_snap,
     get_largest_island_index,
@@ -856,7 +856,7 @@ if __name__ == "__main__":
     mm.active_dataset = args.dataset
     cfg.metadata_mediator = mm
 
-    mi = MetadataInterface(default_metadata_dict)
+    # mi = MetadataInterface(default_metadata_dict)
 
     # keyed by scene handle
     scene_test_results: Dict[str, Dict[str, Any]] = {}
@@ -867,6 +867,110 @@ if __name__ == "__main__":
     target_scenes = mm.get_scene_handles()
     if args.scenes is not None:
         target_scenes = args.scenes
+
+    # Skip scenes
+    skip_scenes = [
+        "102817119",
+        "102344469",
+        "102344328",
+        "108736779_1772634840",
+        "108294846_176710506",
+        "108294492_176709993",
+        "107734158_175999998",
+        "107734146_175999971",
+        "107734119_175999938",
+        "106879023_174887148",
+        "106878975_174887088",
+        "106878975_174887088",
+        "106366104_174226332",
+        "106366104_174226329",
+        "106365897_174225972",
+        "105515403_173104449",
+        "105515211_173104185",
+        "105515175_173104107",
+        "105515160_173104077",
+        "105515151_173104068",
+        "104348328_171513363",
+        "104348289_171513294",
+        "103997718_171030855",
+        "103997643_171030747",
+        "103997613_171030702",
+        "103997586_171030669",
+        "103997562_171030642",
+        "103997586_171030666",
+        "102816066",
+        "102343992",
+        "102816150",  # this one has the broken ao instance in the scene instance
+        "104862396_172226349",  # this one has broken ao instance
+        "104862573_172226682",  # this one has the broken user_defined receptacles ao instance in the scene instance
+        # already done:
+        "102343992",
+        "102344094",
+        "102344115",
+        "102344307",
+        "102344328",
+        "102344349",
+        "102344439",
+        "108736800_177263517",
+        "108736884_177263634",
+        "EMPTY_TEST",
+        "102815859_169535055",
+        "102816036",
+        "102816114",
+        "102816051",
+        # next batch (09_25 PM)
+        "103997940_171031257",
+        "103997865_171031116",
+        "103997799_171031002",
+        "103997781_171030978",
+        "103997730_171030885",
+        "103997541_171030615",
+        "103997478_171030528",
+        "103997478_171030525",
+        "103997445_171030492",
+        "103997403_171030405",
+        "102817053 102816852",
+        "102816786 102816729",
+        "102816627 102816615",
+        "102816600",
+        "102816615",
+        "102816627",
+        "102816729",
+        "102816786",
+        "104862384_172226319",
+        "104862369_172226304",
+        "104862345_172226274",
+        "104348511_171513654",
+        "104348478_171513603",
+        "104348394_171513453",
+        "104348253_171513237",
+        "104348202_171513150",
+        "104348181_171513120",
+        "104348160_171513093",
+        "104348133_171513054",
+        "104348103_171513021",
+        "104348064_171512940",
+        "104348037_171512898",
+        "104348028_171512877",
+        "103997994_171031320",
+        "103997970_171031287",
+        "102817053",
+        "102816852",
+        "104862558_172226664",
+        "104862534_172226625",
+        "104862513_172226580",
+        "104862501_172226556",
+        "104862417_172226382",
+    ]
+
+    new_target_scenes = []
+    for scene_handle in target_scenes:
+        short_handle = scene_handle.split("/")[-1].split(".")[0]
+        if short_handle not in skip_scenes:
+            new_target_scenes.append(short_handle)
+    target_scenes = new_target_scenes
+    print(target_scenes)
+    # breakpoint()
 
     ##########################################
     # get each scene's split
@@ -893,7 +997,7 @@ if __name__ == "__main__":
         with Simulator(cfg) as sim:
             dbv = DebugVisualizer(sim)
 
-            mi.refresh_scene_caches(sim)
+            # mi.refresh_scene_caches(sim)
 
             navmesh_config_and_recompute(sim)
 
@@ -1015,24 +1119,24 @@ if __name__ == "__main__":
 
             ##############################################
             # analyze semantics
-            if "analyze_semantics" in target_check_actions:
-                print(" - check and visualize semantics")
-                scene_test_results[sim.curr_scene_name][
-                    "objects_missing_semantic_class"
-                ] = []
-                missing_semantics_output = os.path.join(
-                    scene_out_dir, "missing_semantics/"
-                )
-                for obj in sutils.get_all_objects(sim):
-                    if mi.get_object_instance_category(obj) is None:
-                        scene_test_results[sim.curr_scene_name][
-                            "objects_missing_semantic_class"
-                        ].append(obj.handle)
-                        if args.save_images:
-                            os.makedirs(missing_semantics_output, exist_ok=True)
-                            dbv.peek(obj, peek_all_axis=True).save(
-                                missing_semantics_output, f"{obj.handle}__"
-                            )
+            # if "analyze_semantics" in target_check_actions:
+            #     print(" - check and visualize semantics")
+            #     scene_test_results[sim.curr_scene_name][
+            #         "objects_missing_semantic_class"
+            #     ] = []
+            #     missing_semantics_output = os.path.join(
+            #         scene_out_dir, "missing_semantics/"
+            #     )
+            #     for obj in sutils.get_all_objects(sim):
+            #         if mi.get_object_instance_category(obj) is None:
+            #             scene_test_results[sim.curr_scene_name][
+            #                 "objects_missing_semantic_class"
+            #             ].append(obj.handle)
+            #             if args.save_images:
+            #                 os.makedirs(missing_semantics_output, exist_ok=True)
+            #                 dbv.peek(obj, peek_all_axis=True).save(
+            #                     missing_semantics_output, f"{obj.handle}__"
+            #                 )
 
     csv_filepath = os.path.join(args.out_dir, "siro_scene_test_results.csv")
     export_results_csv(csv_filepath, scene_test_results)

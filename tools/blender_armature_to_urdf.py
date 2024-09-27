@@ -915,7 +915,7 @@ if __name__ == "__main__":
     # To use from the commandline:
     #  1. `blender <path to asset>.blend --background --python <path to>blender_armature_to_urdf.py -- --export-path <export directory>
     #  2. add `--export-meshes` to export the link .glbs
-    # Note: ' -- ' tells Blender to ignore the remaining arguemnts, so we pass anything after that into the script arguements below:
+    # Note: ' -- ' tells Blender to ignore the remaining arguments, so we pass anything after that into the script arguments below:
     import sys
 
     argv = sys.argv
