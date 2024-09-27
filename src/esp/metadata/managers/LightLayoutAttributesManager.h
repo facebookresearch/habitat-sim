@@ -27,7 +27,7 @@ class LightLayoutAttributesManager
                                       "lighting_config.json") {
     // build this manager's copy constructor map
     this->copyConstructorMap_["LightLayoutAttributes"] =
-        &LightLayoutAttributesManager::createObjectCopy<
+        &LightLayoutAttributesManager::createObjCopyCtorMapEntry<
             attributes::LightLayoutAttributes>;
   }
 

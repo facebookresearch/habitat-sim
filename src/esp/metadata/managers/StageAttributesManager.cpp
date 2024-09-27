@@ -32,7 +32,8 @@ StageAttributesManager::StageAttributesManager(
       cfgLightSetup_(NO_LIGHT_KEY) {
   // build this manager's copy constructor map
   this->copyConstructorMap_["StageAttributes"] =
-      &StageAttributesManager::createObjectCopy<attributes::StageAttributes>;
+      &StageAttributesManager::createObjCopyCtorMapEntry<
+          attributes::StageAttributes>;
 
 }  // StageAttributesManager::ctor
 

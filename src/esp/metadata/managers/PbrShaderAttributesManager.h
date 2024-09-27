@@ -27,7 +27,7 @@ class PbrShaderAttributesManager
                                   ManagedObjectAccess::Copy>::
             AbstractAttributesManager("PBR Rendering", "pbr_config.json") {
     this->copyConstructorMap_["PbrShaderAttributes"] =
-        &PbrShaderAttributesManager::createObjectCopy<
+        &PbrShaderAttributesManager::createObjCopyCtorMapEntry<
             attributes::PbrShaderAttributes>;
   }  // ctor
 

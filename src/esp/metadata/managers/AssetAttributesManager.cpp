@@ -83,17 +83,23 @@ AssetAttributesManager::AssetAttributesManager()
 
   // function pointers to asset attributes copy constructors
   this->copyConstructorMap_["CapsulePrimitiveAttributes"] =
-      &AssetAttributesManager::createObjectCopy<CapsulePrimitiveAttributes>;
+      &AssetAttributesManager::createObjCopyCtorMapEntry<
+          CapsulePrimitiveAttributes>;
   this->copyConstructorMap_["ConePrimitiveAttributes"] =
-      &AssetAttributesManager::createObjectCopy<ConePrimitiveAttributes>;
+      &AssetAttributesManager::createObjCopyCtorMapEntry<
+          ConePrimitiveAttributes>;
   this->copyConstructorMap_["CubePrimitiveAttributes"] =
-      &AssetAttributesManager::createObjectCopy<CubePrimitiveAttributes>;
+      &AssetAttributesManager::createObjCopyCtorMapEntry<
+          CubePrimitiveAttributes>;
   this->copyConstructorMap_["CylinderPrimitiveAttributes"] =
-      &AssetAttributesManager::createObjectCopy<CylinderPrimitiveAttributes>;
+      &AssetAttributesManager::createObjCopyCtorMapEntry<
+          CylinderPrimitiveAttributes>;
   this->copyConstructorMap_["IcospherePrimitiveAttributes"] =
-      &AssetAttributesManager::createObjectCopy<IcospherePrimitiveAttributes>;
+      &AssetAttributesManager::createObjCopyCtorMapEntry<
+          IcospherePrimitiveAttributes>;
   this->copyConstructorMap_["UVSpherePrimitiveAttributes"] =
-      &AssetAttributesManager::createObjectCopy<UVSpherePrimitiveAttributes>;
+      &AssetAttributesManager::createObjCopyCtorMapEntry<
+          UVSpherePrimitiveAttributes>;
   // no entry added for PrimObjTypes::END_PRIM_OBJ_TYPES
   this->clearUndeletableObjectNames();
   // build default AbstractPrimitiveAttributes objects

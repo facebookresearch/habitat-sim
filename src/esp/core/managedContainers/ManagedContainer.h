@@ -637,18 +637,22 @@ class ManagedContainer : public ManagedContainerBase {
                                   const std::string& src);
 
   /**
-   * @brief Build a shared pointer to a copy of a the passed managed object,
-   * of appropriate managed object type for passed object type.  This is the
-   * function called by the copy constructor map.
+   * @brief This is the function called by the copy constructor map. Build a
+   * shared pointer to a copy of a the passed managed object, of appropriate
+   * managed object type for passed object type.
+   *
    * @tparam U Type of managed object being created - must be a derived class
    * of ManagedPtr
    * @param orig original object of type ManagedPtr being copied
    */
-  template <typename U>
-  ManagedPtr createObjectCopy(ManagedPtr& orig) {
+  template <class U>
+  ManagedPtr createObjCopyCtorMapEntry(ManagedPtr& orig) {
+    static_assert(std::is_base_of<T, U>::value,
+                  "ManagedContainer :: Desired type must be derived from "
+                  "Managed object type");
     // don't call init on copy - assume copy is already properly initialized.
     return U::create(*(static_cast<U*>(orig.get())));
-  }  // ManagedContainer::
+  }  // ManagedContainer::createObjCopyCtorMapEntry
 
   /**
    * @brief Build an @ref esp::core::managedContainers::AbstractManagedObject
