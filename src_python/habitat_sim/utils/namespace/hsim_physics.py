@@ -220,7 +220,7 @@ def get_ao_default_link(
             habitat_sim.physics.JointType.Revolute,
             habitat_sim.physics.JointType.Prismatic,
         ]
-        lowest_links: List[int] = None
+        lowest_link = None
         lowest_y: int = None
         # compute the default link
         for link_id in ao.get_link_ids():
@@ -230,21 +230,11 @@ def get_ao_default_link(
                     get_articulated_link_global_keypoints(ao, link_id),
                     key=lambda x: x[1],
                 )[1]
-                if (
-                    lowest_y is None
-                    or link_lowest_y < lowest_y
-                    or abs(lowest_y - link_lowest_y) < 0.01
-                ):
-                    if lowest_y is not None and abs(lowest_y - link_lowest_y) < 0.01:
-                        # 1 cm or less difference
-                        lowest_links.append(link_id)
-                    else:
-                        lowest_links = [link_id]
+                if lowest_y is None or link_lowest_y < lowest_y:
                     lowest_y = link_lowest_y
-
-        if lowest_links is not None:
-            # if multiple links could be confused as the default, use the lowest link index of the set
-            default_link = min(lowest_links)
+                    lowest_link = link_id
+        if lowest_link is not None:
+            default_link = lowest_link
             # if found, set in metadata for next time
             ao.user_attributes.set("default_link", default_link)
 
