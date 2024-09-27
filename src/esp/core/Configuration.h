@@ -272,8 +272,7 @@ constexpr ConfigValType configValTypeFor<Mn::Rad>() {
 /**
  * @brief Stream operator to support display of @ref ConfigValType enum tags
  */
-MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug,
-                                    const ConfigValType& value);
+Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValType& value);
 
 /**
  * @brief This class uses an anonymous tagged union to store values of different
@@ -657,7 +656,7 @@ class ConfigValue {
 /**
  * @brief provide debug stream support for @ref ConfigValue
  */
-MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value);
+Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value);
 
 /**
  * @brief This class holds Configuration data in a map of ConfigValues, and
@@ -1734,8 +1733,7 @@ class Configuration {
 /**
  * @brief provide debug stream support for a @ref Configuration
  */
-MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug,
-                                    const Configuration& value);
+Mn::Debug& operator<<(Mn::Debug& debug, const Configuration& value);
 
 template <>
 std::vector<float> Configuration::getSubconfigValsOfTypeInVector(
