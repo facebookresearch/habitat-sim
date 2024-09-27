@@ -2,6 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/FormatStl.h>
 #include "esp/core/Configuration.h"
@@ -236,6 +237,15 @@ void ConfigurationTest::TestConfiguration() {
   cfg.set("myRad", Mn::Rad{1.23});
   cfg.set("myString", "test");
 
+  cfg.set("fuzzyTestVal0", 1.0);
+  cfg.set("fuzzyTestVal1", 1.0 + Mn::Math::TypeTraits<double>::epsilon() / 2);
+  // Scale the epsilon to be too big to be seen as the same.
+  cfg.set("fuzzyTestVal2", 1.0 + Mn::Math::TypeTraits<double>::epsilon() * 4);
+
+  ESP_ERROR() << "Fuzzy vals : " << cfg.get("fuzzyTestVal0") << " | "
+              << cfg.get("fuzzyTestVal1") << " | " << cfg.get("fuzzyTestVal2")
+              << " | ";
+
   CORRADE_VERIFY(cfg.hasValue("myBool"));
   CORRADE_VERIFY(cfg.hasValue("myInt"));
   CORRADE_VERIFY(cfg.hasValue("myFloatToDouble"));
@@ -247,6 +257,18 @@ void ConfigurationTest::TestConfiguration() {
   CORRADE_VERIFY(cfg.hasValue("myMat3"));
   CORRADE_VERIFY(cfg.hasValue("myRad"));
   CORRADE_VERIFY(cfg.hasValue("myString"));
+  CORRADE_VERIFY(cfg.hasValue("fuzzyTestVal0"));
+  CORRADE_VERIFY(cfg.hasValue("fuzzyTestVal1"));
+  CORRADE_VERIFY(cfg.hasValue("fuzzyTestVal2"));
+
+  // Verify very close doubles are considered sufficiently close by fuzzy
+  // compare
+  CORRADE_COMPARE(cfg.get("fuzzyTestVal0"), cfg.get("fuzzyTestVal1"));
+
+  // verify very close but not-quite-close enough doubles are considered
+  // different by magnum's fuzzy compare
+  CORRADE_COMPARE_AS(cfg.get("fuzzyTestVal0"), cfg.get("fuzzyTestVal2"),
+                     Cr::TestSuite::Compare::NotEqual);
 
   CORRADE_COMPARE(cfg.get<bool>("myBool"), true);
   CORRADE_COMPARE(cfg.get<int>("myInt"), 10);
