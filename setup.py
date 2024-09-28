@@ -264,6 +264,12 @@ class CMakeBuild(build_ext):
         for ext in self.extensions:
             self.build_extension(ext)
 
+        # Build stubs for all of 'habitat_sim' including bindings to provide
+        # type information.
+        subprocess.run(
+            subprocess.run(["docs/m.css/documentation/python.py", "docs/conf-stubs.py"])
+        )
+
     def build_extension(self, ext):
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
 
@@ -450,21 +456,28 @@ if __name__ == "__main__":
     setup(
         name="habitat_sim",
         version=habitat_sim.__version__,
-        author="FAIR A-STAR",
+        author="Meta",
         description="A high performance simulator for training embodied agents",
         long_description="",
         packages=find_packages(where="src_python"),
         package_dir={"": "src_python"},
         install_requires=requirements,
         tests_require=["hypothesis", "pytest-benchmark", "pytest"],
+        setup_requires=["pybind11-stubgen"],
         python_requires=">=3.9",
         # add extension module
         ext_modules=[CMakeExtension("habitat_sim._ext.habitat_sim_bindings", "src")],
         # add custom build_ext command
-        cmdclass=dict(build_ext=CMakeBuild),
+        cmdclass={
+            "build_ext": CMakeBuild,
+        },
         zip_safe=False,
         include_package_data=True,
+        package_data={
+            "habitat_sim": ["py.typed", "**/*.pyi"],
+        },
     )
+
     pymagnum_build_dir = osp.join(
         _cmake_build_dir, "deps", "magnum-bindings", "src", "python"
     )
