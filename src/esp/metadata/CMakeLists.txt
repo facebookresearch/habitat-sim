@@ -31,6 +31,8 @@ set(
   attributes/SemanticAttributes.cpp
   attributes/StageAttributes.h
   attributes/StageAttributes.cpp
+  diagnostics/DatasetDiagnosticsTool.h
+  diagnostics/DatasetDiagnosticsTool.cpp
   managers/AbstractAttributesManager.h
   managers/AbstractObjectAttributesManager.h
   managers/AOAttributesManager.h

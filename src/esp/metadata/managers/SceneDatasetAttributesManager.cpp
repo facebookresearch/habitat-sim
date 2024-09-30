@@ -66,9 +66,12 @@ SceneDatasetAttributesManager::initNewObjectInternal(
   return newAttributes;
 }  // SceneDatasetAttributesManager::initNewObjectInternal
 
-void SceneDatasetAttributesManager::setValsFromJSONDoc(
+void SceneDatasetAttributesManager::setValsFromJSONDocInternal(
     attributes::SceneDatasetAttributes::ptr dsAttribs,
     const io::JsonGenericValue& jsonConfig) {
+  // check for diagnostics requests
+  this->setDSDiagnostics(dsAttribs, jsonConfig);
+
   // dataset root directory to build paths from
   std::string dsDir = dsAttribs->getFileDirectory();
   // process stages
@@ -138,6 +141,9 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
     const io::JsonGenericValue& jsonConfig,
     const U& attrMgr,
     std::map<std::string, std::string>* strKeyMap) {
+  // merge DatasetDiagnostics tool from this manager into passed manager
+  attrMgr->mergeDSDiagnosticsTool(*(this->datasetDiagnostics_));
+
   io::JsonGenericValue::ConstMemberIterator jsonIter =
       jsonConfig.FindMember(tag);
   if (jsonIter != jsonConfig.MemberEnd()) {
