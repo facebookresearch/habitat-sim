@@ -608,6 +608,12 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   /** @brief Return the local axis-aligned bounding box of the this object.*/
   virtual const Mn::Range3D& getAabb() { return node().getCumulativeBB(); }
 
+  /** @brief Return this object's mesh volume. */
+  virtual double getVolume() const { return node().getMeshVolume(); }
+
+  /** @brief Return this object's mesh surface area. */
+  virtual double getSurfaceArea() const { return node().getMeshSurfaceArea(); }
+
  protected:
   /**
    * @brief Used Internally on object creation. Set whether or not this object
