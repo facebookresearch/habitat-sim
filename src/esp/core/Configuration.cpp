@@ -207,18 +207,35 @@ bool operator==(const ConfigValue& a, const ConfigValue& b) {
   if (a._typeAndFlags != b._typeAndFlags) {
     return false;
   }
+  const auto dataType = a.getType();
   // Pointer-backed data types need to have _data dereffed
-  if (isConfigValTypePointerBased(a.getType())) {
-    return pointerBasedConfigTypeHandlerFor(a.getType())
-        .comparator(a._data, b._data);
+  if (isConfigValTypePointerBased(dataType)) {
+    return pointerBasedConfigTypeHandlerFor(dataType).comparator(a._data,
+                                                                 b._data);
   }
 
-  // Trivial type : a._data holds the actual value
-  // _data array will always hold only legal data, since a ConfigValue should
-  // never change type.
+  // By here we know the type is a trivial type and that the types for both
+  // values are equal
+  if (a.reqsFuzzyCompare()) {
+    // Type is specified to require fuzzy comparison
+    switch (dataType) {
+      case ConfigValType::Double: {
+        return Mn::Math::equal(a.get<double>(), b.get<double>());
+      }
+      default: {
+        CORRADE_ASSERT_UNREACHABLE(
+            "Unknown/unsupported Type in ConfigValue::operator==()", "");
+      }
+    }
+  }
+
+  // Trivial non-fuzzy-comparison-requiring type : a._data holds the actual
+  // value _data array will always hold only legal data, since a ConfigValue
+  // should never change type.
   return std::equal(std::begin(a._data), std::end(a._data),
                     std::begin(b._data));
-}
+
+}  // ConfigValue::operator==
 
 bool operator!=(const ConfigValue& a, const ConfigValue& b) {
   return !(a == b);
@@ -236,7 +253,7 @@ std::string ConfigValue::getAsString() const {
       return std::to_string(get<int>());
     }
     case ConfigValType::Double: {
-      return std::to_string(get<double>());
+      return Cr::Utility::formatString("{}", get<double>());
     }
     case ConfigValType::String: {
       return get<std::string>();
@@ -295,7 +312,8 @@ std::string ConfigValue::getAsString() const {
 
 io::JsonGenericValue ConfigValue::writeToJsonObject(
     io::JsonAllocator& allocator) const {
-  // unknown is checked before this function is called, so does not need support
+  // unknown is checked before this function is called, so does not need
+  // support
   switch (getType()) {
     case ConfigValType::Boolean: {
       return io::toJsonValue(get<bool>(), allocator);
@@ -487,8 +505,8 @@ int Configuration::loadOneConfigFromJson(int numConfigSettings,
       } else {
         // The array does not match any currently supported magnum
         // objects, so place in indexed subconfig of values.
-        // decrement count by 1 - the recursive subgroup load will count all the
-        // values.
+        // decrement count by 1 - the recursive subgroup load will count all
+        // the values.
         --numConfigSettings;
         // create a new subgroup
         std::shared_ptr<core::config::Configuration> subGroupPtr =
@@ -496,8 +514,8 @@ int Configuration::loadOneConfigFromJson(int numConfigSettings,
         // load array into subconfig
         numConfigSettings += subGroupPtr->loadFromJsonArray(jsonObj);
       }
-      // value in array is a number of specified length, else it is a string, an
-      // object or a nested array
+      // value in array is a number of specified length, else it is a string,
+      // an object or a nested array
     } else {
       // decrement count by 1 - the recursive subgroup load will count all the
       // values.
@@ -584,8 +602,8 @@ void Configuration::writeValuesToJson(io::JsonGenericValue& jsonObj,
           << "`, so nothing will be written to JSON for this key.";
 
     } else if (valIter->second.shouldWriteToFile()) {
-      // Create Generic value for key, using allocator, to make sure its a copy
-      // and lives long enough
+      // Create Generic value for key, using allocator, to make sure its a
+      // copy and lives long enough
       writeValueToJsonInternal(valIter->second, valIter->first.c_str(), jsonObj,
                                allocator);
     } else {
@@ -602,8 +620,8 @@ void Configuration::writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
        ++cfgIter) {
     // only save if subconfig tree has value entries
     if (cfgIter->second->getConfigTreeNumValues() > 0) {
-      // Create Generic value for key, using allocator, to make sure its a copy
-      // and lives long enough
+      // Create Generic value for key, using allocator, to make sure its a
+      // copy and lives long enough
       io::JsonGenericValue name{cfgIter->first.c_str(), allocator};
       io::JsonGenericValue subObj =
           cfgIter->second->writeToJsonObject(allocator);
@@ -663,9 +681,9 @@ void Configuration::setSubconfigValsOfTypeInVector(
 /**
  * @brief Retrieves a shared pointer to a copy of the subConfig @ref
  * esp::core::config::Configuration that has the passed @p name . This will
- * create a pointer to a new sub-configuration if none exists already with that
- * name, but will not add this configuration to this Configuration's internal
- * storage.
+ * create a pointer to a new sub-configuration if none exists already with
+ * that name, but will not add this configuration to this Configuration's
+ * internal storage.
  *
  * @param name The name of the configuration to retrieve.
  * @return A pointer to a copy of the configuration having the requested
@@ -866,7 +884,7 @@ Mn::Debug& operator<<(Mn::Debug& debug, const Configuration& cfg) {
 
 bool operator==(const Configuration& a, const Configuration& b) {
   if ((a.getNumSubconfigs() != b.getNumSubconfigs()) ||
-      (a.getNumValues() != b.getNumValues())) {
+      (a.getNumVisibleValues() != b.getNumVisibleValues())) {
     return false;
   }
   for (const auto& entry : a.configMap_) {
