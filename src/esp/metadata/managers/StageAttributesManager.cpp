@@ -32,7 +32,8 @@ StageAttributesManager::StageAttributesManager(
       cfgLightSetup_(NO_LIGHT_KEY) {
   // build this manager's copy constructor map
   this->copyConstructorMap_["StageAttributes"] =
-      &StageAttributesManager::createObjectCopy<attributes::StageAttributes>;
+      &StageAttributesManager::createObjCopyCtorMapEntry<
+          attributes::StageAttributes>;
 
 }  // StageAttributesManager::ctor
 
@@ -42,7 +43,7 @@ void StageAttributesManager::createDefaultPrimBasedAttributesTemplates() {
   auto tmplt = this->postCreateRegister(
       StageAttributesManager::initNewObjectInternal("NONE", false), true);
   std::string tmpltHandle = tmplt->getHandle();
-  this->undeletableObjectNames_.insert(std::move(tmpltHandle));
+  this->addUndeletableObjectName(std::move(tmpltHandle));
 }  // StageAttributesManager::createDefaultPrimBasedAttributesTemplates
 
 StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
@@ -460,8 +461,8 @@ StageAttributesManager::preRegisterObjectFinalize(
   // accessors are hidden fields
 
   this->finalizeAttrPathsBeforeRegister(stageAttributes);
-
-  stageAttributes->setIsClean();
+  // Clear dirty flag from when asset handles are changed
+  stageAttributes->setFilePathsAreClean();
 
   return core::managedContainers::ManagedObjectPreregistration::Success;
 

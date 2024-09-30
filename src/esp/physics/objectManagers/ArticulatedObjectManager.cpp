@@ -12,7 +12,8 @@ ArticulatedObjectManager::ArticulatedObjectManager()
           PhysicsObjectBaseManager("ArticulatedObject") {
   // build this manager's copy constructor map
   this->copyConstructorMap_["ManagedArticulatedObject"] =
-      &ArticulatedObjectManager::createObjectCopy<ManagedArticulatedObject>;
+      &ArticulatedObjectManager::createObjCopyCtorMapEntry<
+          ManagedArticulatedObject>;
 
   // build the function pointers to proper wrapper construction methods, keyed
   // by the wrapper names
@@ -21,7 +22,7 @@ ArticulatedObjectManager::ArticulatedObjectManager()
           ManagedArticulatedObject>;
 
   this->copyConstructorMap_["ManagedBulletArticulatedObject"] =
-      &ArticulatedObjectManager::createObjectCopy<
+      &ArticulatedObjectManager::createObjCopyCtorMapEntry<
           ManagedBulletArticulatedObject>;
   managedObjTypeConstructorMap_["ManagedBulletArticulatedObject"] =
       &ArticulatedObjectManager::createPhysicsObjectWrapper<
