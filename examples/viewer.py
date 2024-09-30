@@ -429,18 +429,13 @@ class HabitatSimInteractiveViewer(Application):
             )
             for receptacle in recs:
                 g_trans = receptacle.get_global_transform(self.sim)
-                # transform the query point once instead of all verts
-                local_point = g_trans.inverted().transform_point(pos)
                 if (g_trans.translation - pos).length() < max_dist:
                     # receptacles object transform should be close to the point
                     if isinstance(receptacle, hab_receptacle.TriangleMeshReceptacle):
-                        for vert in receptacle.mesh_data.attribute(
-                            mn.trade.MeshAttribute.POSITION
-                        ):
-                            v_dist = (local_point - vert).length()
-                            if v_dist < closest_rec_dist:
-                                closest_rec_dist = v_dist
-                                closest_rec = receptacle
+                        r_dist = receptacle.dist_to_rec(self.sim, pos)
+                        if r_dist < closest_rec_dist:
+                            closest_rec_dist = r_dist
+                            closest_rec = receptacle
                     else:
                         global_keypoints = None
                         if isinstance(receptacle, hab_receptacle.AABBReceptacle):
