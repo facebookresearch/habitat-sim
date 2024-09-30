@@ -375,9 +375,12 @@ void SceneInstanceAttributesManager::setAbstractObjectAttributesFromJson(
         instanceAttrs->setHandle(template_name);
       });
 
-  // Check for translation origin override for a particular instance.  Default
+  // Check for translation origin override for a particular instance. Default
   // to unknown, which will mean use scene instance-level default.
-  instanceAttrs->setTranslationOrigin(getTranslationOriginVal(jCell));
+  const std::string transOriginStr = getTranslationOriginVal(jCell);
+  if (transOriginStr != instanceAttrs->getTranslationOriginStr()) {
+    instanceAttrs->setTranslationOrigin(getTranslationOriginVal(jCell));
+  }
 
   // set specified shader type value.  May be Unspecified, which means the
   // default value specified in the stage or object attributes will be used.

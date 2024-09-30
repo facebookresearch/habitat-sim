@@ -162,7 +162,7 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
   }
 
   // allocate ids for links
-  ArticulatedLink& rootObject = articulatedObject->getLink(-1);
+  ArticulatedLink& rootObject = articulatedObject->getLink(BASELINK_ID);
   rootObject.node().setBaseObjectId(articulatedObject->getObjectID());
   for (int linkIx = 0; linkIx < articulatedObject->btMultiBody_->getNumLinks();
        ++linkIx) {
@@ -536,7 +536,7 @@ void BulletPhysicsManager::lookUpObjectIdAndLinkId(
   CORRADE_INTERNAL_ASSERT(objectId);
   CORRADE_INTERNAL_ASSERT(linkId);
 
-  *linkId = -1;
+  *linkId = ID_UNDEFINED;
   // If the lookup fails, default to the stage. TODO: better error-handling.
   *objectId = RIGID_STAGE_ID;
   auto rawColObjIdIter = collisionObjToObjIds_->find(colObj);
@@ -572,10 +572,10 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
     const btPersistentManifold* manifold =
         dispatcher->getInternalManifoldPointer()[i];
 
-    int objectIdA = ID_UNDEFINED;
-    int objectIdB = ID_UNDEFINED;
-    int linkIndexA = -1;  // -1 if not a multibody
-    int linkIndexB = -1;
+    int objectIdA = RIGID_STAGE_ID - 1;
+    int objectIdB = RIGID_STAGE_ID - 1;
+    int linkIndexA = ID_UNDEFINED;  // -1 if not a multibody
+    int linkIndexB = ID_UNDEFINED;
 
     const btCollisionObject* colObj0 = manifold->getBody0();
     const btCollisionObject* colObj1 = manifold->getBody1();

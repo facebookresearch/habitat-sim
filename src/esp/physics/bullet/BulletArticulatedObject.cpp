@@ -172,7 +172,7 @@ void BulletArticulatedObject::initializeFromURDF(
   // set user config and initialization attributes
   setUserAttributes(initAttributes->getUserConfiguration());
   setMarkerSets(initAttributes->getMarkerSetsConfiguration());
-  initializationAttributes_ = initAttributes;
+  objInitAttributes_ = initAttributes;
 }
 
 void BulletArticulatedObject::constructStaticRigidBaseObject() {

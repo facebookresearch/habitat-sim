@@ -24,7 +24,7 @@ class SceneInstanceAttributesManager
             AbstractAttributesManager("Scene Instance", "scene_instance.json") {
     // build this manager's copy constructor map
     this->copyConstructorMap_["SceneInstanceAttributes"] =
-        &SceneInstanceAttributesManager::createObjectCopy<
+        &SceneInstanceAttributesManager::createObjCopyCtorMapEntry<
             attributes::SceneInstanceAttributes>;
   }
 
