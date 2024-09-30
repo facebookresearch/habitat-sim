@@ -224,7 +224,7 @@ bool operator==(const ConfigValue& a, const ConfigValue& b) {
       }
       default: {
         CORRADE_ASSERT_UNREACHABLE(
-            "Unknown/unsupported Type in ConfigValue::getAsString", "");
+            "Unknown/unsupported Type in ConfigValue::operator==()", "");
       }
     }
   }
