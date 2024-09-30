@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "esp/core/Esp.h"
-#include "esp/core/EspEigen.h"
 
 #include <Magnum/Math/Vector3.h>
 #include <Magnum/Trade/Trade.h>
@@ -46,16 +45,16 @@ enum class ColorSpace {
 };
 
 //! global/world up direction
-static const vec3f ESP_UP = vec3f::UnitY();
+static const Mn::Vector3 ESP_UP = Mn::Vector3::yAxis();
 //! global/world gravity (down) direction
-static const vec3f ESP_GRAVITY = -ESP_UP;
+static const Mn::Vector3 ESP_GRAVITY = -ESP_UP;
 //! global/world front direction
-static const vec3f ESP_FRONT = -vec3f::UnitZ();
+static const Mn::Vector3 ESP_FRONT = -Mn::Vector3::zAxis();
 //! global/world back direction
-static const vec3f ESP_BACK = -ESP_FRONT;
+static const Mn::Vector3 ESP_BACK = -ESP_FRONT;
 
 // compute convex hull of 2D points and return as vector of vertices
-std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points);
+std::vector<Mn::Vector2> convexHull2D(const std::vector<Mn::Vector2>& points);
 
 /**
  * @brief Compute the axis-aligned bounding box which results from applying a
