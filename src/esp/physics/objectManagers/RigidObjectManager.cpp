@@ -12,7 +12,7 @@ RigidObjectManager::RigidObjectManager()
   // build this manager's copy constructor map, keyed by the type name of the
   // wrappers it will manage
   this->copyConstructorMap_["ManagedRigidObject"] =
-      &RigidObjectManager::createObjectCopy<ManagedRigidObject>;
+      &RigidObjectManager::createObjCopyCtorMapEntry<ManagedRigidObject>;
 
   // build the function pointers to proper wrapper construction methods, keyed
   // by the wrapper names
@@ -20,7 +20,7 @@ RigidObjectManager::RigidObjectManager()
       &RigidObjectManager::createPhysicsObjectWrapper<ManagedRigidObject>;
 
   this->copyConstructorMap_["ManagedBulletRigidObject"] =
-      &RigidObjectManager::createObjectCopy<ManagedBulletRigidObject>;
+      &RigidObjectManager::createObjCopyCtorMapEntry<ManagedBulletRigidObject>;
   managedObjTypeConstructorMap_["ManagedBulletRigidObject"] =
       &RigidObjectManager::createPhysicsObjectWrapper<ManagedBulletRigidObject>;
 }

@@ -29,7 +29,7 @@ class ObjectAttributesManager
             AbstractObjectAttributesManager("Object", "object_config.json") {
     // build this manager's copy constructor map
     this->copyConstructorMap_["ObjectAttributes"] =
-        &ObjectAttributesManager::createObjectCopy<
+        &ObjectAttributesManager::createObjCopyCtorMapEntry<
             attributes::ObjectAttributes>;
   }
 

@@ -25,7 +25,7 @@ SceneDatasetAttributesManager::SceneDatasetAttributesManager(
       pbrShaderAttributesManager_(std::move(pbrShaderAttributesMgr)) {
   // build this manager's copy ctor map
   this->copyConstructorMap_["SceneDatasetAttributes"] =
-      &SceneDatasetAttributesManager::createObjectCopy<
+      &SceneDatasetAttributesManager::createObjCopyCtorMapEntry<
           attributes::SceneDatasetAttributes>;
 }  // SceneDatasetAttributesManager ctor
 

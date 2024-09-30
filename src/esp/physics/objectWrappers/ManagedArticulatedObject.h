@@ -48,7 +48,7 @@ class ManagedArticulatedObject
     return 1.0;
   }
 
-  scene::SceneNode* getLinkSceneNode(int linkId = -1) const {
+  scene::SceneNode* getLinkSceneNode(int linkId = BASELINK_ID) const {
     if (auto sp = getObjectReference()) {
       return &const_cast<scene::SceneNode&>(sp->getLinkSceneNode(linkId));
     }
@@ -56,7 +56,7 @@ class ManagedArticulatedObject
   }
 
   std::vector<scene::SceneNode*> getLinkVisualSceneNodes(
-      int linkId = -1) const {
+      int linkId = BASELINK_ID) const {
     if (auto sp = getObjectReference()) {
       return sp->getLinkVisualSceneNodes(linkId);
     }
@@ -73,7 +73,7 @@ class ManagedArticulatedObject
     if (auto sp = getObjectReference()) {
       return sp->getNumLinks();
     }
-    return -1;
+    return ID_UNDEFINED;
   }
 
   std::vector<int> getLinkIds() const {
@@ -94,7 +94,7 @@ class ManagedArticulatedObject
     if (auto sp = getObjectReference()) {
       return sp->getLinkIdFromName(_name);
     }
-    return -1;
+    return ID_UNDEFINED;
   }
 
   std::unordered_map<int, int> getLinkObjectIds() const {
@@ -237,7 +237,7 @@ class ManagedArticulatedObject
     if (auto sp = getObjectReference()) {
       return sp->getLinkDoFOffset(linkId);
     }
-    return -1;
+    return ID_UNDEFINED;
   }
 
   int getLinkNumDoFs(int linkId) const {
@@ -251,7 +251,7 @@ class ManagedArticulatedObject
     if (auto sp = getObjectReference()) {
       return sp->getLinkJointPosOffset(linkId);
     }
-    return -1;
+    return ID_UNDEFINED;
   }
 
   int getLinkNumJointPos(int linkId) const {

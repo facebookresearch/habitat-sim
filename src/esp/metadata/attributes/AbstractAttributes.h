@@ -122,13 +122,33 @@ class AbstractAttributes
   }
 
   /**
+   * @brief Gets a const smart pointer reference to a view of the user-specified
+   * configuration data from config file. Habitat does not parse or process this
+   * data, but it will be available to the user via python bindings for each
+   * object.
+   */
+  std::shared_ptr<const Configuration> getUserConfigurationView() const {
+    return getSubconfigView("user_defined");
+  }
+
+  /**
    * @brief Gets a smart pointer reference to the actual user-specified
    * configuration data from config file. Habitat does not parse or process this
    * data, but it will be available to the user via python bindings for each
-   * object.  This method is for editing the configuration.
+   * object. This method is for editing the configuration.
    */
   std::shared_ptr<Configuration> editUserConfiguration() {
     return editSubconfig<Configuration>("user_defined");
+  }
+
+  /**
+   * @brief Move an existing user_defined subconfiguration into this
+   * configuration, overwriting the existing copy if it exists. Habitat does not
+   * parse or process this data, but it will be available to the user via python
+   * bindings for each object. This method is for editing the configuration.
+   */
+  void setUserConfiguration(std::shared_ptr<Configuration>& userAttr) {
+    setSubconfigPtr("user_defined", userAttr);
   }
 
   /**
@@ -166,7 +186,42 @@ class AbstractAttributes
                                      getObjectInfoInternal());
   }
 
+  /**
+   * @brief Check whether filepath-based fields have been set by user input
+   * but have not been verified to exist (such verification occurs when the
+   * attributes is registered.)
+   */
+  bool getFilePathsAreDirty() const { return get<bool>("__fileNamesDirty"); }
+
+  /**
+   * @brief Clear the flag that specifies that filepath-based fields have been
+   * set but not verfified to exist (such verification occurs when the
+   * attributes is registered.)
+   */
+  void setFilePathsAreClean() { setHidden("__fileNamesDirty", false); }
+
+  /**
+   * @brief Get whether this ManagedObject has been saved to disk in its current
+   * state. Only applicable to registered ManagedObjects
+   */
+  bool isAttrSaved() const override { return get<bool>("__isAttrSaved"); }
+
  protected:
+  /**
+   * @brief Set this ManagedObject's save status (i.e. whether it matches its
+   * version on disk or not)
+   */
+  void setFileSaveStatus(bool _isSaved) override {
+    setHidden("__isAttrSaved", _isSaved);
+  }
+
+  /**
+   * @brief Used internally only. Set the flag that specifies a filepath-based
+   * field has been set to some value but has not yet been verified to
+   * exist (such verification occurs when the attributes is registered.)
+   */
+  void setFilePathsAreDirty() { setHidden("__fileNamesDirty", true); }
+
   /**
    * @brief Changing access to setter so that Configuration bindings cannot be
    * used to set a reserved value to an incorrect type. The inheritors of this

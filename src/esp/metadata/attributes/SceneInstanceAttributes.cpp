@@ -21,10 +21,12 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
     : AbstractAttributes(type, handle) {
   // default to unknown for object instances, to use attributes-specified
   // defaults
-  init("shader_type", getShaderTypeName(ObjectInstanceShaderType::Unspecified));
+  initTranslated("shader_type",
+                 getShaderTypeName(ObjectInstanceShaderType::Unspecified));
 
   // defaults to unknown/undefined
-  init("motion_type", getMotionTypeName(esp::physics::MotionType::UNDEFINED));
+  initTranslated("motion_type",
+                 getMotionTypeName(esp::physics::MotionType::UNDEFINED));
   // set to no rotation or translation
   init("rotation", Mn::Quaternion(Mn::Math::IdentityInit));
   init("translation", Mn::Vector3());
@@ -32,8 +34,9 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
   // ID_UNDEFINED
   init("is_instance_visible", ID_UNDEFINED);
   // defaults to unknown so that obj instances use scene instance setting
-  init("translation_origin",
-       getTranslationOriginName(SceneInstanceTranslationOrigin::Unknown));
+  initTranslated(
+      "translation_origin",
+      getTranslationOriginName(SceneInstanceTranslationOrigin::Unknown));
   // set default multiplicative scaling values
   init("uniform_scale", 1.0);
   init("non_uniform_scale", Mn::Vector3{1.0, 1.0, 1.0});
@@ -50,18 +53,27 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
   // to a scene instance.
   // Handle is set via init in base class, which would not be written out to
   // file if we did not explicitly set it.
+  // NOTE : this will not call a virtual override
+  // (SceneAOInstanceAttributes::setHandle) of AbstractAttributes::setHandle due
+  // to virtual dispatch not being available in constructor
   setHandle(handle);
   // set appropriate fields from abstract object attributes
   // Not initialize, since these are not default values
-  set("shader_type", getShaderTypeName(baseObjAttribs->getShaderType()));
-  // set to match attributes setting
-  set("is_instance_visible", (baseObjAttribs->getIsVisible() ? 1 : 0));
+
+  // Need to verify that the baseObjAttribs values are not defaults before we
+  // set these values.
+
+  if (!baseObjAttribs->isDefaultVal("shader_type")) {
+    setShaderType(getShaderTypeName(baseObjAttribs->getShaderType()));
+  }
+  if (!baseObjAttribs->isDefaultVal("is_visible")) {
+    setIsInstanceVisible(baseObjAttribs->getIsVisible());
+  }
 
   // set nonuniform scale to match attributes scale
-  setNonUniformScale(baseObjAttribs->getScale());
-  // Prepopulate user config to match baseObjAttribs' user config.
-  editUserConfiguration()->overwriteWithConfig(
-      baseObjAttribs->getUserConfiguration());
+  if (!baseObjAttribs->isDefaultVal("scale")) {
+    setNonUniformScale(baseObjAttribs->getScale());
+  }
 }
 
 std::string SceneObjectInstanceAttributes::getObjectInfoHeaderInternal() const {
@@ -118,15 +130,10 @@ void SceneObjectInstanceAttributes::writeValuesToJson(
     io::JsonAllocator& allocator) const {
   // map "handle" to "template_name" key in json
   writeValueToJson("handle", "template_name", jsonObj, allocator);
-  if (getTranslation() != Mn::Vector3()) {
-    writeValueToJson("translation", jsonObj, allocator);
-  }
-  if (getTranslationOrigin() != SceneInstanceTranslationOrigin::Unknown) {
-    writeValueToJson("translation_origin", jsonObj, allocator);
-  }
-  if (getRotation() != Mn::Quaternion(Mn::Math::IdentityInit)) {
-    writeValueToJson("rotation", jsonObj, allocator);
-  }
+  writeValueToJson("translation", jsonObj, allocator);
+  writeValueToJson("translation_origin", jsonObj, allocator);
+  writeValueToJson("rotation", jsonObj, allocator);
+
   // map "is_instance_visible" to boolean only if not -1, otherwise don't save
   int visSet = getIsInstanceVisible();
   if (visSet != ID_UNDEFINED) {
@@ -134,25 +141,12 @@ void SceneObjectInstanceAttributes::writeValuesToJson(
     auto jsonVal = io::toJsonValue(static_cast<bool>(visSet), allocator);
     jsonObj.AddMember("is_instance_visible", jsonVal, allocator);
   }
-  if (getMotionType() != esp::physics::MotionType::UNDEFINED) {
-    writeValueToJson("motion_type", jsonObj, allocator);
-  }
-  if (getShaderType() != ObjectInstanceShaderType::Unspecified) {
-    writeValueToJson("shader_type", jsonObj, allocator);
-  }
-  if (getUniformScale() != 1.0f) {
-    writeValueToJson("uniform_scale", jsonObj, allocator);
-  }
-  if (getNonUniformScale() != Mn::Vector3(1.0, 1.0, 1.0)) {
-    writeValueToJson("non_uniform_scale", jsonObj, allocator);
-  }
-  if (!getApplyScaleToMass()) {
-    writeValueToJson("apply_scale_to_mass", jsonObj, allocator);
-  }
-  if (getMassScale() != 1.0) {
-    writeValueToJson("mass_scale", jsonObj, allocator);
-  }
-
+  writeValueToJson("motion_type", jsonObj, allocator);
+  writeValueToJson("shader_type", jsonObj, allocator);
+  writeValueToJson("uniform_scale", jsonObj, allocator);
+  writeValueToJson("non_uniform_scale", jsonObj, allocator);
+  writeValueToJson("apply_scale_to_mass", jsonObj, allocator);
+  writeValueToJson("mass_scale", jsonObj, allocator);
   // take care of child class values, if any exist
   writeValuesToJsonInternal(jsonObj, allocator);
 
@@ -168,19 +162,21 @@ SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
 
   // Set the instance base type to be unspecified - if not set in instance json,
   // use ao_config value
-  init("base_type", getAOBaseTypeName(ArticulatedObjectBaseType::Unspecified));
+  initTranslated("base_type",
+                 getAOBaseTypeName(ArticulatedObjectBaseType::Unspecified));
   // Set the instance source for the inertia calculation to be unspecified - if
   // not set in instance json, use ao_config value
-  init("inertia_source",
-       getAOInertiaSourceName(ArticulatedObjectInertiaSource::Unspecified));
+  initTranslated(
+      "inertia_source",
+      getAOInertiaSourceName(ArticulatedObjectInertiaSource::Unspecified));
   // Set the instance link order to use as unspecified - if not set in instance
   // json, use ao_config value
-  init("link_order",
-       getAOLinkOrderName(ArticulatedObjectLinkOrder::Unspecified));
+  initTranslated("link_order",
+                 getAOLinkOrderName(ArticulatedObjectLinkOrder::Unspecified));
   // Set render mode to be unspecified - if not set in instance json, use
   // ao_config value
-  init("render_mode",
-       getAORenderModeName(ArticulatedObjectRenderMode::Unspecified));
+  initTranslated("render_mode",
+                 getAORenderModeName(ArticulatedObjectRenderMode::Unspecified));
   editSubconfig<Configuration>("initial_joint_pose");
   editSubconfig<Configuration>("initial_joint_velocities");
 }
@@ -194,27 +190,40 @@ SceneAOInstanceAttributes::SceneAOInstanceAttributes(
   // a scene instance.
   // Handle is set via init in base class, which would not be written out to
   // file if we did not explicitly set it.
+  // NOTE : this will not call a virtual override
+  // (SceneAOInstanceAttributes::setHandle) of AbstractAttributes::setHandle due
+  // to virtual dispatch not being available in constructor
   setHandle(handle);
 
   // Should not initialize these values but set them, since these are not
   // default values, but from an existing AO attributes.
-  // Set shader type to use aObjAttribs value
-  setShaderType(getShaderTypeName(aObjAttribs->getShaderType()));
-  // Set the instance base type to use aObjAttribs value
-  setBaseType(getAOBaseTypeName(aObjAttribs->getBaseType()));
-  // Set the instance source for the inertia calculation to use aObjAttribs
-  // value
-  setInertiaSource(getAOInertiaSourceName(aObjAttribs->getInertiaSource()));
-  // Set the instance link order to use aObjAttribs value
-  setLinkOrder(getAOLinkOrderName(aObjAttribs->getLinkOrder()));
-  // Set render mode to use aObjAttribs value
-  setRenderMode(getAORenderModeName(aObjAttribs->getRenderMode()));
 
-  // Prepopulate user config to match attribs' user config.
-  editUserConfiguration()->overwriteWithConfig(
-      aObjAttribs->getUserConfiguration());
-  editSubconfig<Configuration>("initial_joint_pose");
-  editSubconfig<Configuration>("initial_joint_velocities");
+  // Need to verify that the aObjAttribs values are not defaults before we
+  // set these values.
+  // Set shader type to use aObjAttribs value
+  if (!aObjAttribs->isDefaultVal("shader_type")) {
+    setShaderType(getShaderTypeName(aObjAttribs->getShaderType()));
+  }
+  if (!aObjAttribs->isDefaultVal("is_visible")) {
+    setIsInstanceVisible(aObjAttribs->getIsVisible());
+  }
+  if (!aObjAttribs->isDefaultVal("base_type")) {
+    // Set the instance base type to use aObjAttribs value
+    setBaseType(getAOBaseTypeName(aObjAttribs->getBaseType()));
+  }
+  if (!aObjAttribs->isDefaultVal("inertia_source")) {
+    // Set the instance source for the inertia calculation to use aObjAttribs
+    // value
+    setInertiaSource(getAOInertiaSourceName(aObjAttribs->getInertiaSource()));
+  }
+  if (!aObjAttribs->isDefaultVal("link_order")) {
+    // Set the instance link order to use aObjAttribs value
+    setLinkOrder(getAOLinkOrderName(aObjAttribs->getLinkOrder()));
+  }
+  if (!aObjAttribs->isDefaultVal("render_mode")) {
+    // Set render mode to use aObjAttribs value
+    setRenderMode(getAORenderModeName(aObjAttribs->getRenderMode()));
+  }
 }
 
 std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoHeaderInternal()
@@ -262,19 +271,10 @@ std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal() const {
 void SceneAOInstanceAttributes::writeValuesToJsonInternal(
     io::JsonGenericValue& jsonObj,
     io::JsonAllocator& allocator) const {
-  if (getBaseType() != ArticulatedObjectBaseType::Unspecified) {
-    writeValueToJson("base_type", jsonObj, allocator);
-  }
-  if (getInertiaSource() != ArticulatedObjectInertiaSource::Unspecified) {
-    writeValueToJson("inertia_source", jsonObj, allocator);
-  }
-  if (getLinkOrder() != ArticulatedObjectLinkOrder::Unspecified) {
-    writeValueToJson("link_order", jsonObj, allocator);
-  }
-  if (getRenderMode() != ArticulatedObjectRenderMode::Unspecified) {
-    writeValueToJson("render_mode", jsonObj, allocator);
-  }
-
+  writeValueToJson("base_type", jsonObj, allocator);
+  writeValueToJson("inertia_source", jsonObj, allocator);
+  writeValueToJson("link_order", jsonObj, allocator);
+  writeValueToJson("render_mode", jsonObj, allocator);
   writeValueToJson("auto_clamp_joint_limits", jsonObj, allocator);
 
 }  // SceneAOInstanceAttributes::writeValuesToJsonInternal

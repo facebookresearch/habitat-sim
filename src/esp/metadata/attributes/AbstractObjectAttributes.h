@@ -77,11 +77,18 @@ class AbstractObjectAttributes : public AbstractAttributes {
   double getUnitsToMeters() const { return get<double>("units_to_meters"); }
 
   /**
-   * @brief If not visible can add dynamic non-rendered object into a scene. If
-   * is not visible then should not add object to drawables.
+   * @brief Set whether visible or not. If not visible can add dynamic
+   * non-rendered object into a scene. If is not visible then should not add
+   * object to drawables.
    */
   void setIsVisible(bool isVisible) { set("is_visible", isVisible); }
+  /**
+   * @brief Get whether visible or not. If not visible can add dynamic
+   * non-rendered object into a scene. If is not visible then should not add
+   * object to drawables.
+   */
   bool getIsVisible() const { return get<bool>("is_visible"); }
+
   void setFrictionCoefficient(double frictionCoefficient) {
     set("friction_coefficient", frictionCoefficient);
   }
@@ -114,7 +121,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   void setRenderAssetHandle(const std::string& renderAssetHandle) {
     set("render_asset", renderAssetHandle);
-    setIsDirty();
+    setFilePathsAreDirty();
   }
 
   /**
@@ -133,7 +140,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   void setRenderAssetFullPath(const std::string& renderAssetHandle) {
     setHidden("__renderAssetFullPath", renderAssetHandle);
-    setIsDirty();
+    setFilePathsAreDirty();
   }
 
   /**
@@ -272,7 +279,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   void setCollisionAssetHandle(const std::string& collisionAssetHandle) {
     set("collision_asset", collisionAssetHandle);
-    setIsDirty();
+    setFilePathsAreDirty();
   }
 
   /**
@@ -291,7 +298,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   void setCollisionAssetFullPath(const std::string& collisionAssetHandle) {
     setHidden("__collisionAssetFullPath", collisionAssetHandle);
-    setIsDirty();
+    setFilePathsAreDirty();
   }
 
   /**
@@ -501,9 +508,6 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   bool getForceFlatShading() const { return get<bool>("force_flat_shading"); }
 
-  bool getIsDirty() const { return get<bool>("__isDirty"); }
-  void setIsClean() { setHidden("__isDirty", false); }
-
   /**
    * @brief Populate a json object with all the first-level values held in this
    * configuration.  Default is overridden to handle special cases for
@@ -587,7 +591,6 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * @brief get AbstractObject specific info for csv string
    */
   virtual std::string getAbstractObjectInfoInternal() const { return ""; };
-  void setIsDirty() { setHidden("__isDirty", true); }
 
  public:
   ESP_SMART_POINTERS(AbstractObjectAttributes)

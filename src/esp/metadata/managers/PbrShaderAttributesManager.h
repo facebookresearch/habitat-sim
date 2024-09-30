@@ -27,7 +27,7 @@ class PbrShaderAttributesManager
                                   ManagedObjectAccess::Copy>::
             AbstractAttributesManager("PBR Rendering", "pbr_config.json") {
     this->copyConstructorMap_["PbrShaderAttributes"] =
-        &PbrShaderAttributesManager::createObjectCopy<
+        &PbrShaderAttributesManager::createObjCopyCtorMapEntry<
             attributes::PbrShaderAttributes>;
   }  // ctor
 
@@ -70,11 +70,14 @@ class PbrShaderAttributesManager
    * to have IBL either on or off.
    */
   void setAllIBLEnabled(bool isIblEnabled) {
-    for (const auto& val : this->objectLibrary_) {
+    auto objIterPair = this->getObjectLibIterator();
+    for (auto& objIter = objIterPair.first; objIter != objIterPair.second;
+         ++objIter) {
+      const std::string objHandle = objIter->first;
       // Don't change system default
-      if (val.first.find(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH) ==
+      if (objHandle.find(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH) ==
           std::string::npos) {
-        this->getObjectByHandle(val.first)->setEnableIBL(isIblEnabled);
+        this->getObjectByHandle(objHandle)->setEnableIBL(isIblEnabled);
       }
     }
   }  // PbrShaderAttributesManager::setAllIBLEnabled
@@ -84,11 +87,14 @@ class PbrShaderAttributesManager
    * to have Direct Ligthing either on or off.
    */
   void setAllDirectLightsEnabled(bool isDirLightEnabled) {
-    for (const auto& val : this->objectLibrary_) {
+    auto objIterPair = this->getObjectLibIterator();
+    for (auto& objIter = objIterPair.first; objIter != objIterPair.second;
+         ++objIter) {
+      const std::string objHandle = objIter->first;
       // Don't change system default
-      if (val.first.find(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH) ==
+      if (objHandle.find(ESP_DEFAULT_PBRSHADER_CONFIG_REL_PATH) ==
           std::string::npos) {
-        this->getObjectByHandle(val.first)->setEnableDirectLighting(
+        this->getObjectByHandle(objHandle)->setEnableDirectLighting(
             isDirLightEnabled);
       }
     }
@@ -102,11 +108,11 @@ class PbrShaderAttributesManager
    *
    * TODO : If/When we begin treating IBL filepaths like we do other paths, this
    * will need to be implemented.
-   * @param attributes The attributes to be filtered.
+   * @param pbrShaderAttribs The attributes to be filtered.
    */
   void finalizeAttrPathsBeforeRegister(
-      CORRADE_UNUSED const attributes::PbrShaderAttributes::ptr& attributes)
-      const override{};
+      CORRADE_UNUSED const attributes::PbrShaderAttributes::ptr&
+          pbrShaderAttribs) const override;
 
  protected:
   /**
@@ -139,12 +145,10 @@ class PbrShaderAttributesManager
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
   /**
-   * @brief Not required for this manager.
-   *
-   * This method will perform any essential updating to the managed object
-   * before registration is performed. If this updating fails, registration will
-   * also fail.
-   * @param object the managed object to be registered
+   * @brief This method will perform any essential updating to the managed
+   * object before registration is performed. If this updating fails,
+   * registration will also fail.
+   * @param pbrShaderAttribs the managed object to be registered
    * @param objectHandle the name to register the managed object with.
    * Expected to be valid.
    * @param forceRegistration Should register object even if conditional
@@ -154,12 +158,9 @@ class PbrShaderAttributesManager
    */
   core::managedContainers::ManagedObjectPreregistration
   preRegisterObjectFinalize(
-      CORRADE_UNUSED attributes::PbrShaderAttributes::ptr object,
+      attributes::PbrShaderAttributes::ptr pbrShaderAttribs,
       CORRADE_UNUSED const std::string& objectHandle,
-      CORRADE_UNUSED bool forceRegistration) override {
-    // No pre-registration conditioning performed
-    return core::managedContainers::ManagedObjectPreregistration::Success;
-  }
+      CORRADE_UNUSED bool forceRegistration) override;
 
   /**
    * @brief Not required for this manager.

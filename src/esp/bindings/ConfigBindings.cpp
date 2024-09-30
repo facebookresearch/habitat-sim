@@ -152,7 +152,7 @@ void initConfigBindings(py::module& m) {
           R"(Returns whether or not this Configuration has the passed key. Does not check subconfigurations.)",
           "key"_a)
       .def(
-          "has_key_to_type", &Configuration::hasKeyOfType,
+          "has_key_to_type", &Configuration::hasKeyToValOfType,
           R"(Returns whether passed key points to a value of specified ConfigValType)",
           "key"_a, "value_type"_a)
       .def(

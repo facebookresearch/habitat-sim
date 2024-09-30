@@ -171,7 +171,11 @@ def build_dict_of_PhyObj_attrs(phys_obj_template):
         False,
         "boolean",
     )
-    res_dict["is_dirty"] = (phys_obj_template.is_dirty, False, "boolean")
+    res_dict["filenames_are_dirty"] = (
+        phys_obj_template.filenames_are_dirty,
+        False,
+        "boolean",
+    )
     return res_dict
 
 

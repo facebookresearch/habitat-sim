@@ -133,6 +133,13 @@ enum ConfigValStatus : uint64_t {
    * properly read from or written to file otherwise.
    */
   isTranslated = 1ULL << 34,
+
+  /**
+   * @brief This @ref ConfigValue requires manual fuzzy comparison (i.e. floating
+   * point scalar type) using the Magnum::Math::equal method. Magnum types
+   * already perform fuzzy comparison.
+   */
+  reqsFuzzyComparison = 1ULL << 35,
 };  // enum class ConfigValStatus
 
 /**
@@ -155,6 +162,24 @@ constexpr bool isConfigValTypePointerBased(ConfigValType type) {
 constexpr bool isConfigValTypeNonTrivial(ConfigValType type) {
   return static_cast<int>(type) >=
          static_cast<int>(ConfigValType::_nonTrivialTypes);
+}
+
+/**
+ * @brief Function template to return whether the value requires fuzzy
+ * comparison or not.
+ */
+template <typename T>
+constexpr bool useFuzzyComparisonFor() {
+  // Default for all types is no.
+  return false;
+}
+
+/**
+ * @brief Specify that @ref ConfigValType::Double scalar floating point values require fuzzy comparison
+ */
+template <>
+constexpr bool useFuzzyComparisonFor<double>() {
+  return true;
 }
 
 /**
@@ -272,8 +297,7 @@ constexpr ConfigValType configValTypeFor<Mn::Rad>() {
 /**
  * @brief Stream operator to support display of @ref ConfigValType enum tags
  */
-MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug,
-                                    const ConfigValType& value);
+Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValType& value);
 
 /**
  * @brief This class uses an anonymous tagged union to store values of different
@@ -355,7 +379,8 @@ class ConfigValue {
   }
 
   /**
-   * @brief Get this ConfigVal's value. Type is stored as a Pointer.
+   * @brief Get this ConfigVal's value. For Types that are stored in _data as a
+   * Pointer.
    */
   template <typename T>
   EnableIf<isConfigValTypePointerBased(configValTypeFor<T>()), const T&>
@@ -367,7 +392,8 @@ class ConfigValue {
   }
 
   /**
-   * @brief Get this ConfigVal's value. Type is stored directly in buffer.
+   * @brief Get this ConfigVal's value. For Types that are stored directly in
+   * buffer.
    */
   template <typename T>
   EnableIf<!isConfigValTypePointerBased(configValTypeFor<T>()), const T&>
@@ -413,6 +439,9 @@ class ConfigValue {
 
     //_data should be destructed at this point, construct a new value
     setInternalTyped(value);
+    // set whether this type requires fuzzy comparison or not
+    setReqsFuzzyCompare(useFuzzyComparisonFor<T>());
+
   }  // ConfigValue::setInternal
 
   /**
@@ -622,6 +651,29 @@ class ConfigValue {
   }
 
   /**
+   * @brief Check whether this ConfigVal requires a fuzzy comparison for
+   * equality (i.e. for a scalar double).
+   *
+   * The comparisons for such a type
+   * should use Magnum::Math::equal to be consistent with similarly configured
+   * magnum types.
+   */
+  inline bool reqsFuzzyCompare() const {
+    return getState(ConfigValStatus::reqsFuzzyComparison);
+  }
+  /**
+   * @brief Check whether this ConfigVal requires a fuzzy comparison for
+   * equality (i.e. for a scalar double).
+   *
+   * The comparisons for such a type
+   * should use Magnum::Math::equal to be consistent with similarly configured
+   * magnum types.
+   */
+  inline void setReqsFuzzyCompare(bool fuzzyCompare) {
+    setState(ConfigValStatus::reqsFuzzyComparison, fuzzyCompare);
+  }
+
+  /**
    * @brief Whether or not this @ref ConfigValue should be written to file during
    * common execution. The reason we may not want to do this might be that the
    * value was only set to a programmatic default value, and not set
@@ -657,7 +709,7 @@ class ConfigValue {
 /**
  * @brief provide debug stream support for @ref ConfigValue
  */
-MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value);
+Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value);
 
 /**
  * @brief This class holds Configuration data in a map of ConfigValues, and
@@ -697,7 +749,7 @@ class Configuration {
       : configMap_(std::move(otr.configMap_)),
         valueMap_(std::move(otr.valueMap_)) {}  // move ctor
 
-  // virtual destructor set to that pybind11 recognizes attributes inheritance
+  // virtual destructor set so that pybind11 recognizes attributes inheritance
   // from Configuration to be polymorphic
   virtual ~Configuration() = default;
 
@@ -751,6 +803,8 @@ class Configuration {
     return {};
   }
 
+  // ****************** Value Status ******************
+
   /**
    * @brief Return the @ref ConfigValType enum representing the type of the
    * value referenced by the passed @p key or @ref ConfigValType::Unknown
@@ -763,6 +817,46 @@ class Configuration {
     }
     ESP_ERROR() << "Key :" << key << "not present in Configuration.";
     return ConfigValType::Unknown;
+  }
+
+  /**
+   * @brief Returns whether or not the @ref ConfigValue specified
+   * by @p key is a default/initialization value or was intentionally set.
+   */
+  bool isDefaultVal(const std::string& key) const {
+    ValueMapType::const_iterator mapIter = valueMap_.find(key);
+    if (mapIter != valueMap_.end()) {
+      return mapIter->second.isDefaultVal();
+    }
+    ESP_ERROR() << "Key :" << key << "not present in Configuration.";
+    return false;
+  }
+
+  /**
+   * @brief Returns whether or not the @ref ConfigValue specified
+   * by @p key is a hidden value intended to be be only used internally.
+   */
+  bool isHiddenVal(const std::string& key) const {
+    ValueMapType::const_iterator mapIter = valueMap_.find(key);
+    if (mapIter != valueMap_.end()) {
+      return mapIter->second.isHiddenVal();
+    }
+    ESP_ERROR() << "Key :" << key << "not present in Configuration.";
+    return false;
+  }
+
+  /**
+   * @brief Returns whether or not the @ref ConfigValue specified
+   * by @p key is a translated value, meaning a string that corresponds to, and
+   * is translated into, an enum value for consumption.
+   */
+  bool isTranslated(const std::string& key) const {
+    ValueMapType::const_iterator mapIter = valueMap_.find(key);
+    if (mapIter != valueMap_.end()) {
+      return mapIter->second.isTranslated();
+    }
+    ESP_ERROR() << "Key :" << key << "not present in Configuration.";
+    return false;
   }
 
   // ****************** String Conversion ******************
@@ -1133,9 +1227,25 @@ class Configuration {
   }
 
   /**
-   * @brief returns number of values in this Configuration.
+   * @brief Returns number of values in this Configuration.
    */
   int getNumValues() const { return valueMap_.size(); }
+
+  /**
+   * @brief Returns number of non-hidden values in this Configuration. This is
+   * necessary for determining whether or not configurations are "effectively"
+   * equal, where they contain the same data but may vary in number
+   * internal-use-only fields.
+   */
+  int getNumVisibleValues() const {
+    int numVals = 0;
+    for (const auto& val : valueMap_) {
+      if (!val.second.isHiddenVal()) {
+        numVals += 1;
+      }
+    }
+    return numVals;
+  }
 
   /**
    * @brief Return total number of values held by this Configuration and all
@@ -1163,7 +1273,8 @@ class Configuration {
    * @param desiredType the @ref ConfigValType to compare the value's type to
    * @return Whether @p key references a value that is of @p desiredType.
    */
-  bool hasKeyOfType(const std::string& key, ConfigValType desiredType) {
+  bool hasKeyToValOfType(const std::string& key,
+                         ConfigValType desiredType) const {
     ValueMapType::const_iterator mapIter = valueMap_.find(key);
     return (mapIter != valueMap_.end() &&
             (mapIter->second.getType() == desiredType));
@@ -1247,7 +1358,6 @@ class Configuration {
    * @return A pointer to a copy of the Configuration having the requested
    * name, cast to the appropriate type, or nullptr if not found.
    */
-
   template <typename T>
   std::shared_ptr<T> getSubconfigCopy(const std::string& cfgName) const {
     static_assert(std::is_base_of<Configuration, T>::value,
@@ -1371,27 +1481,24 @@ class Configuration {
 
   /**
    * @brief Merges Configuration pointed to by @p src into this
-   * Configuration, including all subconfigs.  Passed config overwrites
+   * Configuration, including all subconfigs. Passed config overwrites
    * existing data in this config.
    * @param src The source of Configuration data we wish to merge into this
    * Configuration.
    */
-  void overwriteWithConfig(const std::shared_ptr<const Configuration>& src) {
-    if (src->getNumEntries() == 0) {
-      return;
-    }
-    // copy every element over from src
-    for (const auto& elem : src->valueMap_) {
-      valueMap_[elem.first] = elem.second;
-    }
-    // merge subconfigs
-    for (const auto& subConfig : src->configMap_) {
-      const auto name = subConfig.first;
-      // make if DNE and merge src subconfig
-      addOrEditSubgroup<Configuration>(name).first->second->overwriteWithConfig(
-          subConfig.second);
-    }
-  }
+  void overwriteWithConfig(const std::shared_ptr<const Configuration>& src);
+
+  /**
+   * @brief Performs the opposite operation to @ref Configuration::overwriteWithConfig.
+   * All values and subconfigs in the passed Configuration will be removed from
+   * this config unless the data they hold is different. Any empty subconfigs
+   * will be removed as well.
+   *
+   * @param src The source of Configuration data we wish to prune from this
+   * Configuration.
+   */
+
+  void filterFromConfig(const std::shared_ptr<const Configuration>& src);
 
   /**
    * @brief Returns a const iterator across the map of values.
@@ -1695,8 +1802,7 @@ class Configuration {
 /**
  * @brief provide debug stream support for a @ref Configuration
  */
-MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug,
-                                    const Configuration& value);
+Mn::Debug& operator<<(Mn::Debug& debug, const Configuration& value);
 
 template <>
 std::vector<float> Configuration::getSubconfigValsOfTypeInVector(

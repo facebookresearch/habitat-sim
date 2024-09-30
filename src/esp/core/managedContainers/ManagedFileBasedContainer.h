@@ -81,6 +81,9 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     const io::JsonGenericValue config = docConfig->GetObject();
     ManagedFileIOPtr attr = this->buildManagedObjectFromDoc(filename, config);
     attr->setActualFilename(filename);
+    // Set attributes' status to saved (i.e. it matches the version on disk)
+    // since it was just loaded.
+    attr->setAttrIsSaved();
     return this->postCreateRegister(std::move(attr), registerObject);
   }  // ManagedFileBasedContainer::createObjectFromJSONFile
 
@@ -110,6 +113,9 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     // convert doc to const value
     const io::JsonGenericValue config = docConfig->GetObject();
     ManagedFileIOPtr attr = this->buildManagedObjectFromDoc(docName, config);
+    // Set attributes' status to saved (i.e. it matches the version on disk)
+    // since it was just built from an existing JSON string.
+    attr->setAttrIsSaved();
     return this->postCreateRegister(std::move(attr), registerObject);
   }  // ManagedFileBasedContainer::createObjectFromJSONString
 
@@ -377,6 +383,8 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
         // attributes. Note : this will not be "permanent" for the object unless
         // it is registered after this save.
         managedObject->setActualFilename(fullFilename);
+        // Set attributes' status to saved (i.e. it matches the version on disk)
+        managedObject->setAttrIsSaved();
       } else {
         ESP_ERROR(Mn::Debug::Flag::NoSpace)
             << "<" << this->objectType_ << "> : Attempt to save to Filename `"

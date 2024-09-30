@@ -206,6 +206,7 @@ std::string getShaderTypeName(ObjectInstanceShaderType shaderTypeVal) {
 
 const std::map<std::string, SceneInstanceTranslationOrigin>
     InstanceTranslationOriginMap = {
+        {"default", SceneInstanceTranslationOrigin::Unknown},
         {"asset_local", SceneInstanceTranslationOrigin::AssetLocal},
         {"com", SceneInstanceTranslationOrigin::COM},
 };

@@ -51,7 +51,7 @@ AbstractObjectAttributes::AbstractObjectAttributes(
   // This specifies that we want to investigate the state of the render and
   // collision handles before we allow this attributes to be registered.
   // Hidden field
-  setIsDirty();
+  setFilePathsAreDirty();
   // set up an existing subgroup for marker_sets attributes
   addOrEditSubgroup<MarkerSets>("marker_sets");
 }  // AbstractObjectAttributes ctor
