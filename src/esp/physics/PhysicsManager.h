@@ -520,8 +520,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * query Simulator to retrieve a group.
    * @param fixedBase Whether the base of the @ref ArticulatedObject should be
    * fixed.
-   * @param globalScale A scale multiplier to be applied uniformly in 3
-   * dimensions to the entire @ref ArticulatedObject.
+   * @param globalScale A scale multiplier to be applied in 3 dimensions to the
+   * entire @ref ArticulatedObject.
    * @param massScale A scale multiplier to be applied to the mass of the all
    * the components of the @ref ArticulatedObject.
    * @param forceReload If true, reload the source URDF from file, replacing the
@@ -541,7 +541,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       const std::string& filepath,
       DrawableGroup* drawables = nullptr,
       bool fixedBase = false,
-      float globalScale = 1.0,
+      const Mn::Vector3& globalScale = {1.0, 1.0, 1.0},
       float massScale = 1.0,
       bool forceReload = false,
       bool maintainLinkOrder = false,
