@@ -884,7 +884,7 @@ Mn::Debug& operator<<(Mn::Debug& debug, const Configuration& cfg) {
 
 bool operator==(const Configuration& a, const Configuration& b) {
   if ((a.getNumSubconfigs() != b.getNumSubconfigs()) ||
-      (a.getNumValues() != b.getNumValues())) {
+      (a.getNumVisibleValues() != b.getNumVisibleValues())) {
     return false;
   }
   for (const auto& entry : a.configMap_) {

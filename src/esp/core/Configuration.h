@@ -1227,9 +1227,25 @@ class Configuration {
   }
 
   /**
-   * @brief returns number of values in this Configuration.
+   * @brief Returns number of values in this Configuration.
    */
   int getNumValues() const { return valueMap_.size(); }
+
+  /**
+   * @brief Returns number of non-hidden values in this Configuration. This is
+   * necessary for determining whether or not configurations are "effectively"
+   * equal, where they contain the same data but may vary in number
+   * internal-use-only fields.
+   */
+  int getNumVisibleValues() const {
+    int numVals = 0;
+    for (const auto& val : valueMap_) {
+      if (!val.second.isHiddenVal()) {
+        numVals += 1;
+      }
+    }
+    return numVals;
+  }
 
   /**
    * @brief Return total number of values held by this Configuration and all
