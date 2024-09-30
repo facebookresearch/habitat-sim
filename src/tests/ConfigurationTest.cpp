@@ -2,6 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/FormatStl.h>
 #include "esp/core/Configuration.h"
@@ -77,6 +78,14 @@ struct ConfigurationTest : Cr::TestSuite::Tester {
   void TestConfiguration();
 
   /**
+   * @brief Test Configuration comparisons between value types requiring fuzzy
+   * logic (i.e. doubles). All additional numeric types added in the future that
+   * require fuzzy comparison should have their fuzzy equality bounds tested
+   * here.
+   */
+  void TestConfigurationFuzzyVals();
+
+  /**
    * @brief Test Configuration find capability. Find returns a list of
    * subconfiguration keys required to find a particular key
    */
@@ -103,6 +112,7 @@ struct ConfigurationTest : Cr::TestSuite::Tester {
 ConfigurationTest::ConfigurationTest() {
   addTests({
       &ConfigurationTest::TestConfiguration,
+      &ConfigurationTest::TestConfigurationFuzzyVals,
       &ConfigurationTest::TestSubconfigFind,
       &ConfigurationTest::TestSubconfigFindAndMerge,
       &ConfigurationTest::TestSubconfigFilter,
@@ -268,6 +278,29 @@ void ConfigurationTest::TestConfiguration() {
 
   CORRADE_COMPARE(cfg.get<std::string>("myString"), "test");
 }  // ConfigurationTest::TestConfiguration test
+
+void ConfigurationTest::TestConfigurationFuzzyVals() {
+  Configuration cfg;
+
+  // Specify values to test
+  cfg.set("fuzzyTestVal0", 1.0);
+  cfg.set("fuzzyTestVal1", 1.0 + Mn::Math::TypeTraits<double>::epsilon() / 2);
+  // Scale the epsilon to be too big to be seen as the same.
+  cfg.set("fuzzyTestVal2", 1.0 + Mn::Math::TypeTraits<double>::epsilon() * 4);
+
+  CORRADE_VERIFY(cfg.hasValue("fuzzyTestVal0"));
+  CORRADE_VERIFY(cfg.hasValue("fuzzyTestVal1"));
+  CORRADE_VERIFY(cfg.hasValue("fuzzyTestVal2"));
+  // Verify very close doubles are considered sufficiently close by fuzzy
+  // compare
+  CORRADE_COMPARE(cfg.get("fuzzyTestVal0"), cfg.get("fuzzyTestVal1"));
+
+  // verify very close but not-quite-close enough doubles are considered
+  // different by magnum's fuzzy compare
+  CORRADE_COMPARE_AS(cfg.get("fuzzyTestVal0"), cfg.get("fuzzyTestVal2"),
+                     Cr::TestSuite::Compare::NotEqual);
+
+}  // ConfigurationTest::TestConfigurationFuzzyVals
 
 // Test configuration find functionality
 void ConfigurationTest::TestSubconfigFind() {

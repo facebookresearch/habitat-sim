@@ -28,7 +28,7 @@ class AOAttributesManager
                                   ManagedObjectAccess::Copy>::
             AbstractAttributesManager("Articulated Object", "ao_config.json") {
     this->copyConstructorMap_["ArticulatedObjectAttributes"] =
-        &AOAttributesManager::createObjectCopy<
+        &AOAttributesManager::createObjCopyCtorMapEntry<
             attributes::ArticulatedObjectAttributes>;
   }  // ctor
 
@@ -43,7 +43,7 @@ class AOAttributesManager
    * overwritten with the newly created one if registerTemplate is true.
    *
    * @param aoConfigFilename The configuration file to parse.
-   * @param registerTemplate whether to add this template to the library.
+   * @param registerTemplate Whether to add this template to the library.
    * If the user is going to edit this template, this should be false - any
    * subsequent editing will require re-registration. Defaults to true. If
    * specified as true, then this function returns a copy of the registered

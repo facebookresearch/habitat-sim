@@ -28,7 +28,7 @@ class PhysicsAttributesManager
             AbstractAttributesManager("Physics Manager",
                                       "physics_config.json") {
     this->copyConstructorMap_["PhysicsManagerAttributes"] =
-        &PhysicsAttributesManager::createObjectCopy<
+        &PhysicsAttributesManager::createObjCopyCtorMapEntry<
             attributes::PhysicsManagerAttributes>;
   }  // ctor
 
