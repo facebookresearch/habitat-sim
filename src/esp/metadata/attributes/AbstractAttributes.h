@@ -186,7 +186,42 @@ class AbstractAttributes
                                      getObjectInfoInternal());
   }
 
+  /**
+   * @brief Check whether filepath-based fields have been set by user input
+   * but have not been verified to exist (such verification occurs when the
+   * attributes is registered.)
+   */
+  bool getFilePathsAreDirty() const { return get<bool>("__fileNamesDirty"); }
+
+  /**
+   * @brief Clear the flag that specifies that filepath-based fields have been
+   * set but not verfified to exist (such verification occurs when the
+   * attributes is registered.)
+   */
+  void setFilePathsAreClean() { setHidden("__fileNamesDirty", false); }
+
+  /**
+   * @brief Get whether this ManagedObject has been saved to disk in its current
+   * state. Only applicable to registered ManagedObjects
+   */
+  bool isAttrSaved() const override { return get<bool>("__isAttrSaved"); }
+
  protected:
+  /**
+   * @brief Set this ManagedObject's save status (i.e. whether it matches its
+   * version on disk or not)
+   */
+  void setFileSaveStatus(bool _isSaved) override {
+    setHidden("__isAttrSaved", _isSaved);
+  }
+
+  /**
+   * @brief Used internally only. Set the flag that specifies a filepath-based
+   * field has been set to some value but has not yet been verified to
+   * exist (such verification occurs when the attributes is registered.)
+   */
+  void setFilePathsAreDirty() { setHidden("__fileNamesDirty", true); }
+
   /**
    * @brief Changing access to setter so that Configuration bindings cannot be
    * used to set a reserved value to an incorrect type. The inheritors of this

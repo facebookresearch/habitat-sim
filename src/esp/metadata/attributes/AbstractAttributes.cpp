@@ -22,6 +22,9 @@ AbstractAttributes::AbstractAttributes(const std::string& attributesClassKey,
   setHidden("__ID", 0);
   setHidden("__fileDirectory", "");
   setHidden("__actualFilename", "");
+  // Initialize attributes to be different than on version on disk, if one
+  // exists. This should be set to true on file load and on file save.
+  setHidden("__isAttrSaved", false);
 }
 
 }  // namespace attributes

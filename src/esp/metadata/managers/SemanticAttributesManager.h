@@ -27,7 +27,7 @@ class SemanticAttributesManager
             AbstractAttributesManager("Semantic Attributes",
                                       "semantic_config.json") {
     this->copyConstructorMap_["SemanticAttributes"] =
-        &SemanticAttributesManager::createObjectCopy<
+        &SemanticAttributesManager::createObjCopyCtorMapEntry<
             attributes::SemanticAttributes>;
   }  // ctor
 

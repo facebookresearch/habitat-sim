@@ -280,9 +280,8 @@ class PbrShaderAttributes : public AbstractAttributes {
    */
   void setIBLBrdfLUTAssetHandle(const std::string& brdfLUTAsset) {
     set("ibl_blut_filename", brdfLUTAsset);
-    set("pbr_ibl_helper_key",
-        Cr::Utility::formatString("{}_{}", brdfLUTAsset,
-                                  get<std::string>("ibl_envmap_filename")));
+    buildPbrShaderHelperKey(brdfLUTAsset,
+                            get<std::string>("ibl_envmap_filename"));
   }
   /**
    * @brief Get the filename for the brdf lookup table used by the IBL
@@ -299,9 +298,7 @@ class PbrShaderAttributes : public AbstractAttributes {
    */
   void setIBLEnvMapAssetHandle(const std::string& envMapAsset) {
     set("ibl_envmap_filename", envMapAsset);
-    set("pbr_ibl_helper_key",
-        Cr::Utility::formatString(
-            "{}_{}", get<std::string>("ibl_blut_filename"), envMapAsset));
+    buildPbrShaderHelperKey(get<std::string>("ibl_blut_filename"), envMapAsset);
   }
 
   /**
@@ -319,7 +316,7 @@ class PbrShaderAttributes : public AbstractAttributes {
    * handle>'.
    */
   std::string getPbrShaderHelperKey() const {
-    return get<std::string>("pbr_ibl_helper_key");
+    return get<std::string>("__pbrIBLHelperKey");
   }
 
   /**
@@ -508,6 +505,17 @@ class PbrShaderAttributes : public AbstractAttributes {
                          io::JsonAllocator& allocator) const override;
 
  protected:
+  /**
+   * @brief Used internally. Build the PbrShaderHelper Key from the ibl blut
+   * filename and the ibl envmap filename used to check/retrive helpers in map
+   * in ResourceManager.
+   */
+  void buildPbrShaderHelperKey(const std::string& brdfLUTAsset,
+                               const std::string& envMapAsset) {
+    setHidden("__pbrIBLHelperKey",
+              Cr::Utility::formatString("{}_{}", brdfLUTAsset, envMapAsset));
+  }
+
   /**
    * @brief Retrieve a comma-separated string holding the header values for the
    * info returned for this managed object, type-specific.

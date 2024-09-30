@@ -82,7 +82,7 @@ class StageAttributes : public AbstractObjectAttributes {
   void setSemanticDescriptorFilename(
       const std::string& semantic_descriptor_filename) {
     set("semantic_descriptor_filename", semantic_descriptor_filename);
-    setIsDirty();
+    setFilePathsAreDirty();
   }
   /**
    * @brief Text file that describes the hierharchy of semantic information
@@ -101,7 +101,7 @@ class StageAttributes : public AbstractObjectAttributes {
   void setSemanticDescriptorFullPath(
       const std::string& semanticDescriptorHandle) {
     setHidden("__semanticDescriptorFullPath", semanticDescriptorHandle);
-    setIsDirty();
+    setFilePathsAreDirty();
   }
 
   /**
@@ -121,7 +121,7 @@ class StageAttributes : public AbstractObjectAttributes {
    */
   void setSemanticAssetHandle(const std::string& semanticAssetHandle) {
     set("semantic_asset", semanticAssetHandle);
-    setIsDirty();
+    setFilePathsAreDirty();
   }
 
   /**
@@ -141,7 +141,7 @@ class StageAttributes : public AbstractObjectAttributes {
    */
   void setSemanticAssetFullPath(const std::string& semanticAssetHandle) {
     setHidden("__semanticAssetFullPath", semanticAssetHandle);
-    setIsDirty();
+    setFilePathsAreDirty();
   }
 
   /**
@@ -298,7 +298,7 @@ class StageAttributes : public AbstractObjectAttributes {
 
   void setNavmeshAssetHandle(const std::string& nav_asset) {
     set("nav_asset", nav_asset);
-    setIsDirty();
+    setFilePathsAreDirty();
   }
   std::string getNavmeshAssetHandle() const {
     return get<std::string>("nav_asset");
@@ -311,7 +311,7 @@ class StageAttributes : public AbstractObjectAttributes {
    */
   void setNavmeshAssetFullPath(const std::string& navmeshAssetHandle) {
     setHidden("__navmeshAssetFullPath", navmeshAssetHandle);
-    setIsDirty();
+    setFilePathsAreDirty();
   }
 
   /**
