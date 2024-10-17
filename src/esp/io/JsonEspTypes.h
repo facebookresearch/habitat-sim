@@ -20,27 +20,6 @@
 namespace esp {
 namespace io {
 
-inline JsonGenericValue toJsonValue(const esp::vec3f& vec,
-                                    JsonAllocator& allocator) {
-  return toJsonArrayHelper(vec.data(), 3, allocator);
-}
-
-inline bool fromJsonValue(const JsonGenericValue& obj, esp::vec3f& val) {
-  if (obj.IsArray() && obj.Size() == 3) {
-    for (rapidjson::SizeType i = 0; i < 3; ++i) {
-      if (obj[i].IsNumber()) {
-        val[i] = obj[i].GetDouble();
-      } else {
-        ESP_ERROR() << "Invalid numeric value specified in JSON vec3f, index :"
-                    << i;
-        return false;
-      }
-    }
-    return true;
-  }
-  return false;
-}
-
 inline JsonGenericValue toJsonValue(
     const esp::assets::PhongMaterialColor& material,
     JsonAllocator& allocator) {
@@ -72,9 +51,9 @@ inline JsonGenericValue toJsonValue(const esp::geo::CoordinateFrame& frame,
 inline bool fromJsonValue(const JsonGenericValue& obj,
                           esp::geo::CoordinateFrame& frame) {
   bool success = true;
-  esp::vec3f up;
-  esp::vec3f front;
-  esp::vec3f origin;
+  Mn::Vector3 up;
+  Mn::Vector3 front;
+  Mn::Vector3 origin;
   success &= readMember(obj, "up", up);
   success &= readMember(obj, "front", front);
   success &= readMember(obj, "origin", origin);

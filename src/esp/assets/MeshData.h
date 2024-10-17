@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "esp/core/Esp.h"
-#include "esp/core/EspEigen.h"
 
 namespace esp {
 namespace assets {
@@ -16,13 +15,13 @@ namespace assets {
 //! Raw mesh data storage
 struct MeshData {
   //! Vertex positions
-  std::vector<vec3f> vbo;
+  std::vector<Magnum::Vector3> vbo;
   //! Vertex normals
-  std::vector<vec3f> nbo;
+  std::vector<Magnum::Vector3> nbo;
   //! Texture coordinates
-  std::vector<vec2f> tbo;
+  std::vector<Magnum::Vector2> tbo;
   //! Vertex colors
-  std::vector<vec3f> cbo;
+  std::vector<Magnum::Vector3> cbo;
   //! Index buffer
   std::vector<uint32_t> ibo;
 

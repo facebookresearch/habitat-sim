@@ -15,11 +15,9 @@ namespace Cr = Corrade;
 namespace esp {
 namespace scene {
 
-bool SemanticScene::loadHM3DHouse(
-    const std::string& houseFilename,
-    SemanticScene& scene,
-    const quatf& rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(),
-                                                       geo::ESP_GRAVITY) */ ) {
+bool SemanticScene::loadHM3DHouse(const std::string& houseFilename,
+                                  SemanticScene& scene,
+                                  const Mn::Quaternion& rotation) {
   if (!checkFileExists(houseFilename, "loadHM3DHouse")) {
     return false;
   }
@@ -92,7 +90,7 @@ void buildInstanceRegionCategory(
 
 bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
                                    SemanticScene& scene,
-                                   const quatf& /*rotation*/) {
+                                   const Mn::Quaternion& /*rotation*/) {
   // temp constructs
   std::map<int, TempHM3DObject> objInstance;
   std::map<int, TempHM3DRegion> regions;
