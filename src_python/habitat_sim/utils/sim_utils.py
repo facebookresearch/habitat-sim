@@ -10,6 +10,9 @@ from typing import Callable, List
 
 import magnum as mn
 import numpy as np
+from habitat.articulated_agents.robots.spot_robot import SpotRobot
+from habitat.datasets.rearrange.navmesh_utils import get_largest_island_index
+from omegaconf import DictConfig
 
 import habitat_sim
 from habitat_sim import physics as HSim_Phys
@@ -18,10 +21,6 @@ from habitat_sim import physics as HSim_Phys
 # Class to instantiate and maneuver spot from a viewer
 # DEPENDENT ON HABITAT-LAB -
 class SpotAgent:
-    from habitat.articulated_agents.robots.spot_robot import SpotRobot
-    from habitat.datasets.rearrange.navmesh_utils import get_largest_island_index
-    from omegaconf import DictConfig
-
     SPOT_DIR = "data/robots/hab_spot_arm/urdf/hab_spot_arm.urdf"
     if not os.path.isfile(SPOT_DIR):
         # support other layout
@@ -255,10 +254,8 @@ class SpotAgent:
     def load_and_init(self):
         # add the robot to the world via the wrapper
         robot_path = SpotAgent.SPOT_DIR
-        agent_config = SpotAgent.DictConfig({"articulated_agent_urdf": robot_path})
-        self.spot: SpotAgent.SpotRobot = SpotAgent.SpotRobot(
-            agent_config, self.sim, fixed_base=True
-        )
+        agent_config = DictConfig({"articulated_agent_urdf": robot_path})
+        self.spot: SpotRobot = SpotRobot(agent_config, self.sim, fixed_base=True)
         self.spot.reconfigure()
         self.spot.update()
         self.spot_action: SpotAgent.ExtractedBaseVelNonCylinderAction = (
@@ -323,7 +320,7 @@ class SpotAgent:
 
     def place_on_navmesh(self):
         if self.sim.pathfinder.is_loaded:
-            self.largest_island_ix = SpotAgent.get_largest_island_index(
+            self.largest_island_ix = get_largest_island_index(
                 pathfinder=self.sim.pathfinder,
                 sim=self.sim,
                 allow_outdoor=False,
