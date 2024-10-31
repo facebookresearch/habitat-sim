@@ -139,6 +139,8 @@ class HabitatSimInteractiveViewer(Application):
             )
         )
         self.shader = shaders.VectorGL2D()
+        # whether to render window text or not
+        self.do_draw_text = True
 
         # make magnum text background transparent
         mn.gl.Renderer.enable(mn.gl.Renderer.Feature.BLENDING)
@@ -244,7 +246,7 @@ class HabitatSimInteractiveViewer(Application):
     def draw_contact_debug(self, debug_line_render: Any):
         """
         This method is called to render a debug line overlay displaying active contact points and normals.
-        Yellow lines show the contact distance along the normal and red lines show the contact normal at a fixed length.
+        Red lines show the contact distance along the normal and yellow lines show the contact normal at a fixed length.
         """
         yellow = mn.Color4.yellow()
         red = mn.Color4.red()
@@ -366,7 +368,8 @@ class HabitatSimInteractiveViewer(Application):
 
         # draw CPU/GPU usage data and other info to the app window
         mn.gl.default_framebuffer.bind()
-        self.draw_text(self.render_camera.specification())
+        if self.do_draw_text:
+            self.draw_text(self.render_camera.specification())
 
         self.swap_buffers()
         Timer.next_frame()
@@ -627,6 +630,7 @@ class HabitatSimInteractiveViewer(Application):
             self.obj_editor.select_all_matching_objects(only_matches=not shift_pressed)
 
         elif key == pressed.H:
+            # Print help text to console
             self.print_help_text()
 
         elif key == pressed.SPACE:
@@ -744,7 +748,10 @@ class HabitatSimInteractiveViewer(Application):
                     self.sim.navmesh_visualization = not self.sim.navmesh_visualization
                     logger.info("Command: toggle navmesh")
                 else:
-                    logger.warn("Warning: recompute navmesh first")
+                    logger.warning("Warning: recompute navmesh first")
+        elif key == pressed.P:
+            # Toggle whether showing performance data on screen or not
+            self.do_draw_text = not self.do_draw_text
 
         elif key == pressed.T:
             self.remove_outdoor_objects()
@@ -838,16 +845,16 @@ class HabitatSimInteractiveViewer(Application):
 
         # select an object with RIGHT-click
         if physics_enabled and self.mouse_cast_has_hits:
-            mouse_cast_results = self.mouse_cast_results
+            mouse_cast_hit_results = self.mouse_cast_results.hits
             if event.button == button.RIGHT:
                 # Find object being clicked
                 obj_found = False
                 obj = None
                 # find first non-stage object
                 hit_idx = 0
-                while hit_idx < len(mouse_cast_results.hits) and not obj_found:
-                    self.last_hit_details = mouse_cast_results.hits[hit_idx]
-                    hit_obj_id = mouse_cast_results.hits[hit_idx].object_id
+                while hit_idx < len(mouse_cast_hit_results) and not obj_found:
+                    self.last_hit_details = mouse_cast_hit_results[hit_idx]
+                    hit_obj_id = mouse_cast_hit_results[hit_idx].object_id
                     obj = hsim_physics.get_obj_from_id(self.sim, hit_obj_id)
                     if obj is None:
                         hit_idx += 1
