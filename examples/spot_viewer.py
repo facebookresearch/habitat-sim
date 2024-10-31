@@ -1018,6 +1018,7 @@ Key Commands:
 -------------
     esc:        Exit the application.
     'h':        Display this help message.
+    'p':        Toggle the display of on-screen data
 
     Spot Controls:
     'wasd':     Move Spot's body forward/backward and rotate left/right.
