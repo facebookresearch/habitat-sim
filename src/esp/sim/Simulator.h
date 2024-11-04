@@ -75,8 +75,11 @@ class Simulator {
    * Does not invalidate existing ManagedObject wrappers.
    * Does not add or remove object instances.
    * Only changes motion_type when scene_instance specified a motion type.
+   * @param calledAfterSceneCreate Whether this reset is being called after a
+   * new scene has been created in reconfigure. If so we con't want to
+   * redundantly re-place the newly-placed object positions.
    */
-  void reset();
+  void reset(bool calledAfterSceneCreate = false);
 
   void seed(uint32_t newSeed);
 
@@ -472,6 +475,21 @@ class Simulator {
       return "NONE";
     }
     return curSceneInstanceAttributes_->getSimplifiedHandle();
+  }
+
+  /**
+   * @brief Return whether the @ref
+   * esp::metadata::attributes::SceneInstanceAttributes used to create the scene
+   * currently being simulated/displayed specifies a default COM handling for
+   * rigid objects
+   */
+
+  bool getCurSceneDefaultCOMHandling() const {
+    if (curSceneInstanceAttributes_ == nullptr) {
+      return false;
+    }
+    return (curSceneInstanceAttributes_->getTranslationOrigin() ==
+            metadata::attributes::SceneInstanceTranslationOrigin::AssetLocal);
   }
 
   /**

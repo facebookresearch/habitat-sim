@@ -426,9 +426,9 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
       success = instanceArticulatedObjectsForSceneAttributes(
           curSceneInstanceAttributes_);
       if (success) {
-        // TODO : reset may eventually have all the scene instantiation code so
-        // that scenes can be reset
-        reset();
+        // Pass true so that the object/AO placement code is bypassed in
+        // physicsManager_->reset
+        reset(true);
       }
     }
   }
@@ -616,12 +616,6 @@ bool Simulator::instanceObjectsForSceneAttributes(
   // node to attach object to
   scene::SceneNode* attachmentNode = nullptr;
 
-  // whether or not to correct for COM shift - only do for blender-sourced
-  // scene attributes
-  bool defaultCOMCorrection =
-      (curSceneInstanceAttributes_->getTranslationOrigin() ==
-       metadata::attributes::SceneInstanceTranslationOrigin::AssetLocal);
-
   // Iterate through instances, create object and implement initial
   // transformation.
   for (const auto& objInst : objectInstances) {
@@ -635,8 +629,8 @@ bool Simulator::instanceObjectsForSceneAttributes(
             config_.activeSceneName));
 
     // objID =
-    physicsManager_->addObjectInstance(objInst, defaultCOMCorrection,
-                                       &getDrawableGroup(), attachmentNode,
+    physicsManager_->addObjectInstance(objInst, &getDrawableGroup(),
+                                       attachmentNode,
                                        config_.sceneLightSetupKey);
   }  // for each object attributes
   return true;
@@ -670,12 +664,12 @@ bool Simulator::instanceArticulatedObjectsForSceneAttributes(
   return true;
 }  // Simulator::instanceArticulatedObjectsForSceneAttributes
 
-void Simulator::reset() {
+void Simulator::reset(bool calledAfterSceneCreate) {
   if (physicsManager_ != nullptr) {
     // Note: resets time to 0 and all existing objects set back to initial
     // states. Does not add back deleted objects or delete added objects. Does
     // not break ManagedObject pointers.
-    physicsManager_->reset();
+    physicsManager_->reset(calledAfterSceneCreate);
   }
 
   for (auto& agent : agents_) {
@@ -683,7 +677,7 @@ void Simulator::reset() {
   }
   getActiveSceneGraph().getRootNode().computeCumulativeBB();
   resourceManager_->setLightSetup(gfx::getDefaultLights());
-}  // Simulator::reset()
+}  // Simulator::reset
 
 metadata::attributes::SceneInstanceAttributes::ptr
 Simulator::buildCurrentStateSceneAttributes() const {

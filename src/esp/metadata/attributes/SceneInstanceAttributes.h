@@ -73,7 +73,7 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
                   << translation_origin
                   << "attempted to be set in SceneObjectInstanceAttributes :"
                   << getHandle() << ". Aborting.");
-    set("translation_origin", translation_origin);
+    setTranslated("translation_origin", translation_origin);
   }
 
   /**
@@ -91,6 +91,13 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
     }
     // Unknown is default value
     return SceneInstanceTranslationOrigin::Unknown;
+  }
+
+  /**
+   * @brief Get string representation of translation origin
+   */
+  std::string getTranslationOriginStr() const {
+    return get<std::string>("translation_origin");
   }
 
   /**
@@ -145,7 +152,7 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
                   << "attempted to be set in SceneObjectInstanceAttributes :"
                   << getHandle() << ". Aborting.");
 
-    set("shader_type", shader_type);
+    setTranslated("shader_type", shader_type);
   }
 
   /**
@@ -324,7 +331,7 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
                   << baseType
                   << "attempted to be set in ArticulatedObjectAttributes:"
                   << getHandle() << ". Aborting.");
-    set("base_type", baseType);
+    setTranslated("base_type", baseType);
   }
 
   /**
@@ -356,7 +363,7 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
                   << inertiaSrc
                   << "attempted to be set in ArticulatedObjectAttributes:"
                   << getHandle() << ". Aborting.");
-    set("inertia_source", inertiaSrc);
+    setTranslated("inertia_source", inertiaSrc);
   }
 
   /**
@@ -388,7 +395,7 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
                   << linkOrder
                   << "attempted to be set in ArticulatedObjectAttributes:"
                   << getHandle() << ". Aborting.");
-    set("link_order", linkOrder);
+    setTranslated("link_order", linkOrder);
   }
 
   /**
@@ -419,7 +426,7 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
                   << renderMode
                   << "attempted to be set in ArticulatedObjectAttributes:"
                   << getHandle() << ". Aborting.");
-    set("render_mode", renderMode);
+    setTranslated("render_mode", renderMode);
   }
 
   /**

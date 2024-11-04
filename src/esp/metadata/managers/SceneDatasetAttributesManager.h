@@ -67,8 +67,10 @@ class SceneDatasetAttributesManager
    */
   void setCurrPhysicsManagerAttributesHandle(const std::string& handle) {
     physicsManagerAttributesHandle_ = handle;
-    for (const auto& val : this->objectLibrary_) {
-      this->getObjectByHandle(val.first)->setPhysicsManagerHandle(handle);
+    auto objIterPair = this->getObjectLibIterator();
+    for (auto& objIter = objIterPair.first; objIter != objIterPair.second;
+         ++objIter) {
+      this->getObjectByHandle(objIter->first)->setPhysicsManagerHandle(handle);
     }
   }  // SceneDatasetAttributesManager::setCurrPhysicsManagerAttributesHandle
 
@@ -87,9 +89,11 @@ class SceneDatasetAttributesManager
    */
   void setDefaultPbrShaderAttributesHandle(const std::string& pbrHandle) {
     defaultPbrShaderAttributesHandle_ = pbrHandle;
-    for (const auto& val : this->objectLibrary_) {
-      this->getObjectByHandle(val.first)->setDefaultPbrShaderAttrHandle(
-          pbrHandle);
+    auto objIterPair = this->getObjectLibIterator();
+    for (auto& objIter = objIterPair.first; objIter != objIterPair.second;
+         ++objIter) {
+      this->getObjectByHandle(objIter->first)
+          ->setDefaultPbrShaderAttrHandle(pbrHandle);
     }
   }  // SceneDatasetAttributesManager::setDefaultPbrShaderAttributesHandle
 

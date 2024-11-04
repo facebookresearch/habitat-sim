@@ -424,7 +424,7 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
 }
 
 std::string BulletRigidObject::getCollisionDebugName() {
-  return "RigidObject, " + initializationAttributes_->getHandle() + ", id " +
+  return "RigidObject, " + objInitAttributes_->getHandle() + ", id " +
          std::to_string(objectId_);
 }
 

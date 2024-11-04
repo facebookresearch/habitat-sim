@@ -53,6 +53,7 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
    */
   void setRenderAssetHandle(const std::string& renderAsset) {
     set("render_asset", renderAsset);
+    setFilePathsAreDirty();
   }
   /**
    * @brief Gets the string name for the render asset relative path
@@ -68,6 +69,7 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
    */
   void setRenderAssetFullPath(const std::string& renderAssetHandle) {
     setHidden("__renderAssetFullPath", renderAssetHandle);
+    setFilePathsAreDirty();
   }
 
   /**
@@ -98,6 +100,19 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
    * @brief Get mass scaling of the articulated object.
    */
   double getMassScale() const { return get<double>("mass_scale"); }
+
+  /**
+   * @brief Set whether visible or not. If not visible can add dynamic
+   * non-rendered object into a scene. If is not visible then should not add
+   * object to drawables.
+   */
+  void setIsVisible(bool isVisible) { set("is_visible", isVisible); }
+  /**
+   * @brief Get whether visible or not. If not visible can add dynamic
+   * non-rendered object into a scene. If is not visible then should not add
+   * object to drawables.
+   */
+  bool getIsVisible() const { return get<bool>("is_visible"); }
 
   /**
    * @brief Set the type of base/root joint to use to add this Articulated

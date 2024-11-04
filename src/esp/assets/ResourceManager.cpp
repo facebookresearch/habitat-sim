@@ -2885,7 +2885,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
   // object has acquired a copy of its parent attributes.  No object should
   // ever have a copy of attributes with isDirty == true - any editing of
   // attributes for objects requires object rebuilding.
-  if (objectAttributes->getIsDirty()) {
+  if (objectAttributes->getFilePathsAreDirty()) {
     CORRADE_ASSERT(
         (getObjectAttributesManager()->registerObject(
              objectAttributes, objectTemplateHandle) != ID_UNDEFINED),

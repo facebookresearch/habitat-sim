@@ -28,16 +28,12 @@ PbrShaderAttributes::PbrShaderAttributes(const std::string& handle)
 
   // Default brdf lookup table is the brdflut from here:
   // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/screenshots/tex_brdflut.png
-  // Setting the value directly so that it won't trigger the PbrIBLHelper handle
-  // creation.
   init("ibl_blut_filename", "brdflut_ldr_512x512.png");
-
   // Default equirectangular environment cube map
-
   init("ibl_envmap_filename", "lythwood_room_1k.hdr");
-  init("pbr_ibl_helper_key",
-       Cr::Utility::formatString("{}_{}", "brdflut_ldr_512x512",
-                                 "lythwood_room_1k.hdr"));
+  // Build the PbrIBLHelper key to check/retrive helpers in map in
+  // ResourceManager.
+  buildPbrShaderHelperKey("brdflut_ldr_512x512.png", "lythwood_room_1k.hdr");
 
   init("tonemap_exposure", 4.5f);
   init("use_ibl_tonemap", true);

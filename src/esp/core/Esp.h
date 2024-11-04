@@ -98,6 +98,9 @@ constexpr int ID_UNDEFINED = -1;
 /** @brief Object ID of the rigid stage.*/
 constexpr int RIGID_STAGE_ID = 0;
 
+/** @brief Link ID of the baseLink for articulated objects */
+constexpr int BASELINK_ID = -1;
+
 static const double NO_TIME = 0.0;
 
 /**
