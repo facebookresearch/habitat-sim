@@ -834,6 +834,12 @@ void SimTest::addSensorToObject() {
                        observation.buffer->data}),
       Cr::Utility::Path::join(screenshotDir, "SimTestExpectedScene.png"),
       (Mn::DebugTools::CompareImageToFile{maxThreshold, 0.75f}));
+
+  // test attachement to AOs
+  auto articulatedObjMgr = simulator->getArticulatedObjectManager();
+  auto ao = articulatedObjMgr->addArticulatedObjectFromURDF(
+      "data/test_assets/urdf/prim_chain.urdf");
+  auto aoSensorSpec = esp::sensor::CameraSensorSpec::create();
 }
 
 void SimTest::createMagnumRenderingOff() {
