@@ -1114,7 +1114,7 @@ esp::sensor::Sensor& Simulator::addSensorToObject(
                      ->getSceneNode();
   } else {
     // This could be a link, search for it
-    for (auto ao :
+    for (auto& ao :
          getArticulatedObjectManager()->getObjectsByHandleSubstring()) {
       auto linkObjectIds = ao.second->getLinkObjectIds();
       auto objectIdIx = linkObjectIds.find(objectId);
