@@ -1109,7 +1109,9 @@ esp::sensor::Sensor& Simulator::addSensorToObject(
         getRigidObjectManager()->getObjectCopyByID(objectId)->getSceneNode();
   } else if (getArticulatedObjectManager()->getObjectLibHasID(objectId)) {
     // This is a ManagedArticulatedObject
-    getArticulatedObjectManager()->getObjectCopyByID(objectId)->getSceneNode();
+    objectNode = getArticulatedObjectManager()
+                     ->getObjectCopyByID(objectId)
+                     ->getSceneNode();
   } else {
     // This could be a link, search for it
     for (auto ao :
@@ -1120,6 +1122,9 @@ esp::sensor::Sensor& Simulator::addSensorToObject(
         objectNode = ao.second->getLinkSceneNode(objectIdIx->second);
       }
     }
+    ESP_CHECK(objectNode != nullptr,
+              "Invalid object id provided for sensor attachemnt."
+                  << objectId << " No object found.");
   }
 
   esp::sensor::SensorFactory::createSensors(*objectNode, sensorSpecifications);

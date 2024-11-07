@@ -60,6 +60,8 @@ const std::string skokloster =
                             "habitat-test-scenes/skokloster-castle.glb");
 const std::string planeStage =
     Cr::Utility::Path::join(TEST_ASSETS, "scenes/plane.glb");
+const std::string primChain =
+    Cr::Utility::Path::join(TEST_ASSETS, "urdf/prim_chain.urdf");
 const std::string physicsConfigFile =
     Cr::Utility::Path::join(TEST_ASSETS, "testing.physics_config.json");
 const std::string screenshotDir =
@@ -837,9 +839,51 @@ void SimTest::addSensorToObject() {
 
   // test attachement to AOs
   auto articulatedObjMgr = simulator->getArticulatedObjectManager();
-  auto ao = articulatedObjMgr->addArticulatedObjectFromURDF(
-      "data/test_assets/urdf/prim_chain.urdf");
+  auto ao = articulatedObjMgr->addArticulatedObjectFromURDF(primChain);
+  CORRADE_VERIFY(ao->getSceneNode()->getSubtreeSensors().size() == 0);
   auto aoSensorSpec = esp::sensor::CameraSensorSpec::create();
+  aoSensorSpec->position = {0.0, 0.0, 0.0};
+  // attach to root of AO
+  aoSensorSpec->uuid = ao->getID();
+  simulator->addSensorToObject(ao->getID(), aoSensorSpec);
+  CORRADE_VERIFY(ao->getSceneNode()->getSubtreeSensors().size() == 1);
+  // attach to link of AO
+  int lastLinkIndex = ao->getNumLinks() - 1;
+  int linkObjectId = ao->getLinkIdsToObjectIds()[lastLinkIndex];
+  aoSensorSpec->uuid = linkObjectId;
+  simulator->addSensorToObject(linkObjectId, aoSensorSpec);
+  // Note the ArticulatedLinks are not in the subtree of the parent, so they
+  // will not be accessed via the subtree
+  CORRADE_VERIFY(ao->getSceneNode()->getSubtreeSensors().size() == 1);
+  CORRADE_VERIFY(
+      ao->getLinkSceneNode(lastLinkIndex)->getSubtreeSensors().size() == 1);
+  CORRADE_COMPARE(
+      ao->getLinkSceneNode(lastLinkIndex)
+          ->getSubtreeSensors()
+          .begin()
+          ->second.get()
+          .node()
+          .absoluteTransformation(),
+      ao->getLinkSceneNode(lastLinkIndex)->absoluteTransformation());
+
+  // verify adding to the global root node
+  aoSensorSpec->uuid = "global_sensor";
+  simulator->addSensorToObject(esp::RIGID_STAGE_ID, aoSensorSpec);
+  CORRADE_VERIFY(
+      simulator->getActiveSceneGraph().getRootNode().getNodeSensors().size() ==
+      1);
+  CORRADE_VERIFY(simulator->getActiveSceneGraph()
+                     .getRootNode()
+                     .getSubtreeSensors()
+                     .size() == 4);
+  CORRADE_COMPARE(simulator->getActiveSceneGraph()
+                      .getRootNode()
+                      .getNodeSensors()
+                      .at("global_sensor")
+                      .get()
+                      .node()
+                      .absoluteTransformation(),
+                  Mn::Matrix4{Mn::Math::IdentityInit});
 }
 
 void SimTest::createMagnumRenderingOff() {
