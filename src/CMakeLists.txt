@@ -36,10 +36,8 @@ option(BUILD_GUI_VIEWERS "Whether to build GUI viewer utility binary" OFF)
 option(BUILD_WITH_BULLET
        "Build Habitat-Sim with Bullet physics enabled -- Requires Bullet" OFF
 )
-option(
-  BUILD_WITH_BACKGROUND_RENDERER
-  "Build Habitat-Sim with async rendering support.  This will be forced to OFF when building emscripten"
-  ON
+option(BUILD_WITH_BACKGROUND_RENDERER "Build Habitat-Sim with async rendering support."
+       ON
 )
 option(BUILD_TEST "Build test binaries" OFF)
 option(REL_BUILD_RPATH "Use a relative build rpath" OFF)
@@ -78,32 +76,20 @@ if(NOT CMAKE_BUILD_TYPE)
   )
 endif()
 if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
-  if(EMSCRIPTEN)
-    # Magnum's Toolchain has issues with INTERPROCEDURAL_OPTIMIZATION
-    # There is a bug with Magnum's Emscripten toolchain.
-    # on Emscripten. Set flags manually
-    # https://github.com/emscripten-core/emscripten/issues/11143#issue-617410308
-    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
-  else()
-    # Policy that enables INTERPROCEDURAL_OPTIMIZATION
-    set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
-    cmake_policy(SET CMP0069 NEW)
+  # Policy that enables INTERPROCEDURAL_OPTIMIZATION
+  set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
+  cmake_policy(SET CMP0069 NEW)
 
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"
-       OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION
-                                                     VERSION_LESS 13.0)
-    )
-      message(
-        "-- Forcing full LTO for compatibility: ThinLTO requires LLVM Clang>=13.0"
-      )
-      # Clang has some issues with thinLTO (segfaults on final linking)
-      # This enables full LTO through CMake
-      # FullLTO is slow, but may yield performance improvements.
-      #set(CMAKE_{lang}_COMPILE_OPTIONS_IPO ${CMAKE_CXX_COMPILE_OPTIONS_IPO} -flto)
-      add_compile_options("-flto=full") # alternate way of forcing FAT LTO.
-    endif()
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"
+     OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION
+                                                   VERSION_LESS 13.0)
+  )
+    message("-- Forcing full LTO for compatibility: ThinLTO requires LLVM Clang>=13.0")
+    # Clang has some issues with thinLTO (segfaults on final linking)
+    # This enables full LTO through CMake
+    # FullLTO is slow, but may yield performance improvements.
+    #set(CMAKE_{lang}_COMPILE_OPTIONS_IPO ${CMAKE_CXX_COMPILE_OPTIONS_IPO} -flto)
+    add_compile_options("-flto=full") # alternate way of forcing FAT LTO.
   endif()
 endif()
 # avoid ld visibility warnings, should be done by CMAKE_CXX_VISIBILITY_PRESET
@@ -156,15 +142,6 @@ include_directories(${PROJECT_SOURCE_DIR})
 # Physics
 add_definitions(-DBT_ENABLE_PROFILE)
 
-if(CORRADE_TARGET_EMSCRIPTEN)
-  if(BUILD_WITH_BACKGROUND_RENDERER)
-    message("Emscripten build, disabling background rendering")
-  endif()
-  set(BUILD_WITH_BACKGROUND_RENDERER OFF CACHE BOOL "BUILD_WITH_BACKGROUND_RENDERER"
-                                               FORCE
-  )
-endif()
-
 # add subdirectories
 add_subdirectory(esp)
 
@@ -192,10 +169,5 @@ endif()
 if(BUILD_GUI_VIEWERS)
   message("Building GUI viewer")
   add_subdirectory(utils/viewer)
-
-  # The replayer utility consumes *huge* files supplied on a command line,
-  # which makes it useless in a browser setting. Thus not building it at all.
-  if(NOT CORRADE_TARGET_EMSCRIPTEN)
-    add_subdirectory(utils/replayer)
-  endif()
+  add_subdirectory(utils/replayer)
 endif()

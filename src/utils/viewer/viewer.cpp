@@ -813,11 +813,7 @@ Viewer::Viewer(const Arguments& arguments)
       MM_(std::make_shared<esp::metadata::MetadataMediator>(simConfig_)),
       curSceneInstances_{} {
   Cr::Utility::Arguments args;
-#ifdef CORRADE_TARGET_EMSCRIPTEN
-  args.addNamedArgument("scene")
-#else
   args.addArgument("scene")
-#endif
       .setHelp("scene", "scene/stage file to load")
       .addSkippedPrefix("magnum", "engine-specific options")
       .setGlobalHelp("Displays a 3D scene file provided on command line")

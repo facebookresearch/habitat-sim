@@ -160,8 +160,7 @@ class RenderTarget {
                   const Magnum::Range2Di& targetRectangle);
 
   /**
-   * @brief Blits the rgba buffer from internal FBO to default frame buffer
-   * which in case of EmscriptenApplication will be a canvas element.
+   * @brief Blits the rgba buffer from internal FBO to default frame buffer.
    */
   void blitRgbaToDefault();
 
