@@ -132,35 +132,6 @@ commands:
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
               python -c 'import torch; torch.cuda.set_device(0)'
-      - run:
-          name: Install emscripten
-          no_output_timeout: 20m
-          background: true
-          command: |
-              if [ ! -f ~/emscripten_installed ]
-              then
-                export PATH=$HOME/miniconda/bin:$PATH
-                . activate habitat;
-                git clone -q https://github.com/emscripten-core/emsdk.git ~/emsdk
-                cd ~/emsdk
-                ./emsdk install 1.38.48
-                ./emsdk activate 1.38.48
-                . ~/emsdk/emsdk_env.sh
-                touch ~/emscripten_installed
-              fi
-      - run:
-          name: Install JavaScript dependencies
-          background: true
-          command: |
-              if [ ! -f ~/npm_deps_installed ]
-              then
-                wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.34.0/install.sh | bash
-                . ~/.bashrc
-                nvm install v11.9.0
-                nvm use v11.9.0
-                npm install
-                touch ~/npm_deps_installed
-              fi
       #- restore_cache:
       #    keys:
       #      - habitat-lab-{{ checksum "./hablab_sha" }}

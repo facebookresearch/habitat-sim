@@ -37,11 +37,6 @@ option(BUILD_WITH_BULLET
        "Build Habitat-Sim with Bullet physics enabled -- Requires Bullet" OFF
 )
 option(
-  BUILD_WEB_APPS
-  "(Emscripten-build-only) build and bundle our html/Javascript demo web apps including test_page.html and bindings.html"
-  ON
-)
-option(
   BUILD_WITH_BACKGROUND_RENDERER
   "Build Habitat-Sim with async rendering support.  This will be forced to OFF when building emscripten"
   ON
