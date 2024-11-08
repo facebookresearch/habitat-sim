@@ -178,12 +178,6 @@ if(BUILD_PYTHON_BINDINGS)
   add_subdirectory(esp/bindings)
 endif()
 
-# emscripten js bindings
-if(CORRADE_TARGET_EMSCRIPTEN)
-  message("Building Emscripten JS bindings")
-  add_subdirectory(esp/bindings_js)
-endif()
-
 # Build the following with the build RPath
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 if(BUILD_DATATOOL)

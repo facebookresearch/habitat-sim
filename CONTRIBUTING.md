@@ -47,9 +47,6 @@ clear and has sufficient instructions to be able to reproduce the issue.
   - We follow PEP8 and use [typing](https://docs.python.org/3/library/typing.html).
   - We use `black` and `isort` for linting and code style of python code.
   Install `black` and `isort` through `pip install -U black isort`. They can then be ran via `black .` and `isort`.
-- JS
-  - We use `eslint` with `prettier` plugin for linting, formatting and code style of JS code.
-  Install these dependencies through `npm install`. Then, for fixing linting/formatting errors run `npm run lint-fix`. Make sure you have a node version > 8 for this.
 
 We also use pre-commit hooks to ensure linting and style enforcement. Install the pre-commit hooks with `pip install pre-commit && pre-commit install`.
 

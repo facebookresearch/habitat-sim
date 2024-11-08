@@ -14,18 +14,14 @@ commands:
       - run: &install_cmake
           name: Install cmake
           no_output_timeout: 5m
-          # OpenEXR requires CMake 3.12. We also download CMake 3.20, which
-          # we'll use later for the JS build only.
+          # OpenEXR requires CMake 3.12.
           command: |
               echo $(date +%F) > ./date
               echo $(git ls-remote https://github.com/facebookresearch/habitat-lab.git HEAD | awk '{ print $1}') > ./hablab_sha
               cat ./hablab_sha
               wget https://cmake.org/files/v3.12/cmake-3.12.4-Linux-x86_64.sh
-              wget https://cmake.org/files/v3.20/cmake-3.20.1-linux-x86_64.sh
               sudo mkdir /opt/cmake312
-              sudo mkdir /opt/cmake320
               sudo sh ./cmake-3.12.4-Linux-x86_64.sh --prefix=/opt/cmake312 --skip-license
-              sudo sh ./cmake-3.20.1-linux-x86_64.sh --prefix=/opt/cmake320 --skip-license
               sudo ln -s /opt/cmake312/bin/cmake /usr/local/bin/cmake
       - run: &install_deps
           name: Install dependencies
@@ -230,20 +226,6 @@ jobs:
       - run:
           name: run mypy
           command: mypy
-
-  js_lint:
-    docker:
-      - image: cimg/node:12.20
-    steps:
-      - checkout
-      - run:
-          name: setup
-          command: |
-            npm install
-      - run:
-          name: run eslint
-          command: |
-            npm run lint
 
   pre-commit:
     docker:
@@ -526,25 +508,6 @@ jobs:
             ccache --show-stats
       - run: *download_test_data
       - run:
-          name: Build Javascript bindings
-          command: |
-              # Wait for npm and emscripten install. Note that npm is not strictly
-              # required (see also Run JavaScript tests in this file).
-              while [[ ! -f ~/emscripten_installed && ! -f ~/npm_deps_installed ]]; do sleep 2; done
-              # switch to cmake 3.20 just for this step. The JS build requires
-              # static Bullet libs, and Bullet static libs required CMake 3.13+.
-              sudo rm /usr/local/bin/cmake
-              sudo ln -s /opt/cmake320/bin/cmake /usr/local/bin/cmake
-              cd habitat-sim
-              . ~/.bashrc
-              export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat
-              . ~/emsdk/emsdk_env.sh
-              CMAKE_GENERATOR=Ninja ./build_js.sh --bullet --no-web-apps
-              # switch back to cmake 3.12
-              sudo rm /usr/local/bin/cmake
-              sudo ln -s /opt/cmake312/bin/cmake /usr/local/bin/cmake
-      - run:
           name: Display dependency versions
           no_output_timeout: 20m
           command: |
@@ -567,17 +530,6 @@ jobs:
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
               python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
-
-      # reference code to test our JS build using npm/html/JS
-      # - run:
-      #     name: Run JavaScript tests
-      #     command: |
-      #       cd habitat-sim
-      #       . ~/.bashrc
-      #       export PATH=$HOME/miniconda/bin:$PATH
-      #       . activate habitat
-      #       nvm use v11.9.0
-      #       npm run test
       - run:
           name: Run sim tests
           no_output_timeout: 25m
@@ -610,11 +562,6 @@ jobs:
               ./build.sh --headless --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
               PYTHONPATH=src_python pytest -n 4 --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
 
-              # reference code to generate JS CodeConv
-              # . ~/.bashrc
-              # nvm use v11.9.0
-              # . ~/emsdk/emsdk_env.sh
-              # npm run test_with_coverage
       - run: &upload_coverage
           name: Upload test coverage
           command: |
@@ -625,9 +572,6 @@ jobs:
               chmod +x codecov
               #Uploading test coverage for Python code
               ./codecov -f coverage.xml -cF Python
-
-              # reference code for uploading test coverage for JS code
-              # ./codecov coverage_js/coverage-final.json -cF JavaScript
 
               #Uploading test coverage for C++ code
               lcov --directory . --capture --output-file coverage.info
@@ -759,7 +703,6 @@ workflows:
   install_and_test:
     jobs:
       - python_lint
-      - js_lint
       - lab_build_habitat
       - build_conda_osx:
          CI_TEST: true

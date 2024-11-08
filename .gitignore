@@ -187,17 +187,3 @@ pre-commit-deps.txt
 
 /src_python/habitat_sim/_ext
 /tools/qa_scenes/qa_scenes_output/
-
-# JS
-node_modules/
-package-lock.json
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.npm/
-coverage_js/
-
-# JS hand demo data, bindings, and web assembly
-/examples/web_apps/webxr_hand_demo/data/*
-/examples/web_apps/webxr_hand_demo/js/hsim_bindings.js
-/examples/web_apps/webxr_hand_demo/js/hsim_bindings.wasm
