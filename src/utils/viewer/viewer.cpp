@@ -8,12 +8,6 @@
 #include <fstream>
 #include <iostream>
 
-#include <Magnum/configure.h>
-#ifdef MAGNUM_TARGET_WEBGL
-#include <Magnum/Platform/EmscriptenApplication.h>
-#else
-#include <Magnum/Platform/GlfwApplication.h>
-#endif
 #include <Magnum/GL/Context.h>
 #include <Magnum/GL/Extensions.h>
 #include <Magnum/GL/Framebuffer.h>
@@ -21,9 +15,11 @@
 #include <Magnum/GL/RenderbufferFormat.h>
 #include <Magnum/Image.h>
 #include <Magnum/PixelFormat.h>
+#include <Magnum/Platform/GlfwApplication.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/Shaders/Shaders.h>
 #include <Magnum/Timeline.h>
+#include <Magnum/configure.h>
 #include "esp/core/configure.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
