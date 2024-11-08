@@ -1482,7 +1482,7 @@ void ResourceManager::configureImporterManagerGLExtensions() {
   /* This is reduced to formats that Magnum currently can Y-flip. More formats
      will get added back with new additions to Magnum/Math/ColorBatch.h. */
 
-#ifdef defined(MAGNUM_TARGET_GLES)
+#ifdef MAGNUM_TARGET_GLES
   if (context.isExtensionSupported<
           Mn::GL::Extensions::EXT::texture_compression_s3tc>() ||
       context.isExtensionSupported<
