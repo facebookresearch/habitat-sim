@@ -29,8 +29,7 @@ pybind11_add_module(
 target_link_libraries(
   habitat_sim_bindings
   PRIVATE MagnumBindings::Python MagnumPlugins::KtxImporter
-  PUBLIC agent
-         assets
+  PUBLIC assets
          scene
          core
          gfx

@@ -1968,8 +1968,8 @@ void Viewer::mousePressEvent(MouseEvent& event) {
           auto semanticObjects = semanticScene->objects();
           std::string sensorId = "semantic_camera";
           esp::sensor::Observation observation;
-          simulator_->getAgentObservation(defaultAgentId_, sensorId,
-                                          observation);
+          simulator_->getSensorObservation(defaultAgentId_, sensorId,
+                                           observation);
 
           uint32_t desiredIdx =
               (viewportPoint[0] +

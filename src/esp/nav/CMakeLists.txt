@@ -14,6 +14,6 @@ target_include_directories(
 
 target_link_libraries(
   nav
-  PUBLIC core agent scene
+  PUBLIC core scene
   PRIVATE Detour Recast
 )
