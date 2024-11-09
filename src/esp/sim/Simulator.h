@@ -629,7 +629,8 @@ class Simulator {
   agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig);
 
   /**
-   * @brief Initialize sensor and attach to sceneNode of a particular object
+   * @brief Initialize a sensor from its spec and attach it to the SceneNode of
+   * a particular object or link.
    * @param objectId    Id of the object to which a sensor will be initialized
    * at its node
    * @param sensorSpec  SensorSpec of sensor to be initialized
