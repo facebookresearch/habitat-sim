@@ -1024,10 +1024,38 @@ esp::sensor::Sensor& Simulator::addSensorToObject(
   getRenderGLContext();
 
   esp::sensor::SensorSetup sensorSpecifications = {sensorSpec};
-  esp::scene::SceneNode& objectNode =
-      *(getRigidObjectManager()->getObjectCopyByID(objectId)->getSceneNode());
-  esp::sensor::SensorFactory::createSensors(objectNode, sensorSpecifications);
-  return objectNode.getNodeSensorSuite().get(sensorSpec->uuid);
+
+  // Handle attachements to the SceneGraph
+  esp::scene::SceneNode* objectNode = nullptr;
+  if (objectId == RIGID_STAGE_ID) {
+    // This is the stage, attach to the root node
+    objectNode = &getActiveSceneGraph().getRootNode();
+  } else if (getRigidObjectManager()->getObjectLibHasID(objectId)) {
+    // This is a ManagedRigidObject
+    objectNode =
+        getRigidObjectManager()->getObjectCopyByID(objectId)->getSceneNode();
+  } else if (getArticulatedObjectManager()->getObjectLibHasID(objectId)) {
+    // This is a ManagedArticulatedObject
+    objectNode = getArticulatedObjectManager()
+                     ->getObjectCopyByID(objectId)
+                     ->getSceneNode();
+  } else {
+    // This could be a link, search for it
+    for (auto& ao :
+         getArticulatedObjectManager()->getObjectsByHandleSubstring()) {
+      auto linkObjectIds = ao.second->getLinkObjectIds();
+      auto objectIdIx = linkObjectIds.find(objectId);
+      if (objectIdIx != linkObjectIds.end()) {
+        objectNode = ao.second->getLinkSceneNode(objectIdIx->second);
+      }
+    }
+    ESP_CHECK(objectNode != nullptr,
+              "Invalid object id provided for sensor attachemnt."
+                  << objectId << " No object found.");
+  }
+
+  esp::sensor::SensorFactory::createSensors(*objectNode, sensorSpecifications);
+  return objectNode->getNodeSensorSuite().get(sensorSpec->uuid);
 }
 
 void Simulator::setPathFinder(nav::PathFinder::ptr pathfinder) {
