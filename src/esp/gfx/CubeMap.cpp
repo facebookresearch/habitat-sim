@@ -156,9 +156,7 @@ Magnum::GL::CubeMapTexture& CubeMap::texture(TextureType type) {
 }
 
 CubeMap::CubeMap(int imageSize, Flags flags) : flags_(flags) {
-#ifndef MAGNUM_TARGET_WEBGL
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::SeamlessCubeMapTexture);
-#endif
   reset(imageSize);
 }
 
@@ -339,9 +337,7 @@ Mn::GL::CubeMapTexture& CubeMap::getTexture(TextureType type) {
   return textures_[static_cast<uint8_t>(type)];
 }
 
-#ifndef MAGNUM_TARGET_WEBGL
-// because Mn::Image2D image = textures_[type]->image(...)
-// requires desktop OpenGL
+// Mn::Image2D image = textures_[type]->image(...) requires desktop OpenGL
 bool CubeMap::saveTexture(TextureType type,
                           const std::string& imageFilePrefix,
                           unsigned int mipLevel) {
@@ -414,7 +410,6 @@ bool CubeMap::saveTexture(TextureType type,
 
   return true;
 }
-#endif
 
 void CubeMap::loadTexture(TextureType type,
                           const std::string& imageFilePrefix,
@@ -521,11 +516,10 @@ void CubeMap::copySubImage(unsigned int cubeSideIndex,
 
   int size = imageSize_ / (1 << mipLevel);
 
-#ifndef MAGNUM_TARGET_WEBGL
   CORRADE_ASSERT(texture.imageSize(0) == Mn::Vector2i(size),
                  "CubeMap::CopyToTexture2D(): the texture size does not match "
                  "the cubemap size.", );
-#endif
+
   // map for read
   switch (type) {
     case TextureType::Color:

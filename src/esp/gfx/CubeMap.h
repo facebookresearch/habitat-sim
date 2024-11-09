@@ -124,7 +124,6 @@ class CubeMap {
   /** @brief get cube map size */
   int getCubeMapSize() const { return imageSize_; }
 
-#ifndef MAGNUM_TARGET_WEBGL
   /**
    * ```
    *           +----+
@@ -160,7 +159,6 @@ class CubeMap {
   bool saveTexture(TextureType type,
                    const std::string& imageFilePrefix,
                    unsigned int mipLevel = 0);
-#endif
 
   /**
    * ```
