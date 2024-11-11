@@ -30,7 +30,6 @@
 #include "esp/physics/bullet/BulletCollisionHelper.h"
 #include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
-#include "esp/scene/ObjectControls.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/SensorFactory.h"
 #include "esp/sensor/VisualSensor.h"

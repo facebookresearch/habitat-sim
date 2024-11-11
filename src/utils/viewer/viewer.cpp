@@ -26,7 +26,6 @@
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
 #include "esp/nav/PathFinder.h"
-#include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneNode.h"
 #include "esp/sensor/configure.h"
 
@@ -298,8 +297,6 @@ class Viewer : public Mn::Platform::Application {
    * @brief Display information about the currently loaded scene.
    */
   void dispMetadataInfo();
-
-  esp::agent::AgentConfiguration agentConfig_;
 
   void saveAgentAndSensorTransformToFile();
   void loadAgentAndSensorTransformFromFile();
@@ -582,10 +579,9 @@ Key Commands:
 
   bool debugBullet_ = false;
 
+  //! The SceneNode constructed to hold a set of Sensor objects.
   esp::scene::SceneNode* agentBodyNode_ = nullptr;
-
-  const int defaultAgentId_ = 0;
-  esp::agent::Agent::ptr defaultAgent_ = nullptr;
+  esp::sensor::SensorSetup sensorSpecs = esp::sensor::SensorSetup();
 
   // if currently orthographic
   bool isOrtho_ = false;
@@ -664,15 +660,14 @@ Key Commands:
 #endif  // ESP_BUILD_WITH_AUDIO
 };      // class viewer declaration
 
-void addSensors(esp::agent::AgentConfiguration& agentConfig,
+void addSensors(esp::sensor::SensorSetup& sensorSpecs,
                 bool isOrtho,
                 const Mn::Vector2i& framebufferSize) {
   auto addCameraSensor = [&](const std::string& uuid,
                              esp::sensor::SensorType sensorType) {
-    agentConfig.sensorSpecifications.emplace_back(
-        esp::sensor::CameraSensorSpec::create());
-    auto spec = static_cast<esp::sensor::CameraSensorSpec*>(
-        agentConfig.sensorSpecifications.back().get());
+    sensorSpecs.emplace_back(esp::sensor::CameraSensorSpec::create());
+    auto spec =
+        static_cast<esp::sensor::CameraSensorSpec*>(sensorSpecs.back().get());
 
     spec->uuid = uuid;
     spec->sensorSubType = isOrtho ? esp::sensor::SensorSubType::Orthographic
@@ -700,10 +695,10 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
     // TODO: support the other model types in the future.
     CORRADE_INTERNAL_ASSERT(modelType ==
                             esp::sensor::FisheyeSensorModelType::DoubleSphere);
-    agentConfig.sensorSpecifications.emplace_back(
+    sensorSpecs.emplace_back(
         esp::sensor::FisheyeSensorDoubleSphereSpec::create());
     auto spec = static_cast<esp::sensor::FisheyeSensorDoubleSphereSpec*>(
-        agentConfig.sensorSpecifications.back().get());
+        sensorSpecs.back().get());
 
     spec->uuid = uuid;
     spec->sensorType = sensorType;
@@ -746,10 +741,9 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
 
   auto addEquirectangularSensor = [&](const std::string& uuid,
                                       esp::sensor::SensorType sensorType) {
-    agentConfig.sensorSpecifications.emplace_back(
-        esp::sensor::EquirectangularSensorSpec::create());
+    sensorSpecs.emplace_back(esp::sensor::EquirectangularSensorSpec::create());
     auto spec = static_cast<esp::sensor::EquirectangularSensorSpec*>(
-        agentConfig.sensorSpecifications.back().get());
+        sensorSpecs.back().get());
     spec->uuid = uuid;
     spec->sensorType = sensorType;
     if (sensorType == esp::sensor::SensorType::Depth ||
@@ -776,10 +770,9 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
   auto addAudioSensor = [&](const std::string& uuid,
                             esp::sensor::SensorType sensorType,
                             esp::sensor::SensorSubType sensorSubType) {
-    agentConfig.sensorSpecifications.emplace_back(
-        esp::sensor::AudioSensorSpec::create());
-    auto spec = static_cast<esp::sensor::AudioSensorSpec*>(
-        agentConfig.sensorSpecifications.back().get());
+    sensorSpecs.emplace_back(esp::sensor::AudioSensorSpec::create());
+    auto spec =
+        static_cast<esp::sensor::AudioSensorSpec*>(sensorSpecs.back().get());
     spec->uuid = uuid;
     spec->sensorType = sensorType;
     spec->sensorSubType = sensorSubType;
@@ -921,46 +914,8 @@ Viewer::Viewer(const Arguments& arguments)
   recomputeNavmesh_ = args.isSet("recompute-navmesh");
   navmeshFilename_ = args.value("navmesh-file").empty();
 
-  // configure default Agent Config for actions and sensors
-  agentConfig_ = esp::agent::AgentConfiguration();
-  agentConfig_.height = rgbSensorHeight;
-  agentConfig_.actionSpace = {
-      // setup viewer action space
-      {"moveForward",
-       esp::agent::ActionSpec::create(
-           "moveForward",
-           esp::agent::ActuationMap{{"amount", moveSensitivity}})},
-      {"moveBackward",
-       esp::agent::ActionSpec::create(
-           "moveBackward",
-           esp::agent::ActuationMap{{"amount", moveSensitivity}})},
-      {"moveLeft",
-       esp::agent::ActionSpec::create(
-           "moveLeft", esp::agent::ActuationMap{{"amount", moveSensitivity}})},
-      {"moveRight",
-       esp::agent::ActionSpec::create(
-           "moveRight", esp::agent::ActuationMap{{"amount", moveSensitivity}})},
-      {"moveDown",
-       esp::agent::ActionSpec::create(
-           "moveDown", esp::agent::ActuationMap{{"amount", moveSensitivity}})},
-      {"moveUp",
-       esp::agent::ActionSpec::create(
-           "moveUp", esp::agent::ActuationMap{{"amount", moveSensitivity}})},
-      {"turnLeft",
-       esp::agent::ActionSpec::create(
-           "turnLeft", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
-      {"turnRight",
-       esp::agent::ActionSpec::create(
-           "turnRight", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
-      {"lookUp",
-       esp::agent::ActionSpec::create(
-           "lookUp", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
-      {"lookDown",
-       esp::agent::ActionSpec::create(
-           "lookDown", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
-  };
   // add sensor specifications to agent config
-  addSensors(agentConfig_, isOrtho_, scaledFramebufferSize_);
+  addSensors(sensorSpecs, isOrtho_, scaledFramebufferSize_);
 
   // setup SimulatorConfig from args.
   simConfig_.activeSceneName = args.value("scene");
@@ -1096,8 +1051,8 @@ void Viewer::initSimPostReconfigure() {
     }
   } else if (recomputeNavmesh_) {
     esp::nav::NavMeshSettings navMeshSettings;
-    navMeshSettings.agentHeight = agentConfig_.height;
-    navMeshSettings.agentRadius = agentConfig_.radius;
+    navMeshSettings.agentHeight = 1.3;
+    navMeshSettings.agentRadius = 0.25;
     navMeshSettings.includeStaticObjects = true;
     simulator_->recomputeNavMesh(*simulator_->getPathFinder().get(),
                                  navMeshSettings);
@@ -1108,14 +1063,10 @@ void Viewer::initSimPostReconfigure() {
       simulator_->getPathFinder()->loadNavMesh(navmeshFile);
     }
   }
-  // add selects a random initial state and sets up the default controls and
-  // step filter
-  simulator_->addAgent(agentConfig_);
 
   // Set up camera
   activeSceneGraph_ = &simulator_->getActiveSceneGraph();
-  defaultAgent_ = simulator_->getAgent(defaultAgentId_);
-  agentBodyNode_ = &defaultAgent_->node();
+  agentBodyNode_ = &activeSceneGraph_->getRootNode().createChild();
   renderCamera_ = getAgentCamera().getRenderCamera();
   // Refresh local simConfig_ to track results from scene load
   simConfig_ = MM_->getSimulatorConfiguration();
@@ -1180,7 +1131,7 @@ void Viewer::saveAgentAndSensorTransformToFile() {
   }
 
   // update temporary save
-  savedAgentTransform_ = defaultAgent_->node().transformation();
+  savedAgentTransform_ = agentBodyNode_->transformation();
   savedSensorTransform_ = getAgentCamera().node().transformation();
 
   // update save in file system
@@ -1367,8 +1318,8 @@ void Viewer::loadAgentAndSensorTransformFromFile() {
     }
   }
 
-  defaultAgent_->node().setTransformation(*savedAgentTransform_);
-  for (const auto& p : defaultAgent_->node().getNodeSensors()) {
+  agentBodyNode_->setTransformation(*savedAgentTransform_);
+  for (const auto& p : agentBodyNode_->getNodeSensors()) {
     p.second.get().object().setTransformation(*savedSensorTransform_);
   }
   ESP_DEBUG()
@@ -1485,7 +1436,6 @@ void Viewer::setSceneInstanceFromListAndShow(int nextSceneInstanceIDX) {
 
   renderCamera_ = nullptr;
   agentBodyNode_ = nullptr;
-  defaultAgent_ = nullptr;
   activeSceneGraph_ = nullptr;
 
   // close and reconfigure
@@ -1593,7 +1543,7 @@ void Viewer::drawEvent() {
     // ONLY draw the content to the frame buffer but not immediately blit the
     // result to the default main buffer
     // (this is the reason we do not call displayObservation)
-    simulator_->drawObservation(defaultAgentId_, sensorVisID_);
+    simulator_->drawObservation(sensorVisID_);
 
     Mn::GL::Renderer::setDepthFunction(
         Mn::GL::Renderer::DepthFunction::LessOrEqual);
@@ -1609,7 +1559,7 @@ void Viewer::drawEvent() {
 
     visibles = renderCamera_->getPreviousNumVisibleDrawables();
     esp::gfx::RenderTarget* sensorRenderTarget =
-        simulator_->getRenderTarget(defaultAgentId_, sensorVisID_);
+        simulator_->getRenderTarget(sensorVisID_);
     CORRADE_ASSERT(sensorRenderTarget,
                    "Error in Viewer::drawEvent: sensor's rendering target "
                    "cannot be nullptr.", );
@@ -1634,22 +1584,22 @@ void Viewer::drawEvent() {
     sensorRenderTarget->blitRgbaToDefault();
   } else {
     // Depth Or Semantic, or Non-pinhole RGBA
-    simulator_->drawObservation(defaultAgentId_, sensorVisID_);
+    simulator_->drawObservation(sensorVisID_);
 
     esp::gfx::RenderTarget* sensorRenderTarget =
-        simulator_->getRenderTarget(defaultAgentId_, sensorVisID_);
+        simulator_->getRenderTarget(sensorVisID_);
     CORRADE_ASSERT(sensorRenderTarget,
                    "Error in Viewer::drawEvent: sensor's rendering target "
                    "cannot be nullptr.", );
 
     if (visualizeMode_ == VisualizeMode::Depth) {
-      simulator_->visualizeObservation(defaultAgentId_, sensorVisID_,
+      simulator_->visualizeObservation(sensorVisID_,
                                        1.0f / 512.0f,  // colorMapOffset
                                        1.0f / 12.0f);  // colorMapScale
     } else if (visualizeMode_ == VisualizeMode::Semantic) {
       Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
                                        Mn::GL::FramebufferClear::Depth);
-      simulator_->visualizeObservation(defaultAgentId_, sensorVisID_);
+      simulator_->visualizeObservation(sensorVisID_);
     }
     sensorRenderTarget->blitRgbaToDefault();
   }
@@ -1796,7 +1746,7 @@ void Viewer::moveAndLook(int repetitions) {
     // GRAB mode, move the constraint
     auto ray = renderCamera_->unproject(previousMousePoint);
     mouseGrabber_->updateTransform(
-        Mn::Matrix4::from(defaultAgent_->node().rotation().toMatrix(),
+        Mn::Matrix4::from(agentBodyNode_->rotation().toMatrix(),
                           renderCamera_->node().absoluteTranslation() +
                               ray.direction * mouseGrabber_->gripDepth));
   }
@@ -1968,8 +1918,7 @@ void Viewer::mousePressEvent(MouseEvent& event) {
           auto semanticObjects = semanticScene->objects();
           std::string sensorId = "semantic_camera";
           esp::sensor::Observation observation;
-          simulator_->getSensorObservation(defaultAgentId_, sensorId,
-                                           observation);
+          simulator_->getSensorObservation(sensorId, observation);
 
           uint32_t desiredIdx =
               (viewportPoint[0] +
@@ -2056,10 +2005,8 @@ void Viewer::mousePressEvent(MouseEvent& event) {
             constraintSettings.linkIdA = aoLink;
             constraintSettings.pivotA = objectPivot;
             constraintSettings.frameA =
-                objectFrame.toMatrix() *
-                defaultAgent_->node().rotation().toMatrix();
-            constraintSettings.frameB =
-                defaultAgent_->node().rotation().toMatrix();
+                objectFrame.toMatrix() * agentBodyNode_->rotation().toMatrix();
+            constraintSettings.frameB = agentBodyNode_->rotation().toMatrix();
             constraintSettings.pivotB = hitInfo.point;
             // by default use a point 2 point constraint
             if (event.button() == MouseEvent::Button::Right) {
@@ -2136,7 +2083,7 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
       auto ray = renderCamera_->unproject(viewportPoint);
       mouseGrabber_->gripDepth += scrollDelta;
       mouseGrabber_->updateTransform(
-          Mn::Matrix4::from(defaultAgent_->node().rotation().toMatrix(),
+          Mn::Matrix4::from(agentBodyNode_->rotation().toMatrix(),
                             renderCamera_->node().absoluteTranslation() +
                                 ray.direction * mouseGrabber_->gripDepth));
     }
@@ -2167,7 +2114,7 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
     // GRAB mode, move the constraint
     auto ray = renderCamera_->unproject(viewportPoint);
     mouseGrabber_->updateTransform(
-        Mn::Matrix4::from(defaultAgent_->node().rotation().toMatrix(),
+        Mn::Matrix4::from(agentBodyNode_->rotation().toMatrix(),
                           renderCamera_->node().absoluteTranslation() +
                               ray.direction * mouseGrabber_->gripDepth));
   }

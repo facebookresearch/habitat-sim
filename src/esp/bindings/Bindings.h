@@ -153,8 +153,7 @@ createSceneNodeBind(pybind11::module& m);
  * @ref esp::scene::SceneManager , @ref esp::scene::SemanticCategory ,
  * @ref esp::scene::Mp3dObjectCategory , @ref esp::scene::Mp3dRegionCategory
  * @ref esp::scene::SemanticObject , @ref esp::scene::SemanticRegion ,
- * @ref esp::scene::SemanticLevel , @ref esp::scene::SemanticScene , and
- * @ref esp::scene::ObjectControls
+ * @ref esp::scene::SemanticLevel , @ref esp::scene::SemanticScene
  */
 void initSceneBindings(
     pybind11::module& m,
