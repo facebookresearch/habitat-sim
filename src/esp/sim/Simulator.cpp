@@ -1145,7 +1145,6 @@ bool Simulator::getSensorObservation(const std::string& sensorUuid,
   auto sensor = allSensors.find(sensorUuid);
 
   if (sensor != allSensors.end()) {
-    ESP_DEBUG() << "Found the sensor, trying to getObservation " << sensorUuid;
     return sensor->second.get().getObservation(*this, observation);
   }
   return false;

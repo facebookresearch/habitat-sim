@@ -127,11 +127,10 @@ void VisualSensor::readObservation(Observation& obs) {
 bool VisualSensor::getObservation(sim::Simulator& sim, Observation& obs) {
   // TODO: check if sensor is valid?
   // TODO: have different classes for the different types of sensors
-  //
+
   if (!hasRenderTarget())
     return false;
 
-  ESP_DEBUG() << "Has render target...";
   drawObservation(sim);
   readObservation(obs);
 

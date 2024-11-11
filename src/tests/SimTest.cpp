@@ -940,8 +940,6 @@ void SimTest::createMagnumRenderingOff() {
   testRaycast();
   testBoundingBox();
 
-  ESP_DEBUG() << "about to do sensor stuff";
-
   // do some sensor stuff to check that nothing errors
   auto objectSensorSpec = esp::sensor::CameraSensorSpec::create();
   objectSensorSpec->sensorType = esp::sensor::SensorType::Color;
@@ -949,9 +947,7 @@ void SimTest::createMagnumRenderingOff() {
   objectSensorSpec->position = {0, 0, 0};
   objectSensorSpec->orientation = {0, 0, 0};
   objectSensorSpec->resolution = {128, 128};
-  ESP_DEBUG() << "about to add sensor to obj";
   simulator->addSensorToObject(obj->getID(), objectSensorSpec);
-  ESP_DEBUG() << "added sensor to obj";
   std::string expectedUUID = std::to_string(obj->getID());
   CameraSensor& cameraSensor = dynamic_cast<CameraSensor&>(
       objectNode->getNodeSensorSuite().get(expectedUUID));
