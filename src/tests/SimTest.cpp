@@ -254,7 +254,7 @@ void SimTest::checkPinholeCameraRGBAObservation(
   pinholeCameraSpec->position = {1.0f, 1.5f, 1.0f};
   pinholeCameraSpec->resolution = {128, 128};
 
-  auto globalSensorSuite =
+  auto& globalSensorSuite =
       simulator.addSensorToObject(esp::RIGID_STAGE_ID, pinholeCameraSpec);
 
   Observation observation;
@@ -681,8 +681,8 @@ void SimTest::addObjectInvertedScale() {
   pinholeCameraSpec->position = {0.0f, 1.5f, 0.0f};
   pinholeCameraSpec->resolution = {128, 128};
 
-  auto globalSensorSuite =
-      simulator.addSensorToObject(esp::RIGID_STAGE_ID, pinholeCameraSpec);
+  auto& globalSensorSuite =
+      simulator->addSensorToObject(esp::RIGID_STAGE_ID, pinholeCameraSpec);
 
   // Add 2 objects and take initial non-negative scaled observation
   const auto objHandle = Cr::Utility::Path::join(

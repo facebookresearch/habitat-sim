@@ -1051,7 +1051,7 @@ void Viewer::initSimPostReconfigure() {
     }
   } else if (recomputeNavmesh_) {
     esp::nav::NavMeshSettings navMeshSettings;
-    navMeshSettings.agentHeight = 1.3;
+    navMeshSettings.agentHeight = rgbSensorHeight;
     navMeshSettings.agentRadius = 0.25;
     navMeshSettings.includeStaticObjects = true;
     simulator_->recomputeNavMesh(*simulator_->getPathFinder().get(),
@@ -1697,46 +1697,43 @@ void Viewer::dispMetadataInfo() {  // display info report
 
 void Viewer::moveAndLook(int repetitions) {
   for (int i = 0; i < repetitions; ++i) {
-    if (keysPressed[KeyEvent::Key::Left]) {
-      defaultAgent_->act("turnLeft");
-    }
-    if (keysPressed[KeyEvent::Key::Right]) {
-      defaultAgent_->act("turnRight");
-    }
-    if (keysPressed[KeyEvent::Key::Up]) {
-      defaultAgent_->act("lookUp");
-    }
-    if (keysPressed[KeyEvent::Key::Down]) {
-      defaultAgent_->act("lookDown");
-    }
-
     bool moved = false;
     if (keysPressed[KeyEvent::Key::A]) {
-      defaultAgent_->act("moveLeft");
+      agentBodyNode_->translateLocal(agentBodyNode_->transformation().right() *
+                                     -moveSensitivity);
       moved = true;
     }
     if (keysPressed[KeyEvent::Key::D]) {
-      defaultAgent_->act("moveRight");
+      agentBodyNode_->translateLocal(agentBodyNode_->transformation().right() *
+                                     moveSensitivity);
       moved = true;
     }
     if (keysPressed[KeyEvent::Key::S]) {
-      defaultAgent_->act("moveBackward");
+      agentBodyNode_->translateLocal(
+          agentBodyNode_->transformation().backward() * moveSensitivity);
       moved = true;
     }
     if (keysPressed[KeyEvent::Key::W]) {
-      defaultAgent_->act("moveForward");
+      agentBodyNode_->translateLocal(
+          agentBodyNode_->transformation().backward() * -moveSensitivity);
       moved = true;
     }
-    if (keysPressed[KeyEvent::Key::X]) {
-      defaultAgent_->act("moveDown");
-      moved = true;
-    }
-    if (keysPressed[KeyEvent::Key::Z]) {
-      defaultAgent_->act("moveUp");
-      moved = true;
+    if (keysPressed[KeyEvent::Key::X] || keysPressed[KeyEvent::Key::Z]) {
+      auto moveAmount = moveSensitivity;
+      if (keysPressed[KeyEvent::Key::Z]) {
+        moveAmount *= -1.0;
+      }
+      // apply the transformation to all sensors
+      for (auto& p : agentBodyNode_->getSubtreeSensors()) {
+        auto& sensorNode = p.second.get().node();
+        // apply X rotation to the sensors to pivot them up/down
+        sensorNode.translate(agentBodyNode_->transformation().up() *
+                             moveAmount);
+      }
     }
 
     if (moved) {
+      // TODO: rec filter
       recAgentLocation();
     }
   }
@@ -2100,14 +2097,15 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   auto viewportPoint = getMousePosition(event.position());
   if (mouseInteractionMode == MouseInteractionMode::LOOK) {
     const Mn::Vector2i delta = event.relativePosition();
-    auto& controls = *defaultAgent_->getControls().get();
-    controls(*agentBodyNode_, "turnRight", delta.x());
+    // apply Y rotation to the "agent" node to turn it
+    agentBodyNode_->rotateYLocal(Magnum::Deg(-delta.x()));
+    agentBodyNode_->setRotation(agentBodyNode_->rotation().normalized());
     // apply the transformation to all sensors
     for (auto& p : agentBodyNode_->getSubtreeSensors()) {
-      controls(p.second.get().object(),  // SceneNode
-               "lookDown",               // action name
-               delta.y(),                // amount
-               false);                   // applyFilter
+      auto& sensorNode = p.second.get().node();
+      // apply X rotation to the sensors to pivot them up/down
+      sensorNode.rotateXLocal(Magnum::Deg(delta.x()));
+      sensorNode.setRotation(sensorNode.rotation().normalized());
     }
   } else if (mouseInteractionMode == MouseInteractionMode::GRAB &&
              mouseGrabber_ != nullptr) {
@@ -2362,8 +2360,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
                 ArtObjConfigFilepath, false, simConfig_.sceneLightSetupKey);
           }
           ao->setTranslation(
-              defaultAgent_->node().transformation().transformPoint(
-                  {0, 1.0, -1.5}));
+              agentBodyNode_->transformation().transformPoint({0, 1.0, -1.5}));
         }
       }
     } break;

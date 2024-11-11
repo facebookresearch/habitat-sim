@@ -226,6 +226,7 @@ corrade_add_test(
   SimTest.cpp
   LIBRARIES
   sim
+  sensor
   Magnum::DebugTools
   Magnum::AnyImageConverter
   MagnumPlugins::StbImageImporter
