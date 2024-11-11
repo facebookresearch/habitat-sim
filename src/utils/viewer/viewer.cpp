@@ -1067,6 +1067,14 @@ void Viewer::initSimPostReconfigure() {
   // Set up camera
   activeSceneGraph_ = &simulator_->getActiveSceneGraph();
   agentBodyNode_ = &activeSceneGraph_->getRootNode().createChild();
+  for (auto spec : sensorSpecs) {
+    // create global sensors
+    simulator_->addSensorToObject(esp::RIGID_STAGE_ID, spec);
+    // re-assign them to the proxy "agent" SceneNode
+    auto newSensor =
+        activeSceneGraph_->getRootNode().getNodeSensors().at(spec->uuid);
+    newSensor.get().node().setParent(agentBodyNode_);
+  }
   renderCamera_ = getAgentCamera().getRenderCamera();
   // Refresh local simConfig_ to track results from scene load
   simConfig_ = MM_->getSimulatorConfiguration();
@@ -1698,6 +1706,7 @@ void Viewer::dispMetadataInfo() {  // display info report
 void Viewer::moveAndLook(int repetitions) {
   for (int i = 0; i < repetitions; ++i) {
     bool moved = false;
+    auto initialAgentPosition = agentBodyNode_->translation();
     if (keysPressed[KeyEvent::Key::A]) {
       agentBodyNode_->translateLocal(agentBodyNode_->transformation().right() *
                                      -moveSensitivity);
@@ -2104,7 +2113,7 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
     for (auto& p : agentBodyNode_->getSubtreeSensors()) {
       auto& sensorNode = p.second.get().node();
       // apply X rotation to the sensors to pivot them up/down
-      sensorNode.rotateXLocal(Magnum::Deg(delta.x()));
+      sensorNode.rotateXLocal(Magnum::Deg(-delta.y()));
       sensorNode.setRotation(sensorNode.rotation().normalized());
     }
   } else if (mouseInteractionMode == MouseInteractionMode::GRAB &&
