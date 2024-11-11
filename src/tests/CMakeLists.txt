@@ -207,9 +207,16 @@ target_include_directories(ReplicaSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 corrade_add_test(ResourceManagerTest ResourceManagerTest.cpp LIBRARIES assets)
 target_include_directories(ResourceManagerTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(SceneGraphTest SceneGraphTest.cpp LIBRARIES scene)
+corrade_add_test(SceneGraphTest SceneGraphTest.cpp LIBRARIES scene sensor)
 
-corrade_add_test(SemanticTest SemanticTest.cpp LIBRARIES metadata scene)
+corrade_add_test(
+  SemanticTest
+  SemanticTest.cpp
+  LIBRARIES
+  metadata
+  scene
+  sim
+)
 target_include_directories(SemanticTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(SensorTest SensorTest.cpp LIBRARIES sensor sim)
