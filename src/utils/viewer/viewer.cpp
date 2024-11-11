@@ -227,6 +227,9 @@ class Viewer : public Mn::Platform::Application {
   void mouseScrollEvent(MouseScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
   void keyReleaseEvent(KeyEvent& event) override;
+  Mn::Vector3 moveFilterFunc(const Mn::Vector3& start,
+                             const Mn::Vector3& end,
+                             bool allowSliding = true);
   void moveAndLook(int repetitions);
 
   /**
@@ -1703,6 +1706,19 @@ void Viewer::dispMetadataInfo() {  // display info report
               << dsInfoReport << "\nActive Dataset Report Details Done";
 }
 
+Mn::Vector3 Viewer::moveFilterFunc(const Mn::Vector3& start,
+                                   const Mn::Vector3& end,
+                                   bool allowSliding) {
+  auto pathfinder = simulator_->getPathFinder();
+  if (!pathfinder->isLoaded()) {
+    return end;
+  }
+  if (allowSliding) {
+    return pathfinder->tryStep(start, end);
+  }
+  return pathfinder->tryStepNoSliding(start, end);
+}
+
 void Viewer::moveAndLook(int repetitions) {
   for (int i = 0; i < repetitions; ++i) {
     bool moved = false;
@@ -1742,7 +1758,11 @@ void Viewer::moveAndLook(int repetitions) {
     }
 
     if (moved) {
-      // TODO: rec filter
+      // do navmesh step filtering
+      agentBodyNode_->setTranslation(moveFilterFunc(
+          initialAgentPosition, agentBodyNode_->translation(),
+          true  // allow sliding
+          ));
       recAgentLocation();
     }
   }
