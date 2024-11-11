@@ -227,6 +227,7 @@ corrade_add_test(
   LIBRARIES
   sim
   sensor
+  assets
   Magnum::DebugTools
   Magnum::AnyImageConverter
   MagnumPlugins::StbImageImporter

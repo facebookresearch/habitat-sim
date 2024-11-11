@@ -1054,7 +1054,13 @@ esp::sensor::Sensor& Simulator::addSensorToObject(
   }
 
   esp::sensor::SensorFactory::createSensors(*objectNode, sensorSpecifications);
-  return objectNode->getNodeSensorSuite().get(sensorSpec->uuid);
+  auto& newSensor = objectNode->getNodeSensorSuite().get(sensorSpec->uuid);
+  if (newSensor.isVisualSensor() && config_.createRenderer) {
+    renderer_->bindRenderTarget(
+        static_cast<esp::sensor::VisualSensor&>(newSensor));
+  }
+
+  return newSensor;
 }
 
 void Simulator::setPathFinder(nav::PathFinder::ptr pathfinder) {
@@ -1139,6 +1145,7 @@ bool Simulator::getSensorObservation(const std::string& sensorUuid,
   auto sensor = allSensors.find(sensorUuid);
 
   if (sensor != allSensors.end()) {
+    ESP_DEBUG() << "Found the sensor, trying to getObservation " << sensorUuid;
     return sensor->second.get().getObservation(*this, observation);
   }
   return false;

@@ -131,6 +131,7 @@ bool VisualSensor::getObservation(sim::Simulator& sim, Observation& obs) {
   if (!hasRenderTarget())
     return false;
 
+  ESP_DEBUG() << "Has render target...";
   drawObservation(sim);
   readObservation(obs);
 
