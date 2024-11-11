@@ -244,7 +244,8 @@ void DebugLineRender::drawCircle(const Magnum::Vector3& pos,
                                  int numSegments,
                                  const Magnum::Vector3& normal) {
   // https://stackoverflow.com/questions/11132681/what-is-a-formula-to-get-a-vector-perpendicular-to-another-vector
-  auto randomPerpVec = normal.z() < normal.x()
+  // account for normal == (0, 0, -1)
+  auto randomPerpVec = fabs(normal.z()) < fabs(normal.x())
                            ? Mn::Vector3(normal.y(), -normal.x(), 0)
                            : Mn::Vector3(0, -normal.z(), normal.y());
 

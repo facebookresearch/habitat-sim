@@ -120,7 +120,6 @@ struct RenderTarget::Impl {
         Mn::GL::Framebuffer::Status::Complete);
 
     if (flags_ & Flag::HorizonBasedAmbientOcclusion) {
-#ifndef MAGNUM_TARGET_WEBGL
       // depth texture is required for HBAO
       CORRADE_INTERNAL_ASSERT(flags_ & Flag::DepthTextureAttachment);
       // TODO Drive construction based on premade configurations
@@ -131,10 +130,6 @@ struct RenderTarget::Impl {
               .setUseLayeredGeometryShader(true)
           // TODO other options here?
       };
-#else
-      ESP_ERROR()
-          << "HBAO functionality requested but not supported for WebGL builds";
-#endif
     }
   }
 

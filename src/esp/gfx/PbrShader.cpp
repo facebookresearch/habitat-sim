@@ -51,11 +51,8 @@ PbrShader::PbrShader(const Configuration& config)
     importShaderResources();
   }
 
-#ifdef MAGNUM_TARGET_WEBGL
-  Mn::GL::Version glVersion = Mn::GL::Version::GLES300;
-#else
   Mn::GL::Version glVersion = Mn::GL::Version::GL330;
-#endif
+
   directLightingIsEnabled_ =
       ((lightCount_ != 0u) && flags_ >= Flag::DirectLighting);
   lightingIsEnabled_ =
@@ -155,16 +152,11 @@ PbrShader::PbrShader(const Configuration& config)
         "#define JOINT_COUNT {}\n"
         "#define PER_VERTEX_JOINT_COUNT {}u\n"
         "#define SECONDARY_PER_VERTEX_JOINT_COUNT {}u\n"
-#ifndef MAGNUM_TARGET_WEBGL
         "#define JOINT_MATRIX_INITIALIZER {}\n"
-#endif
+
         ,
-        jointCount_, perVertexJointCount_, secondaryPerVertexJointCount_
-#ifndef MAGNUM_TARGET_WEBGL
-        ,
-        ("mat4(1.0), "_s * jointCount_).exceptSuffix(2)
-#endif
-            ));
+        jointCount_, perVertexJointCount_, secondaryPerVertexJointCount_,
+        ("mat4(1.0), "_s * jointCount_).exceptSuffix(2)));
   }
 
   vert.addSource(rs.getString("pbr.vert"));

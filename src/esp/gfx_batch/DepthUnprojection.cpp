@@ -34,11 +34,7 @@ DepthShader::DepthShader(Flags flags) : flags_{flags} {
   }
   const Corrade::Utility::Resource rs{"gfx-batch-shaders"};
 
-#ifdef MAGNUM_TARGET_WEBGL
-  Mn::GL::Version glVersion = Mn::GL::Version::GLES300;
-#else
   Mn::GL::Version glVersion = Mn::GL::Version::GL330;
-#endif
 
   Mn::GL::Shader vert{glVersion, Mn::GL::Shader::Type::Vertex};
   Mn::GL::Shader frag{glVersion, Mn::GL::Shader::Type::Fragment};
