@@ -29,6 +29,7 @@ class ResourceManager;
 }
 
 namespace physics {
+class ManagedArticulatedObject;
 
 class URDFImporter;
 
@@ -1069,6 +1070,19 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
       recomputeAabb();
     }
     return aabb_;
+  }
+
+  /**
+   * @brief Get the ManagedArticulatedObject or BulletManagedArticulatedObject
+   * referencing this object.
+   */
+  template <class T>
+  std::shared_ptr<T> getManagedArticulatedObject() const {
+    static_assert(std::is_base_of<ManagedArticulatedObject, T>::value,
+                  "ManagedArticulatedObject must be base class of desired "
+                  "ArticulatedObject's Managed wrapper class.");
+
+    return PhysicsObjectBase::getManagedObjectPtrInternal<T>();
   }
 
  protected:

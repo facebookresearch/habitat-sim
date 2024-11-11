@@ -233,10 +233,6 @@ void BulletArticulatedObject::updateNodes(bool force) {
   }
 }
 
-////////////////////////////
-// BulletArticulatedLink
-////////////////////////////
-
 std::shared_ptr<metadata::attributes::SceneAOInstanceAttributes>
 BulletArticulatedObject::getCurrentStateInstanceAttr() {
   // get mutable copy of initialization SceneAOInstanceAttributes for this AO

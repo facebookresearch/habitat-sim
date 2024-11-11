@@ -214,9 +214,6 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
   collisionObjToObjIds_->emplace(
       articulatedObject->btMultiBody_->getBaseCollider(), articulatedObjectID);
 
-  existingArticulatedObjects_.emplace(articulatedObjectID,
-                                      std::move(articulatedObject));
-
   // get a simplified name of the handle for the object
   std::string simpleArtObjHandle = artObjAttributes->getSimplifiedHandle();
 
@@ -226,19 +223,23 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
   ESP_DEBUG() << "simpleArtObjHandle :" << simpleArtObjHandle
               << " | newArtObjectHandle :" << newArtObjectHandle;
 
-  existingArticulatedObjects_.at(articulatedObjectID)
-      ->setObjectName(newArtObjectHandle);
+  articulatedObject->setObjectName(newArtObjectHandle);
 
   // 2.0 Get wrapper - name is irrelevant, do not register on create.
   ManagedArticulatedObject::ptr AObjWrapper = getArticulatedObjectWrapper();
 
   // 3.0 Put articulated object in wrapper
-  AObjWrapper->setObjectRef(
-      existingArticulatedObjects_.at(articulatedObjectID));
+  AObjWrapper->setObjectRef(articulatedObject);
 
   // 4.0 register wrapper in manager
-  articulatedObjectManager_->registerObject(std::move(AObjWrapper),
-                                            newArtObjectHandle);
+  articulatedObjectManager_->registerObject(AObjWrapper, newArtObjectHandle);
+
+  // 4.5 register wrapper with object it contains
+  articulatedObject->setManagedObjectPtr(AObjWrapper);
+
+  // 5.0 move object into object library
+  existingArticulatedObjects_.emplace(articulatedObjectID,
+                                      std::move(articulatedObject));
 
   return articulatedObjectID;
 
