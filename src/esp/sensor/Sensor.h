@@ -84,7 +84,7 @@ struct ObservationSpace {
   ESP_SMART_POINTERS(ObservationSpace)
 };
 
-// Represents a sensor that provides data from the environment to an agent
+// Represents a sensor that provides data from the environment
 class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
  public:
   explicit Sensor(scene::SceneNode& node, SensorSpec::ptr spec);

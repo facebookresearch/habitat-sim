@@ -42,7 +42,6 @@ enum class Subsystem : uint8_t {
   core,
   assets,
   sensor,
-  agent,
 
   /**
    * @brief Not a subsystem.  Simply tracks how many subsystems there are.
@@ -54,7 +53,7 @@ enum class Subsystem : uint8_t {
 
 constexpr const char* subsystemNames[] = {
     "Default", "Gfx", "Scene", "Sim",  "Physics", "Nav",    "Metadata",
-    "Geo",     "IO",  "URDF",  "Core", "Assets",  "Sensor", "Agent",
+    "Geo",     "IO",  "URDF",  "Core", "Assets",  "Sensor",
 };
 
 Subsystem subsystemFromName(Corrade::Containers::StringView name);
@@ -102,7 +101,6 @@ ESP_ADD_SUBSYSTEM_FN(io)
 ESP_ADD_SUBSYSTEM_FN(core)
 ESP_ADD_SUBSYSTEM_FN(assets)
 ESP_ADD_SUBSYSTEM_FN(sensor)
-ESP_ADD_SUBSYSTEM_FN(agent)
 
 namespace esp {
 namespace metadata {

@@ -29,9 +29,6 @@
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
-using esp::agent::Agent;
-using esp::agent::AgentConfiguration;
-using esp::agent::AgentState;
 using esp::assets::ResourceManager;
 using esp::gfx::LightInfo;
 using esp::gfx::LightPositionModel;
@@ -239,24 +236,9 @@ void SimTest::reset() {
   auto simulator = data.creator(*this, vangogh, true, esp::NO_LIGHT_KEY);
 
   PathFinder::ptr pathfinder = simulator->getPathFinder();
-  auto pinholeCameraSpec = CameraSensorSpec::create();
-  pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
-  pinholeCameraSpec->sensorType = SensorType::Color;
-  pinholeCameraSpec->position = {0.0f, 1.5f, 5.0f};
-  pinholeCameraSpec->resolution = {100, 100};
-  AgentConfiguration agentConfig{};
-  agentConfig.sensorSpecifications = {pinholeCameraSpec};
-  auto agent = simulator->addAgent(agentConfig);
-
-  auto stateOrig = AgentState::create();
-  agent->getState(stateOrig);
 
   simulator->reset();
 
-  auto stateFinal = AgentState::create();
-  agent->getState(stateFinal);
-  CORRADE_COMPARE(stateOrig->position, stateFinal->position);
-  CORRADE_COMPARE(stateOrig->rotation, stateFinal->rotation);
   CORRADE_COMPARE(pathfinder, simulator->getPathFinder());
 }
 
@@ -272,17 +254,15 @@ void SimTest::checkPinholeCameraRGBAObservation(
   pinholeCameraSpec->position = {1.0f, 1.5f, 1.0f};
   pinholeCameraSpec->resolution = {128, 128};
 
-  AgentConfiguration agentConfig{};
-  agentConfig.sensorSpecifications = {pinholeCameraSpec};
-  Agent::ptr agent = simulator.addAgent(agentConfig);
-  agent->setInitialState(AgentState{});
+  auto& globalSensorSuite =
+      simulator.addSensorToObject(esp::RIGID_STAGE_ID, pinholeCameraSpec);
 
   Observation observation;
   ObservationSpace obsSpace;
   CORRADE_VERIFY(
-      simulator.getAgentObservation(0, pinholeCameraSpec->uuid, observation));
+      simulator.getSensorObservation(pinholeCameraSpec->uuid, observation));
   CORRADE_VERIFY(
-      simulator.getAgentObservationSpace(0, pinholeCameraSpec->uuid, obsSpace));
+      simulator.getSensorObservationSpace(pinholeCameraSpec->uuid, obsSpace));
 
   std::vector<size_t> expectedShape{
       {static_cast<size_t>(pinholeCameraSpec->resolution[0]),
@@ -683,7 +663,7 @@ void SimTest::addObjectsAndMakeObservation(
   otherObj->setTranslation({1.0f, 0.5f, -2.5f});
 
   // Make Observation of constructed scene
-  CORRADE_VERIFY(sim.getAgentObservation(0, cameraSpec.uuid, observation));
+  CORRADE_VERIFY(sim.getSensorObservation(cameraSpec.uuid, observation));
 
 }  // SimTest::addObjectsAndMakeObservation
 
@@ -701,10 +681,8 @@ void SimTest::addObjectInvertedScale() {
   pinholeCameraSpec->position = {0.0f, 1.5f, 0.0f};
   pinholeCameraSpec->resolution = {128, 128};
 
-  AgentConfiguration agentConfig{};
-  agentConfig.sensorSpecifications = {pinholeCameraSpec};
-  Agent::ptr agent = simulator->addAgent(agentConfig);
-  agent->setInitialState(AgentState{});
+  auto& globalSensorSuite =
+      simulator->addSensorToObject(esp::RIGID_STAGE_ID, pinholeCameraSpec);
 
   // Add 2 objects and take initial non-negative scaled observation
   const auto objHandle = Cr::Utility::Path::join(
@@ -964,6 +942,7 @@ void SimTest::createMagnumRenderingOff() {
 
   // do some sensor stuff to check that nothing errors
   auto objectSensorSpec = esp::sensor::CameraSensorSpec::create();
+  objectSensorSpec->sensorType = esp::sensor::SensorType::Color;
   objectSensorSpec->uuid = std::to_string(obj->getID());
   objectSensorSpec->position = {0, 0, 0};
   objectSensorSpec->orientation = {0, 0, 0};

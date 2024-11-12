@@ -10,8 +10,6 @@ add_library(
   HM3DSemanticScene.h
   Mp3dSemanticScene.cpp
   Mp3dSemanticScene.h
-  ObjectControls.cpp
-  ObjectControls.h
   ReplicaSemanticScene.cpp
   ReplicaSemanticScene.h
   SceneGraph.cpp

@@ -30,7 +30,6 @@
 #include "esp/physics/bullet/BulletCollisionHelper.h"
 #include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
-#include "esp/scene/ObjectControls.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/SensorFactory.h"
 #include "esp/sensor/VisualSensor.h"
@@ -68,7 +67,6 @@ void Simulator::close(const bool destroy) {
   pathfinder_ = nullptr;
   navMeshVisPrimID_ = esp::ID_UNDEFINED;
   navMeshVisNode_ = nullptr;
-  agents_.clear();
 
   physicsManager_ = nullptr;
   curSceneInstanceAttributes_ = nullptr;
@@ -670,9 +668,6 @@ void Simulator::reset(bool calledAfterSceneCreate) {
     physicsManager_->reset(calledAfterSceneCreate);
   }
 
-  for (auto& agent : agents_) {
-    agent->reset();
-  }
   getActiveSceneGraph().getRootNode().computeCumulativeBB();
   resourceManager_->setLightSetup(gfx::getDefaultLights());
 }  // Simulator::reset
@@ -995,19 +990,6 @@ bool Simulator::isNavMeshVisualizationActive() {
   return (navMeshVisNode_ != nullptr && navMeshVisPrimID_ != ID_UNDEFINED);
 }
 
-// Agents
-void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
-  if (pathfinder_->isLoaded()) {
-    agentState.position = pathfinder_->getRandomNavigablePoint();
-    const float randomAngleRad = random_->uniform_float_01() * M_PI;
-    quatf rotation(Eigen::AngleAxisf(randomAngleRad, vec3f::UnitY()));
-    agentState.rotation = rotation.coeffs();
-    // TODO: any other AgentState members should be randomized?
-  } else {
-    ESP_ERROR() << "No loaded PathFinder, aborting sampleRandomAgentState.";
-  }
-}
-
 esp::physics::ManagedArticulatedObject::ptr
 Simulator::queryArticulatedObjWrapper(int objID) const {
   if (!sceneHasPhysics()) {
@@ -1033,60 +1015,6 @@ scene::SceneNode* Simulator::loadAndCreateRenderAssetInstance(
   std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
   return resourceManager_->loadAndCreateRenderAssetInstance(
       assetInfo, creation, sceneManager_.get(), tempIDs);
-}
-
-agent::Agent::ptr Simulator::addAgent(
-    const agent::AgentConfiguration& agentConfig,
-    scene::SceneNode& agentParentNode) {
-  // initialize the agent, as well as all the sensors on it.
-
-  // attach each agent, each sensor to a scene node, set the local
-  // transformation of the sensor w.r.t. the agent (done internally in the
-  // constructor of Agent)
-  auto& agentNode = agentParentNode.createChild();
-  agent::Agent::ptr ag = agent::Agent::create(agentNode, agentConfig);
-  esp::sensor::SensorFactory::createSensors(agentNode,
-                                            agentConfig.sensorSpecifications);
-  agent::AgentState state;
-  sampleRandomAgentState(state);
-  ag->setInitialState(state);
-
-  // Add a RenderTarget to each of the agent's visual sensors
-  for (auto& it : ag->getSubtreeSensors()) {
-    if (it.second.get().isVisualSensor()) {
-      sensor::VisualSensor& sensor =
-          static_cast<sensor::VisualSensor&>(it.second.get());
-      renderer_->bindRenderTarget(sensor);
-    }
-  }
-
-  agents_.push_back(ag);
-  // TODO: just do this once
-  if (pathfinder_->isLoaded()) {
-    scene::ObjectControls::MoveFilterFunc moveFilterFunction;
-    if (config_.allowSliding) {
-      moveFilterFunction = [&](const vec3f& start, const vec3f& end) {
-        return pathfinder_->tryStep(start, end);
-      };
-    } else {
-      moveFilterFunction = [&](const vec3f& start, const vec3f& end) {
-        return pathfinder_->tryStepNoSliding(start, end);
-      };
-    }
-    ag->getControls()->setMoveFilterFunction(std::move(moveFilterFunction));
-  }
-
-  return ag;
-}
-
-agent::Agent::ptr Simulator::addAgent(
-    const agent::AgentConfiguration& agentConfig) {
-  return addAgent(agentConfig, getActiveSceneGraph().getRootNode());
-}
-
-agent::Agent::ptr Simulator::getAgent(const int agentId) {
-  CORRADE_INTERNAL_ASSERT(0 <= agentId && agentId < agents_.size());
-  return agents_[agentId];
 }
 
 esp::sensor::Sensor& Simulator::addSensorToObject(
@@ -1126,130 +1054,112 @@ esp::sensor::Sensor& Simulator::addSensorToObject(
   }
 
   esp::sensor::SensorFactory::createSensors(*objectNode, sensorSpecifications);
-  return objectNode->getNodeSensorSuite().get(sensorSpec->uuid);
+  auto& newSensor = objectNode->getNodeSensorSuite().get(sensorSpec->uuid);
+  if (newSensor.isVisualSensor() && config_.createRenderer) {
+    renderer_->bindRenderTarget(
+        static_cast<esp::sensor::VisualSensor&>(newSensor));
+  }
+
+  return newSensor;
 }
 
 void Simulator::setPathFinder(nav::PathFinder::ptr pathfinder) {
   pathfinder_ = std::move(pathfinder);
 }
-gfx::RenderTarget* Simulator::getRenderTarget(int agentId,
-                                              const std::string& sensorId) {
-  agent::Agent::ptr ag = getAgent(agentId);
-
-  if (ag != nullptr) {
-    sensor::Sensor& sensor = ag->getSubtreeSensorSuite().get(sensorId);
-    if (sensor.isVisualSensor()) {
-      return &(static_cast<sensor::VisualSensor&>(sensor).renderTarget());
+gfx::RenderTarget* Simulator::getRenderTarget(const std::string& sensorUuid) {
+  // TODO: This should be a global map lookup instead of a tree search
+  auto allSensors = getActiveSceneGraph().getRootNode().getSubtreeSensors();
+  auto sensor = allSensors.find(sensorUuid);
+  if (sensor != allSensors.end()) {
+    if (sensor->second.get().isVisualSensor()) {
+      return &(static_cast<sensor::VisualSensor&>(sensor->second.get())
+                   .renderTarget());
     }
   }
+
   return nullptr;
 }
 
-bool Simulator::displayObservation(const int agentId,
-                                   const std::string& sensorId) {
-  agent::Agent::ptr ag = getAgent(agentId);
+bool Simulator::displayObservation(const std::string& sensorUuid) {
+  // TODO: This should be a global map lookup instead of a tree search
+  auto allSensors = getActiveSceneGraph().getRootNode().getSubtreeSensors();
+  auto sensor = allSensors.find(sensorUuid);
 
-  if (ag != nullptr) {
-    sensor::Sensor& sensor = ag->getSubtreeSensorSuite().get(sensorId);
-    return sensor.displayObservation(*this);
+  if (sensor != allSensors.end()) {
+    return sensor->second.get().displayObservation(*this);
   }
   return false;
 }
 
-bool Simulator::drawObservation(const int agentId,
-                                const std::string& sensorId) {
-  agent::Agent::ptr ag = getAgent(agentId);
+bool Simulator::drawObservation(const std::string& sensorUuid) {
+  // TODO: This should be a global map lookup instead of a tree search
+  auto allSensors = getActiveSceneGraph().getRootNode().getSubtreeSensors();
+  auto sensor = allSensors.find(sensorUuid);
 
-  if (ag != nullptr) {
-    sensor::Sensor& sensor = ag->getSubtreeSensorSuite().get(sensorId);
-    if (sensor.isVisualSensor()) {
-      return static_cast<sensor::VisualSensor&>(sensor).drawObservation(*this);
+  if (sensor != allSensors.end()) {
+    if (sensor->second.get().isVisualSensor()) {
+      return static_cast<sensor::VisualSensor&>(sensor->second.get())
+          .drawObservation(*this);
     }
   }
   return false;
 }
 
-bool Simulator::visualizeObservation(int agentId, const std::string& sensorId) {
-  agent::Agent::ptr ag = getAgent(agentId);
+bool Simulator::visualizeObservation(const std::string& sensorUuid) {
+  // TODO: This should be a global map lookup instead of a tree search
+  auto allSensors = getActiveSceneGraph().getRootNode().getSubtreeSensors();
+  auto sensor = allSensors.find(sensorUuid);
 
-  if (ag != nullptr) {
-    sensor::Sensor& sensor = ag->getSubtreeSensorSuite().get(sensorId);
-    if (sensor.isVisualSensor()) {
-      renderer_->visualize(static_cast<sensor::VisualSensor&>(sensor));
+  if (sensor != allSensors.end()) {
+    if (sensor->second.get().isVisualSensor()) {
+      renderer_->visualize(
+          static_cast<sensor::VisualSensor&>(sensor->second.get()));
     }
     return true;
   }
   return false;
 }
 
-bool Simulator::visualizeObservation(int agentId,
-                                     const std::string& sensorId,
+bool Simulator::visualizeObservation(const std::string& sensorUuid,
                                      float colorMapOffset,
                                      float colorMapScale) {
-  agent::Agent::ptr ag = getAgent(agentId);
+  // TODO: This should be a global map lookup instead of a tree search
+  auto allSensors = getActiveSceneGraph().getRootNode().getSubtreeSensors();
+  auto sensor = allSensors.find(sensorUuid);
 
-  if (ag != nullptr) {
-    sensor::Sensor& sensor = ag->getSubtreeSensorSuite().get(sensorId);
-    if (sensor.isVisualSensor()) {
-      renderer_->visualize(static_cast<sensor::VisualSensor&>(sensor),
-                           colorMapOffset, colorMapScale);
+  if (sensor != allSensors.end()) {
+    if (sensor->second.get().isVisualSensor()) {
+      renderer_->visualize(
+          static_cast<sensor::VisualSensor&>(sensor->second.get()),
+          colorMapOffset, colorMapScale);
     }
     return true;
   }
   return false;
 }
 
-bool Simulator::getAgentObservation(const int agentId,
-                                    const std::string& sensorId,
-                                    sensor::Observation& observation) {
-  agent::Agent::ptr ag = getAgent(agentId);
-  if (ag != nullptr) {
-    return ag->getSubtreeSensorSuite().get(sensorId).getObservation(
-        *this, observation);
+bool Simulator::getSensorObservation(const std::string& sensorUuid,
+                                     sensor::Observation& observation) {
+  // TODO: This should be a global map lookup instead of a tree search
+  auto allSensors = getActiveSceneGraph().getRootNode().getSubtreeSensors();
+  auto sensor = allSensors.find(sensorUuid);
+
+  if (sensor != allSensors.end()) {
+    return sensor->second.get().getObservation(*this, observation);
   }
   return false;
 }
 
-int Simulator::getAgentObservations(
-    const int agentId,
-    std::map<std::string, sensor::Observation>& observations) {
-  observations.clear();
-  agent::Agent::ptr ag = getAgent(agentId);
-  if (ag != nullptr) {
-    for (auto& s : ag->getSubtreeSensors()) {
-      sensor::Observation obs;
-      if (s.second.get().getObservation(*this, obs)) {
-        observations[s.first] = obs;
-      }
-    }
-  }
-  return observations.size();
-}
+bool Simulator::getSensorObservationSpace(const std::string& sensorUuid,
+                                          sensor::ObservationSpace& space) {
+  // TODO: This should be a global map lookup instead of a tree search
+  auto allSensors = getActiveSceneGraph().getRootNode().getSubtreeSensors();
+  auto sensor = allSensors.find(sensorUuid);
 
-bool Simulator::getAgentObservationSpace(const int agentId,
-                                         const std::string& sensorId,
-                                         sensor::ObservationSpace& space) {
-  agent::Agent::ptr ag = getAgent(agentId);
-  if (ag != nullptr) {
-    return ag->getSubtreeSensorSuite().get(sensorId).getObservationSpace(space);
+  if (sensor != allSensors.end()) {
+    return sensor->second.get().getObservationSpace(space);
   }
   return false;
-}
-
-int Simulator::getAgentObservationSpaces(
-    const int agentId,
-    std::map<std::string, sensor::ObservationSpace>& spaces) {
-  spaces.clear();
-  agent::Agent::ptr ag = getAgent(agentId);
-  if (ag != nullptr) {
-    for (auto& s : ag->getSubtreeSensors()) {
-      sensor::ObservationSpace space;
-      if (s.second.get().getObservationSpace(space)) {
-        spaces[s.first] = space;
-      }
-    }
-  }
-  return spaces.size();
 }
 
 std::vector<std::string> Simulator::getRuntimePerfStatNames() {
