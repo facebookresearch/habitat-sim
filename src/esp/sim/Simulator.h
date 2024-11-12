@@ -96,8 +96,6 @@ class Simulator {
     return gfxReplayMgr_;
   }
 
-  void saveFrame(const std::string& filename);
-
   /**
    * @brief The ID of the CUDA device of the OpenGL context owned by the
    * simulator. This will only be nonzero if the simulator is built in
@@ -111,7 +109,6 @@ class Simulator {
   }
 
   // === Physics Simulator Functions ===
-  // TODO: support multi-scene physics (default sceneID=0 currently).
   /**
    * @brief Return manager for construction and access to articulated object
    * attributes for the current dataset.
@@ -296,26 +293,6 @@ class Simulator {
       return physicsManager_->getExistingObjectIDs();
     }
     return std::vector<int>();  // empty if no simulator exists
-  }
-
-  /**
-   * @brief Turn on/off rendering for the bounding box of the object's visual
-   * component.
-   *
-   * Assumes the new @ref esp::gfx::Drawable for the bounding box should be
-   * added to the active @ref esp::gfx::SceneGraph's default drawable group. See
-   * @ref esp::gfx::SceneGraph::getDrawableGroup().
-   *
-   * @param drawBB Whether or not the render the bounding box.
-   * @param objectId The object ID and key identifying the object in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   */
-  void setObjectBBDraw(bool drawBB, int objectId) {
-    if (sceneHasPhysics()) {
-      getRenderGLContext();
-      auto& drawables = getDrawableGroup();
-      physicsManager_->setObjectBBDraw(objectId, &drawables, drawBB);
-    }
   }
 
   /**
@@ -925,18 +902,6 @@ class Simulator {
   buildCurrentStateSceneAttributes() const;
 
   bool sceneHasPhysics() const { return physicsManager_ != nullptr; }
-
-  /**
-   * @brief TEMPORARY until sim access to objects is completely removed.  This
-   * method will return an object's wrapper if the passed @p objID is valid.
-   * This wrapper will then be used by the calling
-   * function to access components of the object.
-   * @param objID The ID of the desired object
-   * @return A smart pointer to the wrapper referencing the desired object, or
-   * nullptr if DNE.
-   */
-  esp::physics::ManagedArticulatedObject::ptr queryArticulatedObjWrapper(
-      int objID) const;
 
   void reconfigureReplayManager(bool enableGfxReplaySave);
 
