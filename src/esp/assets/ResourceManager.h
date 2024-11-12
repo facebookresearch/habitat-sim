@@ -525,7 +525,7 @@ class ResourceManager {
       const Magnum::Vector3& origin);
 
   /**
-   * @brief Sets whether or not the current agent sensor suite requires textures
+   * @brief Sets whether or not the current sensor suite requires textures
    * for rendering. Textures will not be loaded if this is false.
    */
   inline void setRequiresTextures(bool newVal) { requiresTextures_ = newVal; }

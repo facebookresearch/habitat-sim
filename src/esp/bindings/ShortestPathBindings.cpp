@@ -15,7 +15,6 @@
 #include "esp/core/Esp.h"
 #include "esp/nav/GreedyFollower.h"
 #include "esp/nav/PathFinder.h"
-#include "esp/scene/ObjectControls.h"
 
 namespace py = pybind11;
 namespace Mn = Magnum;

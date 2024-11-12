@@ -10,7 +10,6 @@
 #include <Magnum/PythonBindings.h>
 #include <Magnum/SceneGraph/PythonBindings.h>
 #include "esp/scene/Mp3dSemanticScene.h"
-#include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneGraph.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
@@ -297,14 +296,6 @@ void initSceneBindings(
               regions, points are considered belonging to every region the point is
               found in.)",
            "points"_a);
-
-  // ==== ObjectControls ====
-  py::class_<ObjectControls, ObjectControls::ptr>(m, "ObjectControls")
-      .def(py::init(&ObjectControls::create<>))
-      .def("action", &ObjectControls::action, R"(
-        Take action using this :py:class:`ObjectControls`.
-      )",
-           "object"_a, "name"_a, "amount"_a, "apply_filter"_a = true);
 }
 
 }  // namespace scene

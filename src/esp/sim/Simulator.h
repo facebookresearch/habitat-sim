@@ -8,7 +8,6 @@
 #include <Corrade/Utility/Assert.h>
 
 #include <utility>
-#include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/core/Esp.h"
 #include "esp/core/Random.h"
@@ -70,7 +69,7 @@ class Simulator {
 
   /**
    * @brief Reset the simulation state including the state of all physics
-   * objects, agents, and the default light setup.
+   * objects and the default light setup.
    * Sets the @ref worldTime_ to 0.0, changes the physical state of all objects back to their initial states.
    * Does not invalidate existing ManagedObject wrappers.
    * Does not add or remove object instances.
@@ -622,12 +621,6 @@ class Simulator {
     return false;
   }
 
-  agent::Agent::ptr getAgent(int agentId);
-
-  agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig,
-                             scene::SceneNode& agentParentNode);
-  agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig);
-
   /**
    * @brief Initialize a sensor from its spec and attach it to the SceneNode of
    * a particular object or link.
@@ -643,44 +636,37 @@ class Simulator {
 
   /**
    * @brief Displays observations on default frame buffer for a
-   * particular sensor of an agent
-   * @param agentId    Id of the agent for which the observation is to
-   *                   be returned
-   * @param sensorId   Id of the sensor for which the observation is to
+   * particular sensor
+   * @param sensorUuid   Unique Id of the sensor for which the observation is to
    *                   be returned
    */
-  bool displayObservation(int agentId, const std::string& sensorId);
+  bool displayObservation(const std::string& sensorUuid);
 
   /**
    * @brief
-   * get the render target of a particular sensor of an agent
+   * get the render target of a particular sensor
    * @return pointer to the render target if it is a valid visual sensor,
    * otherwise nullptr
-   * @param agentId    Id of the agent for which the observation is to
-   *                   be returned
-   * @param sensorId   Id of the sensor for which the observation is to
+   * @param sensorUuid   Id of the sensor for which the observation is to
    *                   be returned
    */
-  gfx::RenderTarget* getRenderTarget(int agentId, const std::string& sensorId);
+  gfx::RenderTarget* getRenderTarget(const std::string& sensorUuid);
 
   /**
    * @brief draw observations to the frame buffer stored in that
-   * particular sensor of an agent. Unlike the @displayObservation, it will
+   * particular sensor. Unlike the @displayObservation, it will
    * not display the observation on the default frame buffer
-   * @param agentId    Id of the agent for which the observation is to
-   *                   be returned
-   * @param sensorId   Id of the sensor for which the observation is to
+
+   * @param sensorUuid   Id of the sensor for which the observation is to
    *                   be returned
    */
-  bool drawObservation(int agentId, const std::string& sensorId);
+  bool drawObservation(const std::string& sensorUuid);
 
   /**
    * @brief visualize the undisplayable observations such as depth, semantic, to
    * the frame buffer stored in the @ref SensorInfoVisualizer
    * Note: it will not display the observation on the default frame buffer
-   * @param[in] agentId    Id of the agent for which the observation is to
-   *                   be returned
-   * @param[in] sensorId   Id of the sensor for which the observation is to
+   * @param[in] sensorUuid   Id of the sensor for which the observation is to
    *                   be returned
    * @param[in] colorMapOffset the offset of the color map
    * @param[in] colorMapScale the scale of the color map
@@ -695,26 +681,17 @@ class Simulator {
    * Renderer::RenderTargetBindingFlag for more info
    * @return false if the sensor's observation cannot be visualized.
    */
-  bool visualizeObservation(int agentId,
-                            const std::string& sensorId,
+  bool visualizeObservation(const std::string& sensorUuid,
                             float colorMapOffset,
                             float colorMapScale);
 
-  bool visualizeObservation(int agentId, const std::string& sensorId);
+  bool visualizeObservation(const std::string& sensorUuid);
 
-  bool getAgentObservation(int agentId,
-                           const std::string& sensorId,
-                           sensor::Observation& observation);
-  int getAgentObservations(
-      int agentId,
-      std::map<std::string, sensor::Observation>& observations);
+  bool getSensorObservation(const std::string& sensorUuid,
+                            sensor::Observation& observation);
 
-  bool getAgentObservationSpace(int agentId,
-                                const std::string& sensorId,
-                                sensor::ObservationSpace& space);
-  int getAgentObservationSpaces(
-      int agentId,
-      std::map<std::string, sensor::ObservationSpace>& spaces);
+  bool getSensorObservationSpace(const std::string& sensorUuid,
+                                 sensor::ObservationSpace& space);
 
   nav::PathFinder::ptr getPathFinder() { return pathfinder_; }
   void setPathFinder(nav::PathFinder::ptr pf);
@@ -947,12 +924,6 @@ class Simulator {
   metadata::attributes::SceneInstanceAttributes::ptr
   buildCurrentStateSceneAttributes() const;
 
-  /**
-   * @brief sample a random valid AgentState in passed agentState
-   * @param agentState [out] The placeholder for the sampled agent state.
-   */
-  void sampleRandomAgentState(agent::AgentState& agentState);
-
   bool sceneHasPhysics() const { return physicsManager_ != nullptr; }
 
   /**
@@ -1008,8 +979,6 @@ class Simulator {
 
   core::Random::ptr random_;
   SimulatorConfiguration config_;
-
-  std::vector<agent::Agent::ptr> agents_;
 
   nav::PathFinder::ptr pathfinder_;
   // state indicating frustum culling is enabled or not
