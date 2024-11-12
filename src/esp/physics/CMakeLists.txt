@@ -14,6 +14,7 @@ configure_file(
 
 add_library(
   physics STATIC
+  ArticulatedLink.h
   ArticulatedObject.h
   CollisionGroupHelper.cpp
   CollisionGroupHelper.h

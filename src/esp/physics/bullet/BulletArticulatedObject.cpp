@@ -5,6 +5,7 @@
 // Construction code adapted from Bullet3/examples/
 
 #include "BulletArticulatedObject.h"
+#include "BulletArticulatedLink.h"
 #include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
 #include "BulletPhysicsManager.h"
 #include "BulletURDFImporter.h"

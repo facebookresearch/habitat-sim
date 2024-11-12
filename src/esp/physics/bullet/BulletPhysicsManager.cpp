@@ -141,14 +141,14 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
 
   int articulatedObjectID = allocateObjectID();
 
-  // parse succeeded, attempt to create the articulated object
+  // 1.0 parse succeeded, attempt to create the articulated object
   scene::SceneNode* objectNode = &staticStageObject_->node().createChild();
   BulletArticulatedObject::ptr articulatedObject =
       BulletArticulatedObject::create(objectNode, resourceManager_,
                                       articulatedObjectID, bWorld_,
                                       collisionObjToObjIds_);
 
-  // Setup and configure
+  // Setup and configure links
   articulatedObject->initializeFromURDF(artObjAttributes, *urdfImporter_, {},
                                         physicsNode_);
 
@@ -163,6 +163,7 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
 
   // allocate ids for links
   ArticulatedLink& rootObject = articulatedObject->getLink(BASELINK_ID);
+  // Root object node's ID is AO's ID
   rootObject.node().setBaseObjectId(articulatedObject->getObjectID());
   for (int linkIx = 0; linkIx < articulatedObject->btMultiBody_->getNumLinks();
        ++linkIx) {
@@ -234,10 +235,14 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
   // 4.0 register wrapper in manager
   articulatedObjectManager_->registerObject(AObjWrapper, newArtObjectHandle);
 
-  // 4.5 register wrapper with object it contains
+  // 4.5 register wrapper with object it contains - moved here
   articulatedObject->setManagedObjectPtr(AObjWrapper);
 
-  // 5.0 move object into object library
+  // 5.0 register wrapper with each of AO's links.
+  articulatedObject
+      ->assignManagedAOtoLinks<physics::ManagedBulletArticulatedObject>();
+
+  // 6.0 move object into object library
   existingArticulatedObjects_.emplace(articulatedObjectID,
                                       std::move(articulatedObject));
 
