@@ -145,7 +145,14 @@ endif()
 corrade_add_test(GibsonSceneTest GibsonSceneTest.cpp LIBRARIES scene sim)
 target_include_directories(GibsonSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(HM3DSceneTest HM3DSceneTest.cpp LIBRARIES scene sim)
+corrade_add_test(
+  HM3DSceneTest
+  HM3DSceneTest.cpp
+  LIBRARIES
+  scene
+  sim
+  assets
+)
 target_include_directories(HM3DSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(IOTest IOTest.cpp LIBRARIES io metadata)
