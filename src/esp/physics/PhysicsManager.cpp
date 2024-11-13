@@ -319,17 +319,17 @@ int PhysicsManager::addObjectInternal(
   }
 
   // derive valid object ID and create new node if necessary
-  int nextObjectID_ = allocateObjectID();
+  int newObjectID = allocateObjectID();
   scene::SceneNode* objectNode = attachmentNode;
   if (attachmentNode == nullptr) {
     objectNode = &staticStageObject_->node().createChild();
   }
-
+  // Attempt to create a new object, initialize it and add to existingObjects_
   objectSuccess =
-      makeAndAddRigidObject(nextObjectID_, objectAttributes, objectNode);
+      makeAndAddRigidObject(newObjectID, objectAttributes, objectNode);
 
   if (!objectSuccess) {
-    deallocateObjectID(nextObjectID_);
+    deallocateObjectID(newObjectID);
     if (attachmentNode == nullptr) {
       delete objectNode;
     }
@@ -341,7 +341,7 @@ int PhysicsManager::addObjectInternal(
 
   // temp non-owning pointer to object
   esp::physics::RigidObject* const obj =
-      (existingObjects_.at(nextObjectID_).get());
+      (existingObjects_.at(newObjectID).get());
 
   obj->visualNodes_.push_back(obj->visualNode_);
 
@@ -358,7 +358,7 @@ int PhysicsManager::addObjectInternal(
   objectSuccess = obj->finalizeObject();
   if (!objectSuccess) {
     // if failed for some reason, remove and return
-    removeObject(nextObjectID_, true, true);
+    removeObject(newObjectID, true, true);
     ESP_ERROR() << "PhysicsManager::finalizeObject unsuccessful, so addObject `"
                 << objectAttributes->getHandle() << "` aborted.";
     return ID_UNDEFINED;
@@ -373,18 +373,21 @@ int PhysicsManager::addObjectInternal(
   ESP_DEBUG() << "Simplified template handle :" << simpleObjectHandle
               << " | newObjectHandle :" << newObjectHandle;
 
-  existingObjects_.at(nextObjectID_)->setObjectName(newObjectHandle);
+  obj->setObjectName(newObjectHandle);
 
   // 2.0 Get wrapper - name is irrelevant, do not register.
   ManagedRigidObject::ptr objWrapper = getRigidObjectWrapper();
 
   // 3.0 Put object in wrapper
-  objWrapper->setObjectRef(existingObjects_.at(nextObjectID_));
+  objWrapper->setObjectRef(existingObjects_.at(newObjectID));
 
   // 4.0 register wrapper in manager
-  rigidObjectManager_->registerObject(std::move(objWrapper), newObjectHandle);
+  rigidObjectManager_->registerObject(objWrapper, newObjectHandle);
 
-  return nextObjectID_;
+  // 4.5 register wrapper with object it contains
+  obj->setManagedObjectPtr(objWrapper);
+
+  return newObjectID;
 }  // PhysicsManager::addObject
 
 /////////////////////////////////
@@ -938,26 +941,6 @@ int PhysicsManager::checkActiveObjects() {
     }
   }
   return numActive;
-}
-
-void PhysicsManager::setObjectBBDraw(int physObjectID,
-                                     DrawableGroup* drawables,
-                                     bool drawBB) {
-  auto objIter = getRigidObjIteratorOrAssert(physObjectID);
-  if (objIter->second->BBNode_ && !drawBB) {
-    // destroy the node
-    delete objIter->second->BBNode_;
-    objIter->second->BBNode_ = nullptr;
-  } else if (drawBB && objIter->second->visualNode_) {
-    // add a new BBNode
-    Magnum::Vector3 scale = objIter->second->getAabb().size() / 2.0;
-    objIter->second->BBNode_ = &objIter->second->visualNode_->createChild();
-    objIter->second->BBNode_->MagnumObject::setScaling(scale);
-    objIter->second->BBNode_->MagnumObject::setTranslation(
-        objIter->second->getAabb().center());
-    resourceManager_.addPrimitiveToDrawables(0, *objIter->second->BBNode_,
-                                             drawables);
-  }
 }
 
 metadata::attributes::PhysicsManagerAttributes::ptr

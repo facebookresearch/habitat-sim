@@ -990,14 +990,6 @@ bool Simulator::isNavMeshVisualizationActive() {
   return (navMeshVisNode_ != nullptr && navMeshVisPrimID_ != ID_UNDEFINED);
 }
 
-esp::physics::ManagedArticulatedObject::ptr
-Simulator::queryArticulatedObjWrapper(int objID) const {
-  if (!sceneHasPhysics()) {
-    return nullptr;
-  }
-  return getArticulatedObjectManager()->getObjectCopyByID(objID);
-}
-
 void Simulator::setMetadataMediator(
     metadata::MetadataMediator::ptr _metadataMediator) {
   metadataMediator_ = std::move(_metadataMediator);
