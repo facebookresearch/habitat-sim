@@ -252,7 +252,8 @@ class DemoRunner:
             # get "interaction" time
             total_sim_step_time += time.time() - start_step_time
 
-            observations = self._sim.step(action)
+            self._sim.step(action)
+            observations = self._sim.get_sensor_observations()
             time_per_step.append(time.time() - start_step_time)
 
             # get simulation step time without sensor observations

@@ -38,7 +38,8 @@ def _render_scene(sim, scene, sensor_type, gpu2gpu):
         state.rotation = quat_from_coeffs(render_state["rot"])
 
     sim.initialize_agent(0, state)
-    obs = sim.step("move_forward")
+    sim.step("move_forward")
+    obs = sim.get_sensor_observations()
 
     if gpu2gpu:
         torch = pytest.importorskip("torch")
@@ -212,7 +213,8 @@ def test_sensors(
 
     with habitat_sim.Simulator(cfg) as sim:
         if add_sensor_lazy:
-            obs: Dict[str, Any] = sim.reset()
+            sim.reset()
+            obs: Dict[str, Any] = sim.get_sensor_observations()
             assert len(obs) == 1, "Other sensors were not removed"
             for sensor_spec in additional_sensors:
                 sim.add_sensor(sensor_spec)

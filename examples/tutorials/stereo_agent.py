@@ -14,7 +14,8 @@ cv2 = None
 def _render(sim, display, depth=False):
     for _ in range(100):
         # Just spin in a circle
-        obs = sim.step("turn_right")
+        sim.step("turn_right")
+        obs = sim.get_sensor_observations()
         # Put the two stereo observations next to each other
         stereo_pair = np.concatenate([obs["left_sensor"], obs["right_sensor"]], axis=1)
 
