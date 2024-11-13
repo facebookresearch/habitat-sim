@@ -12,7 +12,6 @@
 #include <utility>
 
 #include "../ArticulatedObject.h"
-#include "BulletBase.h"
 #include "BulletDynamics/Featherstone/btMultiBodyJointMotor.h"
 #include "BulletDynamics/Featherstone/btMultiBodySphericalJointMotor.h"
 #include "BulletURDFImporter.h"
@@ -23,39 +22,6 @@ namespace physics {
 
 // forward declaration from BulletURDFImporter
 struct JointLimitConstraintInfo;
-
-////////////////////////////////////
-// Link
-////////////////////////////////////
-
-class BulletArticulatedLink : public ArticulatedLink, public BulletBase {
- public:
-  BulletArticulatedLink(scene::SceneNode* bodyNode,
-                        const assets::ResourceManager& resMgr,
-                        std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
-                        int index,
-                        std::shared_ptr<std::map<const btCollisionObject*, int>>
-                            collisionObjToObjIds)
-      : ArticulatedLink(bodyNode, index, resMgr),
-        BulletBase(std::move(bWorld), std::move(collisionObjToObjIds)) {}
-
-  Magnum::Range3D getCollisionShapeAabb() const override {
-    // TODO: collision object should be linked here
-    ESP_WARNING() << "Not implemented.";
-    return Magnum::Range3D();
-  }
-
-  //! link can't do this.
-  void setMotionType(CORRADE_UNUSED MotionType mt) override {
-    ESP_WARNING() << "Cannot set MotionType individually for links.";
-  }
-
- protected:
-  int mbIndex_;
-
- private:
-  ESP_SMART_POINTERS(BulletArticulatedLink)
-};
 
 ////////////////////////////////////
 // Articulated Object

@@ -7,6 +7,7 @@ find_package(Bullet REQUIRED Dynamics)
 
 add_library(
   bulletphysics STATIC
+  BulletArticulatedLink.h
   BulletArticulatedObject.cpp
   BulletArticulatedObject.h
   BulletBase.cpp
