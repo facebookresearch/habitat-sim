@@ -41,11 +41,7 @@ struct WindowlessContext::Impl {
 #if defined(CORRADE_TARGET_UNIX) && !defined(CORRADE_TARGET_APPLE)
 #ifdef MAGNUM_TARGET_EGL
     if (device != -1) {
-      #ifdef ESP_BUILD_WITH_CUDA
-        config.setCudaDevice(device);
-      #else
-        config.setDevice(device);
-      #endif
+      config.setCudaDevice(device);
     }
 #else  // NO MAGNUM_TARGET_EGL
     if (device != 0)
