@@ -679,14 +679,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   int checkActiveObjects();
 
-  /** @brief Set bounding box rendering for the object true or false.
-   * @param physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param drawables The drawables group with which to render the bounding box.
-   * @param drawBB Set rendering of the bounding box to true or false.
-   */
-  void setObjectBBDraw(int physObjectID, DrawableGroup* drawables, bool drawBB);
-
   /**
    * @brief Get the root node of an object's visual SceneNode subtree.
    *

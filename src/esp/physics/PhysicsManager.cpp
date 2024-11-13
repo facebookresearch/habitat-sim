@@ -940,26 +940,6 @@ int PhysicsManager::checkActiveObjects() {
   return numActive;
 }
 
-void PhysicsManager::setObjectBBDraw(int physObjectID,
-                                     DrawableGroup* drawables,
-                                     bool drawBB) {
-  auto objIter = getRigidObjIteratorOrAssert(physObjectID);
-  if (objIter->second->BBNode_ && !drawBB) {
-    // destroy the node
-    delete objIter->second->BBNode_;
-    objIter->second->BBNode_ = nullptr;
-  } else if (drawBB && objIter->second->visualNode_) {
-    // add a new BBNode
-    Magnum::Vector3 scale = objIter->second->getAabb().size() / 2.0;
-    objIter->second->BBNode_ = &objIter->second->visualNode_->createChild();
-    objIter->second->BBNode_->MagnumObject::setScaling(scale);
-    objIter->second->BBNode_->MagnumObject::setTranslation(
-        objIter->second->getAabb().center());
-    resourceManager_.addPrimitiveToDrawables(0, *objIter->second->BBNode_,
-                                             drawables);
-  }
-}
-
 metadata::attributes::PhysicsManagerAttributes::ptr
 PhysicsManager::getInitializationAttributes() const {
   return metadata::attributes::PhysicsManagerAttributes::create(

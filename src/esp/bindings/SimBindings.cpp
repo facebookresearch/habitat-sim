@@ -298,14 +298,10 @@ void initSimBindings(py::module& m) {
           "cast_ray", &Simulator::castRay, "ray"_a, "max_distance"_a = 100.0,
           "buffer_distance"_a = 0.08,
           R"(Cast a ray into the collidable scene and return hit results. Physics must be enabled. max_distance in units of ray length.)")
-      .def("set_object_bb_draw", &Simulator::setObjectBBDraw, "draw_bb"_a,
-           "object_id"_a,
-           R"(Enable or disable bounding box visualization for an object.)")
       .def(
           "recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
           "navmesh_settings"_a,
           R"(Recompute the NavMesh for a given PathFinder instance using configured NavMeshSettings.)")
-
       .def(
           "add_trajectory_object",
           [](Simulator& self, const std::string& name,
