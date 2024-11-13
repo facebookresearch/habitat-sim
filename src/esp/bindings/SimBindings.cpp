@@ -58,6 +58,9 @@ void initSimConfigBindings(py::module& m) {
           "create_renderer", &SimulatorConfiguration::createRenderer,
           R"(Optimisation for non-visual simulation. If false, no renderer will be created and no materials or textures loaded.)")
       .def_readwrite(
+          "requires_textures", &SimulatorConfiguration::requiresTextures,
+          R"(Optimisation for non-color visual sensors in simulation. If false, no RGB textures will be loaded for render assets resulting in reduced memory footprint.)")
+      .def_readwrite(
           "leave_context_with_background_renderer",
           &SimulatorConfiguration::leaveContextWithBackgroundRenderer,
           R"(See tutorials/async_rendering.py)")
