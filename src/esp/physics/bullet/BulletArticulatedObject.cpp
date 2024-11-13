@@ -5,6 +5,7 @@
 // Construction code adapted from Bullet3/examples/
 
 #include "BulletArticulatedObject.h"
+#include "BulletArticulatedLink.h"
 #include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
 #include "BulletPhysicsManager.h"
 #include "BulletURDFImporter.h"
@@ -232,10 +233,6 @@ void BulletArticulatedObject::updateNodes(bool force) {
           &link.second->node());
   }
 }
-
-////////////////////////////
-// BulletArticulatedLink
-////////////////////////////
 
 std::shared_ptr<metadata::attributes::SceneAOInstanceAttributes>
 BulletArticulatedObject::getCurrentStateInstanceAttr() {

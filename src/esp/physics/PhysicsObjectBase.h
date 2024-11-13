@@ -608,7 +608,32 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   /** @brief Return the local axis-aligned bounding box of the this object.*/
   virtual const Mn::Range3D& getAabb() { return node().getCumulativeBB(); }
 
+  /** @brief Set the managed object used to reference this object externally
+   * (i.e. via python)*/
+  template <class T>
+  void setManagedObjectPtr(std::shared_ptr<T> managedObjPtr) {
+    _managedObject = std::move(managedObjPtr);
+  }
+
  protected:
+  /**
+   * @brief Accessed Internally. Get the Managed Object that references this
+   * object.
+   */
+  template <class T>
+  std::shared_ptr<T> getManagedObjectPtrInternal() const {
+    if (!_managedObject) {
+      return nullptr;
+    }
+    static_assert(
+        std::is_base_of<core::managedContainers::AbstractManagedObject,
+                        T>::value,
+        "AbstractManagedObject must be base class of desired Managed Object "
+        "class.");
+
+    return std::static_pointer_cast<T>(_managedObject);
+  }
+
   /**
    * @brief Used Internally on object creation. Set whether or not this object
    * is articulated.
@@ -641,7 +666,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * @ref metadata::attributes::SceneObjectInstanceAttributes used to
    * create and place the object within the scene, appropriately cast for
    * object type.
-   * @return A copy of the initialization template used to create this object
+   * @return The initialization template used to create this object
    * instance or nullptr if no template exists.
    */
   template <class T>
@@ -778,6 +803,11 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   }
 
  private:
+  /**
+   * @brief The managed wrapper-based object referencing this object.
+   */
+  core::managedContainers::AbstractManagedObject::ptr _managedObject = nullptr;
+
   /**
    * @brief This object's instancing attributes, if any were used during its
    * creation.

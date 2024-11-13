@@ -398,12 +398,6 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   }
 
   /**
-   * @brief The @ref SceneNode of a bounding box debug drawable. If nullptr, BB
-   * drawing is off. See @ref setObjectBBDraw().
-   */
-  scene::SceneNode* BBNode_ = nullptr;
-
-  /**
    * @brief All Drawable components are children of this node.
    *
    * Note that the transformation of this node is a composition of rotation and

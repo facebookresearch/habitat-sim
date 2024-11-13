@@ -2265,9 +2265,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::B: {
       // toggle bounding box on objects
       drawObjectBBs = !drawObjectBBs;
-      for (auto id : simulator_->getExistingObjectIDs()) {
-        simulator_->setObjectBBDraw(drawObjectBBs, id);
-      }
+      // TODO: do this with debug drawing instead
     } break;
     case KeyEvent::Key::C:
       showFPS_ = !showFPS_;
