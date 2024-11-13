@@ -252,6 +252,8 @@ class DemoRunner:
             # get "interaction" time
             total_sim_step_time += time.time() - start_step_time
 
+            state = self._sim.get_agent(0).get_state()
+
             self._sim.step(action)
             observations = self._sim.get_sensor_observations()
             time_per_step.append(time.time() - start_step_time)
@@ -266,8 +268,6 @@ class DemoRunner:
                     self.save_depth_observation(observations, total_frames)
                 if self._sim_settings["semantic_sensor"]:
                     self.save_semantic_observation(observations, total_frames)
-
-            state = self._sim.last_state()
 
             if not self._sim_settings["silent"]:
                 print("position\t", state.position, "\t", "rotation\t", state.rotation)
