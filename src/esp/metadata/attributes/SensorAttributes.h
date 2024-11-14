@@ -12,18 +12,70 @@ namespace metadata {
 namespace attributes {
 
 /**
- * @brief Attributes object holding the descriptions of a Sensor
+ * @brief Attributes object holding the descriptions of a Sensor object
  */
-class SensorAttributes : public AbstractAttributes {
+class AbstractSensorAttributes : public AbstractAttributes {
  public:
-  SensorAttributes(const std::string& classKey, const std::string& handle);
+  AbstractSensorAttributes(const std::string& classKey,
+                           const std::string& handle);
 
-  ~SensorAttributes() override = default;
+  ~AbstractSensorAttributes() override = default;
+
+  /**
+   * @brief Populate a json object with all the first-level values held in this
+   * configuration. Default is overridden to handle special cases for
+   * AbstractSensorAttributes and deriving (i.e. AudioSensorAttributes or
+   * VisualSensorAttributes) classes.
+   */
+  void writeValuesToJson(io::JsonGenericValue& jsonObj,
+                         io::JsonAllocator& allocator) const override;
 
  protected:
+  /**
+   * @brief Write child-class-specific values to json object
+   *
+   */
+  virtual void writeValuesToJsonInternal(
+      CORRADE_UNUSED io::JsonGenericValue& jsonObj,
+      CORRADE_UNUSED io::JsonAllocator& allocator) const {}
+
  public:
-  ESP_SMART_POINTERS(SensorAttributes)
+  ESP_SMART_POINTERS(AbstractSensorAttributes)
 };  // class SensorAttributes
+
+/**
+ * @brief Class to support creating audio sensors
+ */
+class AudioSensorAttributes : public AbstractSensorAttributes {
+ public:
+  explicit AudioSensorAttributes();
+
+ protected:
+  /**
+   * @brief Write Audio Sensor-specific values to json object
+   */
+  void writeValuesToJsonInternal(io::JsonGenericValue& jsonObj,
+                                 io::JsonAllocator& allocator) const override;
+
+ public:
+  ESP_SMART_POINTERS(AudioSensorAttributes)
+};  // class AudioSensorAttributes
+
+/**
+ * @brief Class to suppoort creating visual sensors
+ */
+class VisualSensorAttributes : public AbstractSensorAttributes {
+ public:
+ protected:
+  /**
+   * @brief Write Audio Sensor-specific values to json object
+   */
+  void writeValuesToJsonInternal(io::JsonGenericValue& jsonObj,
+                                 io::JsonAllocator& allocator) const override;
+
+ public:
+  ESP_SMART_POINTERS(VisualSensorAttributes)
+};  // class VisualSensorAttributes
 
 }  // namespace attributes
 }  // namespace metadata

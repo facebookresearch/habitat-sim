@@ -5,6 +5,14 @@
 #include "SensorAttributes.h"
 namespace esp {
 namespace metadata {
-namespace attributes {}  // namespace attributes
+namespace attributes {
+
+AbstractSensorAttributes::AbstractSensorAttributes(
+    const std::string& attributesClassKey,
+    const std::string& handle)
+    : AbstractAttributes(attributesClassKey, handle) {
+}  // AbstractSensorAttributes ctor
+
+}  // namespace attributes
 }  // namespace metadata
 }  // namespace esp
