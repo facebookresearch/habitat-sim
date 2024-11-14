@@ -267,6 +267,13 @@ constexpr ConfigValType configValTypeFor<Mn::Vector2i>() {
 }
 
 /**
+ * @brief Returns @ref ConfigValType::MagnumVec2i type enum for specified type
+ */
+template <>
+constexpr ConfigValType configValTypeFor<Mn::Vector2i>() {
+  return ConfigValType::MagnumVec2i;
+}
+/**
  * @brief Returns @ref ConfigValType::MagnumVec3 type enum for specified type
  */
 template <>
