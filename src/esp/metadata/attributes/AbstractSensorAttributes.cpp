@@ -43,11 +43,12 @@ std::string AbstractSensorAttributes::getObjectInfoHeaderInternal() const {
 }  // AbstractSensorAttributes::getObjectInfoHeaderInternal
 
 std::string AbstractSensorAttributes::getObjectInfoInternal() const {
-  return Cr::Utility::formatString(
-      "{},{},{},{},{},{},{}", getUniqueId(), getPosition(), getOrientation(),
-      getNoiseModel(), getSensorTypeName(getSensorType()),
-      getSensorSubTypeName(getSensorSubType()),
-      getAbstractSensorInfoInternal());
+  return Cr::Utility::formatString("{},{},{},{},{},{},{}", getUniqueId(),
+                                   getAsString("position"),
+                                   getAsString("orientation"), getNoiseModel(),
+                                   getSensorTypeName(getSensorType()),
+                                   getSensorSubTypeName(getSensorSubType()),
+                                   getAbstractSensorInfoInternal());
 }  // AbstractSensorAttributes::getObjectInfoInternal
 
 }  // namespace attributes
