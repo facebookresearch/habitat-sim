@@ -26,6 +26,8 @@ py::object getObjectForConfigValue(const ConfigValue& value) {
       return py::cast(value.get<std::string>());
     case ConfigValType::MagnumVec2:
       return py::cast(value.get<Mn::Vector2>());
+    case ConfigValType::MagnumVec2i:
+      return py::cast(value.get<Mn::Vector2i>());
     case ConfigValType::MagnumVec3:
       return py::cast(value.get<Mn::Vector3>());
     case ConfigValType::MagnumVec4:
@@ -82,6 +84,7 @@ void initConfigBindings(py::module& m) {
       .value("Float", ConfigValType::Double)
       .value("String", ConfigValType::String)
       .value("MagnumVec2", ConfigValType::MagnumVec2)
+      .value("MagnumVec2i", ConfigValType::MagnumVec2i)
       .value("MagnumVec3", ConfigValType::MagnumVec3)
       .value("MagnumVec4", ConfigValType::MagnumVec4)
       .value("MagnumQuat", ConfigValType::MagnumQuat)
@@ -194,6 +197,7 @@ void initConfigBindings(py::module& m) {
   declareSetter<int>(pyConfiguration, "integer");
   declareSetter<double>(pyConfiguration, "floating-point");
   declareSetter<Magnum::Vector2&>(pyConfiguration, "Magnum::Vector2");
+  declareSetter<Magnum::Vector2i&>(pyConfiguration, "Magnum::Vector2i");
   declareSetter<Magnum::Vector3&>(pyConfiguration, "Magnum::Vector3");
   declareSetter<Magnum::Vector4&>(pyConfiguration, "Magnum::Vector4");
   declareSetter<Magnum::Color4&>(pyConfiguration, "Magnum::Color4");
@@ -218,6 +222,7 @@ void initConfigBindings(py::module& m) {
   declareInitializer<int>(pyConfiguration, "integer");
   declareInitializer<double>(pyConfiguration, "floating-point");
   declareInitializer<Magnum::Vector2&>(pyConfiguration, "Magnum::Vector2");
+  declareInitializer<Magnum::Vector2i&>(pyConfiguration, "Magnum::Vector2i");
   declareInitializer<Magnum::Vector3&>(pyConfiguration, "Magnum::Vector3");
   declareInitializer<Magnum::Vector4&>(pyConfiguration, "Magnum::Vector4");
   declareInitializer<Magnum::Color4&>(pyConfiguration, "Magnum::Color4");
