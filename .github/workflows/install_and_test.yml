@@ -63,13 +63,15 @@ jobs:
         path: "./habitat-sim"
     - name: CPU info
       run: cat /proc/cpuinfo
+    - name: Debugging with tmate
+      uses: mxschmitt/action-tmate@v3.18
     - uses: "./habitat-sim/.github/actions/install_ubuntu_deps"
     - name: Build, install habitat-sim
       run: |-
         #give cmake ownership to the runner for installation
         sudo chown runner -R /opt/cmake312/
         #activate conda env
-        export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+        export PATH=$HOME/miniconda/bin:$PATH
         conda init
         source ~/.bashrc
         conda activate habitat
@@ -87,9 +89,7 @@ jobs:
         git --version
         git-lfs --version
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-        conda init
-        source ~/.bashrc
-        conda activate habitat
+        . activate habitat
         conda install -y gitpython git-lfs
         cd habitat-sim
         git lfs install
