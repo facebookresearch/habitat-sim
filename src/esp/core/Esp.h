@@ -22,6 +22,8 @@ namespace esp {
 
 // Faciliate enabling/disabling Function templates
 // Alias template enabling/disabling function templates based on some condition
+
+namespace {
 template <bool, typename T = void>
 struct EnableIfT {};
 
@@ -29,6 +31,8 @@ template <typename T>
 struct EnableIfT<true, T> {
   using Type = T;
 };
+
+}  // namespace
 
 // EnableIf expands to a type so this is implemented as an alias template
 // Cond is the condition for which the subsequent template should be executed,
