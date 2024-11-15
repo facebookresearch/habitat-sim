@@ -78,6 +78,8 @@ jobs:
         pip install -r requirements.txt --progress-bar off
         git submodule update --init --recursive --jobs 8
         python -u setup.py install --build-type "Release" --lto --headless --bullet
+    - name: Debugging with tmate
+      uses: mxschmitt/action-tmate@v3.18
     - name: Download test data
       run: |-
         # Disable clone protection for git lfs
@@ -87,11 +89,9 @@ jobs:
         git --version
         git-lfs --version
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-        . activate habitat
+        conda activate habitat
         conda install -y gitpython git-lfs
         cd habitat-sim
         git lfs install
         python src_python/habitat_sim/utils/datasets_download.py --uids ci_test_assets ycb rearrange_dataset_v2 --replace --data-path data/ --no-prune
         ls -la data/scene_datasets/habitat-test-scenes/
-    - name: Debugging with tmate
-      uses: mxschmitt/action-tmate@v3.18
