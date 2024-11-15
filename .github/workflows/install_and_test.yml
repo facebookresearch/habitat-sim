@@ -63,8 +63,6 @@ jobs:
         path: "./habitat-sim"
     - name: CPU info
       run: cat /proc/cpuinfo
-    - name: Debugging with tmate
-      uses: mxschmitt/action-tmate@v3.18
     - uses: "./habitat-sim/.github/actions/install_ubuntu_deps"
     - name: Build, install habitat-sim
       run: |-
