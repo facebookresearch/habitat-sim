@@ -7,6 +7,10 @@
 
 #include "AbstractSensorAttributes.h"
 
+#ifdef ESP_BUILD_WITH_AUDIO
+#include "rlr-audio-propagation/RLRAudioPropagationPkg/headers/RLRAudioPropagation.h"
+#endif  // ESP_BUILD_WITH_AUDIO
+
 namespace esp {
 namespace metadata {
 namespace attributes {
@@ -16,7 +20,56 @@ namespace attributes {
  */
 class AudioSensorAttributes : public AbstractSensorAttributes {
  public:
-  explicit AudioSensorAttributes();
+  explicit AudioSensorAttributes(const std::string& handle = "");
+
+  /**
+   * @brief Set the output directory
+   */
+  void setOutputDirectory(const std::string& output_directory) {
+    set("output_directory", output_directory);
+  }
+
+  /**
+   * @brief Get the output directory
+   */
+  std::string getOutputDirectory() const {
+    return get<std::string>("output_directory");
+  }
+
+#ifdef ESP_BUILD_WITH_AUDIO
+ private:
+  RLRAudioPropagation::Configuration acousticsConfig_;
+  RLRAudioPropagation::ChannelLayout channelLayout_;
+
+ public:
+  /**
+   * @brief Sets the acoustics configuration.
+   */
+  void setAcousticsConfig(
+      const RLRAudioPropagation::Configuration& acousticsConfig) {
+    acousticsConfig_ = acousticsConfig;
+  }
+  /**
+   * @brief Gets the acoustics configuration.
+   */
+  RLRAudioPropagation::Configuration getAcousticsConfig() const {
+    return acousticsConfig_;
+  }
+  /**
+   * @brief Sets the acoustic channel layout.
+   */
+  void setChannelLayout(
+      const RLRAudioPropagation::ChannelLayout& channelLayout) {
+    channelLayout_ = channelLayout;
+  }
+  /**
+   * @brief Gets the acoustic channel layout.
+   */
+  RLRAudioPropagation::ChannelLayout getChannelLayout() const {
+    return channelLayout_;
+  }
+
+#endif  // ESP_BUILD_WITH_AUDIO
 
  protected:
   /**
