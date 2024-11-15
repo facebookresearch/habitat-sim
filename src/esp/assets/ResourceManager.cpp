@@ -1666,8 +1666,8 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
 
   std::vector<StaticDrawableInfo> staticDrawableInfo;
 
-  auto nodeType = creation.isStatic() ? scene::SceneNodeType::EMPTY
-                                      : scene::SceneNodeType::OBJECT;
+  auto nodeType = creation.isStatic() ? scene::SceneNodeType::Empty
+                                      : scene::SceneNodeType::Object;
   bool computeAbsoluteAABBs = creation.isStatic();
 
   // If the object has a skin and a rig (articulated object), link them together
@@ -1712,7 +1712,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
   }
 
   // set the node type for all cached visual nodes
-  if (nodeType != scene::SceneNodeType::EMPTY) {
+  if (nodeType != scene::SceneNodeType::Empty) {
     for (auto* node : visNodeCache) {
       node->setType(nodeType);
     }

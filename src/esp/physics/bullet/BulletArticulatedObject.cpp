@@ -151,7 +151,7 @@ void BulletArticulatedObject::initializeFromURDF(
       linkObject->linkName = urdfLink->m_name;
       linkNamesToIDs_[linkObject->linkName] = bulletLinkIx;
 
-      linkObject->node().setType(esp::scene::SceneNodeType::OBJECT);
+      linkObject->node().setType(esp::scene::SceneNodeType::Object);
     }
 
     // Build damping motors

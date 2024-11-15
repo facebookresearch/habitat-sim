@@ -84,11 +84,11 @@ void initSceneBindings(
 
   // ==== enum SceneNodeType ====
   py::enum_<SceneNodeType>(m, "SceneNodeType")
-      .value("EMPTY", SceneNodeType::EMPTY)
-      .value("SENSOR", SceneNodeType::SENSOR)
-      .value("AGENT", SceneNodeType::AGENT)
-      .value("CAMERA", SceneNodeType::CAMERA)
-      .value("OBJECT", SceneNodeType::OBJECT);
+      .value("EMPTY", SceneNodeType::Empty)
+      .value("SENSOR", SceneNodeType::Sensor)
+      .value("AGENT", SceneNodeType::Agent)
+      .value("CAMERA", SceneNodeType::Camera)
+      .value("OBJECT", SceneNodeType::Object);
 
   pySceneNode
       .def(py::init_alias<std::reference_wrapper<SceneNode>>(),
