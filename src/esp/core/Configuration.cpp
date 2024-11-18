@@ -35,6 +35,7 @@ const std::unordered_map<ConfigValType, std::string, ConfigValTypeHash>
                           {ConfigValType::Boolean, "bool"},
                           {ConfigValType::Integer, "int"},
                           {ConfigValType::MagnumRad, "Mn::Rad"},
+                          {ConfigValType::MagnumDeg, "Mn::Deg"},
                           {ConfigValType::Double, "double"},
                           {ConfigValType::MagnumVec2, "Mn::Vector2"},
                           {ConfigValType::MagnumVec2i, "Mn::Vector2i"},
@@ -253,6 +254,14 @@ std::string ConfigValue::getAsString() const {
     case ConfigValType::Integer: {
       return std::to_string(get<int>());
     }
+    case ConfigValType::MagnumRad: {
+      auto r = get<Mn::Rad>();
+      return std::to_string(r.operator float());
+    }
+    case ConfigValType::MagnumDeg: {
+      auto r = get<Mn::Deg>();
+      return std::to_string(r.operator float());
+    }
     case ConfigValType::Double: {
       return Cr::Utility::formatString("{}", get<double>());
     }
@@ -304,10 +313,6 @@ std::string ConfigValue::getAsString() const {
       return Cr::Utility::formatString("{} [{} {} {}]", q.scalar(), qv.x(),
                                        qv.y(), qv.z());
     }
-    case ConfigValType::MagnumRad: {
-      auto r = get<Mn::Rad>();
-      return std::to_string(r.operator float());
-    }
     default:
       CORRADE_ASSERT_UNREACHABLE(
           "Unknown/unsupported Type in ConfigValue::getAsString", "");
@@ -324,6 +329,14 @@ io::JsonGenericValue ConfigValue::writeToJsonObject(
     }
     case ConfigValType::Integer: {
       return io::toJsonValue(get<int>(), allocator);
+    }
+    case ConfigValType::MagnumRad: {
+      auto r = get<Mn::Rad>();
+      return io::toJsonValue((r.operator float()), allocator);
+    }
+    case ConfigValType::MagnumDeg: {
+      auto r = get<Mn::Deg>();
+      return io::toJsonValue((r.operator float()), allocator);
     }
     case ConfigValType::Double: {
       return io::toJsonValue(get<double>(), allocator);
@@ -349,10 +362,6 @@ io::JsonGenericValue ConfigValue::writeToJsonObject(
     case ConfigValType::MagnumQuat: {
       return io::toJsonValue(get<Mn::Quaternion>(), allocator);
     }
-    case ConfigValType::MagnumRad: {
-      auto r = get<Mn::Rad>();
-      return io::toJsonValue((r.operator float()), allocator);
-    }
     case ConfigValType::String: {
       return io::toJsonValue(get<std::string>(), allocator);
     }
@@ -372,6 +381,10 @@ bool ConfigValue::putValueInConfigGroup(
       return cfg.setValue(key, get<bool>());
     case ConfigValType::Integer:
       return cfg.setValue(key, get<int>());
+    case ConfigValType::MagnumRad:
+      return cfg.setValue(key, get<Mn::Rad>());
+    case ConfigValType::MagnumDeg:
+      return cfg.setValue(key, get<Mn::Deg>());
     case ConfigValType::Double:
       return cfg.setValue(key, get<double>());
     case ConfigValType::String:
@@ -390,8 +403,6 @@ bool ConfigValue::putValueInConfigGroup(
       return cfg.setValue(key, get<Mn::Matrix4>());
     case ConfigValType::MagnumQuat:
       return cfg.setValue(key, get<Mn::Quaternion>());
-    case ConfigValType::MagnumRad:
-      return cfg.setValue(key, get<Mn::Rad>());
     default:
       CORRADE_ASSERT_UNREACHABLE(
           "Unknown/unsupported Type in ConfigValue::putValueInConfigGroup",

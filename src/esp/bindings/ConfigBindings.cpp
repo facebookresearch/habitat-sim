@@ -40,6 +40,8 @@ py::object getObjectForConfigValue(const ConfigValue& value) {
       return py::cast(value.get<Mn::Quaternion>());
     case ConfigValType::MagnumRad:
       return py::cast(static_cast<Mn::Radd>(value.get<Mn::Rad>()));
+    case ConfigValType::MagnumDeg:
+      return py::cast(static_cast<Mn::Degd>(value.get<Mn::Deg>()));
   }
   return py::cast(nullptr);
 }
@@ -90,7 +92,8 @@ void initConfigBindings(py::module& m) {
       .value("MagnumQuat", ConfigValType::MagnumQuat)
       .value("MagnumMat3", ConfigValType::MagnumMat3)
       .value("MagnumMat4", ConfigValType::MagnumMat4)
-      .value("MagnumRad", ConfigValType::MagnumRad);
+      .value("MagnumRad", ConfigValType::MagnumRad)
+      .value("MagnumDeg", ConfigValType::MagnumDeg);
 
   auto pyConfiguration =
       py::class_<Configuration, Configuration::ptr>(m, "Configuration");
@@ -213,7 +216,15 @@ void initConfigBindings(py::module& m) {
       "Set the value specified by given string key to be specified Magnum::Rad "
       "value.",
       "key"_a, "value"_a);
-
+  // Use Degd version for bindings
+  pyConfiguration.def(
+      "set",
+      [](Configuration& self, const std::string& key, const Mn::Degd val) {
+        self.set(key, static_cast<Mn::Deg>(val));
+      },
+      "Set the value specified by given string key to be specified Magnum::Deg "
+      "value.",
+      "key"_a, "value"_a);
   // Initializer bindings
   // Initializers are like setters but the value specified will not be
   // automatically saved to file unless it is changed.
@@ -238,6 +249,15 @@ void initConfigBindings(py::module& m) {
       },
       "Initialize the value specified by given string key to be specified "
       "Magnum::Rad value.",
+      "key"_a, "value"_a);
+  // Use Degd version for bindings
+  pyConfiguration.def(
+      "init",
+      [](Configuration& self, const std::string& key, const Mn::Degd val) {
+        self.init(key, static_cast<Mn::Deg>(val));
+      },
+      "Initialize the value specified by given string key to be specified "
+      "Magnum::Deg value.",
       "key"_a, "value"_a);
 
 }  // initConfigBindings

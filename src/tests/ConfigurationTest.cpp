@@ -238,36 +238,42 @@ void ConfigurationTest::TestConfiguration() {
   cfg.set("myInt", 10);
   cfg.set("myFloatToDouble", 1.2f);
   cfg.set("myVec2", Mn::Vector2{1.0, 2.0});
+  cfg.set("myVec2i", Mn::Vector2i{30, 40});
   cfg.set("myVec3", Mn::Vector3{1.0, 2.0, 3.0});
   cfg.set("myVec4", Mn::Vector4{1.0, 2.0, 3.0, 4.0});
   cfg.set("myQuat", Mn::Quaternion{{1.0, 2.0, 3.0}, 0.1});
   cfg.set("myMat3", Mn::Matrix3(Mn::Math::IdentityInit));
   cfg.set("myMat4", Mn::Matrix4(Mn::Math::IdentityInit));
   cfg.set("myRad", Mn::Rad{1.23});
+  cfg.set("myDeg", Mn::Deg{35.6});
   cfg.set("myString", "test");
 
   CORRADE_VERIFY(cfg.hasValue("myBool"));
   CORRADE_VERIFY(cfg.hasValue("myInt"));
   CORRADE_VERIFY(cfg.hasValue("myFloatToDouble"));
   CORRADE_VERIFY(cfg.hasValue("myVec2"));
+  CORRADE_VERIFY(cfg.hasValue("myVec2i"));
   CORRADE_VERIFY(cfg.hasValue("myVec3"));
   CORRADE_VERIFY(cfg.hasValue("myMat3"));
   CORRADE_VERIFY(cfg.hasValue("myVec4"));
   CORRADE_VERIFY(cfg.hasValue("myQuat"));
   CORRADE_VERIFY(cfg.hasValue("myMat3"));
   CORRADE_VERIFY(cfg.hasValue("myRad"));
+  CORRADE_VERIFY(cfg.hasValue("myDeg"));
   CORRADE_VERIFY(cfg.hasValue("myString"));
 
   CORRADE_COMPARE(cfg.get<bool>("myBool"), true);
   CORRADE_COMPARE(cfg.get<int>("myInt"), 10);
   CORRADE_COMPARE(cfg.get<double>("myFloatToDouble"), 1.2f);
   CORRADE_COMPARE(cfg.get<Mn::Vector2>("myVec2"), Mn::Vector2(1.0, 2.0));
+  CORRADE_COMPARE(cfg.get<Mn::Vector2i>("myVec2i"), Mn::Vector2i(30, 40));
   CORRADE_COMPARE(cfg.get<Mn::Vector3>("myVec3"), Mn::Vector3(1.0, 2.0, 3.0));
   CORRADE_COMPARE(cfg.get<Mn::Vector4>("myVec4"),
                   Mn::Vector4(1.0, 2.0, 3.0, 4.0));
   CORRADE_COMPARE(cfg.get<Mn::Quaternion>("myQuat"),
                   Mn::Quaternion({1.0, 2.0, 3.0}, 0.1));
   CORRADE_COMPARE(cfg.get<Mn::Rad>("myRad"), Mn::Rad(1.23));
+  CORRADE_COMPARE(cfg.get<Mn::Deg>("myDeg"), Mn::Deg(35.6));
 
   for (int i = 0; i < 3; ++i) {
     CORRADE_COMPARE(cfg.get<Mn::Matrix3>("myMat3").row(i)[i], 1);
