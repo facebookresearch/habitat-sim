@@ -10,11 +10,8 @@ runs:
       echo $(git ls-remote https://github.com/facebookresearch/habitat-lab.git HEAD | awk '{ print $1}') > ./hablab_sha
       cat ./hablab_sha
       wget https://cmake.org/files/v3.12/cmake-3.12.4-Linux-x86_64.sh
-      wget https://cmake.org/files/v3.20/cmake-3.20.1-linux-x86_64.sh
       sudo mkdir /opt/cmake312
-      sudo mkdir /opt/cmake320
       sudo sh ./cmake-3.12.4-Linux-x86_64.sh --prefix=/opt/cmake312 --skip-license
-      sudo sh ./cmake-3.20.1-linux-x86_64.sh --prefix=/opt/cmake320 --skip-license
       sudo ln -s /opt/cmake312/bin/cmake /usr/local/bin/cmake
     shell: bash
   - name: Install dependencies
@@ -24,6 +21,7 @@ runs:
       sudo apt-get install -y --no-install-recommends \
         build-essential \
         git \
+        git-lfs \
         curl \
         vim \
         ca-certificates \
