@@ -12,6 +12,11 @@ AbstractSensorAttributes::AbstractSensorAttributes(
     const std::string& handle)
     : AbstractAttributes(attributesClassKey, handle) {
   init("unique_id", "");
+  if (!handle.empty()) {
+    // set Unique ID with specified handle (future)
+    // Depending on usage this may be more appropriate to be an init
+    set("unique_id", handle);
+  }
   init("position", Mn::Vector3{0.0, 1.5, 0.0});
   init("orientation", Mn::Vector3{0.0, 0.0, 0.0});
   init("noise_model", "None");

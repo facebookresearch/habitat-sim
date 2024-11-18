@@ -26,7 +26,7 @@ AbstractVisualSensorAttributes::AbstractVisualSensorAttributes(
 void AbstractVisualSensorAttributes::writeValuesToJsonInternal(
     io::JsonGenericValue& jsonObj,
     io::JsonAllocator& allocator) const {
-  // write AbstractObjectAttributes values to json
+  // write AbstractVisualSensorAttributes values to json
   writeValueToJson("resolution", jsonObj, allocator);
   writeValueToJson("channels", jsonObj, allocator);
   writeValueToJson("gpu_to_gpu_transfer", jsonObj, allocator);
