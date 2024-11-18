@@ -8,9 +8,9 @@ runs:
     shell: bash
     run: |
       NVIDIA_SMI_OUTPUT=$(nvidia-smi)
-      DRIVER_VERSION=$(echo "$NVIDIA_SMI_OUTPUT" | grep -oP 'Driver Version:\s+\K[\d.]+')
-      MAJOR_VERSION=$(echo "$NVIDIA_SMI_OUTPUT" | grep -oP 'Driver Version:\s+\K\d+')
-      UBUNTU_PACKAGE_SUFFIX="${MAJOR_VERSION}=${DRIVER_VERSION}-0ubuntu1"
+      FULL_DRIVER_VERSION=$(echo "$NVIDIA_SMI_OUTPUT" | grep -oP 'Driver Version:\s+\K[\d.]+')
+      MAJOR_DRIVER_VERSION=$(echo "$NVIDIA_SMI_OUTPUT" | grep -oP 'Driver Version:\s+\K\d+')
+      UBUNTU_PACKAGE_SUFFIX="${MAJOR_DRIVER_VERSION}=${FULL_DRIVER_VERSION}-0ubuntu1"
       sudo apt-get update
-      sudo apt-get install -y libnvidia-common-${DRIVER_VERSION}
-      sudo apt-get install -y libnvidia-gl-${DRIVER_VERSION}
+      sudo apt-get install -y libnvidia-common-${UBUNTU_PACKAGE_SUFFIX}
+      sudo apt-get install -y libnvidia-gl-${UBUNTU_PACKAGE_SUFFIX}
