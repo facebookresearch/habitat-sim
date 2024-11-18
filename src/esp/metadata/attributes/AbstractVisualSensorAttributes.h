@@ -36,28 +36,28 @@ class AbstractVisualSensorAttributes : public AbstractSensorAttributes {
   Mn::Vector2i getResolution() const { return get<Mn::Vector2i>("resolution"); }
 
   /**
-   * @brief Set the number of channels for the Visual Sensor built from this
-   * attrbiutes.
+   * @brief Set the number of channels for the Visual Sensor built from
+   * this attributes.
    */
   void setChannels(int channels) { set("channels", channels); }
 
   /**
    * @brief get the number of channels for the Visual Sensor built from this
-   * attrbiutes.
+   * attributes.
    */
   int getChannels(int channels) const { return get<int>("channels"); }
 
   /**
-   * @brief Set whether to enable gpu-to-gpu transfer for the sensor built from
-   * this attributes.
+   * @brief Set whether to enable gpu-to-gpu transfer for the sensor built
+   * from this attributes.
    */
   void setGPUToGPUTransfer(bool transfer) {
     set("gpu_to_gpu_transfer", transfer);
   }
 
   /**
-   * @brief get whether to enable gpu-to-gpu transfer for the sensor built from
-   * this attributes.
+   * @brief get whether to enable gpu-to-gpu transfer for the sensor built
+   * from this attributes.
    */
   bool getGPUToGPUTransfer() const { return get<bool>("gpu_to_gpu_transfer"); }
 
@@ -104,8 +104,8 @@ class AbstractVisualSensorAttributes : public AbstractSensorAttributes {
   Mn::Color4 getClearColor() const { return get<Mn::Color4>("clear_color"); }
 
   /**
-   * @brief Set the SemanticSensorTarget to use for a Semantic Sensor built from
-   * this attributes.
+   * @brief Set the SemanticSensorTarget to use for a Semantic Sensor built
+   * from this attributes.
    */
   void setSemanticSensorTarget(const std::string& semantic_target) {
     // force to lowercase before setting
@@ -121,8 +121,8 @@ class AbstractVisualSensorAttributes : public AbstractSensorAttributes {
   }
 
   /**
-   * @brief Get the SemanticSensorTarget to use for a Semantic Sensor built from
-   * this attributes.
+   * @brief Get the SemanticSensorTarget to use for a Semantic Sensor built
+   * from this attributes.
    */
   sensor::SemanticSensorTarget getSemanticSensorTarget() const {
     const std::string val = Cr::Utility::String::lowercase(
