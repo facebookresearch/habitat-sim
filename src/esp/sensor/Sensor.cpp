@@ -50,7 +50,7 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
   CORRADE_ASSERT(
       node.getSceneNodeTags() & scene::SceneNodeTag::Leaf,
       "Sensor::Sensor(): Cannot attach a sensor to a non-LEAF node.", );
-  node.setType(scene::SceneNodeType::SENSOR);
+  node.setType(scene::SceneNodeType::Sensor);
   CORRADE_ASSERT(spec_,
                  "Sensor::Sensor(): Cannot initialize sensor. The "
                  "specification is null.", );
