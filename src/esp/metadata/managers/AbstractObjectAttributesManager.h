@@ -11,8 +11,8 @@
  */
 
 #include "esp/metadata/attributes/AbstractObjectAttributes.h"
+#include "esp/metadata/managers/AbstractAttributesManager.h"
 #include "esp/metadata/managers/AssetAttributesManager.h"
-#include "esp/metadata/managers/AttributesManagerBase.h"
 
 namespace Cr = Corrade;
 
@@ -29,7 +29,8 @@ namespace managers {
  * esp::metadata::attributes::AbstractObjectAttributes.
  */
 template <class T, ManagedObjectAccess Access>
-class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
+class AbstractObjectAttributesManager
+    : public AbstractAttributesManager<T, Access> {
  public:
   static_assert(std::is_base_of<attributes::AbstractObjectAttributes, T>::value,
                 "AbstractObjectAttributesManager :: Managed object type must "
@@ -39,7 +40,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
 
   AbstractObjectAttributesManager(const std::string& attrType,
                                   const std::string& JSONTypeExt)
-      : AttributesManager<T, Access>::AttributesManager(
+      : AbstractAttributesManager<T, Access>::AbstractAttributesManager(
             (attrType + " Template"),
             JSONTypeExt) {}
   ~AbstractObjectAttributesManager() override = default;
@@ -76,7 +77,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
   void setAssetAttributesManager(
       AssetAttributesManager::cptr assetAttributesMgr) {
     assetAttributesMgr_ = std::move(assetAttributesMgr);
-    // Create default primitive-based object attributess
+    // Create default primitive-based object attributes
     createDefaultPrimBasedAttributesTemplates();
   }
 

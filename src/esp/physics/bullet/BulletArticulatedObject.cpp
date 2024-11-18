@@ -5,6 +5,7 @@
 // Construction code adapted from Bullet3/examples/
 
 #include "BulletArticulatedObject.h"
+#include "BulletArticulatedLink.h"
 #include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
 #include "BulletPhysicsManager.h"
 #include "BulletURDFImporter.h"
@@ -150,7 +151,7 @@ void BulletArticulatedObject::initializeFromURDF(
       linkObject->linkName = urdfLink->m_name;
       linkNamesToIDs_[linkObject->linkName] = bulletLinkIx;
 
-      linkObject->node().setType(esp::scene::SceneNodeType::OBJECT);
+      linkObject->node().setType(esp::scene::SceneNodeType::Object);
     }
 
     // Build damping motors
@@ -172,7 +173,7 @@ void BulletArticulatedObject::initializeFromURDF(
   // set user config and initialization attributes
   setUserAttributes(initAttributes->getUserConfiguration());
   setMarkerSets(initAttributes->getMarkerSetsConfiguration());
-  initializationAttributes_ = initAttributes;
+  objInitAttributes_ = initAttributes;
 }
 
 void BulletArticulatedObject::constructStaticRigidBaseObject() {
@@ -233,10 +234,6 @@ void BulletArticulatedObject::updateNodes(bool force) {
   }
 }
 
-////////////////////////////
-// BulletArticulatedLink
-////////////////////////////
-
 std::shared_ptr<metadata::attributes::SceneAOInstanceAttributes>
 BulletArticulatedObject::getCurrentStateInstanceAttr() {
   // get mutable copy of initialization SceneAOInstanceAttributes for this AO
@@ -279,8 +276,23 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr() {
   if (attrObjMotionType != physics::MotionType::UNDEFINED) {
     setMotionType(attrObjMotionType);
   }
-  // set initial joint positions
-  // get array of existing joint dofs
+
+  // initially set positions to zero (or identity quaternion for spherical
+  // joints)
+  int posCount = 0;
+  // init unit quat
+  float quat_init[] = {0, 0, 0, 1};
+  for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
+    auto& link = btMultiBody_->getLink(i);
+    if (link.m_posVarCount > 0) {
+      // feed the unit quat to all setters, only spherical joints will hit the
+      // one at the end
+      btMultiBody_->setJointPosMultiDof(i, const_cast<float*>(quat_init));
+      posCount += link.m_posVarCount;
+    }
+  }
+
+  // set initial joint positions from instance config if applicable
   std::vector<float> aoJointPose = getJointPositions();
   // get instance-specified initial joint positions
   const auto& initJointPos = sceneObjInstanceAttr->getInitJointPose();
@@ -295,8 +307,9 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr() {
   }
   setJointPositions(aoJointPose);
 
+  // first clear all joint vels
+  setJointVelocities(std::vector<float>(size_t(btMultiBody_->getNumDofs())));
   // set initial joint velocities
-  // get array of existing joint vel dofs
   std::vector<float> aoJointVels = getJointVelocities();
   // get instance-specified initial joint velocities
   std::vector<float> initJointVels =
@@ -311,6 +324,10 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr() {
     }
     aoJointVels[i] = initJointVels[i];
   }
+  setJointVelocities(aoJointVels);
+
+  // clear any forces
+  setJointForces(std::vector<float>(size_t(btMultiBody_->getNumDofs())));
 
 }  // BulletArticulatedObject::resetStateFromSceneInstanceAttr
 

@@ -22,6 +22,8 @@ namespace esp {
 
 // Faciliate enabling/disabling Function templates
 // Alias template enabling/disabling function templates based on some condition
+
+namespace localonly {
 template <bool, typename T = void>
 struct EnableIfT {};
 
@@ -30,12 +32,14 @@ struct EnableIfT<true, T> {
   using Type = T;
 };
 
+}  // namespace localonly
+
 // EnableIf expands to a type so this is implemented as an alias template
 // Cond is the condition for which the subsequent template should be executed,
 // and T is the type produced by the expression if Cond is met.
 // See esp::core::config::ConfigValue
 template <bool Cond, typename T = void>
-using EnableIf = typename EnableIfT<Cond, T>::Type;
+using EnableIf = typename localonly::EnableIfT<Cond, T>::Type;
 
 //
 // smart pointers macro
@@ -97,6 +101,9 @@ constexpr int ID_UNDEFINED = -1;
 
 /** @brief Object ID of the rigid stage.*/
 constexpr int RIGID_STAGE_ID = 0;
+
+/** @brief Link ID of the baseLink for articulated objects */
+constexpr int BASELINK_ID = -1;
 
 static const double NO_TIME = 0.0;
 

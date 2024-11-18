@@ -29,7 +29,7 @@ using py::literals::operator""_a;
 namespace esp {
 namespace sim {
 
-void initSimBindings(py::module& m) {
+void initSimConfigBindings(py::module& m) {
   // ==== SimulatorConfiguration ====
   py::class_<SimulatorConfiguration, SimulatorConfiguration::ptr>(
       m, "SimulatorConfiguration")
@@ -105,6 +105,40 @@ void initSimBindings(py::module& m) {
       .def(py::self == py::self)
       .def(py::self != py::self);
 
+  // ==== ReplayRendererConfiguration ====
+  py::class_<ReplayRendererConfiguration, ReplayRendererConfiguration::ptr>(
+      m, "ReplayRendererConfiguration")
+      .def(py::init(&ReplayRendererConfiguration::create<>))
+      .def_readwrite("num_environments",
+                     &ReplayRendererConfiguration::numEnvironments,
+                     R"(Number of concurrent environments to render.)")
+      .def_readwrite(
+          "standalone", &ReplayRendererConfiguration::standalone,
+          R"(Determines if the renderer is standalone (windowless) or not (embedded in another window).)")
+      .def_readwrite(
+          "sensor_specifications",
+          &ReplayRendererConfiguration::sensorSpecifications,
+          R"(List of sensor specifications for one simulator. For batch rendering, all simulators must have the same specification.)")
+      .def_readwrite("gpu_device_id", &ReplayRendererConfiguration::gpuDeviceId,
+                     R"(The system GPU device to use for rendering)")
+      .def_readwrite("enable_frustum_culling",
+                     &ReplayRendererConfiguration::enableFrustumCulling,
+                     R"(Controls whether frustum culling is enabled.)")
+      .def_readwrite(
+          "enable_hbao", &ReplayRendererConfiguration::enableHBAO,
+          R"(Controls whether horizon-based ambient occlusion is enabled.)")
+      .def_readwrite(
+          "force_separate_semantic_scene_graph",
+          &ReplayRendererConfiguration::forceSeparateSemanticSceneGraph,
+          R"(Required to support playback of any gfx replay that includes a
+          stage with a semantic mesh. Set to false otherwise.)")
+      .def_readwrite(
+          "leave_context_with_background_renderer",
+          &ReplayRendererConfiguration::leaveContextWithBackgroundRenderer,
+          R"(See See tutorials/async_rendering.py.)");
+}
+
+void initSimBindings(py::module& m) {
   // ==== Simulator ====
   py::class_<Simulator, Simulator::ptr>(m, "Simulator")
       // modify constructor to pass MetadataMediator
@@ -130,7 +164,7 @@ void initSimBindings(py::module& m) {
           R"(Use gfx_replay_manager for replay recording and playback.)")
       .def("seed", &Simulator::seed, "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, "configuration"_a)
-      .def("reset", &Simulator::reset)
+      .def("reset", [](Simulator& self) { self.reset(false); })
       .def(
           "close", &Simulator::close, "destroy"_a = true,
           R"(Free all loaded assets and GPU contexts. Use destroy=true except where noted in tutorials/async_rendering.py.)")
@@ -148,6 +182,9 @@ void initSimBindings(py::module& m) {
       .def_property_readonly(
           "curr_scene_name", &Simulator::getCurSceneInstanceName,
           R"(The simplified, but unique, name of the currently loaded scene.)")
+      .def_property_readonly(
+          "scene_aabb", &Simulator::getSceneAabb,
+          R"(Get the axis-aligned bounding box (AABB) of the scene in global space.)")
       .def_property_readonly(
           "semantic_color_map", &Simulator::getSemanticSceneColormap,
           R"(The list of semantic colors being used for semantic rendering. The index
@@ -259,15 +296,12 @@ void initSimBindings(py::module& m) {
           R"(Perform discrete collision detection for the scene. Physics must be enabled. Warning: may break simulation determinism.)")
       .def(
           "cast_ray", &Simulator::castRay, "ray"_a, "max_distance"_a = 100.0,
+          "buffer_distance"_a = 0.08,
           R"(Cast a ray into the collidable scene and return hit results. Physics must be enabled. max_distance in units of ray length.)")
-      .def("set_object_bb_draw", &Simulator::setObjectBBDraw, "draw_bb"_a,
-           "object_id"_a,
-           R"(Enable or disable bounding box visualization for an object.)")
       .def(
           "recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
           "navmesh_settings"_a,
           R"(Recompute the NavMesh for a given PathFinder instance using configured NavMeshSettings.)")
-
       .def(
           "add_trajectory_object",
           [](Simulator& self, const std::string& name,
@@ -357,38 +391,6 @@ void initSimBindings(py::module& m) {
       .def("get_debug_line_render", &Simulator::getDebugLineRender,
            pybind11::return_value_policy::reference,
            R"(Get visualization helper for rendering lines.)");
-
-  // ==== ReplayRendererConfiguration ====
-  py::class_<ReplayRendererConfiguration, ReplayRendererConfiguration::ptr>(
-      m, "ReplayRendererConfiguration")
-      .def(py::init(&ReplayRendererConfiguration::create<>))
-      .def_readwrite("num_environments",
-                     &ReplayRendererConfiguration::numEnvironments,
-                     R"(Number of concurrent environments to render.)")
-      .def_readwrite(
-          "standalone", &ReplayRendererConfiguration::standalone,
-          R"(Determines if the renderer is standalone (windowless) or not (embedded in another window).)")
-      .def_readwrite(
-          "sensor_specifications",
-          &ReplayRendererConfiguration::sensorSpecifications,
-          R"(List of sensor specifications for one simulator. For batch rendering, all simulators must have the same specification.)")
-      .def_readwrite("gpu_device_id", &ReplayRendererConfiguration::gpuDeviceId,
-                     R"(The system GPU device to use for rendering)")
-      .def_readwrite("enable_frustum_culling",
-                     &ReplayRendererConfiguration::enableFrustumCulling,
-                     R"(Controls whether frustum culling is enabled.)")
-      .def_readwrite(
-          "enable_hbao", &ReplayRendererConfiguration::enableHBAO,
-          R"(Controls whether horizon-based ambient occlusion is enabled.)")
-      .def_readwrite(
-          "force_separate_semantic_scene_graph",
-          &ReplayRendererConfiguration::forceSeparateSemanticSceneGraph,
-          R"(Required to support playback of any gfx replay that includes a
-          stage with a semantic mesh. Set to false otherwise.)")
-      .def_readwrite(
-          "leave_context_with_background_renderer",
-          &ReplayRendererConfiguration::leaveContextWithBackgroundRenderer,
-          R"(See See tutorials/async_rendering.py.)");
 
   // ==== ReplayRenderer ====
   py::class_<AbstractReplayRenderer, AbstractReplayRenderer::ptr>(

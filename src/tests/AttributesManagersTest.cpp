@@ -8,8 +8,8 @@
 
 #include "esp/metadata/MetadataMediator.h"
 #include "esp/metadata/managers/AOAttributesManager.h"
+#include "esp/metadata/managers/AbstractAttributesManager.h"
 #include "esp/metadata/managers/AssetAttributesManager.h"
-#include "esp/metadata/managers/AttributesManagerBase.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/PbrShaderAttributesManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
@@ -28,7 +28,7 @@ using esp::metadata::PrimObjTypes;
 
 using esp::physics::MotionType;
 
-using AttrMgrs::AttributesManager;
+using AttrMgrs::AbstractAttributesManager;
 using Attrs::AbstractPrimitiveAttributes;
 using Attrs::ArticulatedObjectAttributes;
 using Attrs::CapsulePrimitiveAttributes;
@@ -155,10 +155,10 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
 
   /**
    * @brief This test will test creating, modifying, registering and deleting
-   * Attributes via the AttributesManager for PhysicsManagerAttributes.
+   * Attributes via the AbstractAttributesManager for PhysicsManagerAttributes.
    * These tests should be consistent with most types of future
-   * attributes managers specializing the AttributesManager class template that
-   * follow the same expected behavior paths as extent
+   * attributes managers specializing the AbstractAttributesManager class
+   * template that follow the same expected behavior paths as extent
    * attributes/attributesManagers.  Note : PrimitiveAssetAttributes exhibit
    * slightly different behavior and need their own tests.
    */
@@ -166,54 +166,55 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
 
   /**
    * @brief This test will test creating, modifying, registering and deleting
-   * Attributes via the AttributesManager for PbrShaderAttributes. These
+   * Attributes via the AbstractAttributesManager for PbrShaderAttributes. These
    * tests should be consistent with most types of future attributes managers
-   * specializing the AttributesManager class template that follow the same
-   * expected behavior paths as extent attributes/attributesManagers.
+   * specializing the AbstractAttributesManager class template that follow the
+   * same expected behavior paths as extent attributes/attributesManagers.
    */
   void testPbrShaderAttributesManagersCreate();
 
   /**
    * @brief This test will test creating, modifying, registering and deleting
-   * Attributes via the AttributesManager for StageAttributes. These
+   * Attributes via the AbstractAttributesManager for StageAttributes. These
    * tests should be consistent with most types of future attributes managers
-   * specializing the AttributesManager class template that follow the same
-   * expected behavior paths as extent attributes/attributesManagers.
+   * specializing the AbstractAttributesManager class template that follow the
+   * same expected behavior paths as extent attributes/attributesManagers.
    */
   void testStageAttributesManagersCreate();
 
   /**
    * @brief This test will test creating, modifying, registering and deleting
-   * Attributes via the AttributesManager for SemanticAttributes. These
+   * Attributes via the AbstractAttributesManager for SemanticAttributes. These
    * tests should be consistent with most types of future attributes managers
-   * specializing the AttributesManager class template that follow the same
-   * expected behavior paths as extent attributes/attributesManagers.
+   * specializing the AbstractAttributesManager class template that follow the
+   * same expected behavior paths as extent attributes/attributesManagers.
    */
   void testSemanticAttributesManagersCreate();
   /**
    * @brief This test will test creating, modifying, registering and deleting
-   * Attributes via the AttributesManager for ArticulatedObjectAttributes. These
-   * tests should be consistent with most types of future attributes managers
-   * specializing the AttributesManager class template that follow the same
-   * expected behavior paths as extent attributes/attributesManagers.
+   * Attributes via the AbstractAttributesManager for
+   * ArticulatedObjectAttributes. These tests should be consistent with most
+   * types of future attributes managers specializing the
+   * AbstractAttributesManager class template that follow the same expected
+   * behavior paths as extent attributes/attributesManagers.
    */
 
   void testArticulatedObjectAttributesManagersCreate();
 
   /**
    * @brief This test will test creating, modifying, registering and deleting
-   * Attributes via the AttributesManager for ObjectAttributes. These
+   * Attributes via the AbstractAttributesManager for ObjectAttributes. These
    * tests should be consistent with most types of future attributes managers
-   * specializing the AttributesManager class template that follow the same
-   * expected behavior paths as extent attributes/attributesManagers.  Note :
-   * PrimitiveAssetAttributes exhibit slightly different behavior and need their
-   * own tests.
+   * specializing the AbstractAttributesManager class template that follow the
+   * same expected behavior paths as extent attributes/attributesManagers.  Note
+   * : PrimitiveAssetAttributes exhibit slightly different behavior and need
+   * their own tests.
    */
   void testObjectAttributesManagersCreate();
 
   /**
    * @brief This test will test creating, modifying, registering and deleting
-   * Attributes via the AttributesManager for LightLayoutsAttributes
+   * Attributes via the AbstractAttributesManager for LightLayoutsAttributes
    */
   void testLightLayoutAttributesManager();
 

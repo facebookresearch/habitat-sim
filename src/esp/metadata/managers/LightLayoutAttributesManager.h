@@ -5,7 +5,7 @@
 #ifndef ESP_METADATA_MANAGERS_LIGHTATTRIBUTEMANAGER_H_
 #define ESP_METADATA_MANAGERS_LIGHTATTRIBUTEMANAGER_H_
 
-#include "AttributesManagerBase.h"
+#include "AbstractAttributesManager.h"
 
 #include "esp/gfx/LightSetup.h"
 #include "esp/metadata/attributes/LightLayoutAttributes.h"
@@ -17,16 +17,17 @@ namespace metadata {
 namespace managers {
 
 class LightLayoutAttributesManager
-    : public AttributesManager<attributes::LightLayoutAttributes,
-                               ManagedObjectAccess::Copy> {
+    : public AbstractAttributesManager<attributes::LightLayoutAttributes,
+                                       ManagedObjectAccess::Copy> {
  public:
   LightLayoutAttributesManager()
-      : AttributesManager<attributes::LightLayoutAttributes,
-                          ManagedObjectAccess::Copy>::
-            AttributesManager("Lighting Layout", "lighting_config.json") {
+      : AbstractAttributesManager<attributes::LightLayoutAttributes,
+                                  ManagedObjectAccess::Copy>::
+            AbstractAttributesManager("Lighting Layout",
+                                      "lighting_config.json") {
     // build this manager's copy constructor map
     this->copyConstructorMap_["LightLayoutAttributes"] =
-        &LightLayoutAttributesManager::createObjectCopy<
+        &LightLayoutAttributesManager::createObjCopyCtorMapEntry<
             attributes::LightLayoutAttributes>;
   }
 
@@ -81,7 +82,9 @@ class LightLayoutAttributesManager
       const std::string& lightConfigName);
 
   /**
-   * @brief This function will be called to finalize attributes' paths before
+   * @brief Not required for this manager.
+   *
+   * This function will be called to finalize attributes' paths before
    * registration, moving fully qualified paths to the appropriate hidden
    * attribute fields. This can also be called without registration to make sure
    * the paths specified in an attributes are properly configured.
@@ -109,7 +112,8 @@ class LightLayoutAttributesManager
 
   /**
    * @brief This method will perform any necessary updating that is
-   * attributesManager-specific upon template removal.  This should only be
+   * AbstractAttributesManager-specific upon template removal.  This should only
+   * be
    * called from @ref esp::core::managedContainers::ManagedContainerBase.
    *
    * @param templateID the ID of the template to remove

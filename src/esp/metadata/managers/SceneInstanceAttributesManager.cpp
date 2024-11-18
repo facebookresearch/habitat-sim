@@ -111,7 +111,8 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
                     << "` so no Stage can be created for this Scene.");
     }
   }
-
+  // TODO : drive by diagnostics when implemented
+  bool validateUnique = false;
   // Check for object instances existence
   io::JsonGenericValue::ConstMemberIterator objJSONIter =
       jsonConfig.FindMember("object_instances");
@@ -123,7 +124,7 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
         const auto& objCell = objectArray[i];
         if (objCell.IsObject()) {
           attribs->addObjectInstanceAttrs(
-              createInstanceAttributesFromJSON(objCell));
+              createInstanceAttributesFromJSON(objCell), validateUnique);
         } else {
           ESP_WARNING(Mn::Debug::Flag::NoSpace)
               << "Object instance issue in Scene Instance `" << attribsDispName
@@ -161,7 +162,7 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
 
         if (artObjCell.IsObject()) {
           attribs->addArticulatedObjectInstanceAttrs(
-              createAOInstanceAttributesFromJSON(artObjCell));
+              createAOInstanceAttributesFromJSON(artObjCell), validateUnique);
         } else {
           ESP_WARNING(Mn::Debug::Flag::NoSpace)
               << "Articulated Object specification error in Scene Instance `"
@@ -374,9 +375,12 @@ void SceneInstanceAttributesManager::setAbstractObjectAttributesFromJson(
         instanceAttrs->setHandle(template_name);
       });
 
-  // Check for translation origin override for a particular instance.  Default
+  // Check for translation origin override for a particular instance. Default
   // to unknown, which will mean use scene instance-level default.
-  instanceAttrs->setTranslationOrigin(getTranslationOriginVal(jCell));
+  const std::string transOriginStr = getTranslationOriginVal(jCell);
+  if (transOriginStr != instanceAttrs->getTranslationOriginStr()) {
+    instanceAttrs->setTranslationOrigin(getTranslationOriginVal(jCell));
+  }
 
   // set specified shader type value.  May be Unspecified, which means the
   // default value specified in the stage or object attributes will be used.

@@ -92,10 +92,13 @@ struct RaycastResults {
  * @brief based on Bullet b3ContactPointData
  */
 struct ContactPointData {
-  int objectIdA = -2;  // stage is -1
-  int objectIdB = -2;
-  int linkIndexA = -1;  // -1 if not a multibody
-  int linkIndexB = -1;
+  // Initialize to safe, appropriate values
+  // stage will be lowest object ID in system
+  int objectIdA = RIGID_STAGE_ID - 1;
+  int objectIdB = RIGID_STAGE_ID - 1;
+  // assume not a multibody
+  int linkIndexA = ID_UNDEFINED;
+  int linkIndexB = ID_UNDEFINED;
 
   Magnum::Vector3 positionOnAInWS;  // contact point location on object A, in
                                     // world space coordinates
@@ -160,12 +163,11 @@ struct RigidConstraintSettings {
   /** @brief objectIdB == ID_UNDEFINED indicates "world". */
   int objectIdB = ID_UNDEFINED;
 
-  /** @brief  link of objectA if articulated. ID_UNDEFINED(-1) refers to base.
-   */
-  int linkIdA = ID_UNDEFINED;
+  /** @brief  link of objectA if articulated. @ref BASELINK_ID refers to base.*/
+  int linkIdA = BASELINK_ID;
 
-  /** @brief link of objectB if articulated. ID_UNDEFINED(-1) refers to base.*/
-  int linkIdB = ID_UNDEFINED;
+  /** @brief link of objectB if articulated.  @ref BASELINK_ID refers to base.*/
+  int linkIdB = BASELINK_ID;
 
   /** @brief constraint point in local space of respective objects*/
   Mn::Vector3 pivotA{}, pivotB{};
@@ -264,11 +266,25 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /**
    * @brief Reset the simulation and physical world.
-   * Sets the @ref worldTime_ to 0.0, does not change physical state.
+   * Sets the @ref worldTime_ to 0.0, changes the physical
+   * state of all objects back to their initial states.
+   * Only changes motion_type when scene_instance specified a motion type.
+   * @param calledAfterSceneCreate If this is true, this is being called
+   * directly after a new scene was created and all the objects were placed
+   * appropriately, so bypass object placement reset code.
    */
-  virtual void reset() {
-    /* TODO: reset object states or clear them? Other? */
+  virtual void reset(bool calledAfterSceneCreate) {
+    // reset object states from initial values (e.g. from scene instance)
     worldTime_ = 0.0;
+    if (!calledAfterSceneCreate) {
+      // No need to re-place objects after scene creation
+      for (const auto& bro : existingObjects_) {
+        bro.second->resetStateFromSceneInstanceAttr();
+      }
+      for (const auto& bao : existingArticulatedObjects_) {
+        bao.second->resetStateFromSceneInstanceAttr();
+      }
+    }
   }
 
   /** @brief Stores references to a set of drawable elements. */
@@ -311,7 +327,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   int addObjectInstance(
       const esp::metadata::attributes::SceneObjectInstanceAttributes::cptr&
           objInstAttributes,
-      bool defaultCOMCorrection = false,
       DrawableGroup* drawables = nullptr,
       scene::SceneNode* attachmentNode = nullptr,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
@@ -664,14 +679,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   int checkActiveObjects();
 
-  /** @brief Set bounding box rendering for the object true or false.
-   * @param physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param drawables The drawables group with which to render the bounding box.
-   * @param drawBB Set rendering of the bounding box to true or false.
-   */
-  void setObjectBBDraw(int physObjectID, DrawableGroup* drawables, bool drawBB);
-
   /**
    * @brief Get the root node of an object's visual SceneNode subtree.
    *
@@ -786,10 +793,14 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * distances will be in units of ray length.
    * @param maxDistance The maximum distance along the ray direction to
    * search. In units of ray length.
+   * @param bufferDistance The casts the ray from this distance behind the
+   * origin in the inverted ray direction to avoid errors related to casting
+   * rays inside a collision shape's margin.
    * @return The raycast results sorted by distance.
    */
   virtual RaycastResults castRay(const esp::geo::Ray& ray,
-                                 CORRADE_UNUSED double maxDistance = 100.0) {
+                                 CORRADE_UNUSED double maxDistance = 100.0,
+                                 CORRADE_UNUSED double bufferDistance = 0.08) {
     ESP_ERROR() << "Not implemented in base PhysicsManager. Install with "
                    "--bullet to use this feature.";
     RaycastResults results;
@@ -973,9 +984,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @param attachmentNode If supplied, attach the new physical object to an
    * existing SceneNode.
    * @param lightSetup The string name of the desired lighting setup to use.
-   * @param defaultCOMCorrection The default value of whether COM-based
-   * translation correction needs to occur. Only non-default from
-   * addObjectInstance method.
    * @param objInstAttributes The attributes that describe the desired state to
    * set this object on creation. If nullptr, create an empty default instance
    * and populate it properly based on the object config.
@@ -987,7 +995,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       DrawableGroup* drawables = nullptr,
       scene::SceneNode* attachmentNode = nullptr,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY,
-      bool defaultCOMCorrection = false,
       esp::metadata::attributes::SceneObjectInstanceAttributes::cptr
           objInstAttributes = nullptr);
 

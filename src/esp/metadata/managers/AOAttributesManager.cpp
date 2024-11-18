@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "AOAttributesManager.h"
-#include "AttributesManagerBase.h"
+#include "AbstractAttributesManager.h"
 
 namespace Cr = Corrade;
 namespace esp {
@@ -254,6 +254,8 @@ AOAttributesManager::preRegisterObjectFinalize(
   // filter all paths properly so that the handles don't have filepaths and the
   // accessors are hidden fields
   this->finalizeAttrPathsBeforeRegister(AOAttributesTemplate);
+  // Clear dirty flag from when asset handles are changed
+  AOAttributesTemplate->setFilePathsAreClean();
 
   return core::managedContainers::ManagedObjectPreregistration::Success;
 }  // AOAttributesManager::preRegisterObjectFinalize
@@ -289,8 +291,11 @@ void AOAttributesManager::finalizeAttrPathsBeforeRegister(
 std::map<std::string, std::string>
 AOAttributesManager::getArticulatedObjectModelFilenames() const {
   std::map<std::string, std::string> articulatedObjPaths;
-  for (const auto& val : this->objectLibrary_) {
-    auto attr = this->getObjectByHandle(val.first);
+
+  auto objIterPair = this->getObjectLibIterator();
+  for (auto& objIter = objIterPair.first; objIter != objIterPair.second;
+       ++objIter) {
+    auto attr = this->getObjectByHandle(objIter->first);
     auto key = attr->getSimplifiedHandle();
     auto urdf = attr->getURDFFullPath();
     articulatedObjPaths[key] = urdf;

@@ -141,14 +141,14 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
 
   int articulatedObjectID = allocateObjectID();
 
-  // parse succeeded, attempt to create the articulated object
+  // 1.0 parse succeeded, attempt to create the articulated object
   scene::SceneNode* objectNode = &staticStageObject_->node().createChild();
   BulletArticulatedObject::ptr articulatedObject =
       BulletArticulatedObject::create(objectNode, resourceManager_,
                                       articulatedObjectID, bWorld_,
                                       collisionObjToObjIds_);
 
-  // Setup and configure
+  // Setup and configure links
   articulatedObject->initializeFromURDF(artObjAttributes, *urdfImporter_, {},
                                         physicsNode_);
 
@@ -162,7 +162,8 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
   }
 
   // allocate ids for links
-  ArticulatedLink& rootObject = articulatedObject->getLink(-1);
+  ArticulatedLink& rootObject = articulatedObject->getLink(BASELINK_ID);
+  // Root object node's ID is AO's ID
   rootObject.node().setBaseObjectId(articulatedObject->getObjectID());
   for (int linkIx = 0; linkIx < articulatedObject->btMultiBody_->getNumLinks();
        ++linkIx) {
@@ -204,7 +205,7 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
     }
   }
 
-  // Compute the cumulative bbox for the links in the ao.
+  // compute the visual bounding boxes for all nodes
   articulatedObject->computeAOCumulativeBB();
 
   // clear the cache
@@ -213,9 +214,6 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
   // base collider refers to the articulated object's id
   collisionObjToObjIds_->emplace(
       articulatedObject->btMultiBody_->getBaseCollider(), articulatedObjectID);
-
-  existingArticulatedObjects_.emplace(articulatedObjectID,
-                                      std::move(articulatedObject));
 
   // get a simplified name of the handle for the object
   std::string simpleArtObjHandle = artObjAttributes->getSimplifiedHandle();
@@ -226,19 +224,27 @@ int BulletPhysicsManager::addArticulatedObjectInternal(
   ESP_DEBUG() << "simpleArtObjHandle :" << simpleArtObjHandle
               << " | newArtObjectHandle :" << newArtObjectHandle;
 
-  existingArticulatedObjects_.at(articulatedObjectID)
-      ->setObjectName(newArtObjectHandle);
+  articulatedObject->setObjectName(newArtObjectHandle);
 
   // 2.0 Get wrapper - name is irrelevant, do not register on create.
   ManagedArticulatedObject::ptr AObjWrapper = getArticulatedObjectWrapper();
 
   // 3.0 Put articulated object in wrapper
-  AObjWrapper->setObjectRef(
-      existingArticulatedObjects_.at(articulatedObjectID));
+  AObjWrapper->setObjectRef(articulatedObject);
 
   // 4.0 register wrapper in manager
-  articulatedObjectManager_->registerObject(std::move(AObjWrapper),
-                                            newArtObjectHandle);
+  articulatedObjectManager_->registerObject(AObjWrapper, newArtObjectHandle);
+
+  // 4.5 register wrapper with object it contains - moved here
+  articulatedObject->setManagedObjectPtr(AObjWrapper);
+
+  // 5.0 register wrapper with each of AO's links.
+  articulatedObject
+      ->assignManagedAOtoLinks<physics::ManagedBulletArticulatedObject>();
+
+  // 6.0 move object into object library
+  existingArticulatedObjects_.emplace(articulatedObjectID,
+                                      std::move(articulatedObject));
 
   return articulatedObjectID;
 
@@ -271,7 +277,7 @@ bool BulletPhysicsManager::attachLinkGeometry(
     scene::SceneNode& visualGeomComponent = linkObject->node().createChild();
     // cache the visual node
     linkObject->visualNodes_.push_back(&visualGeomComponent);
-    visualGeomComponent.setType(esp::scene::SceneNodeType::OBJECT);
+    visualGeomComponent.setType(esp::scene::SceneNodeType::Object);
     visualGeomComponent.setTransformation(
         link->m_inertia.m_linkLocalFrame.invertedRigid() *
         visual.m_linkLocalFrame);
@@ -484,7 +490,8 @@ void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) const {
 }
 
 RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
-                                             double maxDistance) {
+                                             double maxDistance,
+                                             double bufferDistance) {
   RaycastResults results;
   results.ray = ray;
   double rayLength = static_cast<double>(ray.direction.length());
@@ -492,8 +499,10 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
     ESP_ERROR() << "Cannot cast ray with zero length, aborting.";
     return results;
   }
-  btVector3 from(ray.origin);
+  btVector3 from(ray.origin - ((ray.direction / rayLength) * bufferDistance));
   btVector3 to(ray.origin + ray.direction * maxDistance);
+  double totalLength = (rayLength * maxDistance) + bufferDistance;
+  double scaledBuffer = bufferDistance / (totalLength);
 
   btCollisionWorld::AllHitsRayResultCallback allResults(from, to);
   bWorld_->rayTest(from, to, allResults);
@@ -505,7 +514,13 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
     hit.normal = Magnum::Vector3{allResults.m_hitNormalWorld[i]};
     hit.point = Magnum::Vector3{allResults.m_hitPointWorld[i]};
     hit.rayDistance =
-        (static_cast<double>(allResults.m_hitFractions[i]) * maxDistance);
+        (static_cast<double>((allResults.m_hitFractions[i])) - scaledBuffer) *
+        totalLength / rayLength;
+    if (hit.rayDistance < 0) {
+      // We cast the the ray from bufferDistance behind the origin, so we'll
+      // throw away hits in the intermediate space.
+      continue;
+    }
     // default to RIGID_STAGE_ID for "scene collision" if we don't know which
     // object was involved
     hit.objectId = RIGID_STAGE_ID;
@@ -527,7 +542,7 @@ void BulletPhysicsManager::lookUpObjectIdAndLinkId(
   CORRADE_INTERNAL_ASSERT(objectId);
   CORRADE_INTERNAL_ASSERT(linkId);
 
-  *linkId = -1;
+  *linkId = ID_UNDEFINED;
   // If the lookup fails, default to the stage. TODO: better error-handling.
   *objectId = RIGID_STAGE_ID;
   auto rawColObjIdIter = collisionObjToObjIds_->find(colObj);
@@ -563,10 +578,10 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
     const btPersistentManifold* manifold =
         dispatcher->getInternalManifoldPointer()[i];
 
-    int objectIdA = ID_UNDEFINED;
-    int objectIdB = ID_UNDEFINED;
-    int linkIndexA = -1;  // -1 if not a multibody
-    int linkIndexB = -1;
+    int objectIdA = RIGID_STAGE_ID - 1;
+    int objectIdB = RIGID_STAGE_ID - 1;
+    int linkIndexA = ID_UNDEFINED;  // -1 if not a multibody
+    int linkIndexB = ID_UNDEFINED;
 
     const btCollisionObject* colObj0 = manifold->getBody0();
     const btCollisionObject* colObj1 = manifold->getBody1();

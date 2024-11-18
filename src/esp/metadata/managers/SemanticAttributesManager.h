@@ -7,7 +7,7 @@
 
 #include <utility>
 
-#include "AttributesManagerBase.h"
+#include "AbstractAttributesManager.h"
 
 #include "esp/metadata/attributes/SemanticAttributes.h"
 
@@ -18,15 +18,16 @@ namespace metadata {
 namespace managers {
 
 class SemanticAttributesManager
-    : public AttributesManager<attributes::SemanticAttributes,
-                               ManagedObjectAccess::Copy> {
+    : public AbstractAttributesManager<attributes::SemanticAttributes,
+                                       ManagedObjectAccess::Copy> {
  public:
   SemanticAttributesManager()
-      : AttributesManager<attributes::SemanticAttributes,
-                          ManagedObjectAccess::Copy>::
-            AttributesManager("Semantic Attributes", "semantic_config.json") {
+      : AbstractAttributesManager<attributes::SemanticAttributes,
+                                  ManagedObjectAccess::Copy>::
+            AbstractAttributesManager("Semantic Attributes",
+                                      "semantic_config.json") {
     this->copyConstructorMap_["SemanticAttributes"] =
-        &SemanticAttributesManager::createObjectCopy<
+        &SemanticAttributesManager::createObjCopyCtorMapEntry<
             attributes::SemanticAttributes>;
   }  // ctor
 
@@ -121,8 +122,8 @@ class SemanticAttributesManager
 
   /**
    * @brief This method will perform any necessary updating that is
-   * attributesManager-specific upon template removal, such as removing a
-   * specific template handle from the list of file-based template handles in
+   * AbstractAttributesManager-specific upon template removal, such as removing
+   * a specific template handle from the list of file-based template handles in
    * ObjectAttributesManager.  This should only be called @ref
    * esp::core::ManagedContainerBase.
    *

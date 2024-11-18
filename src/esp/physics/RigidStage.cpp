@@ -13,7 +13,7 @@ RigidStage::RigidStage(scene::SceneNode* rigidBodyNode,
 
 bool RigidStage::initialize(
     metadata::attributes::AbstractObjectAttributes::ptr initAttributes) {
-  if (initializationAttributes_ != nullptr) {
+  if (objInitAttributes_ != nullptr) {
     ESP_ERROR() << "Cannot initialize a RigidStage more than once";
     return false;
   }
@@ -26,7 +26,7 @@ bool RigidStage::initialize(
   // time
   setUserAttributes(initAttributes->getUserConfiguration());
   setMarkerSets(initAttributes->getMarkerSetsConfiguration());
-  initializationAttributes_ = std::move(initAttributes);
+  objInitAttributes_ = std::move(initAttributes);
 
   return initialization_LibSpecific();
 }

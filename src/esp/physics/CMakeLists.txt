@@ -14,6 +14,7 @@ configure_file(
 
 add_library(
   physics STATIC
+  ArticulatedLink.h
   ArticulatedObject.h
   CollisionGroupHelper.cpp
   CollisionGroupHelper.h
@@ -49,6 +50,7 @@ target_link_libraries(
   physics
   PUBLIC core
          scene
+         sensor
          assets
          MagnumPlugins::GltfImporter
          MagnumPlugins::StbImageImporter

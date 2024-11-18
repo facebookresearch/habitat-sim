@@ -231,7 +231,7 @@ BulletRigidObject::buildPrimitiveCollisionObject(int primTypeVal,
 }  // buildPrimitiveCollisionObject
 
 void BulletRigidObject::setCollisionFromBB() {
-  btVector3 dim(node().getCumulativeBB().size() / 2.0);
+  btVector3 dim(getAabb().size() / 2.0);
 
   if (!bObjectShape_) {
     bObjectShape_ = std::make_unique<btCompoundShape>();
@@ -424,7 +424,7 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
 }
 
 std::string BulletRigidObject::getCollisionDebugName() {
-  return "RigidObject, " + initializationAttributes_->getHandle() + ", id " +
+  return "RigidObject, " + objInitAttributes_->getHandle() + ", id " +
          std::to_string(objectId_);
 }
 

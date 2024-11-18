@@ -310,10 +310,7 @@ def sample_object_state(
 
         # raise object such that lowest bounding box corner is above the navmesh sample point.
         if from_navmesh:
-            obj_node = obj.root_scene_node
-            xform_bb = habitat_sim.geo.get_transformed_bb(
-                obj_node.cumulative_bb, obj_node.transformation
-            )
+            xform_bb = habitat_sim.geo.get_transformed_bb(obj.aabb, obj.transformation)
             # also account for collision margin of the scene
             obj.translation += mn.Vector3(
                 0, xform_bb.size_y() / 2.0 + scene_collision_margin, 0
@@ -1151,8 +1148,7 @@ class ObjectGripper:
             return
         self._gripped_obj = obj
         obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
-        object_node = obj.root_scene_node
-        self._gripped_obj_buffer = object_node.cumulative_bb.size_y() / 2.0
+        self._gripped_obj_buffer = obj.aabb.size_y() / 2.0
         self.sync_states()
 
     def release(self):

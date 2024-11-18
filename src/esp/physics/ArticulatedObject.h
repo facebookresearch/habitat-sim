@@ -11,8 +11,10 @@
  * JointMotorType, struct @ref JointMotorSettings
  */
 
-#include "RigidBase.h"
+#include "ArticulatedLink.h"
+#include "PhysicsObjectBase.h"
 #include "esp/core/Esp.h"
+#include "esp/geo/Geo.h"
 #include "esp/metadata/URDFParser.h"
 #include "esp/metadata/attributes/ArticulatedObjectAttributes.h"
 #include "esp/scene/SceneNode.h"
@@ -28,6 +30,7 @@ class ResourceManager;
 }
 
 namespace physics {
+class ManagedArticulatedObject;
 
 class URDFImporter;
 
@@ -130,164 +133,6 @@ struct JointMotor {
 };
 
 ////////////////////////////////////
-// Link
-////////////////////////////////////
-
-/**
- * @brief A single rigid link in a kinematic chain. Abstract class. Feature
- * attaches to a SceneNode.
- */
-class ArticulatedLink : public RigidBase {
- public:
-  ArticulatedLink(scene::SceneNode* bodyNode,
-                  int index,
-                  const assets::ResourceManager& resMgr)
-      : RigidBase(bodyNode,
-                  0,  // TODO: pass an actual object ID. This is currently
-                      // assigned AFTER creation.
-                  resMgr),
-        mbIndex_(index) {
-    setIsArticulated(true);
-  }
-
-  ~ArticulatedLink() override = default;
-
-  //! Get the link's index within its multibody
-  int getIndex() const { return mbIndex_; }
-
-  //! List of visual components attached to this link. Used for NavMesh
-  //! recomputation. Each entry is a child node of this link's node and a string
-  //! key to reference the asset in ResourceManager.
-  std::vector<std::pair<esp::scene::SceneNode*, std::string>>
-      visualAttachments_;
-
-  // RigidBase overrides
-
-  /**
-   * @brief Initializes the link.
-   * @param resMgr a reference to ResourceManager object
-   * @param handle The handle for the template structure defining relevant
-   * physical parameters for this object
-   * @return true if initialized successfully, false otherwise.
-   */
-  bool initialize(
-      CORRADE_UNUSED metadata::attributes::AbstractObjectAttributes::ptr
-          initAttributes) override {
-    return true;
-  }
-
-  void initializeArticulatedLink(const std::string& _linkName,
-                                 const Mn::Vector3& _scale) {
-    linkName = _linkName;
-    setScale(_scale);
-  }
-
-  /**
-   * @brief Finalize the creation of the link.
-   * @return whether successful finalization.
-   */
-  bool finalizeObject() override { return true; }
-
-  void setTransformation(
-      CORRADE_UNUSED const Magnum::Matrix4& transformation) override {
-    ESP_DEBUG() << "ArticulatedLink can't do this.";
-  }
-
-  void setTranslation(CORRADE_UNUSED const Magnum::Vector3& vector) override {
-    ESP_DEBUG() << "ArticulatedLink can't do this.";
-  }
-
-  void setRotation(
-      CORRADE_UNUSED const Magnum::Quaternion& quaternion) override {
-    ESP_DEBUG() << "ArticulatedLink can't do this.";
-  }
-
-  void setRigidState(
-      CORRADE_UNUSED const core::RigidState& rigidState) override {
-    ESP_DEBUG() << "ArticulatedLink can't do this.";
-  }
-
-  void resetTransformation() override {
-    ESP_DEBUG() << "ArticulatedLink can't do this.";
-  }
-
-  void translate(CORRADE_UNUSED const Magnum::Vector3& vector) override {
-    ESP_DEBUG() << "ArticulatedLink can't do this.";
-  }
-
-  void translateLocal(CORRADE_UNUSED const Magnum::Vector3& vector) override {
-    ESP_DEBUG() << "ArticulatedLink can't do this.";
-  }
-
-  void rotate(CORRADE_UNUSED const Magnum::Rad angleInRad,
-              CORRADE_UNUSED const Magnum::Vector3& normalizedAxis) override {
-    ESP_DEBUG() << "ArticulatedLink can't do this.";
-  }
-
-  void rotateLocal(
-      CORRADE_UNUSED const Magnum::Rad angleInRad,
-      CORRADE_UNUSED const Magnum::Vector3& normalizedAxis) override {
-    ESP_DEBUG() << "ArticulatedLink can't do this.";
-  }
-
-  void rotateX(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
-    ESP_DEBUG() << "ArticulatedLink can't do this.";
-  }
-
-  void rotateY(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
-    ESP_DEBUG() << "ArticulatedLink can't do this.";
-  }
-
-  void rotateZ(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
-    ESP_DEBUG() << "ArticulatedLink can't do this.";
-  }
-
-  void rotateXLocal(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
-    ESP_DEBUG() << "ArticulatedLink can't do this.";
-  }
-
-  void rotateYLocal(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
-    ESP_DEBUG() << "ArticulatedLink can't do this.";
-  }
-
-  void rotateZLocal(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
-    ESP_DEBUG() << "ArticulatedLink can't do this.";
-  }
-
-  /**
-   * @brief Not used for articulated links.  Set or reset the object's state
-   * using the object's specified @p sceneInstanceAttributes_.
-   */
-  void resetStateFromSceneInstanceAttr() override {
-    ESP_DEBUG() << "ArticulatedLink can't do this.";
-  }
-
-  std::string linkName = "";
-  std::string linkJointName = "";
-
- private:
-  /**
-   * @brief Finalize the initialization of this link.
-   * @return true if initialized successfully, false otherwise.
-   */
-  bool initialization_LibSpecific() override { return true; }
-  /**
-   * @brief any physics-lib-specific finalization code that needs to be run
-   * after creation.
-   * @return whether successful finalization.
-   */
-  bool finalizeObject_LibSpecific() override { return true; }
-
-  // end RigidBase overrides
-
- protected:
-  int mbIndex_;
-
- public:
-  ESP_SMART_POINTERS(ArticulatedLink)
-};
-
-////////////////////////////////////
 // Articulated Object
 ////////////////////////////////////
 
@@ -326,11 +171,11 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   /**
    * @brief Get a const reference to an ArticulatedLink SceneNode for
    * info query purposes.
-   * @param linkId The ArticulatedLink ID or -1 for the baseLink.
+   * @param linkId The ArticulatedLink ID or @ref BASELINK_ID for the @ref baseLink_.
    * @return Const reference to the SceneNode.
    */
-  const scene::SceneNode& getLinkSceneNode(int linkId = -1) const {
-    if (linkId == ID_UNDEFINED) {
+  const scene::SceneNode& getLinkSceneNode(int linkId = BASELINK_ID) const {
+    if (linkId == BASELINK_ID) {
       // base link
       return baseLink_->node();
     }
@@ -344,12 +189,12 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
 
   /**
    * @brief Get pointers to a link's visual SceneNodes.
-   * @param linkId The ArticulatedLink ID or -1 for the baseLink.
+   * @param linkId The ArticulatedLink ID or @ref BASELINK_ID for the @ref baseLink_.
    * @return vector of pointers to the link's visual scene nodes.
    */
   std::vector<scene::SceneNode*> getLinkVisualSceneNodes(
-      int linkId = -1) const {
-    if (linkId == ID_UNDEFINED) {
+      int linkId = BASELINK_ID) const {
+    if (linkId == BASELINK_ID) {
       // base link
       return baseLink_->visualNodes_;
     }
@@ -403,12 +248,12 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   /**
    * @brief Get a link by index.
    *
-   * @param id The id of the desired link. -1 for base link.
+   * @param id The id of the desired link. @ref BASELINK_ID for the @ref baseLink_.
    * @return The desired link.
    */
   ArticulatedLink& getLink(int id) {
-    // option to get the baseLink_ with id=-1
-    if (id == -1) {
+    // option to get the baseLink_ with id=BASELINK_ID
+    if (id == BASELINK_ID) {
       return *baseLink_.get();
     }
 
@@ -419,14 +264,16 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   }
 
   /**
-   * @brief Get the number of links for this object (not including the base).
+   * @brief Get the number of links for this object (not including the @ref baseLink_
+   * == @ref BASELINK_ID.).
    *
    * @return The number of non-base links.
    */
   int getNumLinks() const { return links_.size(); }
 
   /**
-   * @brief Get a list of link ids, not including the base (-1).
+   * @brief Get a list of link ids, not including the @ref baseLink_
+   * == @ref BASELINK_ID.
    *
    * @return A list of link ids for this object.
    */
@@ -440,14 +287,15 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   }
 
   /**
-   * @brief Get a list of link ids including the base (-1).
+   * @brief Get a list of link ids including the @ref baseLink_
+   * == @ref BASELINK_ID.
    *
    * @return A list of link ids for this object.
    */
   std::vector<int> getLinkIdsWithBase() const {
     std::vector<int> ids;
     ids.reserve(links_.size() + 1);
-    ids.push_back(-1);
+    ids.push_back(BASELINK_ID);
     for (auto it = links_.begin(); it != links_.end(); ++it) {
       ids.push_back(it->first);
     }
@@ -487,12 +335,15 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @brief Given the list of passed points in this object's local space, return
    * those points transformed to world space.
    * @param points vector of points in object local space
-   * @param linkId Internal link index.
+   * @param linkId The ArticulatedLink ID or @ref BASELINK_ID for the @ref baseLink_.
    * @return vector of points transformed into world space
    */
   std::vector<Mn::Vector3> transformLocalPointsToWorld(
       const std::vector<Mn::Vector3>& points,
-      int linkId) const override {
+      int linkId = BASELINK_ID) const override {
+    if (linkId == BASELINK_ID) {
+      return this->baseLink_->transformLocalPointsToWorld(points, BASELINK_ID);
+    }
     auto linkIter = links_.find(linkId);
     ESP_CHECK(linkIter != links_.end(),
               "ArticulatedObject::getLinkVisualSceneNodes - no link found with "
@@ -505,12 +356,15 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @brief Given the list of passed points in world space, return
    * those points transformed to this object's local space.
    * @param points vector of points in world space
-   * @param linkId Internal link index.
+   * @param linkId The ArticulatedLink ID or @ref BASELINK_ID for the @ref baseLink_.
    * @return vector of points transformed to be in local space
    */
   std::vector<Mn::Vector3> transformWorldPointsToLocal(
       const std::vector<Mn::Vector3>& points,
-      int linkId) const override {
+      int linkId = BASELINK_ID) const override {
+    if (linkId == BASELINK_ID) {
+      return this->baseLink_->transformWorldPointsToLocal(points, BASELINK_ID);
+    }
     auto linkIter = links_.find(linkId);
     ESP_CHECK(linkIter != links_.end(),
               "ArticulatedObject::getLinkVisualSceneNodes - no link found with "
@@ -548,19 +402,25 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
       for (const auto& linkEntry : taskEntry.second) {
         const std::string linkName = linkEntry.first;
         int linkId = getLinkIdFromName(linkName);
-        auto linkIter = links_.find(linkId);
-        ESP_CHECK(
-            linkIter != links_.end(),
-            "ArticulatedObject::getMarkerPointsGlobal - no link found with "
-            "linkId ="
-                << linkId);
+        // locally access the unique pointer's payload
+        const esp::physics::ArticulatedLink* aoLink = nullptr;
+        if (linkId == BASELINK_ID) {
+          aoLink = baseLink_.get();
+        } else {
+          auto linkIter = links_.find(linkId);
+          ESP_CHECK(
+              linkIter != links_.end(),
+              "ArticulatedObject::getMarkerPointsGlobal - no link found with "
+              "linkId ="
+                  << linkId);
+          aoLink = linkIter->second.get();
+        }
         std::unordered_map<std::string, std::vector<Mn::Vector3>> perLinkMap;
         // for each set in link
         for (const auto& markersEntry : linkEntry.second) {
           const std::string markersName = markersEntry.first;
           perLinkMap[markersName] =
-              linkIter->second->transformLocalPointsToWorld(markersEntry.second,
-                                                            linkId);
+              aoLink->transformLocalPointsToWorld(markersEntry.second, linkId);
         }
         perTaskMap[linkName] = perLinkMap;
       }
@@ -747,11 +607,11 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   /**
    * @brief Get the name of the link.
    *
-   * @param linkId The link's index. -1 for base link.
+   * @param linkId The link's index. @ref BASELINK_ID for the @ref baseLink_.
    * @return The link's name.
    */
   virtual std::string getLinkName(int linkId) const {
-    if (linkId == -1) {
+    if (linkId == BASELINK_ID) {
       return baseLink_->linkName;
     }
 
@@ -766,15 +626,17 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @brief Get the starting position for this link's parent joint in the global
    * DoFs array.
    *
-   * @param linkId The link's index.
+   * @param linkId The link's index. @ref BASELINK_ID for the @ref baseLink_.
    * @return The link's starting DoF index.
    */
-  virtual int getLinkDoFOffset(CORRADE_UNUSED int linkId) const { return -1; }
+  virtual int getLinkDoFOffset(CORRADE_UNUSED int linkId) const {
+    return ID_UNDEFINED;
+  }
 
   /**
    * @brief Get the number of DoFs for this link's parent joint.
    *
-   * @param linkId The link's index.
+   * @param linkId The link's index. @ref BASELINK_ID for the @ref baseLink_.
    * @return The number of DoFs for this link's parent joint.
    */
   virtual int getLinkNumDoFs(CORRADE_UNUSED int linkId) const { return 0; }
@@ -783,17 +645,17 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @brief Get the starting position for this link's parent joint in the global
    * positions array.
    *
-   * @param linkId The link's index.
+   * @param linkId The link's index. @ref BASELINK_ID for the @ref baseLink_.
    * @return The link's starting position index.
    */
   virtual int getLinkJointPosOffset(CORRADE_UNUSED int linkId) const {
-    return -1;
+    return ID_UNDEFINED;
   }
 
   /**
    * @brief Get the number of positions for this link's parent joint.
    *
-   * @param linkId The link's index.
+   * @param linkId The link's index. @ref BASELINK_ID for the @ref baseLink_.
    * @return The number of positions for this link's parent joint.
    */
   virtual int getLinkNumJointPos(CORRADE_UNUSED int linkId) const { return 0; }
@@ -962,7 +824,18 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     return PhysicsObjectBase::getInitObjectInstanceAttrInternal<
         metadata::attributes::SceneAOInstanceAttributes>();
   }
-
+  /**
+   * @brief Returns a mutable copy of the @ref
+   * metadata::attributes::SceneAOInstanceAttributes used to place this
+   * Articulated Object initially in the scene.
+   * @return a read-only copy of the @ref metadata::attributes::SceneInstanceAttributes used to place
+   * this object in the scene.
+   */
+  std::shared_ptr<metadata::attributes::SceneAOInstanceAttributes>
+  getInitObjectInstanceAttrCopy() const {
+    return PhysicsObjectBase::getInitObjectInstanceAttrCopyInternal<
+        metadata::attributes::SceneAOInstanceAttributes>();
+  }
   /**
    * @brief Return a @ref
    * metadata::attributes::SceneAOInstanceAttributes reflecting the current
@@ -1007,6 +880,71 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     }
   }
 
+  /** @brief Accumulate the collective AABBs of all child links to compute a
+   * cumulative AABB for the object in root local space.*/
+  void recomputeAabb() {
+    // initialize the range to the base link, the only link node child of the
+    // root AO node
+    Mn::Range3D rootAabb = geo::getTransformedBB(
+        baseLink_->getAabb(), baseLink_->getTransformation());
+    // for each link (not in the subtree)
+    for (const auto& link : links_) {
+      // get the local aabb in link space
+      const auto& linkAabb = link.second->getAabb();
+      // get the transformation matrix from link space to root space
+      auto xform =
+          getTransformation().inverted() * link.second->getTransformation();
+      // transform the link space AABB to root space
+      auto rootSpaceLinkAabb = geo::getTransformedBB(linkAabb, xform);
+      // for subsequent links, expand the range
+      rootAabb = Mn::Math::join(rootAabb, rootSpaceLinkAabb);
+    }
+
+    // set the resulting aabb into the member variable
+    aabb_ = rootAabb;
+  }
+
+  /** @brief Return the root local axis-aligned bounding box (aabb) of the this
+   * articulated object. Will recompute the aabb when the object's kinematic
+   * state has been changed between queries.*/
+  const Mn::Range3D& getAabb() override {
+    // dirty check with recompute for efficiency
+    if (dirtyAabb_) {
+      recomputeAabb();
+    }
+    return aabb_;
+  }
+
+  /**
+   * @brief Map this AO's ManagedArticulatedObject to each link as their owning
+   * ManagedAO
+   */
+  template <class T>
+  void assignManagedAOtoLinks() {
+    static_assert(std::is_base_of<ManagedArticulatedObject, T>::value,
+                  "ManagedArticulatedObject must be base class of desired "
+                  "ArticulatedObject's Managed wrapper class.");
+    std::shared_ptr<T> managedAO =
+        PhysicsObjectBase::getManagedObjectPtrInternal<T>();
+    baseLink_->setOwningManagedAO(managedAO);
+    for (auto& link : links_) {
+      link.second->setOwningManagedAO(managedAO);
+    }
+  }
+
+  /**
+   * @brief Get the ManagedArticulatedObject or BulletManagedArticulatedObject
+   * referencing this object.
+   */
+  template <class T>
+  std::shared_ptr<T> getManagedArticulatedObject() const {
+    static_assert(std::is_base_of<ManagedArticulatedObject, T>::value,
+                  "ManagedArticulatedObject must be base class of desired "
+                  "ArticulatedObject's Managed wrapper class.");
+
+    return PhysicsObjectBase::getManagedObjectPtrInternal<T>();
+  }
+
  protected:
   /**
    * @brief Used to synchronize simulator's notion of the object state
@@ -1014,7 +952,11 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * kinematic updates.  For ArticulatedObjects, the transformation of the root
    * node is used to transform the root physical constructs.
    */
-  void syncPose() override { this->setRootState(node().transformation()); }
+  void syncPose() override {
+    this->setRootState(node().transformation());
+    // queue an update on the aabb at the next query
+    dirtyAabb_ = true;
+  }
 
   /**
    * @brief Called internally from syncPose()  Used to update physics
@@ -1041,6 +983,13 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
 
   //! Cache the global scaling from the source model. Set during import.
   float globalScale_ = 1.0;
+
+  //! Cache the cumulative bounding box of the AO heirarchy in root local space.
+  //! This is necessary because the child links are not children of the root
+  //! SceneNode, so the standard cumulative AABB is not correct here.
+  Mn::Range3D aabb_;
+  //! Track when the aabb is outdated so it can be re-computed at the next query
+  bool dirtyAabb_ = false;
 
  public:
   ESP_SMART_POINTERS(ArticulatedObject)

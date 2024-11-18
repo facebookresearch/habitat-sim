@@ -63,7 +63,7 @@ struct VisualSensorSpec : public SensorSpec {
    * @brief the type of semantic information being rendered by the semantic
    * sensor. Ignored by non-semantic sensors
    */
-  SemanticSensorTarget semanticTarget = SemanticSensorTarget::SEMANTIC_ID;
+  SemanticSensorTarget semanticTarget = SemanticSensorTarget::SemanticID;
 
   VisualSensorSpec();
   void sanityCheck() const override;
@@ -72,8 +72,7 @@ struct VisualSensorSpec : public SensorSpec {
   ESP_SMART_POINTERS(VisualSensorSpec)
 };
 
-// Represents a sensor that provides visual data from the environment to an
-// agent
+// Represents a sensor that provides visual data from the environment
 class VisualSensor : public Sensor {
  public:
   explicit VisualSensor(scene::SceneNode& node, VisualSensorSpec::ptr spec);

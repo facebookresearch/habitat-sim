@@ -74,7 +74,7 @@ if(MagnumPlugins_KtxImageConverter_FOUND)
   target_link_libraries(GfxBatchRendererTest PRIVATE MagnumPlugins::KtxImageConverter)
 endif()
 
-corrade_add_test(CoreTest CoreTest.cpp LIBRARIES core io)
+corrade_add_test(ConfigurationTest ConfigurationTest.cpp LIBRARIES core io)
 
 corrade_add_test(CullingTest CullingTest.cpp LIBRARIES gfx)
 target_include_directories(CullingTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
@@ -145,7 +145,14 @@ endif()
 corrade_add_test(GibsonSceneTest GibsonSceneTest.cpp LIBRARIES scene sim)
 target_include_directories(GibsonSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(HM3DSceneTest HM3DSceneTest.cpp LIBRARIES scene sim)
+corrade_add_test(
+  HM3DSceneTest
+  HM3DSceneTest.cpp
+  LIBRARIES
+  scene
+  sim
+  assets
+)
 target_include_directories(HM3DSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(IOTest IOTest.cpp LIBRARIES io metadata)
@@ -207,9 +214,16 @@ target_include_directories(ReplicaSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 corrade_add_test(ResourceManagerTest ResourceManagerTest.cpp LIBRARIES assets)
 target_include_directories(ResourceManagerTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(SceneGraphTest SceneGraphTest.cpp LIBRARIES scene)
+corrade_add_test(SceneGraphTest SceneGraphTest.cpp LIBRARIES scene sensor)
 
-corrade_add_test(SemanticTest SemanticTest.cpp LIBRARIES metadata scene)
+corrade_add_test(
+  SemanticTest
+  SemanticTest.cpp
+  LIBRARIES
+  metadata
+  scene
+  sim
+)
 target_include_directories(SemanticTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(SensorTest SensorTest.cpp LIBRARIES sensor sim)
@@ -219,6 +233,8 @@ corrade_add_test(
   SimTest.cpp
   LIBRARIES
   sim
+  sensor
+  assets
   Magnum::DebugTools
   Magnum::AnyImageConverter
   MagnumPlugins::StbImageImporter

@@ -8,11 +8,9 @@
 
 #ifdef MAGNUM_TARGET_EGL
 #include <Magnum/Platform/WindowlessEglApplication.h>
-#ifndef CORRADE_TARGET_EMSCRIPTEN
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#endif
 #elif defined(CORRADE_TARGET_APPLE)
 #include <Magnum/Platform/WindowlessCglApplication.h>
 #elif defined(CORRADE_TARGET_UNIX)

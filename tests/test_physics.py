@@ -109,7 +109,6 @@ def test_kinematics():
         for _ in range(2):
             # do some kinematics here (todo: translating or rotating instead of absolute)
             cheezit_box.translation = np.random.rand(3)
-            T = cheezit_box.transformation  # noqa: F841
 
             # test getting observation
             sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))
@@ -189,6 +188,13 @@ def test_kinematics_no_physics():
         cheezit_box.motion_type = habitat_sim.physics.MotionType.KINEMATIC
         assert cheezit_box.motion_type == habitat_sim.physics.MotionType.KINEMATIC
 
+        # test object aabb logic with golden numbers
+        box_aabb = cheezit_box.aabb
+        assert box_aabb == mn.Range3D(
+            mn.Vector3(-0.0359, -0.082018, -0.106719),
+            mn.Vector3(0.0359, 0.082018, 0.106719),
+        )
+
         # test kinematics
         I = np.identity(4)
 
@@ -225,7 +231,6 @@ def test_kinematics_no_physics():
         for _ in range(2):
             # do some kinematics here (todo: translating or rotating instead of absolute)
             cheezit_box.translation = np.random.rand(3)
-            T = cheezit_box.transformation  # noqa: F841
 
             # test getting observation
             sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))
@@ -442,7 +447,7 @@ def test_velocity_control():
         obj_handle = obj_template_mgr.get_template_handle_by_id(template_ids[0])
 
         for iteration in range(2):
-            sim.reset()
+            cur_time = sim.get_world_time()
 
             box_object = rigid_obj_mgr.add_object_by_template_handle(obj_handle)
             # Verify is not articulated
@@ -466,17 +471,19 @@ def test_velocity_control():
             vel_control.controlling_lin_vel = True
             vel_control.controlling_ang_vel = True
 
-            while sim.get_world_time() < 1.0:
+            while sim.get_world_time() < 1.0 + cur_time:
                 # NOTE: stepping close to default timestep to get near-constant velocity control of DYNAMIC bodies.
                 sim.step_physics(0.00416)
 
-            ground_truth_pos = sim.get_world_time() * vel_control.linear_velocity
+            ground_truth_pos = (
+                sim.get_world_time() - cur_time
+            ) * vel_control.linear_velocity
             assert np.allclose(box_object.translation, ground_truth_pos, atol=0.01)
             ground_truth_q = mn.Quaternion([[0, 0.480551, 0], 0.876967])
             angle_error = mn.math.half_angle(ground_truth_q, box_object.rotation)
             assert angle_error < mn.Rad(0.005)
 
-            sim.reset()
+            cur_time = sim.get_world_time()
 
             # test local velocities (turn in a half circle)
             vel_control.lin_vel_is_local = True
@@ -487,15 +494,12 @@ def test_velocity_control():
             box_object.translation = [0.0, 0.0, 0.0]
             box_object.rotation = mn.Quaternion()
 
-            while sim.get_world_time() < 0.5:
+            while sim.get_world_time() < 0.5 + cur_time:
                 # NOTE: stepping close to default timestep to get near-constant velocity control of DYNAMIC bodies.
                 sim.step_physics(0.008)
 
-            print(sim.get_world_time())
-
             # NOTE: explicit integration, so expect some error
             ground_truth_q = mn.Quaternion([[1.0, 0.0, 0.0], 0.0])
-            print(box_object.translation)
             assert np.allclose(
                 box_object.translation, np.array([0, 1.0, 0.0]), atol=0.07
             )
@@ -551,7 +555,7 @@ def test_raycast():
                 np.array([-0.999587, 0.0222882, -0.0181424]),
                 atol=0.07,
             )
-            assert abs(raycast_results.hits[0].ray_distance - 6.831) < 0.001
+            assert abs(raycast_results.hits[0].ray_distance - 6.8306) < 0.001
             # hit stage
             assert raycast_results.hits[0].object_id == habitat_sim.stage_id
 
@@ -579,6 +583,46 @@ def test_raycast():
             )
             assert abs(raycast_results.hits[0].ray_distance - 1.89) < 0.001
             assert raycast_results.hits[0].object_id == cube_obj.object_id
+
+            #############################################
+            # test raycasting with buffer:
+            # - test raycasting from within the cube's collision margin with and without buffering
+            # - NOTE: primitive collision margin is much smaller than a convex shape, so we need to get very close to
+            test_ray_2 = habitat_sim.geo.Ray()
+            test_ray_2.origin = cube_obj.translation + mn.Vector3(
+                cube_obj.collision_shape_aabb.size_x(), 0, 0
+            )
+            test_ray_2.direction = mn.Vector3(-1, 0, 0)
+            raycast_results = sim.cast_ray(test_ray_2)
+            assert raycast_results.has_hits()
+            assert raycast_results.hits[0].object_id == cube_obj.object_id
+            # move the ray to just within 1cm of the hit point
+            test_ray_2.origin = raycast_results.hits[0].point + mn.Vector3(0.009, 0, 0)
+            # cast ray with no buffer
+            raycast_results_no_buffer = sim.cast_ray(test_ray_2, buffer_distance=0)
+            # cast ray with buffer
+            raycast_results_buffer = sim.cast_ray(
+                test_ray_2
+            )  # default buffer_distance==0.08
+
+            assert raycast_results_no_buffer.has_hits()
+            assert raycast_results_buffer.has_hits()
+            # the unbuffered raycast misses from within 1cm of the object surface
+            assert raycast_results_no_buffer.hits[0].object_id != cube_obj.object_id
+            # the buffered raycast correctly detects the hit point
+            assert raycast_results_buffer.hits[0].object_id == cube_obj.object_id
+            assert (
+                raycast_results_buffer.hits[0].point - raycast_results.hits[0].point
+            ).length() < 0.0001
+
+            # test another point within the object, but with buffer outside and guarantee no negative hits are registered
+            test_ray_2.origin = raycast_results.hits[0].point - mn.Vector3(0.01, 0, 0)
+            raycast_results_buffer = sim.cast_ray(
+                test_ray_2
+            )  # default buffer_distance==0.08
+            # the ray cast was cast from
+            assert raycast_results_buffer.hits[0].ray_distance > 0
+            assert raycast_results_buffer.hits[0].object_id != cube_obj.object_id
 
             # test raycast against a non-collidable object.
             # should not register a hit with the object.
@@ -862,7 +906,7 @@ def check_articulated_object_root_state(
     ) < mn.Rad(epsilon)
 
 
-def getRestPositions(articulated_object):
+def get_rest_positions(articulated_object):
     r"""Constructs a valid rest pose vector for an ArticulatedObject with all zeros for non-spherical joints which get an identity quaternion instead."""
     rest_pose = np.zeros(len(articulated_object.joint_positions))
     for linkIx in range(articulated_object.num_links):
@@ -874,7 +918,7 @@ def getRestPositions(articulated_object):
     return rest_pose
 
 
-def getRandomPositions(articulated_object):
+def get_random_positions(articulated_object):
     r"""Constructs a random pose vector for an ArticulatedObject with unit quaternions for spherical joints."""
     joint_limits = articulated_object.joint_position_limits
     lower_limits = np.maximum(joint_limits[0], -1)
@@ -900,6 +944,18 @@ def getRandomPositions(articulated_object):
             ] = rand_quat.vector
 
     return rand_pose
+
+
+def get_ao_link_positions(articulated_object):
+    """
+    Get a set of 3D points, one at the position of each link.
+    """
+    ao_link_positions = []
+    for link_ix in range(-1, articulated_object.num_links):
+        ao_link_positions.append(
+            articulated_object.get_link_scene_node(link_ix).absolute_translation
+        )
+    return ao_link_positions
 
 
 @pytest.mark.skipif(
@@ -1061,6 +1117,14 @@ def test_articulated_object_kinematics(test_asset):
         assert robot.is_articulated
         assert robot.is_alive
 
+        # validate the aabb
+        robot_aabb = robot.aabb
+        robot_global_to_local = robot.transformation.inverted()
+        # check that all links are inside the bounding box
+        for link_position in get_ao_link_positions(robot):
+            robot_link_position = robot_global_to_local.transform_point(link_position)
+            assert robot_aabb.contains(robot_link_position)
+
         # NOTE: basic transform properties refer to the root state
         # root state should be identity by default
         expected_root_state = habitat_sim.RigidState()
@@ -1107,16 +1171,25 @@ def test_articulated_object_kinematics(test_asset):
         num_dofs = len(robot.joint_forces)
         assert num_dofs > 0
         # default zero joint states
-        assert np.allclose(robot.joint_positions, getRestPositions(robot))
+        assert np.allclose(robot.joint_positions, get_rest_positions(robot))
         assert np.allclose(robot.joint_velocities, np.zeros(num_dofs))
         assert np.allclose(robot.joint_forces, np.zeros(num_dofs))
 
         # test joint state get/set
         # generate vectors with num_dofs evenly spaced samples in a range
-        target_pose = getRandomPositions(robot)
+        target_pose = get_random_positions(robot)
         # positions
         robot.joint_positions = target_pose
         assert np.allclose(robot.joint_positions, target_pose)
+
+        # test updating the aabb automatically in a new state
+        robot_aabb = robot.aabb
+        robot_global_to_local = robot.transformation.inverted()
+        # check that all links are inside the bounding box
+        for link_position in get_ao_link_positions(robot):
+            robot_link_position = robot_global_to_local.transform_point(link_position)
+            assert robot_aabb.contains(robot_link_position)
+
         # velocities
         target_joint_vel = np.linspace(1.1, 2.0, num_dofs)
         robot.joint_velocities = target_joint_vel
@@ -1133,7 +1206,7 @@ def test_articulated_object_kinematics(test_asset):
         assert np.allclose(robot.joint_forces, 2 * target_joint_forces)
         # clear all positions, velocities, forces to zero
         robot.clear_joint_states()
-        assert np.allclose(robot.joint_positions, getRestPositions(robot))
+        assert np.allclose(robot.joint_positions, get_rest_positions(robot))
         assert np.allclose(robot.joint_velocities, np.zeros(num_dofs))
         assert np.allclose(robot.joint_forces, np.zeros(num_dofs))
 
@@ -1143,7 +1216,7 @@ def test_articulated_object_kinematics(test_asset):
         upper_pos_limits = joint_limits[1]
 
         # setup joint positions outside of the limit range
-        invalid_joint_positions = getRestPositions(robot)
+        invalid_joint_positions = get_rest_positions(robot)
         for pos in range(len(invalid_joint_positions)):
             if not math.isinf(upper_pos_limits[pos]):
                 invalid_joint_positions[pos] = upper_pos_limits[pos] + 0.1
@@ -1155,7 +1228,7 @@ def test_articulated_object_kinematics(test_asset):
         assert np.all(robot.joint_positions <= upper_pos_limits)
         assert np.all(robot.joint_positions <= invalid_joint_positions)
         # repeat with lower limits
-        invalid_joint_positions = getRestPositions(robot)
+        invalid_joint_positions = get_rest_positions(robot)
         for pos in range(len(invalid_joint_positions)):
             if not math.isinf(lower_pos_limits[pos]):
                 invalid_joint_positions[pos] = lower_pos_limits[pos] - 0.1
@@ -1266,7 +1339,7 @@ def test_articulated_object_dynamics(test_asset):
         assert np.allclose(robot.joint_positions, current_positions, atol=1.0e-4)
         assert robot.translation == mn.Vector3(0)
         # positions can be manually changed
-        target_joint_positions = getRandomPositions(robot)
+        target_joint_positions = get_random_positions(robot)
         robot.joint_positions = target_joint_positions
         assert np.allclose(robot.joint_positions, target_joint_positions, atol=1.0e-4)
 
@@ -1287,7 +1360,9 @@ def test_articulated_object_dynamics(test_asset):
         assert robot.root_linear_velocity == mn.Vector3(0)
         assert robot.root_angular_velocity == mn.Vector3(0)
         # positions should be dynamic and perturbed by velocities
-        assert not np.allclose(robot.joint_positions, getRestPositions(robot), atol=0.1)
+        assert not np.allclose(
+            robot.joint_positions, get_rest_positions(robot), atol=0.1
+        )
 
         # instance fresh robot with free base
         art_obj_mgr.remove_object_by_id(robot.object_id)
@@ -1466,7 +1541,7 @@ def test_articulated_object_joint_motors(test_asset):
             robot.remove_joint_motor(motor_id)
         assert len(robot.existing_joint_motor_ids) == 0
 
-        check_joint_positions(robot, getRestPositions(robot))
+        check_joint_positions(robot, get_rest_positions(robot))
 
         # setup the camera for debug video
         sim.agents[0].scene_node.translation = [0.0, -1.5, 2.0]
@@ -1536,7 +1611,7 @@ def test_articulated_object_joint_motors(test_asset):
 
         # validate that rest pose is maintained
         # Note: assume all joints for test assets can be actuated
-        target_positions = getRestPositions(robot)
+        target_positions = get_rest_positions(robot)
         check_joint_positions(robot, target_positions)
 
         # check removal and auto-creation
@@ -1557,7 +1632,7 @@ def test_articulated_object_joint_motors(test_asset):
         assert len(robot.existing_joint_motor_ids) == num_motors
 
         # set new random position targets
-        random_position_target = getRandomPositions(robot)
+        random_position_target = get_random_positions(robot)
         robot.update_all_motor_targets(random_position_target)
 
         target_time += 6.0

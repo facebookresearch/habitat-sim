@@ -1481,10 +1481,8 @@ void ResourceManager::configureImporterManagerGLExtensions() {
   Mn::GL::Context& context = Mn::GL::Context::current();
   /* This is reduced to formats that Magnum currently can Y-flip. More formats
      will get added back with new additions to Magnum/Math/ColorBatch.h. */
-#ifdef MAGNUM_TARGET_WEBGL
-  if (context.isExtensionSupported<
-          Mn::GL::Extensions::WEBGL::compressed_texture_s3tc>())
-#elif defined(MAGNUM_TARGET_GLES)
+
+#ifdef MAGNUM_TARGET_GLES
   if (context.isExtensionSupported<
           Mn::GL::Extensions::EXT::texture_compression_s3tc>() ||
       context.isExtensionSupported<
@@ -1668,8 +1666,8 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
 
   std::vector<StaticDrawableInfo> staticDrawableInfo;
 
-  auto nodeType = creation.isStatic() ? scene::SceneNodeType::EMPTY
-                                      : scene::SceneNodeType::OBJECT;
+  auto nodeType = creation.isStatic() ? scene::SceneNodeType::Empty
+                                      : scene::SceneNodeType::Object;
   bool computeAbsoluteAABBs = creation.isStatic();
 
   // If the object has a skin and a rig (articulated object), link them together
@@ -1714,7 +1712,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
   }
 
   // set the node type for all cached visual nodes
-  if (nodeType != scene::SceneNodeType::EMPTY) {
+  if (nodeType != scene::SceneNodeType::Empty) {
     for (auto* node : visNodeCache) {
       node->setType(nodeType);
     }
@@ -2818,23 +2816,9 @@ void ResourceManager::loadTextures(Importer& importer,
           // greyscale
           Mn::UnsignedInt channelCount = pixelFormatChannelCount(pixelFormat);
           if (channelCount == 1) {
-#ifdef MAGNUM_TARGET_WEBGL
-            ESP_WARNING() << "Single Channel Greyscale Texture : ID" << iTexture
-                          << "incorrectly displays as red instead of "
-                             "greyscale due to greyscale expansion"
-                             "not yet implemented in WebGL.";
-#else
             currentTexture->setSwizzle<'r', 'r', 'r', '1'>();
-#endif
           } else if (channelCount == 2) {
-#ifdef MAGNUM_TARGET_WEBGL
-            ESP_WARNING() << "Two Channel Greyscale + Alpha Texture : ID"
-                          << iTexture
-                          << "incorrectly displays due to greyscale expansion"
-                             "not yet implemented in WebGL.";
-#else
             currentTexture->setSwizzle<'r', 'r', 'r', 'g'>();
-#endif
           }
         }
 
@@ -2885,7 +2869,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
   // object has acquired a copy of its parent attributes.  No object should
   // ever have a copy of attributes with isDirty == true - any editing of
   // attributes for objects requires object rebuilding.
-  if (objectAttributes->getIsDirty()) {
+  if (objectAttributes->getFilePathsAreDirty()) {
     CORRADE_ASSERT(
         (getObjectAttributesManager()->registerObject(
              objectAttributes, objectTemplateHandle) != ID_UNDEFINED),

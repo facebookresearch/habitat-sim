@@ -52,7 +52,7 @@ RenderCamera::RenderCamera(scene::SceneNode& node,
     : MagnumCamera{node}, semanticInfoIDX_(semanticDataIDX) {
   // Set to using the base semantic idx assigned to this camera
   semanticIDXToUse_ = semanticInfoIDX_;
-  node.setType(scene::SceneNodeType::CAMERA);
+  node.setType(scene::SceneNodeType::Camera);
   setAspectRatioPolicy(Mn::SceneGraph::AspectRatioPolicy::NotPreserved);
 }
 
@@ -146,7 +146,7 @@ size_t RenderCamera::removeNonObjects(DrawableTransforms& drawableTransforms) {
                           Mn::Matrix4>& a) {
         auto& node = static_cast<scene::SceneNode&>(a.first.get().object());
         // don't remove OBJECT types
-        return (node.getType() != scene::SceneNodeType::OBJECT);
+        return (node.getType() != scene::SceneNodeType::Object);
       });
   return (newEndIter - drawableTransforms.begin());
 }
@@ -156,7 +156,7 @@ uint32_t RenderCamera::draw(DrawableTransforms& drawableTransforms,
   previousNumVisibleDrawables_ = drawableTransforms.size();
 
   if (flags & Flag::UseDrawableIdAsObjectId) {
-    semanticIDXToUse_ = esp::scene::SceneNodeSemanticDataIDX::DRAWABLE_ID;
+    semanticIDXToUse_ = esp::scene::SceneNodeSemanticDataIDX::DrawableID;
   }
 
   MagnumCamera::draw(drawableTransforms);

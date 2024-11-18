@@ -8,7 +8,6 @@
 #include <Corrade/Utility/Assert.h>
 
 #include <utility>
-#include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/core/Esp.h"
 #include "esp/core/Random.h"
@@ -68,7 +67,18 @@ class Simulator {
 
   void reconfigure(const SimulatorConfiguration& cfg);
 
-  void reset();
+  /**
+   * @brief Reset the simulation state including the state of all physics
+   * objects and the default light setup.
+   * Sets the @ref worldTime_ to 0.0, changes the physical state of all objects back to their initial states.
+   * Does not invalidate existing ManagedObject wrappers.
+   * Does not add or remove object instances.
+   * Only changes motion_type when scene_instance specified a motion type.
+   * @param calledAfterSceneCreate Whether this reset is being called after a
+   * new scene has been created in reconfigure. If so we con't want to
+   * redundantly re-place the newly-placed object positions.
+   */
+  void reset(bool calledAfterSceneCreate = false);
 
   void seed(uint32_t newSeed);
 
@@ -86,8 +96,6 @@ class Simulator {
     return gfxReplayMgr_;
   }
 
-  void saveFrame(const std::string& filename);
-
   /**
    * @brief The ID of the CUDA device of the OpenGL context owned by the
    * simulator. This will only be nonzero if the simulator is built in
@@ -101,7 +109,6 @@ class Simulator {
   }
 
   // === Physics Simulator Functions ===
-  // TODO: support multi-scene physics (default sceneID=0 currently).
   /**
    * @brief Return manager for construction and access to articulated object
    * attributes for the current dataset.
@@ -289,23 +296,11 @@ class Simulator {
   }
 
   /**
-   * @brief Turn on/off rendering for the bounding box of the object's visual
-   * component.
-   *
-   * Assumes the new @ref esp::gfx::Drawable for the bounding box should be
-   * added to the active @ref esp::gfx::SceneGraph's default drawable group. See
-   * @ref esp::gfx::SceneGraph::getDrawableGroup().
-   *
-   * @param drawBB Whether or not the render the bounding box.
-   * @param objectId The object ID and key identifying the object in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
+   * @brief Get the axis-aligned bounding box (AABB) of the scene in global
+   * space.
    */
-  void setObjectBBDraw(bool drawBB, int objectId) {
-    if (sceneHasPhysics()) {
-      getRenderGLContext();
-      auto& drawables = getDrawableGroup();
-      physicsManager_->setObjectBBDraw(objectId, &drawables, drawBB);
-    }
+  const Mn::Range3D& getSceneAabb() {
+    return getActiveSceneGraph().getRootNode().getCumulativeBB();
   }
 
   /**
@@ -403,12 +398,16 @@ class Simulator {
    * distances will be in units of ray length.
    * @param maxDistance The maximum distance along the ray direction to search.
    * In units of ray length.
+   * @param bufferDistance The casts the ray from this distance behind the
+   * origin in the inverted ray direction to avoid errors related to casting
+   * rays inside a collision shape's margin.
    * @return Raycast results sorted by distance.
    */
   esp::physics::RaycastResults castRay(const esp::geo::Ray& ray,
-                                       double maxDistance = 100.0) {
+                                       double maxDistance = 100.0,
+                                       double bufferDistance = 0.08) {
     if (sceneHasPhysics()) {
-      return physicsManager_->castRay(ray, maxDistance);
+      return physicsManager_->castRay(ray, maxDistance, bufferDistance);
     }
     return esp::physics::RaycastResults();
   }
@@ -452,6 +451,21 @@ class Simulator {
       return "NONE";
     }
     return curSceneInstanceAttributes_->getSimplifiedHandle();
+  }
+
+  /**
+   * @brief Return whether the @ref
+   * esp::metadata::attributes::SceneInstanceAttributes used to create the scene
+   * currently being simulated/displayed specifies a default COM handling for
+   * rigid objects
+   */
+
+  bool getCurSceneDefaultCOMHandling() const {
+    if (curSceneInstanceAttributes_ == nullptr) {
+      return false;
+    }
+    return (curSceneInstanceAttributes_->getTranslationOrigin() ==
+            metadata::attributes::SceneInstanceTranslationOrigin::AssetLocal);
   }
 
   /**
@@ -584,14 +598,9 @@ class Simulator {
     return false;
   }
 
-  agent::Agent::ptr getAgent(int agentId);
-
-  agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig,
-                             scene::SceneNode& agentParentNode);
-  agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig);
-
   /**
-   * @brief Initialize sensor and attach to sceneNode of a particular object
+   * @brief Initialize a sensor from its spec and attach it to the SceneNode of
+   * a particular object or link.
    * @param objectId    Id of the object to which a sensor will be initialized
    * at its node
    * @param sensorSpec  SensorSpec of sensor to be initialized
@@ -604,44 +613,37 @@ class Simulator {
 
   /**
    * @brief Displays observations on default frame buffer for a
-   * particular sensor of an agent
-   * @param agentId    Id of the agent for which the observation is to
-   *                   be returned
-   * @param sensorId   Id of the sensor for which the observation is to
+   * particular sensor
+   * @param sensorUuid   Unique Id of the sensor for which the observation is to
    *                   be returned
    */
-  bool displayObservation(int agentId, const std::string& sensorId);
+  bool displayObservation(const std::string& sensorUuid);
 
   /**
    * @brief
-   * get the render target of a particular sensor of an agent
+   * get the render target of a particular sensor
    * @return pointer to the render target if it is a valid visual sensor,
    * otherwise nullptr
-   * @param agentId    Id of the agent for which the observation is to
-   *                   be returned
-   * @param sensorId   Id of the sensor for which the observation is to
+   * @param sensorUuid   Id of the sensor for which the observation is to
    *                   be returned
    */
-  gfx::RenderTarget* getRenderTarget(int agentId, const std::string& sensorId);
+  gfx::RenderTarget* getRenderTarget(const std::string& sensorUuid);
 
   /**
    * @brief draw observations to the frame buffer stored in that
-   * particular sensor of an agent. Unlike the @displayObservation, it will
+   * particular sensor. Unlike the @displayObservation, it will
    * not display the observation on the default frame buffer
-   * @param agentId    Id of the agent for which the observation is to
-   *                   be returned
-   * @param sensorId   Id of the sensor for which the observation is to
+
+   * @param sensorUuid   Id of the sensor for which the observation is to
    *                   be returned
    */
-  bool drawObservation(int agentId, const std::string& sensorId);
+  bool drawObservation(const std::string& sensorUuid);
 
   /**
    * @brief visualize the undisplayable observations such as depth, semantic, to
    * the frame buffer stored in the @ref SensorInfoVisualizer
    * Note: it will not display the observation on the default frame buffer
-   * @param[in] agentId    Id of the agent for which the observation is to
-   *                   be returned
-   * @param[in] sensorId   Id of the sensor for which the observation is to
+   * @param[in] sensorUuid   Id of the sensor for which the observation is to
    *                   be returned
    * @param[in] colorMapOffset the offset of the color map
    * @param[in] colorMapScale the scale of the color map
@@ -656,26 +658,17 @@ class Simulator {
    * Renderer::RenderTargetBindingFlag for more info
    * @return false if the sensor's observation cannot be visualized.
    */
-  bool visualizeObservation(int agentId,
-                            const std::string& sensorId,
+  bool visualizeObservation(const std::string& sensorUuid,
                             float colorMapOffset,
                             float colorMapScale);
 
-  bool visualizeObservation(int agentId, const std::string& sensorId);
+  bool visualizeObservation(const std::string& sensorUuid);
 
-  bool getAgentObservation(int agentId,
-                           const std::string& sensorId,
-                           sensor::Observation& observation);
-  int getAgentObservations(
-      int agentId,
-      std::map<std::string, sensor::Observation>& observations);
+  bool getSensorObservation(const std::string& sensorUuid,
+                            sensor::Observation& observation);
 
-  bool getAgentObservationSpace(int agentId,
-                                const std::string& sensorId,
-                                sensor::ObservationSpace& space);
-  int getAgentObservationSpaces(
-      int agentId,
-      std::map<std::string, sensor::ObservationSpace>& spaces);
+  bool getSensorObservationSpace(const std::string& sensorUuid,
+                                 sensor::ObservationSpace& space);
 
   nav::PathFinder::ptr getPathFinder() { return pathfinder_; }
   void setPathFinder(nav::PathFinder::ptr pf);
@@ -908,25 +901,7 @@ class Simulator {
   metadata::attributes::SceneInstanceAttributes::ptr
   buildCurrentStateSceneAttributes() const;
 
-  /**
-   * @brief sample a random valid AgentState in passed agentState
-   * @param agentState [out] The placeholder for the sampled agent state.
-   */
-  void sampleRandomAgentState(agent::AgentState& agentState);
-
   bool sceneHasPhysics() const { return physicsManager_ != nullptr; }
-
-  /**
-   * @brief TEMPORARY until sim access to objects is completely removed.  This
-   * method will return an object's wrapper if the passed @p objID is valid.
-   * This wrapper will then be used by the calling
-   * function to access components of the object.
-   * @param objID The ID of the desired object
-   * @return A smart pointer to the wrapper referencing the desired object, or
-   * nullptr if DNE.
-   */
-  esp::physics::ManagedArticulatedObject::ptr queryArticulatedObjWrapper(
-      int objID) const;
 
   void reconfigureReplayManager(bool enableGfxReplaySave);
 
@@ -969,8 +944,6 @@ class Simulator {
 
   core::Random::ptr random_;
   SimulatorConfiguration config_;
-
-  std::vector<agent::Agent::ptr> agents_;
 
   nav::PathFinder::ptr pathfinder_;
   // state indicating frustum culling is enabled or not

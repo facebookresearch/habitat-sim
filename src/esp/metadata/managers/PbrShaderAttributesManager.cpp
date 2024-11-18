@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "PbrShaderAttributesManager.h"
-#include "AttributesManagerBase.h"
+#include "AbstractAttributesManager.h"
 
 #include "esp/io/Json.h"
 
@@ -23,7 +23,7 @@ PbrShaderAttributes::ptr PbrShaderAttributesManager::createObject(
       pbrConfigFilename, msg, registerTemplate);
 
   if (nullptr != attrs) {
-    ESP_DEBUG() << msg << "pbr shader configuration created"
+    ESP_DEBUG() << msg << "PBR Shader Attributes created"
                 << (registerTemplate ? "and registered." : ".");
   }
   return attrs;
@@ -218,7 +218,24 @@ void PbrShaderAttributesManager::setValsFromJSONDoc(
   // check for user defined attributes
   this->parseUserDefinedJsonVals(pbrShaderAttribs, jsonConfig);
 
-}  // PbrShaderAttributesManager::createFileBasedAttributesTemplate
+}  // PbrShaderAttributesManager::setValsFromJSONDoc
+
+core::managedContainers::ManagedObjectPreregistration
+PbrShaderAttributesManager::preRegisterObjectFinalize(
+    attributes::PbrShaderAttributes::ptr pbrShaderAttribs,
+    const std::string& /*objectHandle*/,
+    bool /*forceRegistration*/) {
+  // TODO : Verify filenames exist as files or as resources
+  this->finalizeAttrPathsBeforeRegister(pbrShaderAttribs);
+  return core::managedContainers::ManagedObjectPreregistration::Success;
+}  // PbrShaderAttributesManager::preRegisterObjectFinalize
+
+void PbrShaderAttributesManager::finalizeAttrPathsBeforeRegister(
+    const attributes::PbrShaderAttributes::ptr& attributes) const {
+  // TODO Verify getIBLBrdfLUTAssetHandle and getIBLEnvMapAssetHandle exist as
+  // either file-based assets or resources and build paths to be relative if
+  // file-based
+}  // PbrShaderAttributesManager::finalizeAttrPathsBeforeRegister
 
 PbrShaderAttributes::ptr PbrShaderAttributesManager::initNewObjectInternal(
     const std::string& handleName,

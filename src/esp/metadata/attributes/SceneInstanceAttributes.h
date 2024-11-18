@@ -8,7 +8,7 @@
 #include <deque>
 #include <utility>
 
-#include "AttributesBase.h"
+#include "AbstractAttributes.h"
 
 namespace esp {
 namespace physics {
@@ -73,7 +73,7 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
                   << translation_origin
                   << "attempted to be set in SceneObjectInstanceAttributes :"
                   << getHandle() << ". Aborting.");
-    set("translation_origin", translation_origin);
+    setTranslated("translation_origin", translation_origin);
   }
 
   /**
@@ -91,6 +91,13 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
     }
     // Unknown is default value
     return SceneInstanceTranslationOrigin::Unknown;
+  }
+
+  /**
+   * @brief Get string representation of translation origin
+   */
+  std::string getTranslationOriginStr() const {
+    return get<std::string>("translation_origin");
   }
 
   /**
@@ -145,7 +152,7 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
                   << "attempted to be set in SceneObjectInstanceAttributes :"
                   << getHandle() << ". Aborting.");
 
-    set("shader_type", shader_type);
+    setTranslated("shader_type", shader_type);
   }
 
   /**
@@ -324,7 +331,7 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
                   << baseType
                   << "attempted to be set in ArticulatedObjectAttributes:"
                   << getHandle() << ". Aborting.");
-    set("base_type", baseType);
+    setTranslated("base_type", baseType);
   }
 
   /**
@@ -356,7 +363,7 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
                   << inertiaSrc
                   << "attempted to be set in ArticulatedObjectAttributes:"
                   << getHandle() << ". Aborting.");
-    set("inertia_source", inertiaSrc);
+    setTranslated("inertia_source", inertiaSrc);
   }
 
   /**
@@ -388,7 +395,7 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
                   << linkOrder
                   << "attempted to be set in ArticulatedObjectAttributes:"
                   << getHandle() << ". Aborting.");
-    set("link_order", linkOrder);
+    setTranslated("link_order", linkOrder);
   }
 
   /**
@@ -419,7 +426,7 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
                   << renderMode
                   << "attempted to be set in ArticulatedObjectAttributes:"
                   << getHandle() << ". Aborting.");
-    set("render_mode", renderMode);
+    setTranslated("render_mode", renderMode);
   }
 
   /**
@@ -626,11 +633,21 @@ class SceneInstanceAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Add an object instance attributes to this scene instance.
+   * @brief Add an object instance attributes to this scene instance. Returns
+   * false if not added due to a duplicate to @p _objInstance found in
+   * @p objInstConfig_ during uniqueness validation.
+   * @param _objInstance The object instance to add to the owning
+   * subconfiguration.
+   * @param _validateUnique Whether to validate uniqueness of @p _objInstance .
+   * Note : hidden fields are ignored for this validation.
+   * @return Whether or not @p _objInstance was added due to a duplicate being
+   * found.
    */
-  void addObjectInstanceAttrs(SceneObjectInstanceAttributes::ptr _objInstance) {
-    setSubAttributesInternal<SceneObjectInstanceAttributes>(
-        _objInstance, availableObjInstIDs_, objInstConfig_, "obj_inst_");
+  bool addObjectInstanceAttrs(SceneObjectInstanceAttributes::ptr _objInstance,
+                              bool _validateUnique) {
+    return setSubAttributesInternal<SceneObjectInstanceAttributes>(
+        _objInstance, availableObjInstIDs_, objInstConfig_, "obj_inst_",
+        _validateUnique);
   }
 
   /**
@@ -657,13 +674,21 @@ class SceneInstanceAttributes : public AbstractAttributes {
 
   /**
    * @brief Add an articulated object instance's attributes to this scene
-   * instance.
+   * instance. Returns false if not added due to a duplicate to
+   * @p _artObjInstance found in @p artObjInstConfig_ .
+   * @param _artObjInstance The object instance to add to the owning
+   * subconfiguration.
+   * @param _validateUnique Whether to validate uniqueness of @p _objInstance .
+   * Note : hidden fields are ignored for this validation.
+   * @return Whether or not @p _objInstance was added due to a duplicate being
+   * found.
    */
-  void addArticulatedObjectInstanceAttrs(
-      SceneAOInstanceAttributes::ptr _artObjInstance) {
-    setSubAttributesInternal<SceneAOInstanceAttributes>(
+  bool addArticulatedObjectInstanceAttrs(
+      SceneAOInstanceAttributes::ptr _artObjInstance,
+      bool _validateUnique) {
+    return setSubAttributesInternal<SceneAOInstanceAttributes>(
         _artObjInstance, availableArtObjInstIDs_, artObjInstConfig_,
-        "art_obj_inst_");
+        "art_obj_inst_", _validateUnique);
   }
 
   /**

@@ -9,8 +9,8 @@
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/GenericSemanticMeshData.h"
 #include "esp/core/Esp.h"
+#include "esp/metadata/attributes/AbstractAttributes.h"
 #include "esp/metadata/attributes/AbstractObjectAttributes.h"
-#include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/physics/PhysicsObjectBase.h"
 
 /** @file
@@ -288,6 +288,18 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   }
 
   /**
+   * @brief Returns a mutable copy of the @ref metadata::attributes::SceneObjectInstanceAttributes
+   * used to place this rigid object in the scene.
+   * @return a read-only copy of the @ref metadata::attributes::SceneInstanceAttributes used to place
+   * this object in the scene.
+   */
+  std::shared_ptr<metadata::attributes::SceneObjectInstanceAttributes>
+  getInitObjectInstanceAttrCopy() const {
+    return PhysicsObjectBase::getInitObjectInstanceAttrCopyInternal<
+        metadata::attributes::SceneObjectInstanceAttributes>();
+  }
+
+  /**
    * @brief Return a @ref
    * metadata::attributes::SceneObjectInstanceAttributes reflecting the current
    * state of this Rigid.
@@ -386,12 +398,6 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   }
 
   /**
-   * @brief The @ref SceneNode of a bounding box debug drawable. If nullptr, BB
-   * drawing is off. See @ref setObjectBBDraw().
-   */
-  scene::SceneNode* BBNode_ = nullptr;
-
-  /**
    * @brief All Drawable components are children of this node.
    *
    * Note that the transformation of this node is a composition of rotation and
@@ -422,9 +428,7 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * @brief Shift the object's local origin to be coincident with the center of
    * it's bounding box, @ref cumulativeBB_. See @ref shiftOrigin.
    */
-  void shiftOriginToBBCenter() {
-    shiftOrigin(-node().getCumulativeBB().center());
-  }
+  void shiftOriginToBBCenter() { shiftOrigin(-getAabb().center()); }
 
   /** @brief Flag sepcifying whether or not the object has an active collision
    * shape.

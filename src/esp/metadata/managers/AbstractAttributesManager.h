@@ -2,14 +2,14 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_METADATA_MANAGERS_ATTRIBUTESMANAGERBASE_H_
-#define ESP_METADATA_MANAGERS_ATTRIBUTESMANAGERBASE_H_
+#ifndef ESP_METADATA_MANAGERS_ABSTRACTATTRIBUTESMANAGER_H_
+#define ESP_METADATA_MANAGERS_ABSTRACTATTRIBUTESMANAGER_H_
 
 /** @file
- * @brief Class Template @ref esp::metadata::managers::AttributesManager
+ * @brief Class Template @ref esp::metadata::managers::AbstractAttributesManager
  */
 
-#include "esp/metadata/attributes/AttributesBase.h"
+#include "esp/metadata/attributes/AbstractAttributes.h"
 
 #include "esp/core/managedContainers/ManagedFileBasedContainer.h"
 #include "esp/io/Io.h"
@@ -42,11 +42,12 @@ using core::managedContainers::ManagedObjectAccess;
  * themselves.
  */
 template <class T, ManagedObjectAccess Access>
-class AttributesManager : public ManagedFileBasedContainer<T, Access> {
+class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
  public:
-  static_assert(std::is_base_of<attributes::AbstractAttributes, T>::value,
-                "AttributesManager :: Managed object type must be derived from "
-                "AbstractAttributes");
+  static_assert(
+      std::is_base_of<attributes::AbstractAttributes, T>::value,
+      "AbstractAttributesManager :: Managed object type must be derived from "
+      "AbstractAttributes");
 
   typedef std::shared_ptr<T> AttribsPtr;
 
@@ -59,11 +60,12 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
    * the managed type of attributes (i.e. "stage_config.json" for configurations
    * describing stages).
    */
-  AttributesManager(const std::string& attrType, const std::string& JSONTypeExt)
+  AbstractAttributesManager(const std::string& attrType,
+                            const std::string& JSONTypeExt)
       : ManagedFileBasedContainer<T, Access>::ManagedFileBasedContainer(
             attrType,
             JSONTypeExt) {}
-  ~AttributesManager() override = default;
+  ~AbstractAttributesManager() override = default;
 
   /**
    * @brief Load all file-based templates given string list of template file
@@ -174,7 +176,7 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
     // set the values for this attributes from the json config.
     this->setValsFromJSONDoc(attributes, jsonConfig);
     return attributes;
-  }  // AttributesManager<T, Access>::buildObjectFromJSONDoc
+  }  // AbstractAttributesManager<T, Access>::buildObjectFromJSONDoc
 
   /**
    * @brief Method to take an existing attributes and set its values from passed
@@ -197,7 +199,7 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
       const attributes::AbstractAttributes::ptr& attribs,
       const io::JsonGenericValue& jsonConfig) const {
     return this->parseSubconfigJsonVals("user_defined", attribs, jsonConfig);
-  }  // AttributesManager<T, Access>::parseUserDefinedJsonVals
+  }  // AbstractAttributesManager<T, Access>::parseUserDefinedJsonVals
 
   /**
    * @brief This function takes the passed json block @p jsonConfig, looks for
@@ -395,14 +397,15 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
       const std::function<void(const std::string&)>& handleSetter);
 
  public:
-  ESP_SMART_POINTERS(AttributesManager<T, Access>)
+  ESP_SMART_POINTERS(AbstractAttributesManager<T, Access>)
 
-};  // class AttributesManager
+};  // class AbstractAttributesManager
 
 /////////////////////////////
 // Class Template Method Definitions
 template <class T, ManagedObjectAccess Access>
-std::vector<int> AttributesManager<T, Access>::loadAllFileBasedTemplates(
+std::vector<int>
+AbstractAttributesManager<T, Access>::loadAllFileBasedTemplates(
     const std::vector<std::string>& paths,
     bool saveAsDefaults) {
   std::vector<int> templateIndices(paths.size(), ID_UNDEFINED);
@@ -422,7 +425,7 @@ std::vector<int> AttributesManager<T, Access>::loadAllFileBasedTemplates(
       // save handles in list of defaults, so they are not removed, if desired.
       if (saveAsDefaults) {
         std::string tmpltHandle = tmplt->getHandle();
-        this->undeletableObjectNames_.insert(std::move(tmpltHandle));
+        this->addUndeletableObjectName(std::move(tmpltHandle));
       }
       templateIndices[i] = tmplt->getID();
     }
@@ -431,10 +434,11 @@ std::vector<int> AttributesManager<T, Access>::loadAllFileBasedTemplates(
       << "<" << this->objectType_
       << "> : Loaded file-based templates: " << std::to_string(paths.size());
   return templateIndices;
-}  // AttributesManager<T, Access>::loadAllObjectTemplates
+}  // AbstractAttributesManager<T, Access>::loadAllObjectTemplates
 
 template <class T, ManagedObjectAccess Access>
-std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
+std::vector<int>
+AbstractAttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
     const std::string& path,
     const std::string& extType,
     bool saveAsDefaults) {
@@ -480,10 +484,10 @@ std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
   templateIndices = this->loadAllFileBasedTemplates(paths, saveAsDefaults);
 
   return templateIndices;
-}  // AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt
+}  // AbstractAttributesManager<T, Access>::loadAllTemplatesFromPathAndExt
 
 template <class T, ManagedObjectAccess Access>
-void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
+void AbstractAttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
     const std::string& configDir,
     const std::string& extType,
     const io::JsonGenericValue& filePaths) {
@@ -533,10 +537,10 @@ void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
       << "<" << this->objectType_ << "> : " << std::to_string(filePaths.Size())
       << " paths specified in JSON doc for " << this->objectType_
       << " configuration files.";
-}  // AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad
+}  // AbstractAttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad
 
 template <class T, ManagedObjectAccess Access>
-auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
+auto AbstractAttributesManager<T, Access>::createFromJsonOrDefaultInternal(
     const std::string& filename,
     std::string& msg,
     bool registerObj) -> AttribsPtr {
@@ -581,10 +585,10 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
     }
   }
   return attrs;
-}  // AttributesManager<T, Access>::createFromJsonFileOrDefaultInternal
+}  // AbstractAttributesManager<T, Access>::createFromJsonFileOrDefaultInternal
 
 template <class T, ManagedObjectAccess Access>
-bool AttributesManager<T, Access>::parseSubconfigJsonVals(
+bool AbstractAttributesManager<T, Access>::parseSubconfigJsonVals(
     const std::string& subGroupName,
     const attributes::AbstractAttributes::ptr& attribs,
     const io::JsonGenericValue& jsonConfig) const {
@@ -617,10 +621,10 @@ bool AttributesManager<T, Access>::parseSubconfigJsonVals(
     }
   }  // if has requested tag
   return false;
-}  // AttributesManager<T, Access>::parseSubconfigJsonVals
+}  // AbstractAttributesManager<T, Access>::parseSubconfigJsonVals
 
 template <class T, ManagedObjectAccess Access>
-bool AttributesManager<T, Access>::setFilenameFromDefaultTag(
+bool AbstractAttributesManager<T, Access>::setFilenameFromDefaultTag(
     const AttribsPtr& attributes,
     const std::string& srcAssetFilename,
     const std::function<void(const std::string&)>& filenameSetter) {
@@ -671,10 +675,10 @@ bool AttributesManager<T, Access>::setFilenameFromDefaultTag(
   // No file exists with passed name, either as relative path or as
   // wild-card-equipped relative path
   return false;
-}  // AttributesManager<T, Access>::setFilenameFromDefaultTag
+}  // AbstractAttributesManager<T, Access>::setFilenameFromDefaultTag
 
 template <class T, ManagedObjectAccess Access>
-bool AttributesManager<T, Access>::setAttributesHandleFromDefaultTag(
+bool AbstractAttributesManager<T, Access>::setAttributesHandleFromDefaultTag(
     const AttribsPtr& attributes,
     const std::string& srcAssetHandle,
     const std::function<void(const std::string&)>& handleSetter) {
@@ -698,10 +702,10 @@ bool AttributesManager<T, Access>::setAttributesHandleFromDefaultTag(
     return true;
   }
   return false;
-}  // AttributesManager<T, Access>::setAttributesHandleFromDefaultTag
+}  // AbstractAttributesManager<T, Access>::setAttributesHandleFromDefaultTag
 
 template <class T, ManagedObjectAccess Access>
-void AttributesManager<T, Access>::filterAttribsFilenames(
+void AbstractAttributesManager<T, Access>::filterAttribsFilenames(
     const AttribsPtr& attributes,
     const std::string& curRelPathName,
     const std::string& curFQPathName,
@@ -792,11 +796,11 @@ void AttributesManager<T, Access>::filterAttribsFilenames(
   }
 
   ESP_VERY_VERBOSE() << dispString;
-}  // AttributesManager<T, Access>::filterAttribsFilenames
+}  // AbstractAttributesManager<T, Access>::filterAttribsFilenames
 
 template <class T, ManagedObjectAccess Access>
 template <class M>
-void AttributesManager<T, Access>::setEnumStringFromJsonDoc(
+void AbstractAttributesManager<T, Access>::setEnumStringFromJsonDoc(
     const io::JsonGenericValue& jsonConfig,
     const char* jsonTag,
     const std::string& mapName,
@@ -828,9 +832,9 @@ void AttributesManager<T, Access>::setEnumStringFromJsonDoc(
       valueSetter("unspecified");
     }
   }
-}  // AttributesManager<T, Access>::setEnumStringFromJsonDoc
+}  // AbstractAttributesManager<T, Access>::setEnumStringFromJsonDoc
 
 }  // namespace managers
 }  // namespace metadata
 }  // namespace esp
-#endif  // ESP_METADATA_MANAGERS_ATTRIBUTESMANAGERBASE_H_
+#endif  // ESP_METADATA_MANAGERS_ABSTRACTATTRIBUTESMANAGER_H_

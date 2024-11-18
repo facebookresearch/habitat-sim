@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "SemanticAttributesManager.h"
-#include "AttributesManagerBase.h"
+#include "AbstractAttributesManager.h"
 
 #include "esp/io/Json.h"
 
@@ -144,11 +144,32 @@ void SemanticAttributesManager::setValsFromJSONDoc(
   // directory location where semantic attributes files are found
   std::string semanticLocFileDir = semanticAttribs->getFileDirectory();
 
+  // load semantic asset specific up orientation
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonConfig, "semantic_up", [semanticAttribs](const Magnum::Vector3& up) {
+        semanticAttribs->setSemanticOrientUp(up);
+      });
+
+  // load semantic asset specific front orientation
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonConfig, "semantic_front",
+      [semanticAttribs](const Magnum::Vector3& front) {
+        semanticAttribs->setSemanticOrientFront(front);
+      });
+
+  // load whether the semantic asset described has semantically annotated
+  // textures
+  io::jsonIntoSetter<bool>(
+      jsonConfig, "has_semantic_textures",
+      [semanticAttribs](bool has_semantic_textures) {
+        semanticAttribs->setHasSemanticTextures(has_semantic_textures);
+      });
+
   // Set the semantic asset filename
   std::string semanticAsset = "";
   if (io::readMember<std::string>(jsonConfig, "semantic_asset",
                                   semanticAsset)) {
-    // if "semantic mesh" is specified in stage json to non-empty value, set
+    // if "semantic mesh" is specified in source json to non-empty value, set
     // value (override default).
     // semantic asset filename might already be fully qualified; if
     // not, might just be file name
@@ -163,7 +184,7 @@ void SemanticAttributesManager::setValsFromJSONDoc(
   std::string semanticSceneDescriptor = "";
   if (io::readMember<std::string>(jsonConfig, "semantic_descriptor_filename",
                                   semanticSceneDescriptor)) {
-    // if "semantic_descriptor_filename" is specified in stage json, set value
+    // if "semantic_descriptor_filename" is specified in source json, set value
     // (override default).
     // semanticSceneDescriptor filename might already be fully qualified; if
     // not, might just be file name
@@ -173,7 +194,8 @@ void SemanticAttributesManager::setValsFromJSONDoc(
     }
     semanticAttribs->setSemanticDescriptorFilename(semanticSceneDescriptor);
   }
-
+  // TODO : drive by diagnostics when implemented
+  bool validateUnique = false;
   // Check for region instances existence
   io::JsonGenericValue::ConstMemberIterator regionJSONIter =
       jsonConfig.FindMember("region_annotations");
@@ -185,7 +207,7 @@ void SemanticAttributesManager::setValsFromJSONDoc(
         const auto& regionCell = regionArray[i];
         if (regionCell.IsObject()) {
           semanticAttribs->addRegionInstanceAttrs(
-              createRegionAttributesFromJSON(regionCell));
+              createRegionAttributesFromJSON(regionCell), validateUnique);
         } else {
           ESP_WARNING(Mn::Debug::Flag::NoSpace)
               << "Region instance issue in Semantic Configuration `"

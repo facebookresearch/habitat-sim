@@ -5,7 +5,7 @@
 #ifndef ESP_METADATA_ATTRIBUTES_LIGHTLAYOUTATTRIBUTES_H_
 #define ESP_METADATA_ATTRIBUTES_LIGHTLAYOUTATTRIBUTES_H_
 
-#include "AttributesBase.h"
+#include "AbstractAttributes.h"
 #include "esp/gfx/LightSetup.h"
 
 namespace esp {
@@ -116,7 +116,7 @@ class LightInstanceAttributes : public AbstractAttributes {
 
   /**
    * @brief Gets a smart pointer reference to a copy of the spotlight
-   * configuration data for this light instance.
+   * configuration data for this @ref LightInstanceAttributes.
    */
   std::shared_ptr<Configuration> getSpotlightConfiguration() const {
     return getSubconfigCopy<Configuration>("spot");
@@ -124,7 +124,7 @@ class LightInstanceAttributes : public AbstractAttributes {
 
   /**
    * @brief Gets a smart pointer reference to the actual spotlight
-   * configuration data for this light instance.
+   * configuration data for this @ref LightInstanceAttributes.
    */
   std::shared_ptr<Configuration> editSpotlightConfiguration() {
     return editSubconfig<Configuration>("spot");
@@ -248,28 +248,31 @@ class LightLayoutAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Add a light instance to this lighting layout
+   * @brief Add a @ref LightInstanceAttributes to this lighting layout
    */
   void addLightInstance(LightInstanceAttributes::ptr _lightInstance) {
     this->setSubAttributesInternal<LightInstanceAttributes>(
-        _lightInstance, availableLightIDs_, lightInstConfig_, "");
+        _lightInstance, availableLightIDs_, lightInstConfig_, "", false);
   }
 
   /**
-   * @brief Remove a light from this lighting layout
+   * @brief Remove a named @ref LightInstanceAttributes from this lighting layout
    */
   LightInstanceAttributes::ptr removeLightInstance(const std::string& handle) {
     return this->removeNamedSubAttributesInternal<LightInstanceAttributes>(
         handle, availableLightIDs_, lightInstConfig_);
   }
 
+  /**
+   * @brief Retrieve a reference to the named @ref LightInstanceAttributes
+   */
   LightInstanceAttributes::cptr getLightInstance(const std::string& handle) {
     return getNamedSubAttributesInternal<LightInstanceAttributes>(
         handle, lightInstConfig_);
   }
 
   /**
-   * @brief Get the lighting instances for this layout
+   * @brief Get all the @ref LightInstanceAttributes for this layout
    */
   std::vector<LightInstanceAttributes::cptr> getLightInstances() const {
     return this->getSubAttributesListInternal<LightInstanceAttributes>(
@@ -278,7 +281,7 @@ class LightLayoutAttributes : public AbstractAttributes {
 
   /**
    * @brief Return how many lights are in this light layout - number of
-   * subconfigs in @ref lightInstConfig_ subconfig.
+   * @ref LightInstanceAttributes in @ref lightInstConfig_ subconfig.
    */
   int getNumLightInstances() const {
     return this->getNumSubAttributesInternal("", lightInstConfig_);
@@ -307,13 +310,13 @@ class LightLayoutAttributes : public AbstractAttributes {
   std::string getObjectInfoInternal() const override;
 
   /**
-   * @brief Smartpointer to created light instance configuration. The
+   * @brief Smartpointer to created @ref LightInstanceAttributes configuration. The
    * configuration is created on LightLayoutAttributes construction.
    */
   std::shared_ptr<Configuration> lightInstConfig_{};
 
   /**
-   * @brief Deque holding all released IDs to consume for light instances when
+   * @brief Deque holding all released IDs to consume for @ref LightInstanceAttributes when
    * one is deleted, before using size of lightInstances_ container.
    */
   std::deque<int> availableLightIDs_;

@@ -5,7 +5,7 @@
 #ifndef ESP_METADATA_ATTRIBUTES_SEMANTICATTRIBUTES_H_
 #define ESP_METADATA_ATTRIBUTES_SEMANTICATTRIBUTES_H_
 
-#include "AttributesBase.h"
+#include "AbstractAttributes.h"
 
 namespace esp {
 namespace metadata {
@@ -132,7 +132,7 @@ class SemanticVolumeAttributes : public AbstractAttributes {
  */
 class SemanticAttributes : public AbstractAttributes {
  public:
-  explicit SemanticAttributes(const std::string& handle);
+  explicit SemanticAttributes(const std::string& handle = "");
 
   SemanticAttributes(const SemanticAttributes& otr);
   SemanticAttributes(SemanticAttributes&& otr) noexcept;
@@ -356,28 +356,37 @@ class SemanticAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Set whether or not the semantic asset for this stage supports
-   * texture semantics.
+   * @brief Set whether or not the semantic asset described by this attributes
+   * supports texture semantics.
    */
   void setHasSemanticTextures(bool hasSemanticTextures) {
     set("has_semantic_textures", hasSemanticTextures);
   }
 
   /**
-   * @brief Get whether or not the semantic asset for this stage supports
-   * texture semantics.
+   * @brief Get whether or not the semantic asset described by this attributes
+   * supports texture semantics.
    */
   bool getHasSemanticTextures() const {
     return get<bool>("has_semantic_textures");
   }
 
   /**
-   * @brief Add an object instance attributes to this scene instance.
+   * @brief Add an object instance attributes to this scene instance.  Returns
+   * false if not added due to a duplicate to @p _regionInstance found in
+   * @p regionAnnotationConfig_ .
+   * @param _regionInstance The region instance to add to the owning
+   * subconfiguration.
+   * @param _validateUnique Whether to validate uniqueness of @p _regionInstance
+   * . Note : hidden fields are ignored for this validation.
+   * @return Whether or not @p _regionInstance was added due to a duplicate
+   * being found.
    */
-  void addRegionInstanceAttrs(SemanticVolumeAttributes::ptr _regionInstance) {
-    setSubAttributesInternal<SemanticVolumeAttributes>(
+  bool addRegionInstanceAttrs(SemanticVolumeAttributes::ptr _regionInstance,
+                              bool _validateUnique) {
+    return setSubAttributesInternal<SemanticVolumeAttributes>(
         _regionInstance, availableRegionInstIDs_, regionAnnotationConfig_,
-        "region_desc_");
+        "region_desc_", _validateUnique);
   }
 
   /**

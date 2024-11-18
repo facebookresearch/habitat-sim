@@ -246,7 +246,7 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
           });
     }
   }  // if JSON object 'spot' present
-}  // LightLayoutAttributesManager::setValsFromJSONDoc
+}  // LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc
 
 LightLayoutAttributes::ptr LightLayoutAttributesManager::initNewObjectInternal(
     const std::string& handleName,

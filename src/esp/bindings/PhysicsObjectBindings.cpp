@@ -196,6 +196,13 @@ void declareBasePhysicsObjectWrapper(py::module& m,
                               " object is an articulated object or part of one")
                                  .c_str())
       .def_property_readonly(
+          "aabb", &PhysObjWrapper::getAabb,
+          ("Return the local axis-aligned bounding box (aabb) of this " +
+           objType +
+           " object. If the object is articulated, query could trigger aabb "
+           "recomputation when state has been changed since the last query.")
+              .c_str())
+      .def_property_readonly(
           "visual_scene_nodes", &PhysObjWrapper::getVisualSceneNodes,
           ("Get a list of references to the SceneNodes with this " + objType +
            "'s render assets attached. Use this to manipulate this " + objType +
@@ -450,12 +457,13 @@ void declareArticulatedObjectWrapper(py::module& m,
             "link_id. Use link_id==-1 to get the base link.")
                .c_str(),
            "link_id"_a)
-      .def("get_link", &ManagedArticulatedObject::getLink,
-           ("Get this " + objType +
-            "'s articulated link specified by the passed "
-            "link_id. Use link_id==-1 to get the base link.")
-               .c_str(),
-           "link_id"_a)
+      // No binding class currently exists for the Articulated Link
+      // .def("get_link", &ManagedArticulatedObject::getLink,
+      //      ("Get this " + objType +
+      //       "'s articulated link specified by the passed "
+      //       "link_id. Use link_id==-1 to get the base link.")
+      //          .c_str(),
+      //      "link_id"_a)
       .def(
           "get_link_ids", &ManagedArticulatedObject::getLinkIds,
           ("Get a list of this " + objType + "'s individual link ids.").c_str())

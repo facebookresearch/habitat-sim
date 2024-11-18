@@ -167,7 +167,7 @@ if(BUILD_WITH_BULLET AND NOT USE_SYSTEM_BULLET)
   # libs, causing linker errors on Magnum side. If you have CMake 3.13, the
   # Find module is able to correct that on its own, otherwise you need to
   # enable BUILD_SHARED_LIBS to build as shared.
-  if((NOT CORRADE_TARGET_EMSCRIPTEN) AND CMAKE_VERSION VERSION_LESS 3.13)
+  if(CMAKE_VERSION VERSION_LESS 3.13)
     set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
     # however the whole Habitat is built with -fvisibility=hidden and Bullet
     # doesn't export any of its symbols and relies on symbols being visible by
@@ -240,10 +240,6 @@ if(NOT USE_SYSTEM_MAGNUM)
   if(BUILD_PYTHON_BINDINGS)
     set(MAGNUM_WITH_PYTHON ON CACHE BOOL "" FORCE) # Python bindings
   endif()
-  # We only support WebGL2
-  if(CORRADE_TARGET_EMSCRIPTEN)
-    set(MAGNUM_TARGET_GLES2 OFF CACHE BOOL "" FORCE)
-  endif()
   if(BUILD_TEST)
     set(MAGNUM_WITH_OPENGLTESTER ON CACHE BOOL "" FORCE)
   endif()
@@ -283,11 +279,6 @@ if(NOT USE_SYSTEM_MAGNUM)
     # OpenEXR implicitly bundles Imath. However, without this only the first
     # CMake run will pass and subsequent runs will fail.
     set(CMAKE_DISABLE_FIND_PACKAGE_Imath ON)
-    # Disable threading on Emscripten. Brings more problems than is currently
-    # worth-
-    if(CORRADE_TARGET_EMSCRIPTEN)
-      set(OPENEXR_ENABLE_THREADING OFF CACHE BOOL "" FORCE)
-    endif()
     # These variables may be used by other projects, so ensure they're reset
     # back to their original values after. OpenEXR forces CMAKE_DEBUG_POSTFIX
     # to _d, which isn't desired outside of that library.
@@ -315,19 +306,14 @@ if(NOT USE_SYSTEM_MAGNUM)
   if(BUILD_GUI_VIEWERS)
     set(MAGNUM_WITH_TEXT ON CACHE BOOL "" FORCE)
     set(MAGNUM_WITH_STBTRUETYPEFONT ON CACHE BOOL "" FORCE)
-
-    if(CORRADE_TARGET_EMSCRIPTEN)
-      set(MAGNUM_WITH_EMSCRIPTENAPPLICATION ON CACHE BOOL "" FORCE)
-    else()
-      if(NOT USE_SYSTEM_GLFW)
-        set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-        # These two will be off-by-default when GLFW 3.4 gets released
-        set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-        set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-        add_subdirectory("${DEPS_DIR}/glfw")
-      endif()
-      set(MAGNUM_WITH_GLFWAPPLICATION ON CACHE BOOL "" FORCE)
+    if(NOT USE_SYSTEM_GLFW)
+      set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+      # These two will be off-by-default when GLFW 3.4 gets released
+      set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+      set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+      add_subdirectory("${DEPS_DIR}/glfw")
     endif()
+    set(MAGNUM_WITH_GLFWAPPLICATION ON CACHE BOOL "" FORCE)
   endif()
   if(MAGNUM_TARGET_EGL) # Includes also Emscripten
     set(MAGNUM_WITH_WINDOWLESSEGLAPPLICATION ON CACHE BOOL "" FORCE)
@@ -378,7 +364,8 @@ if(NOT USE_SYSTEM_MAGNUM)
 
 endif()
 
-if(NOT CORRADE_TARGET_EMSCRIPTEN)
-  add_library(atomic_wait STATIC ${DEPS_DIR}/atomic_wait/atomic_wait.cpp)
-  target_include_directories(atomic_wait PUBLIC ${DEPS_DIR}/atomic_wait)
-endif()
+add_library(
+  atomic_wait STATIC
+  ${DEPS_DIR}/atomic_wait/atomic_wait.cpp
+)
+target_include_directories(atomic_wait PUBLIC ${DEPS_DIR}/atomic_wait)

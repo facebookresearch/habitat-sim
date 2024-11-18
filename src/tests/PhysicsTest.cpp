@@ -224,7 +224,7 @@ void PhysicsTest::testJoinCompound() {
         objectTemplate->setJoinCollisionMeshes(true);
       }
       objectAttributesManager->registerObject(objectTemplate);
-      physicsManager_->reset();
+      physicsManager_->reset(false);
 
       // add and simulate objects
       int num_objects = 7;
@@ -302,7 +302,7 @@ void PhysicsTest::testCollisionBoundingBox() {
         objectTemplate->setBoundingBoxCollisions(true);
       }
       objectAttributesManager->registerObject(objectTemplate);
-      physicsManager_->reset();
+      physicsManager_->reset(false);
 
       auto objectWrapper = makeObjectGetWrapper(
           objectFile, &sceneManager_->getSceneGraph(sceneID_).getDrawables());
@@ -612,7 +612,7 @@ void PhysicsTest::testMotionTypes() {
 
       // reset the scene
       rigidObjectManager_->removeAllObjects();
-      physicsManager_->reset();  // time=0
+      physicsManager_->reset(false);  // time=0
     }
   }
 }  // PhysicsTest::testMotionTypes
@@ -648,13 +648,12 @@ void PhysicsTest::testRemoveSleepingSupport() {
     cubes[0]->setMotionType(esp::physics::MotionType::STATIC);
 
     for (int testCase = 0; testCase < 2; ++testCase) {
-      // reset time to 0, should not otherwise modify state
-      physicsManager_->reset();
+      float currentTime = physicsManager_->getWorldTime();
       CORRADE_COMPARE_AS(physicsManager_->getNumRigidObjects(), 0,
                          Cr::TestSuite::Compare::Greater);
 
       // simulate to stabilize the stack and populate collision islands
-      while (physicsManager_->getWorldTime() < 4.0) {
+      while (physicsManager_->getWorldTime() < currentTime + 4.0) {
         physicsManager_->stepPhysics(0.1);
       }
 
@@ -814,8 +813,7 @@ void PhysicsTest::testConfigurableScaling() {
 
     objectIDs.push_back(objectWrapper->getID());
 
-    const Magnum::Range3D& visualBounds =
-        objectWrapper->getSceneNode()->getCumulativeBB();
+    const Magnum::Range3D& visualBounds = objectWrapper->getAabb();
 
     CORRADE_COMPARE(visualBounds, boundsGroundTruth);
 
@@ -925,15 +923,15 @@ void PhysicsTest::testVelocityControl() {
     objectWrapper->resetTransformation();
     objectWrapper->setTranslation(Magnum::Vector3{0, 2.0, 0});
     physicsManager_->setGravity({});  // 0 gravity interference
-    physicsManager_->reset();         // reset time to 0
 
     // should closely follow kinematic result while uninhibited in 0 gravity
     float targetTime = 0.5;
+    float currentTime = physicsManager_->getWorldTime();
     esp::core::RigidState initialObjectState(objectWrapper->getRotation(),
                                              objectWrapper->getTranslation());
     esp::core::RigidState kinematicResult =
         velControl->integrateTransform(targetTime, initialObjectState);
-    while (physicsManager_->getWorldTime() < targetTime) {
+    while (physicsManager_->getWorldTime() < currentTime + targetTime) {
       physicsManager_->stepPhysics(physicsManager_->getTimestep());
     }
     CORRADE_COMPARE_AS(
@@ -947,7 +945,7 @@ void PhysicsTest::testVelocityControl() {
 
     // should then get blocked by ground plane collision
     targetTime = 2.0;
-    while (physicsManager_->getWorldTime() < targetTime) {
+    while (physicsManager_->getWorldTime() < currentTime + targetTime) {
       physicsManager_->stepPhysics(physicsManager_->getTimestep());
     }
     CORRADE_COMPARE_AS(objectWrapper->getTranslation()[1], 1.0 - errorEps,
@@ -965,8 +963,8 @@ void PhysicsTest::testVelocityControl() {
   velControl->linVelIsLocal = true;
 
   targetTime = 10.0;
-  physicsManager_->reset();  // reset time to 0
-  while (physicsManager_->getWorldTime() < targetTime) {
+  float currentTime = physicsManager_->getWorldTime();
+  while (physicsManager_->getWorldTime() < currentTime + targetTime) {
     physicsManager_->stepPhysics(physicsManager_->getTimestep());
   }
 

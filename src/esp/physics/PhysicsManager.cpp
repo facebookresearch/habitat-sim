@@ -49,13 +49,15 @@ bool PhysicsManager::initPhysicsFinalize() {
   //! Create new scene node
   staticStageObject_ = physics::RigidStage::create(&physicsNode_->createChild(),
                                                    resourceManager_);
-
   return true;
 }
 
 PhysicsManager::~PhysicsManager() {
   ESP_DEBUG() << "Deconstructing PhysicsManager";
 }
+
+/////////////////////////////////
+// Stage Creation
 
 bool PhysicsManager::addStageInstance(
     const metadata::attributes::StageAttributes::ptr& initAttributes,
@@ -123,7 +125,6 @@ int PhysicsManager::addObject(int attributesID,
 int PhysicsManager::addObjectInstance(
     const esp::metadata::attributes::SceneObjectInstanceAttributes::cptr&
         objInstAttributes,
-    bool defaultCOMCorrection,
     DrawableGroup* drawables,
     scene::SceneNode* attachmentNode,
     const std::string& lightSetup) {
@@ -194,8 +195,7 @@ int PhysicsManager::addObjectInstance(
                          objInstAttributes->getMassScale());
 
   return addObjectAndSaveAttributes(objAttributes, drawables, attachmentNode,
-                                    lightSetup, defaultCOMCorrection,
-                                    objInstAttributes);
+                                    lightSetup, objInstAttributes);
 
 }  // PhysicsManager::addObjectInstance
 
@@ -210,16 +210,14 @@ int PhysicsManager::cloneExistingObject(int objectID) {
     return ID_UNDEFINED;
   }
   auto objPtr = existingObjIter->second;
-  // Get object instance attributes copy
-  esp::metadata::attributes::SceneObjectInstanceAttributes::cptr objInstAttrs =
-      objPtr->getInitObjectInstanceAttr();
-  // Create object instance
-  int newObjID = addObjectInstance(objInstAttrs, objPtr->isCOMCorrected(),
-                                   &simulator_->getDrawableGroup(), nullptr,
-                                   simulator_->getCurrentLightSetupKey());
+  // Get object instance attributes copy with current state of object instance
+  esp::metadata::attributes::SceneObjectInstanceAttributes::ptr
+      newObjInstAttrs = objPtr->getCurrentStateInstanceAttr();
 
-  // Update new object's values if necessary
-  // auto newObject = existingObjects_.find(newObjID);
+  // Create object instance
+  int newObjID =
+      addObjectInstance(newObjInstAttrs, &simulator_->getDrawableGroup(),
+                        nullptr, simulator_->getCurrentLightSetupKey());
 
   return newObjID;
 
@@ -230,16 +228,20 @@ int PhysicsManager::addObjectAndSaveAttributes(
     DrawableGroup* drawables,
     scene::SceneNode* attachmentNode,
     const std::string& lightSetup,
-    bool defaultCOMCorrection,
     esp::metadata::attributes::SceneObjectInstanceAttributes::cptr
         objInstAttributes) {
-  // If no drawables were passed, and a simulator exists
-  // retrieve a drawable group to use
-  if ((drawables == nullptr) && (simulator_ != nullptr)) {
-    // acquire context if available
-    simulator_->getRenderGLContext();
-    // acquire an appropriate drawable group
-    drawables = &simulator_->getDrawableGroup();
+  bool defaultCOMCorrection = false;
+  if (simulator_ != nullptr) {
+    // get defaultCOMCorrection from simulator
+    defaultCOMCorrection = simulator_->getCurSceneDefaultCOMHandling();
+    // If no drawables were passed, and a simulator exists
+    // retrieve a drawable group to use
+    if (drawables == nullptr) {
+      // acquire context if available
+      simulator_->getRenderGLContext();
+      // acquire an appropriate drawable group
+      drawables = &simulator_->getDrawableGroup();
+    }
   }
 
   if (objInstAttributes == nullptr) {
@@ -317,17 +319,17 @@ int PhysicsManager::addObjectInternal(
   }
 
   // derive valid object ID and create new node if necessary
-  int nextObjectID_ = allocateObjectID();
+  int newObjectID = allocateObjectID();
   scene::SceneNode* objectNode = attachmentNode;
   if (attachmentNode == nullptr) {
     objectNode = &staticStageObject_->node().createChild();
   }
-
+  // Attempt to create a new object, initialize it and add to existingObjects_
   objectSuccess =
-      makeAndAddRigidObject(nextObjectID_, objectAttributes, objectNode);
+      makeAndAddRigidObject(newObjectID, objectAttributes, objectNode);
 
   if (!objectSuccess) {
-    deallocateObjectID(nextObjectID_);
+    deallocateObjectID(newObjectID);
     if (attachmentNode == nullptr) {
       delete objectNode;
     }
@@ -339,7 +341,7 @@ int PhysicsManager::addObjectInternal(
 
   // temp non-owning pointer to object
   esp::physics::RigidObject* const obj =
-      (existingObjects_.at(nextObjectID_).get());
+      (existingObjects_.at(newObjectID).get());
 
   obj->visualNodes_.push_back(obj->visualNode_);
 
@@ -356,7 +358,7 @@ int PhysicsManager::addObjectInternal(
   objectSuccess = obj->finalizeObject();
   if (!objectSuccess) {
     // if failed for some reason, remove and return
-    removeObject(nextObjectID_, true, true);
+    removeObject(newObjectID, true, true);
     ESP_ERROR() << "PhysicsManager::finalizeObject unsuccessful, so addObject `"
                 << objectAttributes->getHandle() << "` aborted.";
     return ID_UNDEFINED;
@@ -371,22 +373,26 @@ int PhysicsManager::addObjectInternal(
   ESP_DEBUG() << "Simplified template handle :" << simpleObjectHandle
               << " | newObjectHandle :" << newObjectHandle;
 
-  existingObjects_.at(nextObjectID_)->setObjectName(newObjectHandle);
+  obj->setObjectName(newObjectHandle);
 
   // 2.0 Get wrapper - name is irrelevant, do not register.
   ManagedRigidObject::ptr objWrapper = getRigidObjectWrapper();
 
   // 3.0 Put object in wrapper
-  objWrapper->setObjectRef(existingObjects_.at(nextObjectID_));
+  objWrapper->setObjectRef(existingObjects_.at(newObjectID));
 
   // 4.0 register wrapper in manager
-  rigidObjectManager_->registerObject(std::move(objWrapper), newObjectHandle);
+  rigidObjectManager_->registerObject(objWrapper, newObjectHandle);
 
-  return nextObjectID_;
+  // 4.5 register wrapper with object it contains
+  obj->setManagedObjectPtr(objWrapper);
+
+  return newObjectID;
 }  // PhysicsManager::addObject
 
 /////////////////////////////////
 // Articulated Object Creation
+
 int PhysicsManager::addArticulatedObject(const std::string& attributesHandle,
                                          DrawableGroup* drawables,
                                          bool forceReload,
@@ -580,16 +586,14 @@ int PhysicsManager::cloneExistingArticulatedObject(int aObjectID) {
     return ID_UNDEFINED;
   }
   auto aObjPtr = existingAOIter->second;
-  // Get object instance attributes copy
-  esp::metadata::attributes::SceneAOInstanceAttributes::cptr artObjInstAttrs =
-      aObjPtr->getInitObjectInstanceAttr();
+  // Get articulated object instance attributes copy with current state of AO
+  esp::metadata::attributes::SceneAOInstanceAttributes::ptr artObjInstAttrs =
+      aObjPtr->getCurrentStateInstanceAttr();
+
   // Create object instance
   int newArtObjID = addArticulatedObjectInstance(
       artObjInstAttrs, &simulator_->getDrawableGroup(),
       simulator_->getCurrentLightSetupKey());
-
-  // Update new object's values if necessary
-  // auto newArtObj = existingArticulatedObjects_.find(newArtObjID);
 
   return newArtObjID;
 
@@ -670,10 +674,14 @@ void PhysicsManager::buildCurrentStateSceneAttributes(
   // 2. Clear existing object instances, and set new ones reflecting current
   // state
   sceneInstanceAttrs->clearObjectInstances();
+
+  // TODO : drive by diagnostics when implemented
+  bool validateUnique = false;
+
   // get each object's current state as a SceneObjectInstanceAttributes
   for (const auto& item : existingObjects_) {
     sceneInstanceAttrs->addObjectInstanceAttrs(
-        item.second->getCurrentStateInstanceAttr());
+        item.second->getCurrentStateInstanceAttr(), validateUnique);
   }
   // 3. Clear existing Articulated object instances, and set new ones reflecting
   // current state
@@ -681,7 +689,7 @@ void PhysicsManager::buildCurrentStateSceneAttributes(
   // get each articulated object's current state as a SceneAOInstanceAttributes
   for (const auto& item : existingArticulatedObjects_) {
     sceneInstanceAttrs->addArticulatedObjectInstanceAttrs(
-        item.second->getCurrentStateInstanceAttr());
+        item.second->getCurrentStateInstanceAttr(), validateUnique);
   }
 
 }  // PhysicsManager::buildCurrentStateSceneAttributes
@@ -800,7 +808,7 @@ void PhysicsManager::removeObject(const int objectId,
     trajVisIDByName.erase(trajVisAssetName);
     // TODO : if object is trajectory visualization, remove its assets as
     // well once this is supported.
-    // resourceManager_->removeResourceByName(trajVisAssetName);
+    // resourceManager_.removeResourceByName(trajVisAssetName);
   }
 }  // PhysicsManager::removeObject
 
@@ -933,29 +941,6 @@ int PhysicsManager::checkActiveObjects() {
     }
   }
   return numActive;
-}
-
-void PhysicsManager::setObjectBBDraw(int physObjectID,
-                                     DrawableGroup* drawables,
-                                     bool drawBB) {
-  auto objIter = getRigidObjIteratorOrAssert(physObjectID);
-  if (objIter->second->BBNode_ && !drawBB) {
-    // destroy the node
-    delete objIter->second->BBNode_;
-    objIter->second->BBNode_ = nullptr;
-  } else if (drawBB && objIter->second->visualNode_) {
-    // add a new BBNode
-    Magnum::Vector3 scale =
-        objIter->second->visualNode_->getCumulativeBB().size() / 2.0;
-    objIter->second->BBNode_ = &objIter->second->visualNode_->createChild();
-    objIter->second->BBNode_->MagnumObject::setScaling(scale);
-    objIter->second->BBNode_->MagnumObject::setTranslation(
-        existingObjects_[physObjectID]
-            ->visualNode_->getCumulativeBB()
-            .center());
-    resourceManager_.addPrimitiveToDrawables(0, *objIter->second->BBNode_,
-                                             drawables);
-  }
 }
 
 metadata::attributes::PhysicsManagerAttributes::ptr

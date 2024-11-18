@@ -43,6 +43,26 @@ class AbstractFileBasedManagedObject : public AbstractManagedObject {
   virtual std::string getActualFilename() const = 0;
 
   /**
+   * @brief Get whether this ManagedObject has been saved to disk in its current
+   * state. Only applicable to registered ManagedObjects
+   */
+  virtual bool isAttrSaved() const = 0;
+
+  /**
+   * @brief Set that this ManagedObject has values that are different than its
+   * most recently saved-to-disk version. This is called when the ManagedObject
+   * is registered.
+   */
+
+  void setAttrIsNotSaved() { setFileSaveStatus(false); }
+
+  /**
+   * @brief Set that this ManagedObject is the same as its saved-to-disk
+   * version. This is called when the ManagedObject is saved to disk.
+   */
+  void setAttrIsSaved() { setFileSaveStatus(true); }
+
+  /**
    * @brief This will return a simplified version of the
    * AbstractFileBasedManagedObject handle, removing extensions and any parent
    * directories in name. Note : there's no guarantee this handle will be
@@ -65,6 +85,13 @@ class AbstractFileBasedManagedObject : public AbstractManagedObject {
    */
   virtual io::JsonGenericValue writeToJsonObject(
       io::JsonAllocator& allocator) const = 0;
+
+ protected:
+  /**
+   * @brief Set this ManagedObject's save status (i.e. whether it matches its
+   * version on disk or not)
+   */
+  virtual void setFileSaveStatus(bool _isSaved) = 0;
 
  public:
   ESP_SMART_POINTERS(AbstractFileBasedManagedObject)

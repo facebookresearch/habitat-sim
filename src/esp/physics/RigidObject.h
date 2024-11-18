@@ -29,6 +29,7 @@ namespace assets {
 class ResourceManager;
 }  // namespace assets
 namespace physics {
+class ManagedRigidObject;
 
 /**@brief Convenience struct for applying constant velocity control to a rigid
  * body. */
@@ -135,6 +136,19 @@ class RigidObject : public RigidBase {
         metadata::attributes::ObjectAttributes>();
   };
 
+  /**
+   * @brief Get the ManagedRigidObject or BulletManagedRigidObject referencing
+   * this object.
+   */
+  template <class T>
+  std::shared_ptr<T> getManagedRigidObject() const {
+    static_assert(std::is_base_of<ManagedRigidObject, T>::value,
+                  "ManagedRigidObject must be base class of desired "
+                  "RigidObject's Managed wrapper class.");
+
+    return PhysicsObjectBase::getManagedObjectPtrInternal<T>();
+  }
+
  private:
   /**
    * @brief Finalize the initialization of this @ref esp::physics::RigidObject's
@@ -207,8 +221,7 @@ class RigidObject : public RigidBase {
   VelocityControl::ptr getVelocityControl() { return velControl_; };
 
   /**
-   * @brief Set the object's state from a @ref
-   * esp::metadata::attributes::SceneObjectInstanceAttributes
+   * @brief Set the object's state from a @ref esp::metadata::attributes::SceneObjectInstanceAttributes
    */
   void resetStateFromSceneInstanceAttr() override;
 

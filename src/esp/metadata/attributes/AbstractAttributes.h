@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_METADATA_ATTRIBUTES_ATTRIBUTESBASE_H_
-#define ESP_METADATA_ATTRIBUTES_ATTRIBUTESBASE_H_
+#ifndef ESP_METADATA_ATTRIBUTES_ABSTRACTATTRIBUTES_H_
+#define ESP_METADATA_ATTRIBUTES_ABSTRACTATTRIBUTES_H_
 
 #include <Corrade/Utility/Path.h>
 #include <deque>
@@ -122,13 +122,33 @@ class AbstractAttributes
   }
 
   /**
+   * @brief Gets a const smart pointer reference to a view of the user-specified
+   * configuration data from config file. Habitat does not parse or process this
+   * data, but it will be available to the user via python bindings for each
+   * object.
+   */
+  std::shared_ptr<const Configuration> getUserConfigurationView() const {
+    return getSubconfigView("user_defined");
+  }
+
+  /**
    * @brief Gets a smart pointer reference to the actual user-specified
    * configuration data from config file. Habitat does not parse or process this
    * data, but it will be available to the user via python bindings for each
-   * object.  This method is for editing the configuration.
+   * object. This method is for editing the configuration.
    */
   std::shared_ptr<Configuration> editUserConfiguration() {
     return editSubconfig<Configuration>("user_defined");
+  }
+
+  /**
+   * @brief Move an existing user_defined subconfiguration into this
+   * configuration, overwriting the existing copy if it exists. Habitat does not
+   * parse or process this data, but it will be available to the user via python
+   * bindings for each object. This method is for editing the configuration.
+   */
+  void setUserConfiguration(std::shared_ptr<Configuration>& userAttr) {
+    setSubconfigPtr("user_defined", userAttr);
   }
 
   /**
@@ -166,7 +186,42 @@ class AbstractAttributes
                                      getObjectInfoInternal());
   }
 
+  /**
+   * @brief Check whether filepath-based fields have been set by user input
+   * but have not been verified to exist (such verification occurs when the
+   * attributes is registered.)
+   */
+  bool getFilePathsAreDirty() const { return get<bool>("__fileNamesDirty"); }
+
+  /**
+   * @brief Clear the flag that specifies that filepath-based fields have been
+   * set but not verfified to exist (such verification occurs when the
+   * attributes is registered.)
+   */
+  void setFilePathsAreClean() { setHidden("__fileNamesDirty", false); }
+
+  /**
+   * @brief Get whether this ManagedObject has been saved to disk in its current
+   * state. Only applicable to registered ManagedObjects
+   */
+  bool isAttrSaved() const override { return get<bool>("__isAttrSaved"); }
+
  protected:
+  /**
+   * @brief Set this ManagedObject's save status (i.e. whether it matches its
+   * version on disk or not)
+   */
+  void setFileSaveStatus(bool _isSaved) override {
+    setHidden("__isAttrSaved", _isSaved);
+  }
+
+  /**
+   * @brief Used internally only. Set the flag that specifies a filepath-based
+   * field has been set to some value but has not yet been verified to
+   * exist (such verification occurs when the attributes is registered.)
+   */
+  void setFilePathsAreDirty() { setHidden("__fileNamesDirty", true); }
+
   /**
    * @brief Changing access to setter so that Configuration bindings cannot be
    * used to set a reserved value to an incorrect type. The inheritors of this
@@ -177,7 +232,7 @@ class AbstractAttributes
   using Configuration::set;
 
   /**
-   * @brief return a vector of shared pointers to const @ref AttributesBase
+   * @brief return a vector of shared pointers to const @ref AbstractAttributes
    * sub-configurations.
    * @param subAttrConfig The subconfiguration from which to aquire the
    * subconfigs.
@@ -229,7 +284,7 @@ class AbstractAttributes
   }
 
   /**
-   * @brief Returns a shared pointer to the named @ref AttributesBase
+   * @brief Returns a shared pointer to the named @ref AbstractAttributes
    * sub-configurations member of the passed @p subAttrConfig.
    */
   template <class T>
@@ -239,9 +294,9 @@ class AbstractAttributes
 
   /**
    * @brief Removes and returns a shared pointer to the named @ref
-   * AttributesBase sub-configurations member of the passed @p subAttrConfig.
-   * The object's ID is freed as part of this process, to be used by other
-   * objects.
+   * AbstractAttributes sub-configurations member of the passed @p
+   * subAttrConfig. The object's ID is freed as part of this process, to be used
+   * by other objects.
    * @tparam The desired type of the removed Configuration
    * @param name The name of the object to remove.
    * @param availableIDs A deque of the IDs that this configuration has
@@ -255,8 +310,9 @@ class AbstractAttributes
       const std::shared_ptr<Configuration>& subAttrConfig);
 
   /**
-   * @brief Add the passed shared pointer to @ref AbstractAttributes , @p
-   * objInst , to the appropriate sub-config using the passed name.
+   * @brief Add the passed shared pointer to @ref AbstractAttributes ,
+   * @p objInst , to the passed sub-config building a name from the passed
+   * @p objInstNamePrefix .
    *
    * @tparam The type of smartpointer object instance attributes
    * @param objInst The subAttributes Configuration pointer
@@ -265,13 +321,19 @@ class AbstractAttributes
    * @param subAttrConfig The subconfig to place @p objInst in.
    * @param objInstNamePrefix The prefix to use to construct the key to store
    * the instance in the subconfig. If empty, will use @p objInst->getHandle().
+   * @param verifyUnique Verify that the new subconfiguration holds unique data
+   * (i.e. no other subconfig exists that has the same data). If this is true
+   * and the passed @p objInst is not unique, it will not be saved.
+   * @return whether the passed @p objInst was added. Only returns false if
+   * @p verifyUnique is true and the objInst is not unique.
    */
   template <class T>
-  void setSubAttributesInternal(
+  bool setSubAttributesInternal(
       std::shared_ptr<T>& objInst,
       std::deque<int>& availableIDs,
       const std::shared_ptr<Configuration>& subAttrConfig,
-      const std::string& objInstNamePrefix);
+      const std::string& objInstNamePrefix,
+      bool verifyUnique);
 
   /**
    * @brief Retrieve a comma-separated string holding the header values for
@@ -394,15 +456,29 @@ std::shared_ptr<T> AbstractAttributes::removeNamedSubAttributesInternal(
 }  // AbstractAttributes::removeNamedSubAttributesInternal
 
 template <class T>
-void AbstractAttributes::setSubAttributesInternal(
+bool AbstractAttributes::setSubAttributesInternal(
     std::shared_ptr<T>& objInst,
     std::deque<int>& availableIDs,
     const std::shared_ptr<Configuration>& subAttrConfig,
-    const std::string& objInstNamePrefix) {
+    const std::string& objInstNamePrefix,
+    bool verifyUnique) {
   static_assert(
       std::is_base_of<AbstractAttributes, T>::value,
       "AbstractAttributes : Desired subconfig type must be derived from "
       "esp::metadata::AbstractAttributes");
+  // check uniqueness if verifyUnique is true. If not unique, do not add
+  // subconfig
+  if (verifyUnique) {
+    // Check if subAttrConfig contains a duplicate entry to objInst, other than
+    // hidden/internal fields like ID
+    if (subAttrConfig->hasSubconfig(objInst)) {
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
+          << "An identical subconfig to subconfig :`" << objInst->getHandle()
+          << "` was found in existing subconfig collection, so duplicate was "
+             "not added.";
+      return false;
+    }
+  }
   // set id
   if (!availableIDs.empty()) {
     // use saved value and then remove from storage
@@ -420,6 +496,7 @@ void AbstractAttributes::setSubAttributesInternal(
                                       objInstNamePrefix,
                                       objInst->getSimplifiedHandle()),
       objInst);
+  return true;
 }  // AbstractAttributes::setSubAttributesInternal
 
 template <class T>
@@ -457,4 +534,4 @@ void AbstractAttributes::copySubconfigIntoMe(
 }  // namespace metadata
 }  // namespace esp
 
-#endif  // ESP_METADATA_ATTRIBUTES_ATTRIBUTESBASE_H_
+#endif  // ESP_METADATA_ATTRIBUTES_ABSTRACTATTRIBUTES_H_

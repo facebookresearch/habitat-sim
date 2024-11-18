@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "AttributesBase.h"
+#include "AbstractAttributes.h"
 #include "esp/physics/PhysicsObjectBase.h"
 namespace esp {
 
@@ -22,6 +22,9 @@ AbstractAttributes::AbstractAttributes(const std::string& attributesClassKey,
   setHidden("__ID", 0);
   setHidden("__fileDirectory", "");
   setHidden("__actualFilename", "");
+  // Initialize attributes to be different than on version on disk, if one
+  // exists. This should be set to true on file load and on file save.
+  setHidden("__isAttrSaved", false);
 }
 
 }  // namespace attributes

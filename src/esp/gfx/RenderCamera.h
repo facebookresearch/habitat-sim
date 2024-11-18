@@ -27,7 +27,7 @@ class RenderCamera : public MagnumCamera {
 
     /**
      * Cull Drawables not attached to @ref SceneNodes with @ref
-     * scene::SceneNodeType::OBJECT.
+     * scene::SceneNodeType::Object.
      */
     ObjectsOnly = 1 << 1,
     /**
@@ -271,13 +271,13 @@ class RenderCamera : public MagnumCamera {
   //! render for semantic sensors. This may be overridden by object picking
   //! code.
   esp::scene::SceneNodeSemanticDataIDX semanticInfoIDX_ =
-      esp::scene::SceneNodeSemanticDataIDX::SEMANTIC_ID;
+      esp::scene::SceneNodeSemanticDataIDX::SemanticID;
 
   //! the index to actually use to render semantic info. This will usually be
   //! the same as semanticInfoIDX above, but will hold a different value if
   //! being overridden by object picking.
   esp::scene::SceneNodeSemanticDataIDX semanticIDXToUse_ =
-      esp::scene::SceneNodeSemanticDataIDX::SEMANTIC_ID;
+      esp::scene::SceneNodeSemanticDataIDX::SemanticID;
 
   ESP_SMART_POINTERS(RenderCamera)
 };

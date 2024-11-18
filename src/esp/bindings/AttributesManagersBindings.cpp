@@ -11,11 +11,12 @@
 #include "esp/metadata/attributes/AbstractObjectAttributes.h"
 #include "esp/metadata/attributes/LightLayoutAttributes.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
+#include "esp/metadata/attributes/SemanticAttributes.h"
 #include "esp/metadata/attributes/StageAttributes.h"
 
 #include "esp/metadata/managers/AOAttributesManager.h"
+#include "esp/metadata/managers/AbstractAttributesManager.h"
 #include "esp/metadata/managers/AssetAttributesManager.h"
-#include "esp/metadata/managers/AttributesManagerBase.h"
 #include "esp/metadata/managers/LightLayoutAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/PbrShaderAttributesManager.h"
@@ -55,13 +56,14 @@ template <class T, ManagedObjectAccess Access>
 void declareBaseAttributesManager(py::module& m,
                                   const std::string& attrType,
                                   const std::string& classStrPrefix) {
-  using MgrClass = AttributesManager<T, Access>;
+  using MgrClass = AbstractAttributesManager<T, Access>;
   using AttribsPtr = std::shared_ptr<T>;
   // Most, but not all, of these methods are from ManagedContainer class
-  // template.  However, we use AttributesManager as the base class because we
-  // wish to have appropriate (attributes-related) argument nomenclature and
-  // documentation.
-  std::string pyclass_name = classStrPrefix + std::string("AttributesManager");
+  // template.  However, we use AbstractAttributesManager as the base class
+  // because we wish to have appropriate (attributes-related) argument
+  // nomenclature and documentation.
+  std::string pyclass_name =
+      classStrPrefix + std::string("AbstractAttributesManager");
   py::class_<MgrClass, std::shared_ptr<MgrClass>>(m, pyclass_name.c_str())
       .def("get_template_handle_by_id", &MgrClass::getObjectHandleByID,
            ("Returns string handle for the " + attrType +
@@ -331,10 +333,10 @@ void initAttributesManagersBindings(py::module& m) {
   declareBaseAttributesManager<AbstractPrimitiveAttributes,
                                ManagedObjectAccess::Copy>(m, "Primitive Asset",
                                                           "BaseAsset");
-  py::class_<
-      AssetAttributesManager,
-      AttributesManager<AbstractPrimitiveAttributes, ManagedObjectAccess::Copy>,
-      AssetAttributesManager::ptr>(
+  py::class_<AssetAttributesManager,
+             AbstractAttributesManager<AbstractPrimitiveAttributes,
+                                       ManagedObjectAccess::Copy>,
+             AssetAttributesManager::ptr>(
       m, "AssetAttributesManager",
       R"(Manages PrimtiveAttributes objects which define parameters for constructing primitive mesh shapes such as cubes, capsules, cylinders, and cones.)")
       // AssetAttributesMangaer-specific bindings
@@ -416,23 +418,24 @@ void initAttributesManagersBindings(py::module& m) {
 
   // ==== Light Layout Attributes Template manager ====
   declareBaseAttributesManager<LightLayoutAttributes,
-                               ManagedObjectAccess::Copy>(m, "LightLayout",
-                                                          "BaseLightLayout");
+                               ManagedObjectAccess::Copy>(
+      m, "LightLayoutAttributes", "BaseLightLayout");
   // NOLINTNEXTLINE(bugprone-unused-raii)
-  py::class_<
-      LightLayoutAttributesManager,
-      AttributesManager<LightLayoutAttributes, ManagedObjectAccess::Copy>,
-      LightLayoutAttributesManager::ptr>(m, "LightLayoutAttributesManager");
+  py::class_<LightLayoutAttributesManager,
+             AbstractAttributesManager<LightLayoutAttributes,
+                                       ManagedObjectAccess::Copy>,
+             LightLayoutAttributesManager::ptr>(m,
+                                                "LightLayoutAttributesManager");
 
   // ==== Articulated Object Attributes Template manager ====
   declareBaseAttributesManager<ArticulatedObjectAttributes,
                                ManagedObjectAccess::Copy>(
       m, "ArticulatedObjectAttributes", "BaseArticulatedObject");
   // NOLINTNEXTLINE(bugprone-unused-raii)
-  py::class_<
-      AOAttributesManager,
-      AttributesManager<ArticulatedObjectAttributes, ManagedObjectAccess::Copy>,
-      AOAttributesManager::ptr>(
+  py::class_<AOAttributesManager,
+             AbstractAttributesManager<ArticulatedObjectAttributes,
+                                       ManagedObjectAccess::Copy>,
+             AOAttributesManager::ptr>(
       m, "AOAttributesManager",
       R"(Manages ArticulatedObjectAttributes which define Habitat-specific metadata for articulated objects
       (i.e. render asset or semantic ID), in addition to data held in defining URDF file, pre-instantiation.
@@ -442,9 +445,10 @@ void initAttributesManagersBindings(py::module& m) {
   declareBaseAttributesManager<ObjectAttributes, ManagedObjectAccess::Copy>(
       m, "ObjectAttributes", "BaseObject");
   // NOLINTNEXTLINE(bugprone-unused-raii)
-  py::class_<ObjectAttributesManager,
-             AttributesManager<ObjectAttributes, ManagedObjectAccess::Copy>,
-             ObjectAttributesManager::ptr>(
+  py::class_<
+      ObjectAttributesManager,
+      AbstractAttributesManager<ObjectAttributes, ManagedObjectAccess::Copy>,
+      ObjectAttributesManager::ptr>(
       m, "ObjectAttributesManager",
       R"(Manages ObjectAttributes which define metadata for rigid objects pre-instantiation.
       Can import .object_config.json files.)")
@@ -497,27 +501,16 @@ void initAttributesManagersBindings(py::module& m) {
            R"(Returns the handle for a random synthesized(primitive asset)-based
           template chosen from the existing ObjectAttributes templates being managed.)");
 
-  // ==== Stage Attributes Template manager ====
-  declareBaseAttributesManager<StageAttributes, ManagedObjectAccess::Copy>(
-      m, "StageAttributes", "BaseStage");
-  // NOLINTNEXTLINE(bugprone-unused-raii)
-  py::class_<StageAttributesManager,
-             AttributesManager<StageAttributes, ManagedObjectAccess::Copy>,
-             StageAttributesManager::ptr>(
-      m, "StageAttributesManager",
-      R"(Manages StageAttributes which define metadata for stages (i.e. static background mesh such
-      as architectural elements) pre-instantiation. Can import .stage_config.json files.)");
-
   // ==== Physics World/Manager Template manager ====
 
   declareBaseAttributesManager<PhysicsManagerAttributes,
                                ManagedObjectAccess::Copy>(
       m, "PhysicsAttributes", "BasePhysics");
   // NOLINTNEXTLINE(bugprone-unused-raii)
-  py::class_<
-      PhysicsAttributesManager,
-      AttributesManager<PhysicsManagerAttributes, ManagedObjectAccess::Copy>,
-      PhysicsAttributesManager::ptr>(
+  py::class_<PhysicsAttributesManager,
+             AbstractAttributesManager<PhysicsManagerAttributes,
+                                       ManagedObjectAccess::Copy>,
+             PhysicsAttributesManager::ptr>(
       m, "PhysicsAttributesManager",
       R"(Manages PhysicsManagerAttributes which define global Simulation parameters
       such as timestep. Can import .physics_config.json files.)");
@@ -526,23 +519,37 @@ void initAttributesManagersBindings(py::module& m) {
   declareBaseAttributesManager<PbrShaderAttributes, ManagedObjectAccess::Copy>(
       m, "PbrShaderAttributes", "BasePbrConfig");
   // NOLINTNEXTLINE(bugprone-unused-raii)
-  py::class_<PbrShaderAttributesManager,
-             AttributesManager<PbrShaderAttributes, ManagedObjectAccess::Copy>,
-             PbrShaderAttributesManager::ptr>(
+  py::class_<
+      PbrShaderAttributesManager,
+      AbstractAttributesManager<PbrShaderAttributes, ManagedObjectAccess::Copy>,
+      PbrShaderAttributesManager::ptr>(
       m, "PbrShaderAttributesManager",
-      R"(Manages PbrShaderAttributess which define PBR shader calculation control values, such as
+      R"(Manages PbrShaderAttributes which define PBR shader calculation control values, such as
       enabling IBL or specifying direct and indirect lighting balance. Can import .pbr_config.json files.)");
 
   // ==== Semantic Attributes Template manager ====
   declareBaseAttributesManager<SemanticAttributes, ManagedObjectAccess::Copy>(
       m, "SemanticAttributes", "BaseSemantic");
   // NOLINTNEXTLINE(bugprone-unused-raii)
-  py::class_<SemanticAttributesManager,
-             AttributesManager<SemanticAttributes, ManagedObjectAccess::Copy>,
-             SemanticAttributesManager::ptr>(
+  py::class_<
+      SemanticAttributesManager,
+      AbstractAttributesManager<SemanticAttributes, ManagedObjectAccess::Copy>,
+      SemanticAttributesManager::ptr>(
       m, "SemanticAttributesManager",
       R"(Manages SemanticAttributes which define semantic mappings and files applicable to a scene instance,
       such as semantic screen descriptor files and semantic regions. Can import .semantic_config.json files.)");
+
+  // ==== Stage Attributes Template manager ====
+  declareBaseAttributesManager<StageAttributes, ManagedObjectAccess::Copy>(
+      m, "StageAttributes", "BaseStage");
+  // NOLINTNEXTLINE(bugprone-unused-raii)
+  py::class_<
+      StageAttributesManager,
+      AbstractAttributesManager<StageAttributes, ManagedObjectAccess::Copy>,
+      StageAttributesManager::ptr>(
+      m, "StageAttributesManager",
+      R"(Manages StageAttributes which define metadata for stages (i.e. static background mesh such
+      as architectural elements) pre-instantiation. Can import .stage_config.json files.)");
 
 }  // initAttributesManagersBindings
 }  // namespace managers

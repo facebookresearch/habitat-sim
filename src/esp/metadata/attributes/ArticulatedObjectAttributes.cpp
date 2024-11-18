@@ -16,6 +16,7 @@ ArticulatedObjectAttributes::ArticulatedObjectAttributes(
 
   init("render_asset", "");
   init("semantic_id", 0);
+  init("is_visible", true);
   // Initialize the default base type to be free joint
   initTranslated("base_type",
                  getAOBaseTypeName(ArticulatedObjectBaseType::Free));
@@ -41,7 +42,10 @@ ArticulatedObjectAttributes::ArticulatedObjectAttributes(
   // Initialize these so they exist in the configuration
   setHidden("__urdfFullPath", "");
   setHidden("__renderAssetFullPath", "");
-
+  // This specifies that we want to investigate the state of the urdf and skin
+  // render asset handles before we allow this attributes to be registered.
+  // Hidden field
+  setFilePathsAreDirty();
   // set up an existing subgroup for marker_sets attributes
   addOrEditSubgroup<MarkerSets>("marker_sets");
 }  // ArticulatedObjectAttributes ctor

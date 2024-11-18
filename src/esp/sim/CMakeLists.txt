@@ -20,5 +20,5 @@ add_library(
 
 target_link_libraries(
   sim
-  PUBLIC nav gfx_batch
+  PUBLIC nav gfx_batch sensor scene
 )

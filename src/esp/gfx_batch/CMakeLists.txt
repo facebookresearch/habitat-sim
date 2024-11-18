@@ -46,7 +46,6 @@ endif()
 
 # Find appropriate windowless library for the standalone renderer
 if(MAGNUM_TARGET_EGL)
-  # Includes also Emscripten
   find_package(Magnum REQUIRED WindowlessEglApplication)
 elseif(CORRADE_TARGET_APPLE)
   find_package(Magnum REQUIRED WindowlessCglApplication)
