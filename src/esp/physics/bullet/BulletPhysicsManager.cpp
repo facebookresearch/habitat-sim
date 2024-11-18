@@ -277,7 +277,7 @@ bool BulletPhysicsManager::attachLinkGeometry(
     scene::SceneNode& visualGeomComponent = linkObject->node().createChild();
     // cache the visual node
     linkObject->visualNodes_.push_back(&visualGeomComponent);
-    visualGeomComponent.setType(esp::scene::SceneNodeType::OBJECT);
+    visualGeomComponent.setType(esp::scene::SceneNodeType::Object);
     visualGeomComponent.setTransformation(
         link->m_inertia.m_linkLocalFrame.invertedRigid() *
         visual.m_linkLocalFrame);

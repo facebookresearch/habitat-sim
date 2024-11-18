@@ -33,11 +33,12 @@ class SceneGraph;
 
 // Future types may include e.g., "LIGHT"
 enum class SceneNodeType {
-  EMPTY = 0,
-  SENSOR = 1,
-  AGENT = 2,
-  CAMERA = 3,
-  OBJECT = 4,  // objects added via physics api
+  Empty = 0,
+  Sensor = 1,
+  Agent = 2,
+  Camera = 3,
+  Object = 4,  // objects added via physics api
+  EndSceneNodeType,
 };
 
 /**
@@ -52,24 +53,24 @@ enum class SceneNodeSemanticDataIDX {
    * attached Drawables with Semantic sensor when no perVertexObjectIds are
    * present.
    */
-  SEMANTIC_ID = 0,
+  SemanticID = 0,
 
   /**
    * @brief The object ID of the object represented by this scene node. This
    * value will be set to ID_UNDEFINED if the object is deleted without removing
    * the scene node/drawable.
    */
-  OBJECT_ID = 1,
+  ObjectID = 1,
 
   /**
    * @brief The drawable ID that draws this scene node.
    */
-  DRAWABLE_ID = 2,
+  DrawableID = 2,
   /**
    * @brief Insert the index of a new ID to represent in semantic observations
    * above this entry.
    */
-  NUM_SEMANTIC_IDS
+  EndSemanticDataIDXs
 };  // enum SceneNodeSemanticDataIDX
 
 // Enumeration of SceneNodeTags
@@ -155,35 +156,33 @@ class SceneNode : public MagnumObject,
 
   //! Returns node semanticId
   virtual int getSemanticId() const {
-    return semanticIDs_[static_cast<int>(
-        SceneNodeSemanticDataIDX::SEMANTIC_ID)];
+    return semanticIDs_[static_cast<int>(SceneNodeSemanticDataIDX::SemanticID)];
   }
 
   //! Sets node semanticId
   virtual void setSemanticId(int semanticId) {
-    semanticIDs_[static_cast<int>(SceneNodeSemanticDataIDX::SEMANTIC_ID)] =
+    semanticIDs_[static_cast<int>(SceneNodeSemanticDataIDX::SemanticID)] =
         semanticId;
   }
 
   //! Gets node's owning objectID, for panoptic rendering.
   virtual int getBaseObjectId() const {
-    return semanticIDs_[static_cast<int>(SceneNodeSemanticDataIDX::OBJECT_ID)];
+    return semanticIDs_[static_cast<int>(SceneNodeSemanticDataIDX::ObjectID)];
   }
 
   //! Sets node's owning objectID, for panoptic rendering.
   void setBaseObjectId(int objectId) {
-    semanticIDs_[static_cast<int>(SceneNodeSemanticDataIDX::OBJECT_ID)] =
+    semanticIDs_[static_cast<int>(SceneNodeSemanticDataIDX::ObjectID)] =
         objectId;
   }
   //! Gets node's corresponding drawable's id, for panoptic rendering.
   virtual int getDrawableId() const {
-    return semanticIDs_[static_cast<int>(
-        SceneNodeSemanticDataIDX::DRAWABLE_ID)];
+    return semanticIDs_[static_cast<int>(SceneNodeSemanticDataIDX::DrawableID)];
   }
 
   //! Sets node's corresponding drawable's id, for panoptic rendering.
   void setDrawableId(int drawableId) {
-    semanticIDs_[static_cast<int>(SceneNodeSemanticDataIDX::DRAWABLE_ID)] =
+    semanticIDs_[static_cast<int>(SceneNodeSemanticDataIDX::DrawableID)] =
         drawableId;
   }
 
@@ -310,7 +309,7 @@ class SceneNode : public MagnumObject,
   void clean(const Magnum::Matrix4& absoluteTransformation) override;
 
   // the type of the attached object (e.g., sensor, agent etc.)
-  SceneNodeType type_ = SceneNodeType::EMPTY;
+  SceneNodeType type_ = SceneNodeType::Empty;
   int id_ = ID_UNDEFINED;
 
   // SceneNodeTags of this node, used to flag attributes such as leaf node

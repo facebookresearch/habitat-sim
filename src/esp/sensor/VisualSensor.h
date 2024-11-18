@@ -63,7 +63,7 @@ struct VisualSensorSpec : public SensorSpec {
    * @brief the type of semantic information being rendered by the semantic
    * sensor. Ignored by non-semantic sensors
    */
-  SemanticSensorTarget semanticTarget = SemanticSensorTarget::SEMANTIC_ID;
+  SemanticSensorTarget semanticTarget = SemanticSensorTarget::SemanticID;
 
   VisualSensorSpec();
   void sanityCheck() const override;

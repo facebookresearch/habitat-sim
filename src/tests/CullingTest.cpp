@@ -155,7 +155,7 @@ void CullingTest::frustumCulling() {
   esp::scene::SceneNode agentNode = sceneGraph.getRootNode().createChild();
   esp::scene::SceneNode cameraNode = agentNode.createChild();
   esp::gfx::RenderCamera& renderCamera = *(new esp::gfx::RenderCamera(
-      cameraNode, esp::sensor::SemanticSensorTarget::SEMANTIC_ID));
+      cameraNode, esp::sensor::SemanticSensorTarget::SemanticID));
 
   // The camera to be set:
   // pos: {7.3589f, -6.9258f,4.9583f}
