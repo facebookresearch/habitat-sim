@@ -1,0 +1,16 @@
+# This action installs required Ubuntu NVIDIA dependencies.
+# It assumes that `nvidia-smi` is available on the system.
+name: "Install GPU Dependencies"
+runs:
+  using: composite
+  steps:
+  - name: Install GPU Dependencies
+    shell: bash
+    run: |
+      NVIDIA_SMI_OUTPUT=$(nvidia-smi)
+      FULL_DRIVER_VERSION=$(echo "$NVIDIA_SMI_OUTPUT" | grep -oP 'Driver Version:\s+\K[\d.]+')
+      MAJOR_DRIVER_VERSION=$(echo "$NVIDIA_SMI_OUTPUT" | grep -oP 'Driver Version:\s+\K\d+')
+      UBUNTU_PACKAGE_SUFFIX="${MAJOR_DRIVER_VERSION}=${FULL_DRIVER_VERSION}-0ubuntu1"
+      sudo apt-get update
+      sudo apt-get install -y libnvidia-common-${UBUNTU_PACKAGE_SUFFIX}
+      sudo apt-get install -y libnvidia-gl-${UBUNTU_PACKAGE_SUFFIX}
