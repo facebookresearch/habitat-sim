@@ -157,22 +157,6 @@ jobs:
         #lcov --remove coverage.info "*/test/*" --output-file coverage.info > /dev/null
         #lcov --remove coverage.info "*/tests/*" --output-file coverage.info > /dev/null
         ./codecov -f coverage.info -cF CPP
-    - name: Debugging with tmate
-      uses: mxschmitt/action-tmate@v3.18
-
-  install_and_test_ubuntu_audio:
-    runs-on: 4-core-ubuntu-gpu-t4
-    defaults:
-      run:
-        shell: bash -el {0}
-    steps:
-    - uses: actions/checkout@v4.1.1
-      with:
-        path: "./habitat-sim"
-    - name: CPU info
-      run: cat /proc/cpuinfo
-    - uses: "./habitat-sim/.github/actions/install_ubuntu_deps"
-    - uses: "./habitat-sim/.github/actions/install_ubuntu_gpu_deps"
     - name: install habitat-sim with audio and run audio_agent script
       run: |-
         #give cmake ownership to the runner for installation
@@ -187,3 +171,5 @@ jobs:
         git submodule update --init --recursive --jobs 8
         python -u setup.py install --build-type "Release" --lto --headless --audio
         python examples/tutorials/audio_agent.py
+    - name: Debugging with tmate
+      uses: mxschmitt/action-tmate@v3.18
