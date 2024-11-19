@@ -28,7 +28,7 @@ jobs:
           hypothesis==6.29.3 \
           isort==5.12.0 \
           mypy \
-          numpy \
+          numpy==1.26.4 \
           pytest \
           sphinx \
           tqdm
@@ -95,5 +95,37 @@ jobs:
         git lfs install
         python src_python/habitat_sim/utils/datasets_download.py --uids ci_test_assets ycb rearrange_dataset_v2 --replace --data-path data/ --no-prune
         ls -la data/scene_datasets/habitat-test-scenes/
+    - name: Run sim benchmark
+      run: |-
+        export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+        . activate habitat; cd habitat-sim
+        python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
+    - name: Run sim tests
+      run: |-
+        export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+        . activate habitat; cd habitat-sim
+        export PYTHONPATH=$(pwd):$PYTHONPATH
+
+        #set pytest to show partial progress
+        export PYTHONUNBUFFERED=1
+
+        # run tests with code coverage
+        CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless \
+          --bullet \
+          --with-cuda \
+          --build-datatool \
+          --run-tests \
+          --no-lto \
+          --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
+        PYTHONPATH=src_python pytest -n 4 --durations=10 --cov-report=xml --cov=./
+
+        #run the marked pytest-benchmark tests and print the results
+        PYTHONPATH=src_python pytest -m sim_benchmarks
+
+        #re-build without bullet and cuda and run physics tests again
+        #TODO: instead of reinstall, do this with configuration
+        ./build.sh --headless --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
+        PYTHONPATH=src_python pytest -n 4 --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
+
     - name: Debugging with tmate
       uses: mxschmitt/action-tmate@v3.18
