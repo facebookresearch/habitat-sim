@@ -105,6 +105,9 @@ jobs:
         python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
     - name: Run sim tests
       run: |-
+        #give cmake ownership to the runner for installation
+        sudo chown runner -R /opt/cmake312/
+        #activate conda env
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
         conda init
         source ~/.bashrc
@@ -132,6 +135,55 @@ jobs:
         #TODO: instead of reinstall, do this with configuration
         ./build.sh --headless --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
         PYTHONPATH=src_python pytest -n 4 --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
+    - name: upload test coverage
+      run: |-
+        export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+        conda init
+        source ~/.bashrc
+        conda activate habitat
+        cd habitat-sim
 
+        curl -Os https://uploader.codecov.io/latest/linux/codecov
+        chmod +x codecov
+        #Uploading test coverage for Python code
+        ./codecov -f coverage.xml -cF Python
+
+        #Uploading test coverage for C++ code
+        lcov --directory . --capture --output-file coverage.info
+        # Replaces -1 linecount with zero to prevent lcov from crashing:
+        # https://github.com/psycofdj/coverxygen/issues/6
+        sed -i -e 's/,-1$/,0/g' coverage.info
+        #lcov --remove coverage.info "*/deps/*" --output-file coverage.info > /dev/null
+        #lcov --remove coverage.info "*/test/*" --output-file coverage.info > /dev/null
+        #lcov --remove coverage.info "*/tests/*" --output-file coverage.info > /dev/null
+        ./codecov -f coverage.info -cF CPP
     - name: Debugging with tmate
       uses: mxschmitt/action-tmate@v3.18
+
+  install_and_test_ubuntu_audio:
+    runs-on: 4-core-ubuntu-gpu-t4
+    env:
+      FPS_THRESHOLD: 900
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+    - uses: actions/checkout@v4.1.1
+      with:
+        path: "./habitat-sim"
+    - name: CPU info
+      run: cat /proc/cpuinfo
+    - uses: "./habitat-sim/.github/actions/install_ubuntu_deps"
+    - uses: "./habitat-sim/.github/actions/install_ubuntu_gpu_deps"
+    - name: install habitat-sim with audio and run audio_agent script
+    run: |-
+      export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+      conda init
+      source ~/.bashrc
+      conda activate habitat
+      cd habitat-sim
+      pip install -r requirements.txt --progress-bar off
+      pip install imageio imageio-ffmpeg
+      git submodule update --init --recursive --jobs 8
+      python -u setup.py install --build-type "Release" --lto --headless --audio
+      python examples/tutorials/audio_agent.py
