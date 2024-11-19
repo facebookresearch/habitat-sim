@@ -26,11 +26,6 @@ enum class SensorType : int32_t {
   Depth,
   Normal,
   Semantic,
-  Path,
-  Goal,
-  Force,
-  Tensor,
-  Text,
   Audio,
   EndSensorType,
 };

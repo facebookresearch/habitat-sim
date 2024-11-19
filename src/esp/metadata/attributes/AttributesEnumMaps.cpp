@@ -259,11 +259,6 @@ const std::map<std::string, esp::sensor::SensorType> SensorTypeNamesMap = {
     {"depth", esp::sensor::SensorType::Depth},
     {"normal", esp::sensor::SensorType::Normal},
     {"semantic", esp::sensor::SensorType::Semantic},
-    {"path", esp::sensor::SensorType::Path},
-    {"goal", esp::sensor::SensorType::Goal},
-    {"force", esp::sensor::SensorType::Force},
-    {"tensor", esp::sensor::SensorType::Tensor},
-    {"text", esp::sensor::SensorType::Text},
     {"audio", esp::sensor::SensorType::Audio},
 };
 
