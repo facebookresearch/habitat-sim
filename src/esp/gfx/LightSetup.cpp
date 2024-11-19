@@ -78,18 +78,19 @@ LightSetup getLightsAtBoxCorners(const Magnum::Range3D& box,
 }
 
 LightSetup getDefaultLights() {
+  Magnum::Color3 color = {0.7, 0.7, 0.92};
   return LightSetup{
       {{0.0, -0.5, -0.5, 0.0},
-       {0.5, 0.5, 0.5},
+       color,
        LightPositionModel::Global},  // -z
       {{0.0, -0.5, 0.5, 0.0},
-       {0.5, 0.5, 0.5},
+       color,
        LightPositionModel::Global},  // +z
       {{-0.5, -0.5, 0.0, 0.0},
-       {0.5, 0.5, 0.5},
+       color,
        LightPositionModel::Global},  // -x
       {{0.5, -0.5, 0.0, 0.0},
-       {0.5, 0.5, 0.5},
+       color,
        LightPositionModel::Global},  // +x
   };
 }
@@ -104,7 +105,7 @@ Magnum::Color3 getAmbientLightColor(const LightSetup& lightSetup) {
   } else {
     // todo: add up ambient terms from all lights in lightSetup
     // temp: hard-coded ambient light tuned for ReplicaCAD
-    float ambientIntensity = 0.4;
+    float ambientIntensity = 0.7;
     return Magnum::Color3(ambientIntensity, ambientIntensity, ambientIntensity);
   }
 }

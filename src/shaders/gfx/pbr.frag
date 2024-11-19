@@ -187,6 +187,7 @@ void main() {
   vec3 ttlSpecularContrib =
       colorVals.specularContrib + colorVals.iblSpecularContrib;
 
+
   // Aggregate direct and indirect diffuse and specular with emissive color
   // TODO expand emissiveColor handling
   vec3 finalColor =
