@@ -13,6 +13,7 @@ runs:
       sudo mkdir /opt/cmake312
       sudo sh ./cmake-3.12.4-Linux-x86_64.sh --prefix=/opt/cmake312 --skip-license
       sudo ln -s /opt/cmake312/bin/cmake /usr/local/bin/cmake
+      sudo ln -s /opt/cmake312/bin/ctest /usr/local/bin/ctest
     shell: bash
   - name: Install dependencies
     run: |-
