@@ -98,12 +98,18 @@ jobs:
     - name: Run sim benchmark
       run: |-
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-        . activate habitat; cd habitat-sim
+        conda init
+        source ~/.bashrc
+        conda activate habitat
+        cd habitat-sim
         python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
     - name: Run sim tests
       run: |-
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-        . activate habitat; cd habitat-sim
+        conda init
+        source ~/.bashrc
+        conda activate habitat
+        cd habitat-sim
         export PYTHONPATH=$(pwd):$PYTHONPATH
 
         #set pytest to show partial progress
