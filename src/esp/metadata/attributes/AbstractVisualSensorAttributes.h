@@ -45,7 +45,7 @@ class AbstractVisualSensorAttributes : public AbstractSensorAttributes {
    * @brief get the number of channels for the Visual Sensor built from this
    * attributes.
    */
-  int getChannels(int channels) const { return get<int>("channels"); }
+  int getChannels() const { return get<int>("channels"); }
 
   /**
    * @brief Set whether to enable gpu-to-gpu transfer for the sensor built
