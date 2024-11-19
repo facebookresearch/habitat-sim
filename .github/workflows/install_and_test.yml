@@ -103,8 +103,6 @@ jobs:
         conda activate habitat
         cd habitat-sim
         python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
-    - name: Debugging with tmate
-      uses: mxschmitt/action-tmate@v3.18
     - name: Run sim tests
       run: |-
         #give cmake ownership to the runner for installation
@@ -159,7 +157,8 @@ jobs:
         #lcov --remove coverage.info "*/test/*" --output-file coverage.info > /dev/null
         #lcov --remove coverage.info "*/tests/*" --output-file coverage.info > /dev/null
         ./codecov -f coverage.info -cF CPP
-
+    - name: Debugging with tmate
+      uses: mxschmitt/action-tmate@v3.18
 
   install_and_test_ubuntu_audio:
     runs-on: 4-core-ubuntu-gpu-t4
