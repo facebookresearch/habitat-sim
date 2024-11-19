@@ -107,7 +107,7 @@ jobs:
         #set pytest to show partial progress
         export PYTHONPATH=$(pwd):$PYTHONPATH
         export PYTHONUNBUFFERED=1
-        PYTHONPATH=src_python pytest -n 4 --durations=10
+        pytest -n 4 --durations=10
     - name: Run sim tests
       run: |-
         #give cmake ownership to the runner for installation
