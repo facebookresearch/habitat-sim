@@ -103,6 +103,11 @@ jobs:
         conda activate habitat
         cd habitat-sim
         python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
+        #try the basic pytest here
+        #set pytest to show partial progress
+        export PYTHONPATH=$(pwd):$PYTHONPATH
+        export PYTHONUNBUFFERED=1
+        PYTHONPATH=src_python pytest -n 4 --durations=10
     - name: Run sim tests
       run: |-
         #give cmake ownership to the runner for installation
