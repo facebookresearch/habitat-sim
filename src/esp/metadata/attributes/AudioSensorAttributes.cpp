@@ -9,7 +9,7 @@ namespace metadata {
 namespace attributes {
 
 AudioSensorAttributes::AudioSensorAttributes(const std::string& handle)
-    : AbstractSensorAttributes("AbstractSensorAttributes", handle) {
+    : AbstractSensorAttributes("AudioSensorAttributes", handle) {
 }  // AudioSensorAttributes ctor
 
 void AudioSensorAttributes::writeValuesToJsonInternal(
