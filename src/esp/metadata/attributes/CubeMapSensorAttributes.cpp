@@ -11,6 +11,7 @@ AbstractCubeMapSensorAttributes::AbstractCubeMapSensorAttributes(
     const std::string& classKey,
     const std::string& handle)
     : AbstractVisualSensorAttributes(classKey, handle) {
+  setHidden("__useSpecifiedCubeMapSize", false);
   // Replacing nullopt field - -1 means to ignore
   init("cubemap_size", -1);
 }  // AbstractCubeMapSensorAttributes ctor
@@ -19,7 +20,7 @@ void AbstractCubeMapSensorAttributes::writeVisualSensorValuesToJsonInternal(
     io::JsonGenericValue& jsonObj,
     io::JsonAllocator& allocator) const {
   // write AbstractCubeMapSensorAttributes values to json
-  if (get<int>("cubemap_size") != -1) {
+  if (getUseSpecifiedCubeMapSize()) {
     // Only write if actually specified by user input
     writeValueToJson("cubemap_size", jsonObj, allocator);
   }
@@ -72,10 +73,10 @@ FisheyeSensorAttributes::FisheyeSensorAttributes(const std::string& handle)
   // init double-sphere model-specific values
   init("ds_alpha", 0.59f);
   init("ds_xi", -0.18f);
-  // TODO not a legal specification - focal length needs to be positive in both
+  // TODO not a legal assignment - focal length needs to be positive in both
   // fields
   init("focal_length", Magnum::Vector2(0.0, 0.0));
-  init("use_specified_ppo", false);
+  setHidden("__useSpecifiedPPO", false);
   init("principle_point_offset", Magnum::Vector2(0.0, 0.0));
 }  // FisheyeSensorAttributes ctor
 
@@ -85,16 +86,24 @@ void FisheyeSensorAttributes::writeCubeMapSensorValuesToJsonInternal(
   // Write fisheye-sensor-specific values to json
   writeValueToJson("ds_alpha", jsonObj, allocator);
   writeValueToJson("ds_xi", jsonObj, allocator);
+  writeValueToJson("focal_length", jsonObj, allocator);
+  if (getUsePrincipalPointOffset()) {
+    writeValueToJson("principle_point_offset", jsonObj, allocator);
+  }
+
 }  // FisheyeSensorAttributes::writeCubeMapSensorValuesToJsonInternal
 
 std::string FisheyeSensorAttributes::getCubeMapSensorInfoHeaderInternal()
     const {
-  return "Alpha (double-sphere model),Xi (double-sphere model)";
+  return "Focal Length fx fy,Use PPO,Principal Point Offset,Alpha "
+         "(double-sphere model),Xi (double-sphere model)";
 }  // FisheyeSensorAttributes::getCubeMapSensorInfoHeaderInternal()
 
 std::string FisheyeSensorAttributes::getCubeMapSensorInfoInternal() const {
-  return Cr::Utility::formatString("{},{}", getAsString("ds_alpha"),
-                                   getAsString("ds_xi"));
+  return Cr::Utility::formatString(
+      "{},{},{},{},{}", getAsString("focal_length"),
+      getAsString("use_specified_ppo"), getAsString("principle_point_offset"),
+      getAsString("ds_alpha"), getAsString("ds_xi"));
 
 }  // FisheyeSensorAttributes::getCubeMapSensorInfoInternal()
 

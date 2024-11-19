@@ -21,10 +21,28 @@ class AbstractCubeMapSensorAttributes : public AbstractVisualSensorAttributes {
                                   const std::string& handle);
 
   /**
+   * @brief Set whether to use a user-specified CubeMap size. Otherwise, should
+   * be the smallest of the x or y resolution values.
+   */
+  void setUseSpecifiedCubeMapSize(bool _useCubeMapSize) {
+    setHidden("__useSpecifiedCubeMapSize", _useCubeMapSize);
+  }
+  /**
+   * @brief Get whether to use a user-specified CubeMap size. Otherwise, should
+   * be the smallest of the x or y resolution values.
+   */
+  bool getUseSpecifiedCubeMapSize() const {
+    return get<bool>("__useSpecifiedCubeMapSize");
+  }
+
+  /**
    * @brief Set user-specified CubeMap Size. -1 means ignore this field and use
    * the max dimension of the resolution as the size
    */
-  void setCubeMapSize(int cubemap_size) { set("cubemap_size", cubemap_size); }
+  void setCubeMapSize(int cubemap_size) {
+    set("cubemap_size", cubemap_size);
+    setUseSpecifiedCubeMapSize(true);
+  }
 
   /**
    * @brief Get user-specified CubeMap Size. -1 means ignore this field and use
@@ -134,14 +152,14 @@ class FisheyeSensorAttributes : public AbstractCubeMapSensorAttributes {
    * Principle Point Offset will be placed in the middle of the image.
    */
   void setUsePrincipalPointOffset(bool use_specified_ppo) {
-    set("use_specified_ppo", use_specified_ppo);
+    setHidden("__useSpecifiedPPO", use_specified_ppo);
   }
   /**
    * @brief Get whether to use specified Principal Point Offset. If false, the
    * Principle Point Offset will be placed in the middle of the image.
    */
   bool getUsePrincipalPointOffset() const {
-    return get<bool>("use_specified_ppo");
+    return get<bool>("__useSpecifiedPPO");
   }
 
   /**
@@ -162,6 +180,7 @@ class FisheyeSensorAttributes : public AbstractCubeMapSensorAttributes {
     if (getUsePrincipalPointOffset()) {
       return get<Magnum::Vector2>("principle_point_offset");
     }
+    // If not specified then should be center of given resolution
     return Magnum::Vector2(getResolution()) * 0.5;
   }
 
