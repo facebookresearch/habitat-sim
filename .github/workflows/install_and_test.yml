@@ -162,8 +162,6 @@ jobs:
 
   install_and_test_ubuntu_audio:
     runs-on: 4-core-ubuntu-gpu-t4
-    env:
-      FPS_THRESHOLD: 900
     defaults:
       run:
         shell: bash -el {0}
@@ -176,14 +174,14 @@ jobs:
     - uses: "./habitat-sim/.github/actions/install_ubuntu_deps"
     - uses: "./habitat-sim/.github/actions/install_ubuntu_gpu_deps"
     - name: install habitat-sim with audio and run audio_agent script
-    run: |-
-      export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-      conda init
-      source ~/.bashrc
-      conda activate habitat
-      cd habitat-sim
-      pip install -r requirements.txt --progress-bar off
-      pip install imageio imageio-ffmpeg
-      git submodule update --init --recursive --jobs 8
-      python -u setup.py install --build-type "Release" --lto --headless --audio
-      python examples/tutorials/audio_agent.py
+      run: |-
+        export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+        conda init
+        source ~/.bashrc
+        conda activate habitat
+        cd habitat-sim
+        pip install -r requirements.txt --progress-bar off
+        pip install imageio imageio-ffmpeg
+        git submodule update --init --recursive --jobs 8
+        python -u setup.py install --build-type "Release" --lto --headless --audio
+        python examples/tutorials/audio_agent.py
