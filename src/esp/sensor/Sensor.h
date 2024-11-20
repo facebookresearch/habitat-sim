@@ -32,13 +32,14 @@ enum class SensorType : int32_t {
   Tensor,
   Text,
   Audio,
-  SensorTypeCount,  // add new type above this term!!
+  EndSensorType,
 };
 
 enum class ObservationSpaceType {
   None = 0,
   Tensor = 1,
   Text = 2,
+  EndObservationSpaceType,
 };
 
 enum class SensorSubType : int32_t {
@@ -48,7 +49,7 @@ enum class SensorSubType : int32_t {
   Fisheye,
   Equirectangular,
   ImpulseResponse,
-  SensorSubTypeCount,  // add new type above this term!!
+  EndSensorSubType,
 };
 
 // Specifies the configuration parameters of a sensor

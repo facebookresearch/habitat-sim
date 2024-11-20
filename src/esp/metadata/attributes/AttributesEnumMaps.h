@@ -7,6 +7,7 @@
 
 #include "esp/core/Esp.h"
 #include "esp/gfx/LightSetup.h"
+#include "esp/sensor/Sensor.h"
 namespace esp {
 namespace physics {
 enum class MotionType;
@@ -219,9 +220,8 @@ enum class SceneInstanceTranslationOrigin {
 
 /**
  * @brief Constant static map to provide mappings from string tags to
- * @ref AssetType values.  This will be used to map values
- * set in json for mesh type to @ref AssetType.  Keys must
- * be lowercase.
+ * @ref AssetType values.  This will be used to map string values
+ * used for mesh type to @ref AssetType.  Keys must be lowercase.
  */
 const extern std::map<std::string, AssetType> AssetTypeNamesMap;
 
@@ -233,9 +233,9 @@ std::string getAssetTypeName(AssetType meshTypeEnum);
 
 /**
  * @brief Constant map to provide mappings from string tags to @ref
- * ArticulatedObjectBaseType values. This will be used to map values set
- * in json for AO base_type to @ref ArticulatedObjectBaseType. Keys
- * must be lowercase.
+ * ArticulatedObjectBaseType values. This will be used to map string values
+ * used for AO base_type to @ref ArticulatedObjectBaseType. Keys must be
+ * lowercase.
  */
 const extern std::map<std::string, ArticulatedObjectBaseType> AOBaseTypeMap;
 
@@ -247,8 +247,8 @@ std::string getAOBaseTypeName(ArticulatedObjectBaseType aoBaseType);
 
 /**
  * @brief Constant map to provide mappings from string tags to @ref
- * ArticulatedObjectInertiaSource values. This will be used to map values set
- * in json for AO inertia_source to @ref ArticulatedObjectInertiaSource. Keys
+ * ArticulatedObjectInertiaSource values. This will be used to map string
+ * values used for AO inertia_source to @ref ArticulatedObjectInertiaSource. Keys
  * must be lowercase.
  */
 const extern std::map<std::string, ArticulatedObjectInertiaSource>
@@ -263,8 +263,8 @@ std::string getAOInertiaSourceName(
 
 /**
  * @brief Constant map to provide mappings from string tags to @ref
- * ArticulatedObjectLinkOrder values. This will be used to map values set
- * in json for AO link_order to @ref ArticulatedObjectLinkOrder. Keys
+ * ArticulatedObjectLinkOrder values. This will be used to map string values
+ * used for AO link_order to @ref ArticulatedObjectLinkOrder. Keys
  * must be lowercase.
  */
 const extern std::map<std::string, ArticulatedObjectLinkOrder> AOLinkOrderMap;
@@ -277,9 +277,9 @@ std::string getAOLinkOrderName(ArticulatedObjectLinkOrder aoLinkOrder);
 
 /**
  * @brief Constant map to provide mappings from string tags to @ref
- * ArticulatedObjectRenderMode values. This will be used to map values set
- * in json for AO render_mode to @ref ArticulatedObjectRenderMode. Keys
- * must be lowercase.
+ * ArticulatedObjectRenderMode values. This will be used to map string values
+ * used for AO render_mode to @ref ArticulatedObjectRenderMode. Keys must be
+ * lowercase.
  */
 const extern std::map<std::string, ArticulatedObjectRenderMode>
     AORenderModesMap;
@@ -292,9 +292,8 @@ std::string getAORenderModeName(ArticulatedObjectRenderMode aoRenderMode);
 
 /**
  * @brief Constant map to provide mappings from string tags to @ref
- * ObjectInstanceShaderType values. This will be used to map values set
- * in json for shader type to @ref ObjectInstanceShaderType. Keys
- * must be lowercase.
+ * ObjectInstanceShaderType values. This will be used to map string values used
+ * for shader type to @ref ObjectInstanceShaderType. Keys must be lowercase.
  */
 const extern std::map<std::string, ObjectInstanceShaderType> ShaderTypeNamesMap;
 
@@ -306,8 +305,8 @@ std::string getShaderTypeName(ObjectInstanceShaderType shaderTypeVal);
 
 /**
  * @brief Constant map to provide mappings from string tags to @ref
- * SceneInstanceTranslationOrigin values. This will be used to map values set
- * in json for translation origin to @ref SceneInstanceTranslationOrigin. Keys
+ * SceneInstanceTranslationOrigin values. This will be used to map string values
+ * used for translation origin to @ref SceneInstanceTranslationOrigin. Keys
  * must be lowercase.
  */
 const extern std::map<std::string, SceneInstanceTranslationOrigin>
@@ -321,7 +320,7 @@ std::string getTranslationOriginName(
 
 /**
  * @brief Constant static map to provide mappings from string tags to @ref
- * esp::gfx::LightType values. This will be used to map values set in json
+ * esp::gfx::LightType values. This will be used to map string values used
  * for light type to @ref esp::gfx::LightType. Keys must be lowercase - will
  * support any case values in JSON.
  */
@@ -334,9 +333,9 @@ std::string getLightTypeName(esp::gfx::LightType lightTypeEnum);
 
 /**
  * @brief Constant static map to provide mappings from string tags to @ref
- * esp::gfx::LightPositionModel values. This will be used to map values set
- * in json to specify what translations are measured from for a lighting
- * instance.
+ * esp::gfx::LightPositionModel values. This will be used to map string values
+ * used to specify what translations are measured from for a lighting
+ * instance placement. Keys must be lowercase.
  */
 const extern std::map<std::string, esp::gfx::LightPositionModel>
     LightPositionNamesMap;
@@ -349,17 +348,44 @@ std::string getLightPositionModelName(
 
 /**
  * @brief Constant static map to provide mappings from string tags to @ref
- * esp::physics::MotionType values. This will be used to map values set in
- * json for mesh type to @ref esp::physics::MotionType. Keys must be
- * lowercase.
+ * esp::physics::MotionType values. This will be used to map string values used
+ * for motion type to @ref esp::physics::MotionType. Keys must be lowercase.
  */
 const extern std::map<std::string, esp::physics::MotionType> MotionTypeNamesMap;
 
 /**
- * @brief This method will convert a @ref esp::gfx::LightPositionModel value to
- * the string key it maps to in the LightPositionNamesMap
+ * @brief This method will convert a @ref esp::physics::MotionType value to
+ * the string key it maps to in the MotionTypeNamesMap
  */
 std::string getMotionTypeName(esp::physics::MotionType motionTypeEnum);
+
+/**
+ * @brief Constant static map to provide mappings from string tags to @ref
+ * esp::sensor::SensorType values. This will be used to map string values used
+ * for sensor type to @ref esp::sensor::SensorType. Keys must be lowercase.
+ */
+const extern std::map<std::string, esp::sensor::SensorType> SensorTypeNamesMap;
+
+/**
+ * @brief This method will convert a @ref esp::sensor::SensorType value to
+ * the string key it maps to in the SensorTypeNamesMap
+ */
+std::string getSensorTypeName(esp::sensor::SensorType sensorTypeEnum);
+
+/**
+ * @brief Constant static map to provide mappings from string tags to @ref
+ * esp::sensor::SensorSubType values. This will be used to map string values
+ * used for sensor sub type to @ref esp::sensor::SensorSubType. Keys must be
+ * lowercase.
+ */
+const extern std::map<std::string, esp::sensor::SensorSubType>
+    SensorSubTypeNamesMap;
+
+/**
+ * @brief This method will convert a @ref esp::sensor::SensorSubType value to
+ * the string key it maps to in the SensorSubTypeNamesMap
+ */
+std::string getSensorSubTypeName(esp::sensor::SensorSubType sensorSubTypeEnum);
 
 }  // namespace attributes
 }  // namespace metadata

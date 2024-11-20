@@ -253,6 +253,68 @@ std::string getMotionTypeName(esp::physics::MotionType motionTypeEnum) {
   return "undefined";
 }  // getMotionTypeName
 
+const std::map<std::string, esp::sensor::SensorType> SensorTypeNamesMap = {
+    {"none", esp::sensor::SensorType::None},
+    {"color", esp::sensor::SensorType::Color},
+    {"depth", esp::sensor::SensorType::Depth},
+    {"normal", esp::sensor::SensorType::Normal},
+    {"semantic", esp::sensor::SensorType::Semantic},
+    {"path", esp::sensor::SensorType::Path},
+    {"goal", esp::sensor::SensorType::Goal},
+    {"force", esp::sensor::SensorType::Force},
+    {"tensor", esp::sensor::SensorType::Tensor},
+    {"text", esp::sensor::SensorType::Text},
+    {"audio", esp::sensor::SensorType::Audio},
+};
+
+std::string getSensorTypeName(esp::sensor::SensorType sensorTypeEnum) {
+  // this verifies that enum value being checked is supported by string-keyed
+  // map. The values below should be the minimum and maximum enums supported by
+  // SensorTypeNamesMap
+  if ((sensorTypeEnum <= esp::sensor::SensorType::None) ||
+      (sensorTypeEnum >= esp::sensor::SensorType::EndSensorType)) {
+    return "none";
+  }
+  // Must always be valid value
+  for (const auto& it : SensorTypeNamesMap) {
+    if (it.second == sensorTypeEnum) {
+      return it.first;
+    }
+  }
+  return "none";
+}  // getSensorTypeName
+
+const std::map<std::string, esp::sensor::SensorSubType> SensorSubTypeNamesMap =
+    {
+        {"none", esp::sensor::SensorSubType::None},
+        {"pinhole", esp::sensor::SensorSubType::Pinhole},
+        {"orthographic", esp::sensor::SensorSubType::Orthographic},
+        {"fisheye", esp::sensor::SensorSubType::Fisheye},
+        {"equirectangular", esp::sensor::SensorSubType::Equirectangular},
+        {"impulseresponnse", esp::sensor::SensorSubType::ImpulseResponse},
+};
+
+/**
+ * @brief This method will convert a @ref esp::sensor::SensorSubType value to
+ * the string key it maps to in the SensorSubTypeNamesMap
+ */
+std::string getSensorSubTypeName(esp::sensor::SensorSubType sensorSubTypeEnum) {
+  // this verifies that enum value being checked is supported by string-keyed
+  // map. The values below should be the minimum and maximum enums supported by
+  // SensorSubTypeNamesMap
+  if ((sensorSubTypeEnum <= esp::sensor::SensorSubType::None) ||
+      (sensorSubTypeEnum >= esp::sensor::SensorSubType::EndSensorSubType)) {
+    return "none";
+  }
+  // Must always be valid value
+  for (const auto& it : SensorSubTypeNamesMap) {
+    if (it.second == sensorSubTypeEnum) {
+      return it.first;
+    }
+  }
+  return "none";
+}  // getSensorSubTypeName
+
 }  // namespace attributes
 }  // namespace metadata
 }  // namespace esp
