@@ -394,6 +394,9 @@ class Simulator(SimulatorBackend):
         if isinstance(agent_ids, int):
             agent_ids = [agent_ids]
             return_single = True
+        elif agent_ids is None:
+            agent_ids = [self._default_agent_id]
+            return_single = True
         else:
             return_single = False
 
