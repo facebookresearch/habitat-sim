@@ -70,8 +70,6 @@ class EquirectangularSensor : public CubeMapSensorBase {
     return equirectangularSensorSpec_;
   }
 
-  gfx::RenderCamera* getRenderCamera() = delete;
-
  protected:
   EquirectangularSensorSpec::ptr equirectangularSensorSpec_ =
       std::dynamic_pointer_cast<EquirectangularSensorSpec>(spec_);

@@ -124,8 +124,6 @@ class FisheyeSensor : public CubeMapSensorBase {
    */
   FisheyeSensorSpec::ptr specification() const { return fisheyeSensorSpec_; }
 
-  gfx::RenderCamera* getRenderCamera() = delete;
-
  protected:
   FisheyeSensorSpec::ptr fisheyeSensorSpec_ =
       std::dynamic_pointer_cast<FisheyeSensorSpec>(spec_);
