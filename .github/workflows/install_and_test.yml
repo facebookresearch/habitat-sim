@@ -179,6 +179,7 @@ jobs:
     runs-on: 4-core-ubuntu-gpu-t4
     env:
       AIHABITAT_CONDA_USERNAME: aihabitat
+      AIHABITAT_CONDA_PWD: ${{ secrets.AIHABITAT_CONDA_PWD }}
       AIHABITAT_NIGHTLY_CONDA_USERNAME: aihabitat-nightly
     defaults:
       run:
