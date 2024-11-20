@@ -195,7 +195,7 @@ jobs:
           path: "./habitat-sim"
       - name: Set CI_TEST variable based on "main merge" vs. "pull_request" workflow
         run: |-
-
+          echo "NIGHTLY='true'" >> $GITHUB_ENV
           if [[ ${{ github.event_name }} == 'push' ]]; then
             if [[ ${GITHUB_REF} == refs/heads/* ]]; then
               #trigger a push to main branch
@@ -214,16 +214,25 @@ jobs:
           elif [[ ${{ github.event_name }} == 'pull_request' ]]; then
             #trigger: a pull request
             echo "CI_TEST='true'" >> $GITHUB_ENV
+            echo "NIGHTLY='false'" >> $GITHUB_ENV
           fi
       - name: Build conda Linux packages
         run: |-
           cd habitat-sim/conda-build
           echo "Current event name: $GITHUB_EVENT_NAME"
           echo ${{ env.CI_TEST }}
+          echo ${{ env.NIGHTLY }}
 
           #pivot on the build type
           if [[ ${{ env.CI_TEST }} ]]; then
             echo "This is a CI test."
           else
-            echo "This is an actual build"
+            echo "This is a full conda build with deployment."
+            # Install anaconda to work with packages repo
+            curl -O https://repo.anaconda.com/archive/Anaconda3-2020.11-Linux-x86_64.sh
+            bash Anaconda3-2020.11-Linux-x86_64.sh -b -p $HOME/anaconda
+            export PATH=$HOME/anaconda/bin:$PATH
+
+            # Delete old nightly builds
+            #python common/delete_old_night_packages.py --username << parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>
           fi
