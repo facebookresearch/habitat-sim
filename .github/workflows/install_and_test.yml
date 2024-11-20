@@ -232,6 +232,8 @@ jobs:
           elif [[ ${{ github.event_name }} == 'pull_request' ]]; then
             echo "trigger: a pull request"
           fi
+      - name: Debugging with tmate
+        uses: mxschmitt/action-tmate@v3.18
       - name: Build conda Linux packages
         run: |-
           cd habitat-sim/conda-build
