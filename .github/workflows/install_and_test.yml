@@ -193,7 +193,7 @@ jobs:
         run: |-
           echo "CI_TEST=${{ github.event_name == 'pull_request' }}" >> $GITHUB_ENV
           if [[ ${{ github.event_name }} == 'pull_request' ]]; then
-            echo "CONDA_USERNAME=${{ AIHABITAT_CONDA_USERNAME == 'pull_request' }}" >> $GITHUB_ENV
+            echo "CONDA_USERNAME=${{ AIHABITAT_CONDA_USERNAME }}" >> $GITHUB_ENV
           fi
       - name: Build conda Linux packages
         run: |-
