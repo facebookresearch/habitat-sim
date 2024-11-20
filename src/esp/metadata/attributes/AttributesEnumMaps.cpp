@@ -327,7 +327,7 @@ std::string getSemanitcSensorTargetName(
        esp::sensor::SemanticSensorTarget::SemanticID) ||
       (semanticSensorTargetEnum >=
        esp::sensor::SemanticSensorTarget::EndSemanticDataIDXs)) {
-    // default to Semantic id for illegal values
+    // default to Semantic id for illegal or boundary values
     return "semantic_id";
   }
   // Must always be valid value
@@ -338,6 +338,36 @@ std::string getSemanitcSensorTargetName(
   }
   return "semantic_id";
 }  // getSensorSubTypeName
+
+const std::map<std::string, esp::sensor::FisheyeSensorModelType>
+    FisheyeSensorModelTypeMap = {
+        {"double_sphere", esp::sensor::FisheyeSensorModelType::DoubleSphere},
+};
+
+/**
+ * @brief This method will convert a @ref esp::sensor::FisheyeSensorModelType value to
+ * the string key it maps to in the FisheyeSensorModelTypeMap
+ */
+std::string getFisheyeSensorModelTypeName(
+    esp::sensor::FisheyeSensorModelType fisheyeSensorModelTypeEnum) {
+  // this verifies that enum value being checked is supported by string-keyed
+  // map. The values below should be the minimum and maximum enums supported by
+  // FisheyeSensorModelTypeMap
+  if ((fisheyeSensorModelTypeEnum <=
+       esp::sensor::FisheyeSensorModelType::DoubleSphere) ||
+      (fisheyeSensorModelTypeEnum >=
+       esp::sensor::FisheyeSensorModelType::EndFisheyeSensorModelType)) {
+    // default to double_sphere for illegal values
+    return "double_sphere";
+  }
+  // Must always be valid value
+  for (const auto& it : FisheyeSensorModelTypeMap) {
+    if (it.second == fisheyeSensorModelTypeEnum) {
+      return it.first;
+    }
+  }
+  return "double_sphere";
+}  // getFisheyeSensorModelTypeName
 
 }  // namespace attributes
 }  // namespace metadata

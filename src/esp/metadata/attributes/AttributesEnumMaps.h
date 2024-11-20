@@ -7,7 +7,9 @@
 
 #include "esp/core/Esp.h"
 #include "esp/gfx/LightSetup.h"
+#include "esp/sensor/FisheyeSensor.h"
 #include "esp/sensor/Sensor.h"
+
 namespace esp {
 namespace physics {
 enum class MotionType;
@@ -389,9 +391,8 @@ std::string getSensorSubTypeName(esp::sensor::SensorSubType sensorSubTypeEnum);
 /**
  * @brief Constant static map to provide mappings from string tags to @ref
  * esp::sensor::SemanticSensorTarget values. This will be used to map string
- * values
- * used for sensor sub type to @ref esp::sensor::SemanticSensorTarget. Keys must be
- * lowercase.
+ * values used for sensor sub type to @ref esp::sensor::SemanticSensorTarget.
+ * Keys must be lowercase.
  */
 const extern std::map<std::string, esp::sensor::SemanticSensorTarget>
     SemanticSensorTargetMap;
@@ -402,6 +403,23 @@ const extern std::map<std::string, esp::sensor::SemanticSensorTarget>
  */
 std::string getSemanitcSensorTargetName(
     esp::sensor::SemanticSensorTarget semanticSensorTargetEnum);
+
+/**
+ * @brief Constant static map to provide mappings from string tags to @ref
+ * esp::sensor::FisheyeSensorModelType values. This will be used to map string
+ * values used for to @ref esp::sensor::FisheyeSensorModelType. Keys must be
+ * lowercase.
+ */
+const extern std::map<std::string, esp::sensor::FisheyeSensorModelType>
+    FisheyeSensorModelTypeMap;
+
+/**
+ * @brief This method will convert a @ref esp::sensor::FisheyeSensorModelType value to
+ * the string key it maps to in the FisheyeSensorModelTypeMap
+ */
+std::string getFisheyeSensorModelTypeName(
+    esp::sensor::FisheyeSensorModelType fisheyeSensorModelTypeEnum);
+
 }  // namespace attributes
 }  // namespace metadata
 }  // namespace esp

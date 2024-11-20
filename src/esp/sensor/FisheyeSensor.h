@@ -33,6 +33,9 @@ enum class FisheyeSensorModelType : Magnum::UnsignedInt {
   // User can implement her own model such as:
   // FieldOfView = 1,
   // KannalaBrandt = 2,
+
+  // All future supported models go above this
+  EndFisheyeSensorModelType,
 };
 
 struct FisheyeSensorSpec : public CubeMapSensorBaseSpec {
