@@ -195,11 +195,11 @@ jobs:
           path: "./habitat-sim"
       - name: Set CI_TEST variable based on "main merge" vs. "pull_request" workflow
         run: |-
-          echo "NIGHTLY='true'" >> $GITHUB_ENV
+          echo "NIGHTLY='false'" >> $GITHUB_ENV
+          echo "CI_TEST='true'" >> $GITHUB_ENV
           if [[ ${{ github.event_name }} == 'push' ]]; then
             if [[ ${GITHUB_REF} == refs/heads/* ]]; then
               #trigger a push to main branch
-              echo "CI_TEST='true'" >> $GITHUB_ENV
             elif [[ ${GITHUB_REF} == refs/tags/* ]]; then
               #trigger a version tag push
               echo "CI_TEST='false'" >> $GITHUB_ENV
@@ -209,12 +209,11 @@ jobs:
           elif [[ ${{ github.event_name }} == 'schedule' ]]; then
             #trigger: a nightly build
             echo "CI_TEST='false'" >> $GITHUB_ENV
+            echo "NIGHTLY='true'" >> $GITHUB_ENV
             echo "CONDA_USERNAME=$AIHABITAT_NIGHTLY_CONDA_USERNAME" >> $GITHUB_ENV
             echo "CONDA_PWD=$AIHABITAT_NIGHTLY_CONDA_PWD" >> $GITHUB_ENV
           elif [[ ${{ github.event_name }} == 'pull_request' ]]; then
             #trigger: a pull request
-            echo "CI_TEST='true'" >> $GITHUB_ENV
-            echo "NIGHTLY='false'" >> $GITHUB_ENV
           fi
       - name: Build conda Linux packages
         run: |-
@@ -234,5 +233,15 @@ jobs:
             export PATH=$HOME/anaconda/bin:$PATH
 
             # Delete old nightly builds
-            #python common/delete_old_night_packages.py --username << parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>
+            #python common/delete_old_night_packages.py --username $CONDA_USERNAME --password $CONDA_PWD
           fi
+
+          #install Docker
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+          sudo apt-get update
+          apt-cache policy docker-ce
+          sudo apt-get install -y docker-ce
+
+          #build the container
+          docker build -t hsim_condabuild_dcontainer -f Dockerfile .
