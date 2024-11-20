@@ -108,8 +108,6 @@ jobs:
         export PYTHONPATH=$(pwd):$PYTHONPATH
         export PYTHONUNBUFFERED=1
         pytest -n 4 --durations=10
-    - name: Debugging with tmate
-      uses: mxschmitt/action-tmate@v3.18
     - name: Run sim tests
       run: |-
         #give cmake ownership to the runner for installation
@@ -178,3 +176,5 @@ jobs:
         git submodule update --init --recursive --jobs 8
         python -u setup.py install --build-type "Release" --lto --headless --audio
         python examples/tutorials/audio_agent.py
+    - name: Debugging with tmate
+      uses: mxschmitt/action-tmate@v3.18
