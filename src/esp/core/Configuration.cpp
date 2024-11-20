@@ -35,8 +35,10 @@ const std::unordered_map<ConfigValType, std::string, ConfigValTypeHash>
                           {ConfigValType::Boolean, "bool"},
                           {ConfigValType::Integer, "int"},
                           {ConfigValType::MagnumRad, "Mn::Rad"},
+                          {ConfigValType::MagnumDeg, "Mn::Deg"},
                           {ConfigValType::Double, "double"},
                           {ConfigValType::MagnumVec2, "Mn::Vector2"},
+                          {ConfigValType::MagnumVec2i, "Mn::Vector2i"},
                           {ConfigValType::MagnumVec3, "Mn::Vector3"},
                           {ConfigValType::MagnumVec4, "Mn::Vector4"},
                           {ConfigValType::MagnumQuat, "Mn::Quaternion"},
@@ -252,15 +254,26 @@ std::string ConfigValue::getAsString() const {
     case ConfigValType::Integer: {
       return std::to_string(get<int>());
     }
+    case ConfigValType::MagnumRad: {
+      auto r = get<Mn::Rad>();
+      return std::to_string(r.operator float());
+    }
+    case ConfigValType::MagnumDeg: {
+      auto r = get<Mn::Deg>();
+      return std::to_string(r.operator float());
+    }
     case ConfigValType::Double: {
       return Cr::Utility::formatString("{}", get<double>());
     }
     case ConfigValType::String: {
       return get<std::string>();
     }
-
     case ConfigValType::MagnumVec2: {
       auto v = get<Mn::Vector2>();
+      return Cr::Utility::formatString("[{} {}]", v.x(), v.y());
+    }
+    case ConfigValType::MagnumVec2i: {
+      auto v = get<Mn::Vector2i>();
       return Cr::Utility::formatString("[{} {}]", v.x(), v.y());
     }
     case ConfigValType::MagnumVec3: {
@@ -300,10 +313,6 @@ std::string ConfigValue::getAsString() const {
       return Cr::Utility::formatString("{} [{} {} {}]", q.scalar(), qv.x(),
                                        qv.y(), qv.z());
     }
-    case ConfigValType::MagnumRad: {
-      auto r = get<Mn::Rad>();
-      return std::to_string(r.operator float());
-    }
     default:
       CORRADE_ASSERT_UNREACHABLE(
           "Unknown/unsupported Type in ConfigValue::getAsString", "");
@@ -321,11 +330,22 @@ io::JsonGenericValue ConfigValue::writeToJsonObject(
     case ConfigValType::Integer: {
       return io::toJsonValue(get<int>(), allocator);
     }
+    case ConfigValType::MagnumRad: {
+      auto r = get<Mn::Rad>();
+      return io::toJsonValue((r.operator float()), allocator);
+    }
+    case ConfigValType::MagnumDeg: {
+      auto r = get<Mn::Deg>();
+      return io::toJsonValue((r.operator float()), allocator);
+    }
     case ConfigValType::Double: {
       return io::toJsonValue(get<double>(), allocator);
     }
     case ConfigValType::MagnumVec2: {
       return io::toJsonValue(get<Mn::Vector2>(), allocator);
+    }
+    case ConfigValType::MagnumVec2i: {
+      return io::toJsonValue(get<Mn::Vector2i>(), allocator);
     }
     case ConfigValType::MagnumVec3: {
       return io::toJsonValue(get<Mn::Vector3>(), allocator);
@@ -341,10 +361,6 @@ io::JsonGenericValue ConfigValue::writeToJsonObject(
     }
     case ConfigValType::MagnumQuat: {
       return io::toJsonValue(get<Mn::Quaternion>(), allocator);
-    }
-    case ConfigValType::MagnumRad: {
-      auto r = get<Mn::Rad>();
-      return io::toJsonValue((r.operator float()), allocator);
     }
     case ConfigValType::String: {
       return io::toJsonValue(get<std::string>(), allocator);
@@ -365,12 +381,18 @@ bool ConfigValue::putValueInConfigGroup(
       return cfg.setValue(key, get<bool>());
     case ConfigValType::Integer:
       return cfg.setValue(key, get<int>());
+    case ConfigValType::MagnumRad:
+      return cfg.setValue(key, get<Mn::Rad>());
+    case ConfigValType::MagnumDeg:
+      return cfg.setValue(key, get<Mn::Deg>());
     case ConfigValType::Double:
       return cfg.setValue(key, get<double>());
     case ConfigValType::String:
       return cfg.setValue(key, get<std::string>());
     case ConfigValType::MagnumVec2:
       return cfg.setValue(key, get<Mn::Vector2>());
+    case ConfigValType::MagnumVec2i:
+      return cfg.setValue(key, get<Mn::Vector2i>());
     case ConfigValType::MagnumVec3:
       return cfg.setValue(key, get<Mn::Vector3>());
     case ConfigValType::MagnumVec4:
@@ -381,8 +403,6 @@ bool ConfigValue::putValueInConfigGroup(
       return cfg.setValue(key, get<Mn::Matrix4>());
     case ConfigValType::MagnumQuat:
       return cfg.setValue(key, get<Mn::Quaternion>());
-    case ConfigValType::MagnumRad:
-      return cfg.setValue(key, get<Mn::Rad>());
     default:
       CORRADE_ASSERT_UNREACHABLE(
           "Unknown/unsupported Type in ConfigValue::putValueInConfigGroup",
@@ -418,10 +438,20 @@ int Configuration::loadOneConfigFromJson(int numConfigSettings,
     if (jsonObj[0].IsNumber()) {
       // numeric vector, quaternion or matrix
       if (jsonObj.Size() == 2) {
-        // All size 2 numeric arrays are mapped to Mn::Vector2
-        Mn::Vector2 val{};
-        if (io::fromJsonValue(jsonObj, val)) {
-          set(key, val);
+        // Map numeric/integers to
+        if (jsonObj[0].IsDouble()) {
+          // All size 2 double-based numeric arrays are mapped to Mn::Vector2
+          Mn::Vector2 val{};
+          if (io::fromJsonValue(jsonObj, val)) {
+            set(key, val);
+          }
+        } else {
+          // All size 2 non-double-based numeric arrays are mapped to
+          // Mn::Vector2i
+          Mn::Vector2i val{};
+          if (io::fromJsonValue(jsonObj, val)) {
+            set(key, val);
+          }
         }
       } else if (jsonObj.Size() == 3) {
         // All size 3 numeric arrays are mapped to Mn::Vector3

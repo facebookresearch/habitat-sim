@@ -253,6 +253,117 @@ std::string getMotionTypeName(esp::physics::MotionType motionTypeEnum) {
   return "undefined";
 }  // getMotionTypeName
 
+const std::map<std::string, esp::sensor::SensorType> SensorTypeNamesMap = {
+    {"none", esp::sensor::SensorType::None},
+    {"color", esp::sensor::SensorType::Color},
+    {"depth", esp::sensor::SensorType::Depth},
+    {"normal", esp::sensor::SensorType::Normal},
+    {"semantic", esp::sensor::SensorType::Semantic},
+    {"audio", esp::sensor::SensorType::Audio},
+};
+
+std::string getSensorTypeName(esp::sensor::SensorType sensorTypeEnum) {
+  // this verifies that enum value being checked is supported by string-keyed
+  // map. The values below should be the minimum and maximum enums supported by
+  // SensorTypeNamesMap
+  if ((sensorTypeEnum <= esp::sensor::SensorType::None) ||
+      (sensorTypeEnum >= esp::sensor::SensorType::EndSensorType)) {
+    return "none";
+  }
+  // Must always be valid value
+  for (const auto& it : SensorTypeNamesMap) {
+    if (it.second == sensorTypeEnum) {
+      return it.first;
+    }
+  }
+  return "none";
+}  // getSensorTypeName
+
+const std::map<std::string, esp::sensor::SensorSubType> SensorSubTypeNamesMap =
+    {
+        {"none", esp::sensor::SensorSubType::None},
+        {"pinhole", esp::sensor::SensorSubType::Pinhole},
+        {"orthographic", esp::sensor::SensorSubType::Orthographic},
+        {"fisheye", esp::sensor::SensorSubType::Fisheye},
+        {"equirectangular", esp::sensor::SensorSubType::Equirectangular},
+        {"impulseresponnse", esp::sensor::SensorSubType::ImpulseResponse},
+};
+
+std::string getSensorSubTypeName(esp::sensor::SensorSubType sensorSubTypeEnum) {
+  // this verifies that enum value being checked is supported by string-keyed
+  // map. The values below should be the minimum and maximum enums supported by
+  // SensorSubTypeNamesMap
+  if ((sensorSubTypeEnum <= esp::sensor::SensorSubType::None) ||
+      (sensorSubTypeEnum >= esp::sensor::SensorSubType::EndSensorSubType)) {
+    return "none";
+  }
+  // Must always be valid value
+  for (const auto& it : SensorSubTypeNamesMap) {
+    if (it.second == sensorSubTypeEnum) {
+      return it.first;
+    }
+  }
+  return "none";
+}  // getSensorSubTypeName
+
+const std::map<std::string, esp::sensor::SemanticSensorTarget>
+    SemanticSensorTargetNamesMap = {
+        {"semantic_id", esp::sensor::SemanticSensorTarget::SemanticID},
+        {"object_id", esp::sensor::SemanticSensorTarget::ObjectID},
+        {"drawable_id", esp::sensor::SemanticSensorTarget::DrawableID},
+};
+
+std::string getSemanitcSensorTargetName(
+    esp::sensor::SemanticSensorTarget semanticSensorTargetEnum) {
+  // this verifies that enum value being checked is supported by string-keyed
+  // map. The values below should be the minimum and maximum enums supported by
+  // SemanticSensorTargetNamesMap
+  if ((semanticSensorTargetEnum <=
+       esp::sensor::SemanticSensorTarget::SemanticID) ||
+      (semanticSensorTargetEnum >=
+       esp::sensor::SemanticSensorTarget::EndSemanticDataIDXs)) {
+    // default to Semantic id for illegal or boundary values
+    return "semantic_id";
+  }
+  // Must always be valid value
+  for (const auto& it : SemanticSensorTargetNamesMap) {
+    if (it.second == semanticSensorTargetEnum) {
+      return it.first;
+    }
+  }
+  return "semantic_id";
+}  // getSensorSubTypeName
+
+const std::map<std::string, esp::sensor::FisheyeSensorModelType>
+    FisheyeSensorModelTypeMap = {
+        {"double_sphere", esp::sensor::FisheyeSensorModelType::DoubleSphere},
+};
+
+/**
+ * @brief This method will convert a @ref esp::sensor::FisheyeSensorModelType value to
+ * the string key it maps to in the FisheyeSensorModelTypeMap
+ */
+std::string getFisheyeSensorModelTypeName(
+    esp::sensor::FisheyeSensorModelType fisheyeSensorModelTypeEnum) {
+  // this verifies that enum value being checked is supported by string-keyed
+  // map. The values below should be the minimum and maximum enums supported by
+  // FisheyeSensorModelTypeMap
+  if ((fisheyeSensorModelTypeEnum <=
+       esp::sensor::FisheyeSensorModelType::DoubleSphere) ||
+      (fisheyeSensorModelTypeEnum >=
+       esp::sensor::FisheyeSensorModelType::EndFisheyeSensorModelType)) {
+    // default to double_sphere for illegal values
+    return "double_sphere";
+  }
+  // Must always be valid value
+  for (const auto& it : FisheyeSensorModelTypeMap) {
+    if (it.second == fisheyeSensorModelTypeEnum) {
+      return it.first;
+    }
+  }
+  return "double_sphere";
+}  // getFisheyeSensorModelTypeName
+
 }  // namespace attributes
 }  // namespace metadata
 }  // namespace esp

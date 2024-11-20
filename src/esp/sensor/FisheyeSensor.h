@@ -33,6 +33,9 @@ enum class FisheyeSensorModelType : Magnum::UnsignedInt {
   // User can implement her own model such as:
   // FieldOfView = 1,
   // KannalaBrandt = 2,
+
+  // All future supported models go above this
+  EndFisheyeSensorModelType,
 };
 
 struct FisheyeSensorSpec : public CubeMapSensorBaseSpec {
@@ -120,8 +123,6 @@ class FisheyeSensor : public CubeMapSensorBase {
    * @brief Return a pointer to this fisheye sensor's SensorSpec
    */
   FisheyeSensorSpec::ptr specification() const { return fisheyeSensorSpec_; }
-
-  gfx::RenderCamera* getRenderCamera() = delete;
 
  protected:
   FisheyeSensorSpec::ptr fisheyeSensorSpec_ =
