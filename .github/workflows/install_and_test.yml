@@ -192,6 +192,9 @@ jobs:
       - name: Set CI_TEST variable based on "main merge" vs. "pull_request" workflow
         run: |-
           echo "CI_TEST=${{ github.event_name == 'pull_request' }}" >> $GITHUB_ENV
+          if [[ ${{ github.event_name }} == 'pull_request' ]]; then
+            echo "this is a test"
+          fi
       - name: Build conda Linux packages
         run: |-
           cd habitat-sim/conda-build
