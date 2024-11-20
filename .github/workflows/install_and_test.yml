@@ -10,6 +10,23 @@ on:
     #this is 9PM PST
 
 jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4.1.1
+    - name: Setup python
+      uses: actions/setup-python@v5.0.0
+      with:
+        python-version: '3.9.16'
+    - name: install dependencies
+      run: |-
+        pip install -U pip setuptools pre-commit
+        # Install the hooks now so that they'll be cached
+        pre-commit install-hooks
+    - name: Check Code Style using pre-commit
+      run: |-
+        SKIP=eslint pre-commit run --show-diff-on-failure --all-files
+
   python_lint:
     runs-on: ubuntu-latest
     steps:
@@ -245,3 +262,9 @@ jobs:
 
           #build the container
           docker build -t hsim_condabuild_dcontainer -f Dockerfile .
+
+          if [[ ${{ env.CI_TEST }} ]]; then
+            docker run -it --ipc=host --rm -v $(pwd)/../../:/remote hsim_condabuild_dcontainer /bin/bash -c "source ~/.bashrc && conda activate py39 && cd /remote/habitat-sim/ && git config --global --add safe.directory '*' && cd /remote/habitat-sim/conda-build && python matrix_builder.py --ci_test
+          else
+            echo "TODO: the deployment command"
+          fi
