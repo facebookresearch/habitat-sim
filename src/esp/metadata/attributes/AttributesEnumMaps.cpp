@@ -294,10 +294,6 @@ const std::map<std::string, esp::sensor::SensorSubType> SensorSubTypeNamesMap =
         {"impulseresponnse", esp::sensor::SensorSubType::ImpulseResponse},
 };
 
-/**
- * @brief This method will convert a @ref esp::sensor::SensorSubType value to
- * the string key it maps to in the SensorSubTypeNamesMap
- */
 std::string getSensorSubTypeName(esp::sensor::SensorSubType sensorSubTypeEnum) {
   // this verifies that enum value being checked is supported by string-keyed
   // map. The values below should be the minimum and maximum enums supported by
@@ -313,6 +309,34 @@ std::string getSensorSubTypeName(esp::sensor::SensorSubType sensorSubTypeEnum) {
     }
   }
   return "none";
+}  // getSensorSubTypeName
+
+const std::map<std::string, esp::sensor::SemanticSensorTarget>
+    SemanticSensorTargetNamesMap = {
+        {"semantic_id", esp::sensor::SemanticSensorTarget::SemanticID},
+        {"object_id", esp::sensor::SemanticSensorTarget::ObjectID},
+        {"drawable_id", esp::sensor::SemanticSensorTarget::DrawableID},
+};
+
+std::string getSemanitcSensorTargetName(
+    esp::sensor::SemanticSensorTarget semanticSensorTargetEnum) {
+  // this verifies that enum value being checked is supported by string-keyed
+  // map. The values below should be the minimum and maximum enums supported by
+  // SemanticSensorTargetNamesMap
+  if ((semanticSensorTargetEnum <=
+       esp::sensor::SemanticSensorTarget::SemanticID) ||
+      (semanticSensorTargetEnum >=
+       esp::sensor::SemanticSensorTarget::EndSemanticDataIDXs)) {
+    // default to Semantic id for illegal values
+    return "semantic_id";
+  }
+  // Must always be valid value
+  for (const auto& it : SemanticSensorTargetNamesMap) {
+    if (it.second == semanticSensorTargetEnum) {
+      return it.first;
+    }
+  }
+  return "semantic_id";
 }  // getSensorSubTypeName
 
 }  // namespace attributes

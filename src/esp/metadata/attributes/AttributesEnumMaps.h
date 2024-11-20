@@ -386,7 +386,22 @@ const extern std::map<std::string, esp::sensor::SensorSubType>
  * the string key it maps to in the SensorSubTypeNamesMap
  */
 std::string getSensorSubTypeName(esp::sensor::SensorSubType sensorSubTypeEnum);
+/**
+ * @brief Constant static map to provide mappings from string tags to @ref
+ * esp::sensor::SemanticSensorTarget values. This will be used to map string
+ * values
+ * used for sensor sub type to @ref esp::sensor::SemanticSensorTarget. Keys must be
+ * lowercase.
+ */
+const extern std::map<std::string, esp::sensor::SemanticSensorTarget>
+    SemanticSensorTargetMap;
 
+/**
+ * @brief This method will convert a @ref esp::sensor::SemanticSensorTarget value to
+ * the string key it maps to in the SensorSubTypeNamesMap
+ */
+std::string getSemanitcSensorTargetName(
+    esp::sensor::SemanticSensorTarget semanticSensorTargetEnum);
 }  // namespace attributes
 }  // namespace metadata
 }  // namespace esp
