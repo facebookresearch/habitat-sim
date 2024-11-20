@@ -190,8 +190,19 @@ jobs:
         with:
           path: "./habitat-sim"
       - name: Set modality variable
-        run: echo "CI_TEST=$(echo ${{ github.event_name }} == 'pull_request'" >> $GITHUB_ENV
+        run: echo "CI_TEST=${{ github.event_name == 'pull_request' }}" >> $GITHUB_ENV
+      - name: Build conda Linux packages
+        run: |-
+          cd habitat-sim/conda-build
+          echo "Current event name: $GITHUB_EVENT_NAME"
+          echo ${{ env.CI_TEST }}
 
+          #pivot on the build type
+          if [[ ${{ github.event_name }} == 'pull_request' ]]; then
+            echo "Conda name: $AIHABITAT_CONDA_USERNAME"
+          else
+            echo "Conda name: $AIHABITAT_NIGHTLY_CONDA_USERNAME"
+          fi
 
 # build_conda_binaries:
 #     runs-on: 4-core-ubuntu-gpu-t4
