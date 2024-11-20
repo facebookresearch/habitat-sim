@@ -178,7 +178,8 @@ jobs:
   build_conda_binaries:
     runs-on: 4-core-ubuntu-gpu-t4
     env:
-      FPS_THRESHOLD: 900
+      AIHABITAT_CONDA_USERNAME: aihabitat
+      AIHABITAT_NIGHTLY_CONDA_USERNAME: aihabitat-nightly
     defaults:
       run:
         shell: bash -el {0}
