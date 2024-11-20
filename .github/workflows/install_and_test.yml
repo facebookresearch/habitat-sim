@@ -189,11 +189,9 @@ jobs:
       - uses: actions/checkout@v4.1.1
         with:
           path: "./habitat-sim"
-      - name: CPU info
-        run: cat /proc/cpuinfo
       - name: Set modality variable
-        run: |-
-          echo "CI_TEST=$(echo ${{ github.event_name }} == 'pull_request'" >> $GITHUB_ENV
+        run: echo "CI_TEST=$(echo ${{ github.event_name }} == 'pull_request'" >> $GITHUB_ENV
+
 
 # build_conda_binaries:
 #     runs-on: 4-core-ubuntu-gpu-t4
