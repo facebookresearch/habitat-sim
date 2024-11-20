@@ -211,7 +211,7 @@ jobs:
             echo "CI_TEST='false'" >> $GITHUB_ENV
             echo "CONDA_USERNAME=$AIHABITAT_NIGHTLY_CONDA_USERNAME" >> $GITHUB_ENV
             echo "CONDA_PWD=$AIHABITAT_NIGHTLY_CONDA_PWD" >> $GITHUB_ENV
-          elif [[ ${{ github.event_name }} == 'pull_request' ]];
+          elif [[ ${{ github.event_name }} == 'pull_request' ]]; then
             #trigger: a pull request
             echo "CI_TEST='true'" >> $GITHUB_ENV
           fi
