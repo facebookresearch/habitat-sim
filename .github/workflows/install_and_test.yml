@@ -175,26 +175,26 @@ jobs:
     #- name: Debugging with tmate
     #  uses: mxschmitt/action-tmate@v3.18
 
-# build_conda_binaries:
-#     runs-on: 4-core-ubuntu-gpu-t4
-#     env:
-#       AIHABITAT_CONDA_USERNAME: aihabitat
-#       AIHABITAT_CONDA_PWD: ${{ secrets.AIHABITAT_CONDA_PWD }}
-#       AIHABITAT_NIGHTLY_CONDA_USERNAME: aihabitat-nightly
-#       AIHABITAT_NIGHTLY_CONDA_PWD: ${{ secrets.AIHABITAT_NIGHTLY_CONDA_PWD }}
+build_conda_binaries:
+    runs-on: 4-core-ubuntu-gpu-t4
+    env:
+      AIHABITAT_CONDA_USERNAME: aihabitat
+      AIHABITAT_CONDA_PWD: ${{ secrets.AIHABITAT_CONDA_PWD }}
+      AIHABITAT_NIGHTLY_CONDA_USERNAME: aihabitat-nightly
+      AIHABITAT_NIGHTLY_CONDA_PWD: ${{ secrets.AIHABITAT_NIGHTLY_CONDA_PWD }}
 
-#     defaults:
-#       run:
-#         shell: bash -el {0}
-#     steps:
-#     - uses: actions/checkout@v4.1.1
-#       with:
-#         path: "./habitat-sim"
-#     - name: Set modality variable
-#         echo "CI_TEST=$(echo ${{ github.event_name }} == 'pull_request'" >> $GITHUB_ENV
-#     - name: Build conda Linux packages
-#       run: |-
-#         cd habitat-sim/conda-build
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+    - uses: actions/checkout@v4.1.1
+      with:
+        path: "./habitat-sim"
+    #- name: Set modality variable
+    #    echo "CI_TEST=$(echo ${{ github.event_name }} == 'pull_request'" >> $GITHUB_ENV
+    - name: Build conda Linux packages
+      run: |-
+        cd habitat-sim/conda-build
 #         echo "Current event name: $GITHUB_EVENT_NAME"
 #         echo ${{ env.CI_TEST }}
 
