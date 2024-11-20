@@ -193,13 +193,14 @@ jobs:
         run: |-
           echo "CI_TEST=${{ github.event_name == 'pull_request' }}" >> $GITHUB_ENV
           if [[ ${{ github.event_name }} == 'pull_request' ]]; then
-            echo "this is a test"
+            echo "CONDA_USERNAME=${{ AIHABITAT_CONDA_USERNAME == 'pull_request' }}" >> $GITHUB_ENV
           fi
       - name: Build conda Linux packages
         run: |-
           cd habitat-sim/conda-build
           echo "Current event name: $GITHUB_EVENT_NAME"
           echo ${{ env.CI_TEST }}
+          echo ${{ env.CONDA_USERNAME }}
 
           #pivot on the build type
           if [[ ${{ github.event_name }} == 'pull_request' ]]; then
