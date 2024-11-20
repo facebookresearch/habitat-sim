@@ -4,6 +4,10 @@ on:
   push:
     branches:
     - main
+    tags: [ "v*" ]
+  schedule:
+    - cron: "0 5 * * *"
+    #this is 9PM PST
 
 jobs:
   python_lint:
@@ -192,23 +196,35 @@ jobs:
       - name: Set CI_TEST variable based on "main merge" vs. "pull_request" workflow
         run: |-
           echo "CI_TEST=${{ github.event_name == 'pull_request' }}" >> $GITHUB_ENV
+
           if [[ ${{ github.event_name }} == 'push' ]]; then
-            echo "CONDA_USERNAME=$AIHABITAT_CONDA_USERNAME" >> $GITHUB_ENV
-            echo "CONDA_PWD=$AIHABITAT_CONDA_PWD" >> $GITHUB_ENV
-          else
+            if [[ ${GITHUB_REF} == refs/heads/* ]]; then
+              #trigger a push to main branch
+              echo "CI_TEST='true'" >> $GITHUB_ENV
+            elif [[ ${GITHUB_REF} == refs/tags/* ]]; then
+              #trigger a version tag push
+              echo "CI_TEST='false'" >> $GITHUB_ENV
+              echo "CONDA_USERNAME=$AIHABITAT_CONDA_USERNAME" >> $GITHUB_ENV
+              echo "CONDA_PWD=$AIHABITAT_CONDA_PWD" >> $GITHUB_ENV
+            fi
+          elif [[ ${{ github.event_name }} == 'schedule' ]]; then
+            #trigger: a nightly build
+            echo "CI_TEST='false'" >> $GITHUB_ENV
             echo "CONDA_USERNAME=$AIHABITAT_NIGHTLY_CONDA_USERNAME" >> $GITHUB_ENV
             echo "CONDA_PWD=$AIHABITAT_NIGHTLY_CONDA_PWD" >> $GITHUB_ENV
+          elif [[ ${{ github.event_name }} == 'pull_request' ]];
+            #trigger: a pull request
+            echo "CI_TEST='true'" >> $GITHUB_ENV
           fi
       - name: Build conda Linux packages
         run: |-
           cd habitat-sim/conda-build
           echo "Current event name: $GITHUB_EVENT_NAME"
           echo ${{ env.CI_TEST }}
-          echo ${{ env.CONDA_USERNAME }}
 
           #pivot on the build type
-          if [[ ${{ github.event_name }} == 'pull_request' ]]; then
-            echo "Conda name: $AIHABITAT_CONDA_USERNAME"
+          if [[ ${{ env.CI_TEST }} ]]; then
+            echo "This is a CI test."
           else
-            echo "Conda name: $AIHABITAT_NIGHTLY_CONDA_USERNAME"
+            echo "This is an actual build"
           fi
