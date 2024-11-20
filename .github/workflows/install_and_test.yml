@@ -192,16 +192,11 @@ jobs:
       - name: Set CI_TEST variable based on "main merge" vs. "pull_request" workflow
         run: |-
           echo "CI_TEST=${{ github.event_name == 'pull_request' }}" >> $GITHUB_ENV
-          # if [${{ github.event_name }} == 'pull_request' ]; then
-          #   echo "CONDA_USERNAME=${{ AIHABITAT_CONDA_USERNAME }}" >> $GITHUB_ENV
-          #   echo "CONDA_PWD=${{ AIHABITAT_CONDA_PWD }}" >> $GITHUB_ENV
-          # fi
       - name: Build conda Linux packages
         run: |-
           cd habitat-sim/conda-build
           echo "Current event name: $GITHUB_EVENT_NAME"
           echo ${{ env.CI_TEST }}
-          echo ${{ env.CONDA_USERNAME }}
 
           #pivot on the build type
           if [[ ${{ github.event_name }} == 'pull_request' ]]; then
@@ -209,12 +204,3 @@ jobs:
           else
             echo "Conda name: $AIHABITAT_NIGHTLY_CONDA_USERNAME"
           fi
-
-          # if [${{ env.CI_TEST }} == "false"]; then
-          #   echo "this is not a CI test"
-          #   # # Install anaconda to work with packages repo
-          #   # curl -O https://repo.anaconda.com/archive/Anaconda3-2020.11-Linux-x86_64.sh
-          #   # bash Anaconda3-2020.11-Linux-x86_64.sh -b -p $HOME/anaconda
-          #   # export PATH=$HOME/anaconda/bin:$PATH
-          #   # python common/delete_old_night_packages.py --username << parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> << parameters.NIGHTLY_FLAG >> <</ parameters.CI_TEST >>
-          # fi
