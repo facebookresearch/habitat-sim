@@ -75,7 +75,7 @@ SensorAtttributesManager::createAttributesFromSensorSpec(
     }
     default:
       CORRADE_ASSERT_UNREACHABLE(
-          "SensorSubType specified maps to no Sensor class",
+          "SensorSubType specified maps to no known Sensor class",
           getSensorSubTypeName(sensorSpec->sensorSubType));
       return nullptr;
       // Unreachable

@@ -11,12 +11,6 @@ AbstractSensorAttributes::AbstractSensorAttributes(
     const std::string& attributesClassKey,
     const std::string& handle)
     : AbstractAttributes(attributesClassKey, handle) {
-  init("unique_id", "");
-  if (!handle.empty()) {
-    // set Unique ID with specified handle (future)
-    // Depending on usage this may be more appropriate to be an init
-    set("unique_id", handle);
-  }
   init("position", Mn::Vector3{0.0, 1.5, 0.0});
   init("orientation", Mn::Vector3{0.0, 0.0, 0.0});
   init("noise_model", "None");
@@ -30,7 +24,6 @@ void AbstractSensorAttributes::writeValuesToJson(
     io::JsonGenericValue& jsonObj,
     io::JsonAllocator& allocator) const {
   // write AbstractSensorAttributes to JSON
-  writeValueToJson("unique_id", jsonObj, allocator);
   writeValueToJson("position", jsonObj, allocator);
   writeValueToJson("orientation", jsonObj, allocator);
   writeValueToJson("noise_model", jsonObj, allocator);
@@ -42,14 +35,13 @@ void AbstractSensorAttributes::writeValuesToJson(
 }  // AbstractSensorAttributes::writeValuesToJson
 
 std::string AbstractSensorAttributes::getObjectInfoHeaderInternal() const {
-  return "Unique ID,Position XYZ,Orientation XYZ,Noise Model,Sensor "
+  return "Position XYZ,Orientation XYZ,Noise Model,Sensor "
          "Type,Sensor Subtype," +
          getAbstractSensorInfoHeaderInternal();
 }  // AbstractSensorAttributes::getObjectInfoHeaderInternal
 
 std::string AbstractSensorAttributes::getObjectInfoInternal() const {
-  return Cr::Utility::formatString("{},{},{},{},{},{},{}", getUniqueId(),
-                                   getAsString("position"),
+  return Cr::Utility::formatString("{},{},{},{},{},{}", getAsString("position"),
                                    getAsString("orientation"), getNoiseModel(),
                                    getSensorTypeName(getSensorType()),
                                    getSensorSubTypeName(getSensorSubType()),

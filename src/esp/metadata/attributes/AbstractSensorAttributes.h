@@ -21,21 +21,6 @@ class AbstractSensorAttributes : public AbstractAttributes {
 
   ~AbstractSensorAttributes() override = default;
 
-  /**
-   * @brief Sets the unique ID for this sensor. TODO : Should this just be
-   * managed by existing handle?
-   */
-  void setUniqueId(const std::string& uniqueId) {
-    set("unique_id", uniqueId);
-    setHandle(uniqueId);
-  }
-
-  /**
-   * @brief Gets the unique ID for this sensor. TODO : Should this just be
-   * managed by existing handle?
-   */
-  std::string getUniqueId() const { return get<std::string>("unique_id"); }
-
   /** @brief Set the position of the sensor. */
   void setPosition(const Magnum::Vector3& position) {
     set("position", position);
