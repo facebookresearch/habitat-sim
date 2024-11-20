@@ -103,11 +103,6 @@ jobs:
         conda activate habitat
         cd habitat-sim
         python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
-        #try the basic pytest here
-        #set pytest to show partial progress
-        export PYTHONPATH=$(pwd):$PYTHONPATH
-        export PYTHONUNBUFFERED=1
-        pytest -n 4 --durations=10
     - name: Run sim tests
       run: |-
         #give cmake ownership to the runner for installation
@@ -176,5 +171,36 @@ jobs:
         git submodule update --init --recursive --jobs 8
         python -u setup.py install --build-type "Release" --lto --headless --audio
         python examples/tutorials/audio_agent.py
-    - name: Debugging with tmate
-      uses: mxschmitt/action-tmate@v3.18
+    #NOTE: use the below to debug with ssh: simply move this "job" just before the crashing job to intercept the workflow
+    #- name: Debugging with tmate
+    #  uses: mxschmitt/action-tmate@v3.18
+
+build_conda_binaries:
+    runs-on: 4-core-ubuntu-gpu-t4
+    env:
+      AIHABITAT_CONDA_USERNAME: aihabitat
+      AIHABITAT_CONDA_PWD: ${{ secrets.AIHABITAT_CONDA_PWD }}
+      AIHABITAT_NIGHTLY_CONDA_USERNAME: aihabitat-nightly
+      AIHABITAT_NIGHTLY_CONDA_PWD: ${{ secrets.AIHABITAT_NIGHTLY_CONDA_PWD }}
+
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+    - uses: actions/checkout@v4.1.1
+      with:
+        path: "./habitat-sim"
+    - name: Set modality variable
+        echo "CI_TEST=$(echo ${{ github.event_name }} == 'pull_request'" >> $GITHUB_ENV
+    - name: Build conda Linux packages
+      run: |-
+        cd habitat-sim/conda-build
+        echo "Current event name: $GITHUB_EVENT_NAME"
+        echo ${{ env.CI_TEST }}
+
+        #pivot on the build type
+        if [[ ${{ github.event_name }} == 'pull_request' ]]; then
+          echo "Conda name: $AIHABITAT_CONDA_USERNAME"
+        else
+          echo "Conda name: $AIHABITAT_NIGHTLY_CONDA_USERNAME"
+        fi
