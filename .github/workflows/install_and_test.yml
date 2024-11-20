@@ -175,18 +175,19 @@ jobs:
     #- name: Debugging with tmate
     #  uses: mxschmitt/action-tmate@v3.18
 
-build_conda_binaries:
+  build_conda_binaries:
     runs-on: 4-core-ubuntu-gpu-t4
+    env:
+      FPS_THRESHOLD: 900
     defaults:
       run:
         shell: bash -el {0}
     steps:
-    - uses: actions/checkout@v4.1.1
-      with:
-        path: "./habitat-sim"
-    - name: Build conda Linux packages
-      run: |-
-        cd habitat-sim/conda-build
+      - uses: actions/checkout@v4.1.1
+        with:
+          path: "./habitat-sim"
+      - name: CPU info
+        run: cat /proc/cpuinfo
 
 # build_conda_binaries:
 #     runs-on: 4-core-ubuntu-gpu-t4
