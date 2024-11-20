@@ -195,7 +195,6 @@ jobs:
           path: "./habitat-sim"
       - name: Set CI_TEST variable based on "main merge" vs. "pull_request" workflow
         run: |-
-          echo "CI_TEST=${{ github.event_name == 'pull_request' }}" >> $GITHUB_ENV
 
           if [[ ${{ github.event_name }} == 'push' ]]; then
             if [[ ${GITHUB_REF} == refs/heads/* ]]; then
