@@ -294,14 +294,14 @@ jobs:
         run: |-
           echo "NIGHTLY=''" >> $GITHUB_ENV
           echo "CI_TEST='true'" >> $GITHUB_ENV
+          echo "CONDA_USERNAME=$AIHABITAT_CONDA_USERNAME" >> $GITHUB_ENV
+          echo "CONDA_PWD=$AIHABITAT_CONDA_PWD" >> $GITHUB_ENV
           if [[ ${{ github.event_name }} == 'push' ]]; then
             if [[ ${GITHUB_REF} == refs/heads/* ]]; then
               echo "trigger: a push to main branch"
             elif [[ ${GITHUB_REF} == refs/tags/* ]]; then
               echo "trigger: a version tag push"
               echo "CI_TEST='false'" >> $GITHUB_ENV
-              echo "CONDA_USERNAME=$AIHABITAT_CONDA_USERNAME" >> $GITHUB_ENV
-              echo "CONDA_PWD=$AIHABITAT_CONDA_PWD" >> $GITHUB_ENV
             fi
           elif [[ ${{ github.event_name }} == 'schedule' ]]; then
             echo "trigger: a nightly build"
