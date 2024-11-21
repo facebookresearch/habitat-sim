@@ -284,18 +284,17 @@ jobs:
       - uses: actions/checkout@v4.1.1
         with:
           path: "./habitat-sim"
+      - name: Setup miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniconda-version: "latest"
+          python-version: "3.9"
+          activate-environment: "habitat"
       - name: Setup python
         uses: actions/setup-python@v5.0.0
         with:
           python-version: '3.9.13'
-      - name: Conda Install OSX
-        run: |-
-          curl -o ~/miniconda.sh -O https://repo.anaconda.com/miniconda/Miniconda3-py310_24.1.2-0-MacOSX-arm64.sh
-          chmod +x ~/miniconda.sh
-          ~/miniconda.sh -b -p $HOME/miniconda
-          rm ~/miniconda.sh
-          export PATH=$HOME/miniconda/bin:$PATH
-          conda init "$(basename "${SHELL}")"
+          # check compatible versions for "darwin" "arm64" here: https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json
       - name: Set CI_TEST variable based on "main merge" vs. "pull_request" workflow
         run: |-
           echo "NIGHTLY=''" >> $GITHUB_ENV
@@ -322,7 +321,7 @@ jobs:
         run: |-
           export PATH=$HOME/miniconda/bin:$PATH
           source ~/.bash_profile
-          conda activate
+          conda activate habitat
           conda install -y anaconda-client ccache cmake git ninja conda-build pip
           echo $(which -a python)
           pip install gitpython
