@@ -217,7 +217,7 @@ jobs:
         pip install imageio imageio-ffmpeg
         conda install -y -c conda-forge doxygen=1.9.5
         conda install -y  jinja2 pygments docutils
-        sudo apt install --allow-change-held-packages \
+        sudo apt install --yes --allow-change-held-packages \
           texlive-base \
           texlive-latex-extra \
           texlive-fonts-extra \
