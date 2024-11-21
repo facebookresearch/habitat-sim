@@ -284,6 +284,10 @@ jobs:
       - uses: actions/checkout@v4.1.1
         with:
           path: "./habitat-sim"
+      - name: Setup python
+        uses: actions/setup-python@v5.0.0
+        with:
+          python-version: '3.9.16'
       - name: Conda Install OSX
         run: |-
           curl -o ~/miniconda.sh -O https://repo.anaconda.com/miniconda/Miniconda3-py310_24.1.2-0-MacOSX-arm64.sh
