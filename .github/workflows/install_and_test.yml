@@ -290,11 +290,6 @@ jobs:
           miniconda-version: "latest"
           python-version: "3.9"
           activate-environment: "habitat"
-      - name: Setup python
-        uses: actions/setup-python@v5.0.0
-        with:
-          python-version: '3.9.13'
-          # check compatible versions for "darwin" "arm64" here: https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json
       - name: Set CI_TEST variable based on "main merge" vs. "pull_request" workflow
         run: |-
           echo "NIGHTLY=''" >> $GITHUB_ENV
@@ -317,12 +312,12 @@ jobs:
           elif [[ ${{ github.event_name }} == 'pull_request' ]]; then
             echo "trigger: a pull request"
           fi
-      - name: Debugging with tmate
-        uses: mxschmitt/action-tmate@v3.18
+      #- name: Debugging with tmate
+      #  uses: mxschmitt/action-tmate@v3.18
       - name: Build conda OSX packages
         run: |-
           export PATH=$HOME/miniconda/bin:$PATH
-          source ~/.bash_profile
+          conda init
           conda activate habitat
           conda install -y anaconda-client ccache cmake git ninja conda-build pip
           echo $(which -a python)
