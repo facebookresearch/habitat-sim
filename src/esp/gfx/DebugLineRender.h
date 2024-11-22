@@ -133,6 +133,29 @@ class DebugLineRender {
                                                                   0.0));
 
   /**
+   * @brief Draw a cone in world-space or local-space (see pushTransform).
+   * The cone is a circle (see drawCircle) with each segment endpoint having a
+   * line drawn to the given apex.
+   */
+  void drawCone(const Magnum::Vector3& pos,
+                const Magnum::Vector3& apex,
+                float radius,
+                const Magnum::Color4& color,
+                int numSegments = 24,
+                const Magnum::Vector3& normal = Magnum::Vector3(0.0, 1.0, 0.0));
+
+  /**
+   * @brief Draw RGB->XYZ coordinate axes at given location with given
+   * scaling. A circle will be placed near the end of each positive axis.
+   * @param pos The location in world space to place the axes
+   * @param scale The length of each axis
+   * @param radius The radius of the positive-direction circle indicators
+   */
+  void drawCoordinateAxes(const Magnum::Vector3& pos,
+                          const Magnum::Vector3& scale = {1.0f, 1.0f, 1.0f},
+                          float radius = 0.05);
+
+  /**
    * @brief Draw a sequence of line segments with circles at the two endpoints.
    * In world-space or local-space (see pushTransform).
    */
