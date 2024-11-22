@@ -873,36 +873,6 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}{obj_type_disp_str}
             % ObjectEditor.ObjectTypeToDraw.NUM_VALS.value
         )
 
-    def _draw_coordinate_axes(self, loc: mn.Vector3, debug_line_render):
-        # draw global coordinate axis
-        debug_line_render.draw_transformed_line(
-            loc - mn.Vector3.x_axis(), loc + mn.Vector3.x_axis(), mn.Color4.red()
-        )
-        debug_line_render.draw_transformed_line(
-            loc - mn.Vector3.y_axis(), loc + mn.Vector3.y_axis(), mn.Color4.green()
-        )
-        debug_line_render.draw_transformed_line(
-            loc - mn.Vector3.z_axis(), loc + mn.Vector3.z_axis(), mn.Color4.blue()
-        )
-        debug_line_render.draw_circle(
-            loc + mn.Vector3.x_axis() * 0.95,
-            radius=0.05,
-            color=mn.Color4.red(),
-            normal=mn.Vector3.x_axis(),
-        )
-        debug_line_render.draw_circle(
-            loc + mn.Vector3.y_axis() * 0.95,
-            radius=0.05,
-            color=mn.Color4.green(),
-            normal=mn.Vector3.y_axis(),
-        )
-        debug_line_render.draw_circle(
-            loc + mn.Vector3.z_axis() * 0.95,
-            radius=0.05,
-            color=mn.Color4.blue(),
-            normal=mn.Vector3.z_axis(),
-        )
-
     def _draw_selected_obj(self, obj, debug_line_render, box_color):
         """
         Draw a selection box around and axis frame at the origin of a single object
@@ -924,9 +894,8 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}{obj_type_disp_str}
                 debug_line_render=debug_line_render,
                 box_color=mn.Color4.yellow(),
             )
-            self._draw_coordinate_axes(
-                sel_obj.translation, debug_line_render=debug_line_render
-            )
+            debug_line_render.draw_axes(sel_obj.translation)
+
         mag_color = mn.Color4.magenta()
         # draw all but last/target object
         for i in range(len(obj_list) - 1):
@@ -935,9 +904,7 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}{obj_type_disp_str}
                 self._draw_selected_obj(
                     obj, debug_line_render=debug_line_render, box_color=mag_color
                 )
-                self._draw_coordinate_axes(
-                    obj.translation, debug_line_render=debug_line_render
-                )
+                debug_line_render.draw_axes(obj.translation)
 
     def draw_box_around_objs(self, debug_line_render, agent_name: str = "hab_spot"):
         """
