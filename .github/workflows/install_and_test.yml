@@ -264,8 +264,9 @@ jobs:
         conda install -y -c conda-forge doxygen=1.9.5
         conda install -y  jinja2 pygments docutils
         ./build-public.sh
-    -name: deploy updated docs
+    - name: Deploy documentation
       run: |-
+        echo "Deploy documentation"
         if [[ ${{ github.event_name }} == 'schedule' ]]; then
           echo "Trigger: a nightly build. Deploying the docs."
           git clone git@github.com:facebookmicrosites/habitat-website.git
