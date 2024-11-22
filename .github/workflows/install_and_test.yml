@@ -242,7 +242,6 @@ jobs:
         cd habitat-lab
         pip install -r habitat-lab/requirements.txt --progress-bar off
         ln -s ../habitat-sim/data data
-        touch $HOME/miniconda/pip_deps_installed
     - name: Run Habitat Lab tests
       run: |-
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
