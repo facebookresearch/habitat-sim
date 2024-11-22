@@ -53,6 +53,10 @@ enum class ConfigValType {
    */
   MagnumRad,
   /**
+   * @brief Magnum::Deg angle type
+   */
+  MagnumDeg,
+  /**
    * @brief double type
    */
   Double,
@@ -61,6 +65,11 @@ enum class ConfigValType {
    * @brief Magnum::Vector2 type
    */
   MagnumVec2,
+
+  /**
+   * @brief Magnum::Vector2i type
+   */
+  MagnumVec2i,
 
   // Types stored as a pointer.  All non-trivial types must also be placed after
   // this marker.
@@ -208,6 +217,23 @@ template <>
 constexpr ConfigValType configValTypeFor<int>() {
   return ConfigValType::Integer;
 }
+
+/**
+ * @brief Returns @ref ConfigValType::MagnumRad type enum for specified type
+ */
+template <>
+constexpr ConfigValType configValTypeFor<Mn::Rad>() {
+  return ConfigValType::MagnumRad;
+}
+
+/**
+ * @brief Returns @ref ConfigValType::MagnumDeg type enum for specified type
+ */
+template <>
+constexpr ConfigValType configValTypeFor<Mn::Deg>() {
+  return ConfigValType::MagnumDeg;
+}
+
 /**
  * @brief Returns @ref ConfigValType::Double type enum for specified type
  */
@@ -215,14 +241,15 @@ template <>
 constexpr ConfigValType configValTypeFor<double>() {
   return ConfigValType::Double;
 }
+
 /**
  * @brief Returns @ref ConfigValType::String type enum for specified type
  */
-
 template <>
 constexpr ConfigValType configValTypeFor<std::string>() {
   return ConfigValType::String;
 }
+
 /**
  * @brief Returns @ref ConfigValType::MagnumVec2 type enum for specified type
  */
@@ -230,6 +257,15 @@ template <>
 constexpr ConfigValType configValTypeFor<Mn::Vector2>() {
   return ConfigValType::MagnumVec2;
 }
+
+/**
+ * @brief Returns @ref ConfigValType::MagnumVec2i type enum for specified type
+ */
+template <>
+constexpr ConfigValType configValTypeFor<Mn::Vector2i>() {
+  return ConfigValType::MagnumVec2i;
+}
+
 /**
  * @brief Returns @ref ConfigValType::MagnumVec3 type enum for specified type
  */
@@ -284,14 +320,6 @@ constexpr ConfigValType configValTypeFor<Mn::Matrix4>() {
 template <>
 constexpr ConfigValType configValTypeFor<Mn::Quaternion>() {
   return ConfigValType::MagnumQuat;
-}
-
-/**
- * @brief Returns @ref ConfigValType::MagnumRad type enum for specified type
- */
-template <>
-constexpr ConfigValType configValTypeFor<Mn::Rad>() {
-  return ConfigValType::MagnumRad;
 }
 
 /**

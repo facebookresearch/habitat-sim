@@ -26,6 +26,8 @@ py::object getObjectForConfigValue(const ConfigValue& value) {
       return py::cast(value.get<std::string>());
     case ConfigValType::MagnumVec2:
       return py::cast(value.get<Mn::Vector2>());
+    case ConfigValType::MagnumVec2i:
+      return py::cast(value.get<Mn::Vector2i>());
     case ConfigValType::MagnumVec3:
       return py::cast(value.get<Mn::Vector3>());
     case ConfigValType::MagnumVec4:
@@ -38,6 +40,8 @@ py::object getObjectForConfigValue(const ConfigValue& value) {
       return py::cast(value.get<Mn::Quaternion>());
     case ConfigValType::MagnumRad:
       return py::cast(static_cast<Mn::Radd>(value.get<Mn::Rad>()));
+    case ConfigValType::MagnumDeg:
+      return py::cast(static_cast<Mn::Degd>(value.get<Mn::Deg>()));
   }
   return py::cast(nullptr);
 }
@@ -82,12 +86,14 @@ void initConfigBindings(py::module& m) {
       .value("Float", ConfigValType::Double)
       .value("String", ConfigValType::String)
       .value("MagnumVec2", ConfigValType::MagnumVec2)
+      .value("MagnumVec2i", ConfigValType::MagnumVec2i)
       .value("MagnumVec3", ConfigValType::MagnumVec3)
       .value("MagnumVec4", ConfigValType::MagnumVec4)
       .value("MagnumQuat", ConfigValType::MagnumQuat)
       .value("MagnumMat3", ConfigValType::MagnumMat3)
       .value("MagnumMat4", ConfigValType::MagnumMat4)
-      .value("MagnumRad", ConfigValType::MagnumRad);
+      .value("MagnumRad", ConfigValType::MagnumRad)
+      .value("MagnumDeg", ConfigValType::MagnumDeg);
 
   auto pyConfiguration =
       py::class_<Configuration, Configuration::ptr>(m, "Configuration");
@@ -194,6 +200,7 @@ void initConfigBindings(py::module& m) {
   declareSetter<int>(pyConfiguration, "integer");
   declareSetter<double>(pyConfiguration, "floating-point");
   declareSetter<Magnum::Vector2&>(pyConfiguration, "Magnum::Vector2");
+  declareSetter<Magnum::Vector2i&>(pyConfiguration, "Magnum::Vector2i");
   declareSetter<Magnum::Vector3&>(pyConfiguration, "Magnum::Vector3");
   declareSetter<Magnum::Vector4&>(pyConfiguration, "Magnum::Vector4");
   declareSetter<Magnum::Color4&>(pyConfiguration, "Magnum::Color4");
@@ -209,7 +216,15 @@ void initConfigBindings(py::module& m) {
       "Set the value specified by given string key to be specified Magnum::Rad "
       "value.",
       "key"_a, "value"_a);
-
+  // Use Degd version for bindings
+  pyConfiguration.def(
+      "set",
+      [](Configuration& self, const std::string& key, const Mn::Degd val) {
+        self.set(key, static_cast<Mn::Deg>(val));
+      },
+      "Set the value specified by given string key to be specified Magnum::Deg "
+      "value.",
+      "key"_a, "value"_a);
   // Initializer bindings
   // Initializers are like setters but the value specified will not be
   // automatically saved to file unless it is changed.
@@ -218,6 +233,7 @@ void initConfigBindings(py::module& m) {
   declareInitializer<int>(pyConfiguration, "integer");
   declareInitializer<double>(pyConfiguration, "floating-point");
   declareInitializer<Magnum::Vector2&>(pyConfiguration, "Magnum::Vector2");
+  declareInitializer<Magnum::Vector2i&>(pyConfiguration, "Magnum::Vector2i");
   declareInitializer<Magnum::Vector3&>(pyConfiguration, "Magnum::Vector3");
   declareInitializer<Magnum::Vector4&>(pyConfiguration, "Magnum::Vector4");
   declareInitializer<Magnum::Color4&>(pyConfiguration, "Magnum::Color4");
@@ -233,6 +249,15 @@ void initConfigBindings(py::module& m) {
       },
       "Initialize the value specified by given string key to be specified "
       "Magnum::Rad value.",
+      "key"_a, "value"_a);
+  // Use Degd version for bindings
+  pyConfiguration.def(
+      "init",
+      [](Configuration& self, const std::string& key, const Mn::Degd val) {
+        self.init(key, static_cast<Mn::Deg>(val));
+      },
+      "Initialize the value specified by given string key to be specified "
+      "Magnum::Deg value.",
       "key"_a, "value"_a);
 
 }  // initConfigBindings

@@ -47,7 +47,7 @@ struct CubeMapSensorBaseSpec : public VisualSensorSpec {
 
 class CubeMapSensorBase : public VisualSensor {
  public:
-  gfx::RenderCamera* getRenderCamera() = delete;
+  gfx::RenderCamera* getRenderCamera() const override { return nullptr; }
 
   /**
    * @brief destructor

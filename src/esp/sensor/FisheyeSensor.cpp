@@ -58,11 +58,8 @@ Magnum::Vector2 computePrincipalPointOffset(const FisheyeSensorSpec& spec) {
 FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
                              const FisheyeSensorSpec::ptr& spec)
     : CubeMapSensorBase(cameraNode, spec) {
-  switch (fisheyeSensorSpec_->fisheyeModelType) {
-    case FisheyeSensorModelType::DoubleSphere: {
-      specSanityCheck<FisheyeSensorDoubleSphereSpec>(fisheyeSensorSpec_.get());
-    } break;
-  };
+  // Currently only model type supported is FisheyeSensorDoubleSphere
+  specSanityCheck<FisheyeSensorDoubleSphereSpec>(fisheyeSensorSpec_.get());
 }
 
 bool FisheyeSensorSpec::operator==(const FisheyeSensorSpec& a) const {
