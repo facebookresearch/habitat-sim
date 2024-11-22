@@ -227,6 +227,44 @@ jobs:
         cd docs
         git submodule update --init
         ./build-public.sh
+    - name: Install Habitat Sim and Habitat Lab
+      run: |-
+        export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+        conda activate habitat
+        cd habitat-sim
+        #Rebuild headless
+        python setup.py install --headless --with-bullet --with-cuda
+        cd ..
+        if [ ! -d ./habitat-lab ]
+        then
+          git clone -q --depth 1 https://github.com/facebookresearch/habitat-lab.git
+        fi
+        cd habitat-lab
+        pip install -r habitat-lab/requirements.txt --progress-bar off
+        ln -s ../habitat-sim/data data
+        touch $HOME/miniconda/pip_deps_installed
+    - name: Run Habitat Lab tests
+      run: |-
+        export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+        conda activate habitat
+        cd habitat-lab
+        pip install -e habitat-lab
+        pip install -e habitat-baselines
+        export PYTHONPATH=.:$PYTHONPATH
+        export MULTI_PROC_OFFSET=0 && export MAGNUM_LOG=quiet && export HABITAT_SIM_LOG=quiet
+        python -m pytest
+    - name: Build Habitat Lab documentation
+      run: |-
+        export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+        conda activate habitat
+        cd habitat-lab
+        # Install requirments first to avoid errors related to gym
+        pip install -r habitat-lab/requirements.txt --progress-bar off
+        pip install -e habitat-lab
+        cd docs
+        conda install -y -c conda-forge doxygen=1.9.5
+        conda install -y  jinja2 pygments docutils
+        ./build-public.sh
 
   build_conda_binaries:
     runs-on: 4-core-ubuntu-gpu-t4
