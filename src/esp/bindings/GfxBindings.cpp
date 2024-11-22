@@ -255,6 +255,20 @@ void initGfxBindings(
           R"(Draw a circle in world-space or local-space (see pushTransform). The circle is an approximation; see numSegments.)",
           "translation"_a, "radius"_a, "color"_a, "num_segments"_a = 24,
           "normal"_a = Magnum::Vector3{0.0, 1.0, 0.0})
+      .def("draw_cone", &DebugLineRender::drawCone,
+           R"(Draw a cone in world-space or local-space (see pushTransform).
+          The cone is a segmented circle (see drawCircle) with each segment endpoint
+          having a line drawn to the given apex.)",
+           "translation"_a, "apex"_a, "radius"_a, "color"_a,
+           "num_segments"_a = 12, "normal"_a = Magnum::Vector3{0.0, 1.0, 0.0})
+      .def(
+          "draw_axes", &DebugLineRender::drawCoordinateAxes,
+          R"(Draw a set of coordinate axes at the given XYZ translation and with
+          XYZ scaling in world-space or local-space (see pushTransform).
+          These axes are color-mapped such that XYZ->RGB and each positive axis
+          as a connical 'arrow head' of given radius.)",
+          "translation"_a, "scale"_a = Magnum::Vector3{1.0, 1.0, 1.0},
+          "radius"_a = 0.05)
       .def(
           "draw_transformed_line",
           py::overload_cast<const Magnum::Vector3&, const Magnum::Vector3&,

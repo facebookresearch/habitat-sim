@@ -238,32 +238,88 @@ void DebugLineRender::drawBox(const Magnum::Vector3& min,
                       Mn::Vector3(max.x(), max.y(), max.z()), color);
 }
 
+namespace {
+// Get a vector that is perpendicular to the given normalized vector
+Mn::Vector3 getRandomPerpVec(const Magnum::Vector3& normal) {
+  // https://stackoverflow.com/questions/11132681/what-is-a-formula-to-get-a-vector-perpendicular-to-another-vector
+  // account for normal == (0, 0, -1)
+  return fabs(normal.z()) < fabs(normal.x())
+             ? Mn::Vector3(normal.y(), -normal.x(), 0)
+             : Mn::Vector3(0, -normal.z(), normal.y());
+}
+}  // namespace
+
 void DebugLineRender::drawCircle(const Magnum::Vector3& pos,
                                  float radius,
                                  const Magnum::Color4& color,
                                  int numSegments,
                                  const Magnum::Vector3& normal) {
-  // https://stackoverflow.com/questions/11132681/what-is-a-formula-to-get-a-vector-perpendicular-to-another-vector
-  // account for normal == (0, 0, -1)
-  auto randomPerpVec = fabs(normal.z()) < fabs(normal.x())
-                           ? Mn::Vector3(normal.y(), -normal.x(), 0)
-                           : Mn::Vector3(0, -normal.z(), normal.y());
+  auto randomPerpVec = getRandomPerpVec(normal);
 
   pushTransform(Mn::Matrix4::lookAt(pos, pos + normal, randomPerpVec) *
                 Mn::Matrix4::scaling(Mn::Vector3(radius, radius, 0.f)));
 
-  Mn::Vector3 prevPt;
-  for (int seg = 0; seg <= numSegments; ++seg) {
-    Mn::Deg angle = Mn::Deg(360.f * float(seg) / numSegments);
+  Mn::Vector3 prevPt(1.0f, 0.0f, 0.0f);
+  float degScale = 360.f / numSegments;
+  for (int seg = 1; seg <= numSegments; ++seg) {
+    Mn::Deg angle = Mn::Deg(degScale * float(seg));
     Mn::Vector3 pt(Mn::Math::cos(angle), Mn::Math::sin(angle), 0.f);
-    if (seg > 0) {
-      drawTransformedLine(prevPt, pt, color);
-    }
+    drawTransformedLine(prevPt, pt, color);
     prevPt = pt;
   }
 
   popTransform();
 }
+
+void DebugLineRender::drawCone(const Magnum::Vector3& pos,
+                               const Magnum::Vector3& apex,
+                               float radius,
+                               const Magnum::Color4& color,
+                               int numSegments,
+                               const Magnum::Vector3& normal) {
+  auto randomPerpVec = getRandomPerpVec(normal);
+  const Mn::Matrix4 lookAtTrans =
+      Mn::Matrix4::lookAt(pos, pos + normal, randomPerpVec) *
+      Mn::Matrix4::scaling(Mn::Vector3(radius, radius, 1.0f));
+  // transform the apex to be relative to transformation
+  Mn::Vector3 lclApex = lookAtTrans.invertedRigid().transformPoint(apex);
+  pushTransform(lookAtTrans);
+
+  Mn::Vector3 prevPt(1.0f, 0.0f, 0.0f);
+  float degScale = 360.f / numSegments;
+  for (int seg = 1; seg <= numSegments; ++seg) {
+    Mn::Deg angle = Mn::Deg(degScale * float(seg));
+    Mn::Vector3 pt(Mn::Math::cos(angle), Mn::Math::sin(angle), 0.0f);
+    drawTransformedLine(pt, lclApex, color);
+    drawTransformedLine(prevPt, pt, color);
+    prevPt = pt;
+  }
+
+  popTransform();
+}  // DebugLineRender::drawCone
+
+void DebugLineRender::drawCoordinateAxes(const Magnum::Vector3& pos,
+                                         const Magnum::Vector3& scale,
+                                         float radius) {
+  auto buildAxis = [&](const Magnum::Vector3& pos, const Magnum::Vector3& axis,
+                       const Magnum::Color4& color, float radius) {
+    // Draw line centered at pos along given axis of specified length, with a
+    // cone of given radius to act as a directional arrow
+    drawTransformedLine(pos - axis, pos + axis, color);
+    drawCone(pos + axis * 0.9, pos + axis, radius, color, 24,
+             axis.normalized());
+  };
+
+  // Red x axis and positive endpoint circle indicator
+  buildAxis(pos, Magnum::Vector3::xAxis(scale.x()), Magnum::Color4::red(),
+            radius);
+  // Green y axis and positive endpoint circle indicator
+  buildAxis(pos, Magnum::Vector3::yAxis(scale.y()), Magnum::Color4::green(),
+            radius);
+  // Blue z axis and positive endpoint circle indicator
+  buildAxis(pos, Magnum::Vector3::zAxis(scale.z()), Magnum::Color4::blue(),
+            radius);
+}  // DebugLineRender::drawCoordinateAxes
 
 void DebugLineRender::drawPathWithEndpointCircles(
     Mn::Containers::ArrayView<const Mn::Vector3> points,
