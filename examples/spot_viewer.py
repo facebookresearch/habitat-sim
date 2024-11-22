@@ -768,11 +768,17 @@ class HabitatSimInteractiveViewer(Application):
             # or inject a new object by queried handle substring in front of
             # the agent if no objects selected
 
+            # Use shift to play object at most recent hit location, if it exists
+            if shift_pressed and self.last_hit_details is not None:
+                build_loc = self.last_hit_details.point
+            else:
+                build_loc = self.spot_agent.get_point_in_front(
+                    disp_in_front=[1.5, 0.0, 0.0]
+                )
+
             new_obj_list, self.navmesh_dirty = self.obj_editor.build_objects(
                 self.navmesh_dirty,
-                build_loc=self.spot_agent.get_point_in_front(
-                    disp_in_front=[1.5, 0.0, 0.0]
-                ),
+                build_loc=build_loc,
             )
             if len(new_obj_list) == 0:
                 print("Failed to add any new objects.")
