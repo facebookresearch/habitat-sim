@@ -202,12 +202,13 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}{obj_type_disp_str}
         """
         Remove or add the passed object to the selected objects dict, depending on whether it is present, or not.
         """
-        if obj.object_id in self._sel_obj_ids:
-            # Remove object from obj selected dict
-            self._remove_obj_from_sel(obj)
-        else:
-            # Add object to selected dict
-            self._add_obj_to_sel(obj)
+        if obj is not None:
+            if obj.object_id in self._sel_obj_ids:
+                # Remove object from obj selected dict
+                self._remove_obj_from_sel(obj)
+            else:
+                # Add object to selected dict
+                self._add_obj_to_sel(obj)
 
     def set_ao_joint_states(
         self, do_open: bool, selected: bool, agent_name: str = "hab_spot"
