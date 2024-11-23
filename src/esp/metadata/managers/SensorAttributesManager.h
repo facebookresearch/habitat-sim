@@ -23,6 +23,12 @@ class SensorAtttributesManager
     : public AbstractAttributesManager<attributes::AbstractSensorAttributes,
                                        ManagedObjectAccess::Copy> {
  public:
+  /**
+   * @brief Constant Map holding names of concrete SensorAttributes classes,
+   * keyed by SensorSubtype enum values used to denote them.
+   */
+  static const std::map<sensor::SensorSubType, const std::string>
+      SenssorAttrsTypeNamesMap;
   SensorAtttributesManager();
 
   /**
@@ -100,7 +106,7 @@ class SensorAtttributesManager
    */
   attributes::AbstractSensorAttributes::ptr initNewObjectInternal(
       const std::string& handleName,
-      CORRADE_UNUSED bool builtFromConfig) override;
+      bool builtFromConfig) override;
 
   /**
    * @brief Build a shared pointer to the appropriate attributes for passed
@@ -109,6 +115,10 @@ class SensorAtttributesManager
    */
   template <typename T>
   attributes::AbstractSensorAttributes::ptr createSensorAttributes() {
+    static_assert(
+        std::is_base_of<attributes::AbstractSensorAttributes, T>::value,
+        "AbstractSensorAttributes must be base class of desired "
+        "SensorAttributes class.");
     return T::create();
   }  // AssetAttributeManager::createPrimAttributes
 
@@ -168,7 +178,10 @@ class SensorAtttributesManager
    * @brief Any AbstractSensorAttributes-attributes-specific resetting that
    * needs to happen on ManagedContainerBase::reset().
    */
-  void resetFinalize() override {}
+  void resetFinalize() override {
+    // build default attributes::AbstractSensorAttributes objects - reset does
+    // not remove constructor mappings.
+  }
 
   // ======== Typedefs and Instance Variables ========
 
