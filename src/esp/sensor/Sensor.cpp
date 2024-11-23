@@ -27,11 +27,11 @@ void SensorSpec::sanityCheck() const {
   // Check that all parameters are initialized to legal values
   CORRADE_ASSERT(!uuid.empty(),
                  "SensorSpec::sanityCheck(): uuid cannot be an empty string", );
-  CORRADE_ASSERT(
-      sensorType > SensorType::None && sensorType < SensorType::EndSensorType,
-      "SensorSpec::sanityCheck(): sensorType" << int32_t(sensorType)
-                                              << "is illegal", );
-  CORRADE_ASSERT(sensorSubType > SensorSubType::None &&
+  CORRADE_ASSERT(sensorType > SensorType::Unspecified &&
+                     sensorType < SensorType::EndSensorType,
+                 "SensorSpec::sanityCheck(): sensorType" << int32_t(sensorType)
+                                                         << "is illegal", );
+  CORRADE_ASSERT(sensorSubType > SensorSubType::Unspecified &&
                      sensorSubType < SensorSubType::EndSensorSubType,
                  "SensorSpec::sanityCheck(): sensorSubType"
                      << int32_t(sensorType) << "is illegal", );

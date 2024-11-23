@@ -53,14 +53,14 @@ void initSensorBindings(py::module& m) {
   // TODO fill out other SensorTypes
   // ==== enum SensorType ====
   py::enum_<SensorType>(m, "SensorType")
-      .value("NONE", SensorType::None)
+      .value("NONE", SensorType::Unspecified)
       .value("COLOR", SensorType::Color)
       .value("DEPTH", SensorType::Depth)
       .value("SEMANTIC", SensorType::Semantic)
       .value("AUDIO", SensorType::Audio);
 
   py::enum_<SensorSubType>(m, "SensorSubType")
-      .value("NONE", SensorSubType::None)
+      .value("NONE", SensorSubType::Unspecified)
       .value("PINHOLE", SensorSubType::Pinhole)
       .value("ORTHOGRAPHIC", SensorSubType::Orthographic)
       .value("FISHEYE", SensorSubType::Fisheye)

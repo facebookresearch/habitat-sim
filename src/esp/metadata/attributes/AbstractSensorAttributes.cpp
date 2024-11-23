@@ -15,9 +15,10 @@ AbstractSensorAttributes::AbstractSensorAttributes(
   init("orientation", Mn::Vector3{0.0, 0.0, 0.0});
   init("noise_model", "None");
 
-  initTranslated("sensor_type", getSensorTypeName(sensor::SensorType::None));
+  initTranslated("sensor_type",
+                 getSensorTypeName(sensor::SensorType::Unspecified));
   initTranslated("sensor_subtype",
-                 getSensorSubTypeName(sensor::SensorSubType::None));
+                 getSensorSubTypeName(sensor::SensorSubType::Unspecified));
 }  // AbstractSensorAttributes ctor
 
 void AbstractSensorAttributes::writeValuesToJson(

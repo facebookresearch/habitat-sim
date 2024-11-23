@@ -21,7 +21,7 @@ class Simulator;
 namespace sensor {
 // Enumeration of types of sensors
 enum class SensorType : int32_t {
-  None = 0,
+  Unspecified = 0,
   Color,
   Depth,
   Normal,
@@ -38,7 +38,8 @@ enum class ObservationSpaceType {
 };
 
 enum class SensorSubType : int32_t {
-  None = 0,
+  Unspecified = 0,
+  Custom,
   Pinhole,
   Orthographic,
   Fisheye,
@@ -51,8 +52,8 @@ enum class SensorSubType : int32_t {
 // User should make sure all uuids are unique
 struct SensorSpec {
   std::string uuid = "";
-  SensorType sensorType = SensorType::None;
-  SensorSubType sensorSubType = SensorSubType::None;
+  SensorType sensorType = SensorType::Unspecified;
+  SensorSubType sensorSubType = SensorSubType::Unspecified;
   Magnum::Vector3 position = {0, 1.5, 0};
   Magnum::Vector3 orientation = {0, 0, 0};
   std::string noiseModel = "None";

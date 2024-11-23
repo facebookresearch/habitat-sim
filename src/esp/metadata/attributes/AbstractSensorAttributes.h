@@ -96,7 +96,7 @@ class AbstractSensorAttributes : public AbstractAttributes {
     }
     // This should never get to here. It would mean that this field was set
     // to an invalid value somehow.
-    return sensor::SensorType::None;
+    return sensor::SensorType::Unspecified;
   }
 
   /**
@@ -147,7 +147,7 @@ class AbstractSensorAttributes : public AbstractAttributes {
     }
     // This should never get to here. It would mean that this field was set
     // to an invalid value somehow.
-    return sensor::SensorSubType::None;
+    return sensor::SensorSubType::Unspecified;
   }  // getSensorSubType
 
   /**
