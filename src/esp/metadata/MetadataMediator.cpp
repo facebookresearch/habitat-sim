@@ -18,7 +18,7 @@ void MetadataMediator::buildAttributesManagers() {
   physicsAttributesManager_ = managers::PhysicsAttributesManager::create();
 
   pbrShaderAttributesManager_ = managers::PbrShaderAttributesManager::create();
-  sensorAttributesManager_ = managers::SensorAttributesManager::create();
+  // sensorAttributesManager_ = managers::SensorAttributesManager::create();
 
   sceneDatasetAttributesManager_ =
       managers::SceneDatasetAttributesManager::create(
