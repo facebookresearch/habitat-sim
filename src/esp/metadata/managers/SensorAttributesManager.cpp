@@ -16,7 +16,7 @@ using attributes::AbstractSensorAttributes;
 namespace managers {
 
 const std::map<sensor::SensorSubType, const std::string>
-    SensorAtttributesManager::SenssorAttrsTypeNamesMap = {
+    SensorAttributesManager::SenssorAttrsTypeNamesMap = {
         {sensor::SensorSubType::Unspecified, ""},
         {sensor::SensorSubType::Custom, "CustomSensorAttributes"},
         {sensor::SensorSubType::Pinhole, "CameraSensorAttributes"},
@@ -26,54 +26,54 @@ const std::map<sensor::SensorSubType, const std::string>
         {sensor::SensorSubType::ImpulseResponse, "AudioSensorAttributes"},
         {sensor::SensorSubType::Fisheye, "FisheyeSensorAttributes"},
         {sensor::SensorSubType::EndSensorSubType, ""}};
-SensorAtttributesManager::SensorAtttributesManager()
+SensorAttributesManager::SensorAttributesManager()
     : AbstractAttributesManager<attributes::AbstractSensorAttributes,
                                 ManagedObjectAccess::Copy>::
           AbstractAttributesManager("Sensor", "sensor_config.json") {
   // create constructor maps for various types of sensors mapping to their
   // attributes
   sensorTypeConstructorMap_["AudioSensorAttributes"] =
-      &SensorAtttributesManager::createSensorAttributes<
+      &SensorAttributesManager::createSensorAttributes<
           attributes::AudioSensorAttributes>;
   sensorTypeConstructorMap_["CameraSensorAttributes"] =
-      &SensorAtttributesManager::createSensorAttributes<
+      &SensorAttributesManager::createSensorAttributes<
           attributes::CameraSensorAttributes>;
   sensorTypeConstructorMap_["CustomSensorAttributes"] =
-      &SensorAtttributesManager::createSensorAttributes<
+      &SensorAttributesManager::createSensorAttributes<
           attributes::CustomSensorAttributes>;
   sensorTypeConstructorMap_["EquirectangularSensorAttributes"] =
-      &SensorAtttributesManager::createSensorAttributes<
+      &SensorAttributesManager::createSensorAttributes<
           attributes::EquirectangularSensorAttributes>;
   sensorTypeConstructorMap_["FisheyeSensorAttributes"] =
-      &SensorAtttributesManager::createSensorAttributes<
+      &SensorAttributesManager::createSensorAttributes<
           attributes::FisheyeSensorAttributes>;
 
   // create copy constructor map entries for each type of Sensor Attributes
   this->copyConstructorMap_["AudioSensorAttributes"] =
-      &SensorAtttributesManager::createObjCopyCtorMapEntry<
+      &SensorAttributesManager::createObjCopyCtorMapEntry<
           attributes::AudioSensorAttributes>;
   this->copyConstructorMap_["CameraSensorAttributes"] =
-      &SensorAtttributesManager::createObjCopyCtorMapEntry<
+      &SensorAttributesManager::createObjCopyCtorMapEntry<
           attributes::CameraSensorAttributes>;
   this->copyConstructorMap_["CustomSensorAttributes"] =
-      &SensorAtttributesManager::createObjCopyCtorMapEntry<
+      &SensorAttributesManager::createObjCopyCtorMapEntry<
           attributes::CustomSensorAttributes>;
   this->copyConstructorMap_["EquirectangularSensorAttributes"] =
-      &SensorAtttributesManager::createObjCopyCtorMapEntry<
+      &SensorAttributesManager::createObjCopyCtorMapEntry<
           attributes::EquirectangularSensorAttributes>;
   this->copyConstructorMap_["FisheyeSensorAttributes"] =
-      &SensorAtttributesManager::createObjCopyCtorMapEntry<
+      &SensorAttributesManager::createObjCopyCtorMapEntry<
           attributes::FisheyeSensorAttributes>;
 
-}  // SensorAtttributesManager ctor
+}  // SensorAttributesManager ctor
 
 AbstractSensorAttributes::ptr
-SensorAtttributesManager::createAttributesFromSensorSpec(
+SensorAttributesManager::createAttributesFromSensorSpec(
     const sensor::SensorSpec::ptr& sensorSpec,
     bool registerTemplate) {
   // Get attributes class name from sensorSpec
   const std::string& sensorAttrClassName =
-      SensorAtttributesManager::SenssorAttrsTypeNamesMap.at(
+      SensorAttributesManager::SenssorAttrsTypeNamesMap.at(
           sensorSpec->sensorSubType);
   CORRADE_ASSERT(!sensorAttrClassName.empty(),
                  "Unknown SensorAttributes class for SensorSubType enum value :"
@@ -92,9 +92,9 @@ SensorAtttributesManager::createAttributesFromSensorSpec(
 
   return this->postCreateRegister(std::move(sensorAttributes),
                                   registerTemplate);
-}  // SensorAtttributesManager::createAttributesFromSensorSpec
+}  // SensorAttributesManager::createAttributesFromSensorSpec
 
-AbstractSensorAttributes::ptr SensorAtttributesManager::createObject(
+AbstractSensorAttributes::ptr SensorAttributesManager::createObject(
     const std::string& sensorFileName,
     bool registerTemplate) {
   auto sensorAttrs = this->createDefaultObject(sensorFileName, false);
@@ -109,9 +109,9 @@ AbstractSensorAttributes::ptr SensorAtttributesManager::createObject(
   // TODO : set handle appropriately to be registration key
 
   return this->postCreateRegister(std::move(sensorAttrs), registerTemplate);
-}  // SensorAtttributesManager::createObject
+}  // SensorAttributesManager::createObject
 
-AbstractSensorAttributes::ptr SensorAtttributesManager::buildObjectFromJSONDoc(
+AbstractSensorAttributes::ptr SensorAttributesManager::buildObjectFromJSONDoc(
     const std::string& filename,
     const io::JsonGenericValue& jsonConfig) {
   // Get sensor class type from jsonconfig, use this to determine class
@@ -141,7 +141,7 @@ AbstractSensorAttributes::ptr SensorAtttributesManager::buildObjectFromJSONDoc(
   sensor::SensorSubType sensorSubType = found->second;
 
   const std::string& sensorAttrClassName =
-      SensorAtttributesManager::SenssorAttrsTypeNamesMap.at(sensorSubType);
+      SensorAttributesManager::SenssorAttrsTypeNamesMap.at(sensorSubType);
   CORRADE_ASSERT(!sensorAttrClassName.empty(),
                  "Unknown SensorAttributes class for SensorSubType enum value :"
                      << static_cast<int32_t>(sensorSubType),
@@ -156,9 +156,9 @@ AbstractSensorAttributes::ptr SensorAtttributesManager::buildObjectFromJSONDoc(
   // This should never fail
   this->setValsFromJSONDoc(sensorAttributes, jsonConfig);
   return sensorAttributes;
-}  // SensorAtttributesManager::buildObjectFromJSONDoc
+}  // SensorAttributesManager::buildObjectFromJSONDoc
 
-void SensorAtttributesManager::setValsFromJSONDoc(
+void SensorAttributesManager::setValsFromJSONDoc(
     AttribsPtr attribs,
     const io::JsonGenericValue& jsonConfig) {
   // TODO support loading values from JSON docs for each type of
@@ -198,10 +198,10 @@ void SensorAtttributesManager::setValsFromJSONDoc(
   // check for user defined attributes
   this->parseUserDefinedJsonVals(attribs, jsonConfig);
 
-}  // SensorAtttributesManager::setValsFromJSONDoc
+}  // SensorAttributesManager::setValsFromJSONDoc
 
 attributes::AbstractSensorAttributes::ptr
-SensorAtttributesManager::initNewObjectInternal(
+SensorAttributesManager::initNewObjectInternal(
     const std::string& sensorAttrClassName,
     bool builtFromConfig) {
   // sensorAttrClassName is the class of the sensor attributes to build
@@ -228,10 +228,10 @@ SensorAtttributesManager::initNewObjectInternal(
         << " object created and inited from SensorSpec";
   }
   return newAttributes;
-}  // SensorAtttributesManager::initNewObjectInternal
+}  // SensorAttributesManager::initNewObjectInternal
 
 core::managedContainers::ManagedObjectPreregistration
-SensorAtttributesManager::preRegisterObjectFinalize(
+SensorAttributesManager::preRegisterObjectFinalize(
     attributes::AbstractSensorAttributes::ptr object,
     const std::string& objectHandle,
     bool forceRegistration) {
@@ -250,7 +250,7 @@ SensorAtttributesManager::preRegisterObjectFinalize(
   // the given
   return core::managedContainers::ManagedObjectPreregistration::
       Success_Use_Object_Handle;
-}  // SensorAtttributesManager::preRegisterObjectFinalize
+}  // SensorAttributesManager::preRegisterObjectFinalize
 
 }  // namespace managers
 }  // namespace metadata

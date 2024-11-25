@@ -19,7 +19,7 @@ namespace metadata {
 
 namespace managers {
 
-class SensorAtttributesManager
+class SensorAttributesManager
     : public AbstractAttributesManager<attributes::AbstractSensorAttributes,
                                        ManagedObjectAccess::Copy> {
  public:
@@ -29,7 +29,7 @@ class SensorAtttributesManager
    */
   static const std::map<sensor::SensorSubType, const std::string>
       SenssorAttrsTypeNamesMap;
-  SensorAtttributesManager();
+  SensorAttributesManager();
 
   /**
    * @brief Create an attributes from a SensorSpec.
@@ -187,7 +187,7 @@ class SensorAtttributesManager
    */
   typedef std::unordered_map<std::string,
                              attributes::AbstractSensorAttributes::ptr (
-                                 SensorAtttributesManager::*)()>
+                                 SensorAttributesManager::*)()>
       Map_Of_SensorTypeCtors;
 
   /**
@@ -197,8 +197,8 @@ class SensorAtttributesManager
   Map_Of_SensorTypeCtors sensorTypeConstructorMap_;
 
  public:
-  ESP_SMART_POINTERS(SensorAtttributesManager)
-};  // class SensorAtttributesManager
+  ESP_SMART_POINTERS(SensorAttributesManager)
+};  // class SensorAttributesManager
 
 }  // namespace managers
 }  // namespace metadata
