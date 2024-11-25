@@ -9,11 +9,12 @@ runs:
       echo $(date +%F) > ./date
       echo $(git ls-remote https://github.com/facebookresearch/habitat-lab.git HEAD | awk '{ print $1}') > ./hablab_sha
       cat ./hablab_sha
-      wget https://cmake.org/files/v3.12/cmake-3.12.4-Linux-x86_64.sh
-      sudo mkdir /opt/cmake312
-      sudo sh ./cmake-3.12.4-Linux-x86_64.sh --prefix=/opt/cmake312 --skip-license
-      sudo ln -s /opt/cmake312/bin/cmake /usr/local/bin/cmake
-      sudo ln -s /opt/cmake312/bin/ctest /usr/local/bin/ctest
+      #wget https://cmake.org/files/v3.12/cmake-3.12.4-Linux-x86_64.sh
+      #sudo mkdir /opt/cmake312
+      #sudo sh ./cmake-3.12.4-Linux-x86_64.sh --prefix=/opt/cmake312 --skip-license
+      #sudo ln -s /opt/cmake312/bin/cmake /usr/local/bin/cmake
+      #sudo ln -s /opt/cmake312/bin/ctest /usr/local/bin/ctest
+      sudo apt install -y cmake==3.12.4
     shell: bash
   - name: Install dependencies
     run: |-
@@ -40,16 +41,6 @@ runs:
         libomp-dev \
         unzip || true
     shell: bash
-  # - name: Install cuda
-  #   run: |-
-  #     echo "Install cuda"
-  #     wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
-  #     sudo dpkg -i cuda-keyring_1.1-1_all.deb
-  #     sudo apt-get update
-  #     sudo apt-get -y install cuda-toolkit-12-3
-  #     touch ~/cuda_installed
-  #     if command -v nvidia-smi; then nvidia-smi; fi
-  #   shell: bash
   - name: Setup miniconda
     uses: conda-incubator/setup-miniconda@v3.0.1
     with:
