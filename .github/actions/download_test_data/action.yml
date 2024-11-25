@@ -1,0 +1,21 @@
+name: download_test_data
+runs:
+  using: composite
+  steps:
+  - name: download_test_data
+    run: |
+      # Disable clone protection for git lfs
+        export GIT_CLONE_PROTECTION_ACTIVE=false
+
+        git --version
+        git-lfs --version
+        export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+        conda init
+        source ~/.bashrc
+        conda activate habitat
+        conda install -y gitpython git-lfs
+        cd habitat-sim
+        git lfs install
+        python src_python/habitat_sim/utils/datasets_download.py --uids ci_test_assets ycb rearrange_dataset_v2 --replace --data-path data/ --no-prune
+        ls -la data/scene_datasets/habitat-test-scenes/
+    shell: bash -el {0}
