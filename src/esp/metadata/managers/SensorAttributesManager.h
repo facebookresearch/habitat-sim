@@ -137,11 +137,10 @@ class SensorAtttributesManager
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
   /**
-   * @brief Not required for this manager.
-   *
-   * This method will perform any essential updating to the managed object
-   * before registration is performed. If this updating fails, registration will
-   * also fail.
+   * @brief This method will perform any essential updating to the managed
+   * object before registration is performed. If this updating fails,
+   * registration will also fail. In the case of SensorAttributes, it will
+   * verify the handle syntax and uniqueness.
    * @param object the managed object to be registered
    * @param objectHandle the name to register the managed object with.
    * Expected to be valid.
@@ -151,13 +150,9 @@ class SensorAtttributesManager
    * register the object if it has.
    */
   core::managedContainers::ManagedObjectPreregistration
-  preRegisterObjectFinalize(
-      CORRADE_UNUSED attributes::AbstractSensorAttributes::ptr object,
-      CORRADE_UNUSED const std::string& objectHandle,
-      CORRADE_UNUSED bool forceRegistration) override {
-    // No pre-registration conditioning performed
-    return core::managedContainers::ManagedObjectPreregistration::Success;
-  }
+  preRegisterObjectFinalize(attributes::AbstractSensorAttributes::ptr object,
+                            const std::string& objectHandle,
+                            bool forceRegistration) override;
 
   /**
    * @brief Not required for this manager.

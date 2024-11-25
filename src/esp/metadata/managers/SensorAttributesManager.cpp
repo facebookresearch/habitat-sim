@@ -72,7 +72,7 @@ SensorAtttributesManager::createAttributesFromSensorSpec(
     const sensor::SensorSpec::ptr& sensorSpec,
     bool registerTemplate) {
   // Get attributes class name from sensorSpec
-  const std::string sensorAttrClassName =
+  const std::string& sensorAttrClassName =
       SensorAtttributesManager::SenssorAttrsTypeNamesMap.at(
           sensorSpec->sensorSubType);
   CORRADE_ASSERT(!sensorAttrClassName.empty(),
@@ -83,9 +83,12 @@ SensorAtttributesManager::createAttributesFromSensorSpec(
   auto sensorAttributes =
       this->initNewObjectInternal(sensorAttrClassName, false);
   // Populate attributes from sensorSpec
+  sensorAttributes->populateWithSensorSpec(sensorSpec);
   // TODO : Rename attributes to appropriate name and register
-  std::string newAttrHandle = sensorAttrClassName;
-  // TODO : set handle appropriately to be registration key
+  // Build name using more than just spec uuid?
+  std::string newAttrHandle = sensorSpec->uuid;
+  // set handle appropriately to be registration key
+  sensorAttributes->setHandle(newAttrHandle);
 
   return this->postCreateRegister(std::move(sensorAttributes),
                                   registerTemplate);
@@ -111,9 +114,8 @@ AbstractSensorAttributes::ptr SensorAtttributesManager::createObject(
 AbstractSensorAttributes::ptr SensorAtttributesManager::buildObjectFromJSONDoc(
     const std::string& filename,
     const io::JsonGenericValue& jsonConfig) {
-  // TODO Get sensor class type from jsonconfig, use this to determine class
+  // Get sensor class type from jsonconfig, use this to determine class
   // name to build
-
   std::string tmpStrVal = "";
   // Look for sensor_subtype string value in json config
   if (!io::readMember<std::string>(jsonConfig, "sensor_subtype", tmpStrVal)) {
@@ -124,6 +126,10 @@ AbstractSensorAttributes::ptr SensorAtttributesManager::buildObjectFromJSONDoc(
   std::string strToLookFor = Cr::Utility::String::lowercase(tmpStrVal);
   if (strToLookFor == "unspecified") {
     // cannot instantiate unspecified sensor; error
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "Unable to determine Sensor Sub Type in JSON Config `" << filename
+        << "` so unable to build correct SensorAttributes. "
+           "Aborting.";
     return nullptr;
   }
   auto found = attributes::SensorSubTypeNamesMap.find(strToLookFor);
@@ -134,7 +140,7 @@ AbstractSensorAttributes::ptr SensorAtttributesManager::buildObjectFromJSONDoc(
   // By here, legal sensor subtype is found
   sensor::SensorSubType sensorSubType = found->second;
 
-  const std::string sensorAttrClassName =
+  const std::string& sensorAttrClassName =
       SensorAtttributesManager::SenssorAttrsTypeNamesMap.at(sensorSubType);
   CORRADE_ASSERT(!sensorAttrClassName.empty(),
                  "Unknown SensorAttributes class for SensorSubType enum value :"
@@ -152,6 +158,17 @@ AbstractSensorAttributes::ptr SensorAtttributesManager::buildObjectFromJSONDoc(
   return sensorAttributes;
 }  // SensorAtttributesManager::buildObjectFromJSONDoc
 
+void SensorAtttributesManager::setValsFromJSONDoc(
+    AttribsPtr attribs,
+    const io::JsonGenericValue& jsonConfig) {
+  // TODO support loading values from JSON docs for each type of
+  // SensorAttributes.
+
+  // check for user defined attributes
+  // this->parseUserDefinedJsonVals(attribs, jsonConfig);
+
+}  // SensorAtttributesManager::setValsFromJSONDoc
+
 attributes::AbstractSensorAttributes::ptr
 SensorAtttributesManager::initNewObjectInternal(
     const std::string& sensorAttrClassName,
@@ -166,7 +183,7 @@ SensorAtttributesManager::initNewObjectInternal(
            "create an appropriate new SensorAttributes object.";
     return nullptr;
   }
-  // these attributes ignore any default setttings.
+  // these attributes ignore any default settings.
   auto newAttributes = (*this.*sensorTypeCtorIter->second)();
 
   if (builtFromConfig) {
@@ -182,16 +199,27 @@ SensorAtttributesManager::initNewObjectInternal(
   return newAttributes;
 }  // SensorAtttributesManager::initNewObjectInternal
 
-void SensorAtttributesManager::setValsFromJSONDoc(
-    AttribsPtr attribs,
-    const io::JsonGenericValue& jsonConfig) {
-  // TODO support loading values from JSON docs for each type os
-  // SensorAttributes.
+core::managedContainers::ManagedObjectPreregistration
+SensorAtttributesManager::preRegisterObjectFinalize(
+    attributes::AbstractSensorAttributes::ptr object,
+    const std::string& objectHandle,
+    bool forceRegistration) {
+  // This method will verify syntax and uniqueness of given handle, and once it
+  // is verified, it will set the object's handle and use it as the registration
+  // key.
 
-  // check for user defined attributes
-  // this->parseUserDefinedJsonVals(attribs, jsonConfig);
-
-}  // SensorAtttributesManager::setValsFromJSONDoc
+  // TODO: Verify attributes' field data. This should be done at Configuration
+  // level.
+  // Find first unique variant of given objectHandle.
+  const std::string newHandle =
+      this->getUniqueHandleFromCandidate(objectHandle);
+  // Set handle to be first unique variant of given objectHandle
+  object->setHandle(newHandle);
+  // if this succeeds the registration should use the object's handle and not
+  // the given
+  return core::managedContainers::ManagedObjectPreregistration::
+      Success_Use_Object_Handle;
+}  // SensorAtttributesManager::preRegisterObjectFinalize
 
 }  // namespace managers
 }  // namespace metadata
