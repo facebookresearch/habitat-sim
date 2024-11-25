@@ -12,7 +12,6 @@
 
 #include "AbstractAttributesManager.h"
 #include "esp/metadata/attributes/AbstractSensorAttributes.h"
-#include "esp/sensor/Sensor.h"
 
 namespace esp {
 namespace metadata {
@@ -89,7 +88,7 @@ class SensorAttributesManager
    * @param attribs (out) an existing attributes to be modified.
    * @param jsonConfig json document to parse
    */
-  void setValsFromJSONDoc(AttribsPtr attribs,
+  void setValsFromJSONDoc(attributes::AbstractSensorAttributes::ptr attribs,
                           const io::JsonGenericValue& jsonConfig) override;
 
   /**

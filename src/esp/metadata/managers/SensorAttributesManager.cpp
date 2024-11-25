@@ -5,6 +5,7 @@
 
 #include "AbstractAttributesManager.h"
 
+#include "esp/metadata/attributes/AbstractSensorAttributes.h"
 #include "esp/metadata/attributes/AudioSensorAttributes.h"
 #include "esp/metadata/attributes/CameraSensorAttributes.h"
 #include "esp/metadata/attributes/CubeMapSensorAttributes.h"
@@ -28,9 +29,9 @@ const std::map<sensor::SensorSubType, const std::string>
         {sensor::SensorSubType::EndSensorSubType, ""}};
 
 SensorAttributesManager::SensorAttributesManager()
-    : AbstractAttributesManager<attributes::AbstractSensorAttributes,
+    : AbstractAttributesManager<AbstractSensorAttributes,
                                 ManagedObjectAccess::Copy>::
-          AbstractAttributesManager("Sensor", "sensor_config.json") {
+          AbstractAttributesManager("Sensor Attributes", "sensor_config.json") {
   // create constructor maps for various types of sensors mapping to their
   // attributes
   sensorTypeConstructorMap_["AudioSensorAttributes"] =
@@ -160,7 +161,7 @@ AbstractSensorAttributes::ptr SensorAttributesManager::buildObjectFromJSONDoc(
 }  // SensorAttributesManager::buildObjectFromJSONDoc
 
 void SensorAttributesManager::setValsFromJSONDoc(
-    AttribsPtr attribs,
+    AbstractSensorAttributes::ptr attribs,
     const io::JsonGenericValue& jsonConfig) {
   // TODO support loading values from JSON docs for each type of
   // SensorAttributes.
@@ -201,8 +202,7 @@ void SensorAttributesManager::setValsFromJSONDoc(
 
 }  // SensorAttributesManager::setValsFromJSONDoc
 
-attributes::AbstractSensorAttributes::ptr
-SensorAttributesManager::initNewObjectInternal(
+AbstractSensorAttributes::ptr SensorAttributesManager::initNewObjectInternal(
     const std::string& sensorAttrClassName,
     bool builtFromConfig) {
   // sensorAttrClassName is the class of the sensor attributes to build
@@ -233,7 +233,7 @@ SensorAttributesManager::initNewObjectInternal(
 
 core::managedContainers::ManagedObjectPreregistration
 SensorAttributesManager::preRegisterObjectFinalize(
-    attributes::AbstractSensorAttributes::ptr object,
+    AbstractSensorAttributes::ptr object,
     const std::string& objectHandle,
     bool forceRegistration) {
   // This method will verify syntax and uniqueness of given handle, and once it
