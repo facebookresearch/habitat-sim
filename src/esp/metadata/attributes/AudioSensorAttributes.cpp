@@ -36,13 +36,21 @@ void AudioSensorAttributes::writeValuesToJsonInternal(
 }  // AudioSensorAttributes::writeValuesToJsonInternal
 
 std::string AudioSensorAttributes::getAbstractSensorInfoHeaderInternal() const {
-  // TODO need some way to transform RLRAudioPropagation constructs to strings
+// TODO need some way to transform RLRAudioPropagation constructs to strings
+#ifdef ESP_BUILD_WITH_AUDIO
   return "Output Directory";
+#else
+  return "";
+#endif
 }  // AudioSensorAttributes::getAbstractSensorInfoHeaderInternal
 
 std::string AudioSensorAttributes::getAbstractSensorInfoInternal() const {
-  // TODO need some way to transform RLRAudioPropagation constructs to strings
+// TODO need some way to transform RLRAudioPropagation constructs to strings
+#ifdef ESP_BUILD_WITH_AUDIO
   return Cr::Utility::formatString("{}", getOutputDirectory());
+#else
+  return "";
+#endif
 }  // AudioSensorAttributes::getAbstractSensorInfoInternal
 
 }  // namespace attributes
