@@ -92,8 +92,6 @@ jobs:
         sudo chown runner -R /opt/cmake312/
         #activate conda env
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-        #conda init
-        #source ~/.bashrc
         conda activate habitat
         #install habitat-sim
         cd habitat-sim
@@ -104,8 +102,6 @@ jobs:
     - name: Run sim benchmark
       run: |-
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-        conda init
-        source ~/.bashrc
         conda activate habitat
         cd habitat-sim
         python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
@@ -115,8 +111,6 @@ jobs:
         sudo chown runner -R /opt/cmake312/
         #activate conda env
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-        conda init
-        source ~/.bashrc
         conda activate habitat
         cd habitat-sim
         export PYTHONPATH=$(pwd):$PYTHONPATH
@@ -138,14 +132,11 @@ jobs:
         PYTHONPATH=src_python pytest -m sim_benchmarks
 
         #re-build without bullet and cuda and run physics tests again
-        #TODO: instead of reinstall, do this with configuration
         ./build.sh --headless --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
         PYTHONPATH=src_python pytest -n 4 --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
     - name: upload test coverage
       run: |-
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-        conda init
-        source ~/.bashrc
         conda activate habitat
         cd habitat-sim
 
@@ -168,8 +159,6 @@ jobs:
         #give cmake ownership to the runner for installation
         sudo chown runner -R /opt/cmake312/
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-        conda init
-        source ~/.bashrc
         conda activate habitat
         cd habitat-sim
         pip install -r requirements.txt --progress-bar off
@@ -198,8 +187,6 @@ jobs:
         sudo chown runner -R /opt/cmake312/
         #activate conda env
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-        conda init
-        source ~/.bashrc
         conda activate habitat
         #install habitat-sim
         cd habitat-sim
