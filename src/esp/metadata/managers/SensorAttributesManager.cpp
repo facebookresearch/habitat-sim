@@ -26,6 +26,7 @@ const std::map<sensor::SensorSubType, const std::string>
         {sensor::SensorSubType::ImpulseResponse, "AudioSensorAttributes"},
         {sensor::SensorSubType::Fisheye, "FisheyeSensorAttributes"},
         {sensor::SensorSubType::EndSensorSubType, ""}};
+
 SensorAttributesManager::SensorAttributesManager()
     : AbstractAttributesManager<attributes::AbstractSensorAttributes,
                                 ManagedObjectAccess::Copy>::

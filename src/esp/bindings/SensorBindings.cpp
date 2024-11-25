@@ -72,6 +72,7 @@ void initSensorBindings(py::module& m) {
   // NOTE : esp::sensor::SemanticSensorTarget is an alias for
   // esp::scene::SceneNodeSemanticDataIDX.
   py::enum_<SemanticSensorTarget>(m, "SemanticSensorTarget")
+      .value("DRAWABLE_ID", SemanticSensorTarget::DrawableID)
       .value("SEMANTIC_ID", SemanticSensorTarget::SemanticID)
       .value("OBJECT_ID", SemanticSensorTarget::ObjectID);
 
