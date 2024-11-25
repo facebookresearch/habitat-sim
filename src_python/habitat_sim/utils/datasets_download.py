@@ -218,6 +218,31 @@ def initialize_test_data_sources(data_path):
             "version": "main",
             "requires_auth": False,
         },
+        "ovmm_objects": {
+            "source": "https://huggingface.co/datasets/ai-habitat/OVMM_objects.git",
+            "link": data_path + "objects/ovmm_objects",
+            "version": "main",
+            "requires_auth": False,
+        },
+        "hssd_partnr_ci": {
+            "source": "https://huggingface.co/datasets/ai-habitat/hssd-partnr-ci.git",
+            "link": data_path + "hssd-partnr-ci",
+            "version": "main",
+            "requires_auth": False,
+        },
+        "partnr_episodes": {
+            "source": "https://huggingface.co/datasets/ai-habitat/partnr_episodes.git",
+            "link": data_path + "datasets/partnr_episodes",
+            "version": "main",
+            "requires_auth": False,
+        },
+        # Same as above with less content for ci testing. Should not be installed simultaneously.
+        "partnr_episodes_ci": {
+            "source": "https://huggingface.co/datasets/ai-habitat/partnr_episodes.git",
+            "link": data_path + "datasets/partnr_episodes",
+            "version": "ci",
+            "requires_auth": False,
+        },
     }
 
     # add individual hm3d splits, format components, and versions
