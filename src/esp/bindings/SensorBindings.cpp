@@ -54,6 +54,7 @@ void initSensorBindings(py::module& m) {
   // ==== enum SensorType ====
   py::enum_<SensorType>(m, "SensorType")
       .value("NONE", SensorType::Unspecified)
+      .value("CUSTOM", SensorType::Custom)
       .value("COLOR", SensorType::Color)
       .value("DEPTH", SensorType::Depth)
       .value("SEMANTIC", SensorType::Semantic)
@@ -61,6 +62,7 @@ void initSensorBindings(py::module& m) {
 
   py::enum_<SensorSubType>(m, "SensorSubType")
       .value("NONE", SensorSubType::Unspecified)
+      .value("CUSTOM", SensorSubType::Custom)
       .value("PINHOLE", SensorSubType::Pinhole)
       .value("ORTHOGRAPHIC", SensorSubType::Orthographic)
       .value("FISHEYE", SensorSubType::Fisheye)
