@@ -19,6 +19,13 @@ class CustomSensorAttributes : public AbstractSensorAttributes {
  public:
   explicit CustomSensorAttributes(const std::string& handle = "");
 
+  /**
+   * @brief Populate this CustomSensorAttributes from an appropriate @ref sensor::SensorSpec.
+   * @todo Remove when SensorSpecs are removed
+   *
+   */
+  void populateWithSensorSpec(const sensor::SensorSpec::ptr& spec) override;
+
  protected:
   /**
    * @brief Write CustomSensorAttributes data to JSON

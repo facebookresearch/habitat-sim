@@ -16,6 +16,19 @@ AbstractCubeMapSensorAttributes::AbstractCubeMapSensorAttributes(
   init("cubemap_size", -1);
 }  // AbstractCubeMapSensorAttributes ctor
 
+void AbstractCubeMapSensorAttributes::populateWithSensorSpec(
+    const sensor::SensorSpec::ptr& spec) {
+  // Call Parent class version
+  AbstractVisualSensorAttributes::populateWithSensorSpec(spec);
+  // Appropriately cast to get camera spec data if exists
+  const esp::sensor::CubeMapSensorBaseSpec::ptr& cubemapSpec =
+      std::dynamic_pointer_cast<esp::sensor::CubeMapSensorBaseSpec>(spec);
+  if (cubemapSpec->cubemapSize != Cr::Containers::NullOpt) {
+    // automatically sets useSpecifiedCubeMapSize boolean to true
+    setCubeMapSize(*cubemapSpec->cubemapSize);
+  }
+}  // AbstractCubeMapSensorAttributes::populateWithSensorSpec
+
 void AbstractCubeMapSensorAttributes::writeVisualSensorValuesToJsonInternal(
     io::JsonGenericValue& jsonObj,
     io::JsonAllocator& allocator) const {
@@ -49,6 +62,16 @@ EquirectangularSensorAttributes::EquirectangularSensorAttributes(
     : AbstractCubeMapSensorAttributes("EquirectangularSensorAttributes",
                                       handle) {
 }  // EquirectangularSensorAttributes ctor
+
+void EquirectangularSensorAttributes::populateWithSensorSpec(
+    const sensor::SensorSpec::ptr& spec) {
+  // Call Parent class version
+  AbstractCubeMapSensorAttributes::populateWithSensorSpec(spec);
+  // Appropriately cast to get EquirectangularSensorAttributes-specific spec
+  // data if exists
+  // No EquirectangularSensorAttributes-specific data
+}  // EquirectangularSensorAttributes::populateWithSensorSpec
+
 void EquirectangularSensorAttributes::writeCubeMapSensorValuesToJsonInternal(
     io::JsonGenericValue& jsonObj,
     io::JsonAllocator& allocator) const {
@@ -79,6 +102,27 @@ FisheyeSensorAttributes::FisheyeSensorAttributes(const std::string& handle)
   setHidden("__useSpecifiedPPO", false);
   init("principle_point_offset", Magnum::Vector2(0.0, 0.0));
 }  // FisheyeSensorAttributes ctor
+
+void FisheyeSensorAttributes::populateWithSensorSpec(
+    const sensor::SensorSpec::ptr& spec) {
+  // Call Parent class version
+  AbstractCubeMapSensorAttributes::populateWithSensorSpec(spec);
+  // Appropriately cast to get FisheyeSensorDoubleSphereSpec-spec data if exists
+  const esp::sensor::FisheyeSensorSpec::ptr& fisheyeSpec =
+      std::dynamic_pointer_cast<esp::sensor::FisheyeSensorSpec>(spec);
+  setFocalLength(fisheyeSpec->focalLength);
+  if (fisheyeSpec->principalPointOffset != Cr::Containers::NullOpt) {
+    setPrincipalPointOffset(*fisheyeSpec->principalPointOffset);
+  }
+  // Doublesphere Fisheye
+  const esp::sensor::FisheyeSensorDoubleSphereSpec::ptr& fisheyeDSSpec =
+      std::dynamic_pointer_cast<esp::sensor::FisheyeSensorDoubleSphereSpec>(
+          spec);
+  setDoubleSphereXi(fisheyeDSSpec->xi);
+  setDoubleSphereAlpha(fisheyeDSSpec->alpha);
+  // Currently no other Fisheye algorithm is implemented
+
+}  // FisheyeSensorAttributes::populateWithSensorSpec
 
 void FisheyeSensorAttributes::writeCubeMapSensorValuesToJsonInternal(
     io::JsonGenericValue& jsonObj,

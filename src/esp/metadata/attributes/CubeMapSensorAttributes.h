@@ -21,6 +21,13 @@ class AbstractCubeMapSensorAttributes : public AbstractVisualSensorAttributes {
                                   const std::string& handle);
 
   /**
+   * @brief Populate this AbstractCubeMapSensorAttributes from an appropriate @ref sensor::SensorSpec.
+   * @todo Remove when SensorSpecs are removed
+   *
+   */
+  void populateWithSensorSpec(const sensor::SensorSpec::ptr& spec) override;
+
+  /**
    * @brief Set whether to use a user-specified CubeMap size. Otherwise, should
    * be the smallest of the x or y resolution values.
    */
@@ -42,6 +49,11 @@ class AbstractCubeMapSensorAttributes : public AbstractVisualSensorAttributes {
   void setCubeMapSize(int cubemap_size) {
     set("cubemap_size", cubemap_size);
     setUseSpecifiedCubeMapSize(true);
+  }
+
+  void clearCubeMapSize() {
+    set("cubemap_size", -1);
+    setUseSpecifiedCubeMapSize(false);
   }
 
   /**
@@ -94,6 +106,12 @@ class AbstractCubeMapSensorAttributes : public AbstractVisualSensorAttributes {
 class EquirectangularSensorAttributes : public AbstractCubeMapSensorAttributes {
  public:
   explicit EquirectangularSensorAttributes(const std::string& handle = "");
+  /**
+   * @brief Populate this EquirectangularSensorAttributes from an appropriate @ref sensor::SensorSpec.
+   * @todo Remove when SensorSpecs are removed
+   *
+   */
+  void populateWithSensorSpec(const sensor::SensorSpec::ptr& spec) override;
 
  protected:
   /**
@@ -116,7 +134,7 @@ class EquirectangularSensorAttributes : public AbstractCubeMapSensorAttributes {
 
  public:
   ESP_SMART_POINTERS(EquirectangularSensorAttributes)
-};
+};  // class EquirectangularSensorAttributes
 
 /**
  * @brief Class holding attributes for CubeMap-based Fisheye sensor
@@ -124,7 +142,12 @@ class EquirectangularSensorAttributes : public AbstractCubeMapSensorAttributes {
 class FisheyeSensorAttributes : public AbstractCubeMapSensorAttributes {
  public:
   explicit FisheyeSensorAttributes(const std::string& handle = "");
-
+  /**
+   * @brief Populate this FisheyeSensorAttributes from an appropriate @ref sensor::SensorSpec.
+   * @todo Remove when SensorSpecs are removed
+   *
+   */
+  void populateWithSensorSpec(const sensor::SensorSpec::ptr& spec) override;
   /**
    * @brief Set the fisheye sensor focal length, fx, fy, the distance between
    * the pinhole and the image plane. In practice, fx and fy can differ for a
@@ -171,6 +194,15 @@ class FisheyeSensorAttributes : public AbstractCubeMapSensorAttributes {
     setUsePrincipalPointOffset(true);
   }
 
+  /**
+   * @brief Clear out any specified Principal Point Offsets that might have been
+   * set.
+   */
+  void clearPrincipalPointOffset() {
+    set<Magnum::Vector2>("principle_point_offset",
+                         Magnum::Vector2(getResolution()) * 0.5);
+    setUsePrincipalPointOffset(false);
+  }
   /**
    * @brief Get the Principal Point Offset in pixel, cx, cy, location of the
    * principal point relative to the image plane's origin. If not specified use
@@ -241,7 +273,7 @@ class FisheyeSensorAttributes : public AbstractCubeMapSensorAttributes {
 
  public:
   ESP_SMART_POINTERS(FisheyeSensorAttributes)
-};
+};  // class FisheyeSensorAttributes
 
 }  // namespace attributes
 }  // namespace metadata

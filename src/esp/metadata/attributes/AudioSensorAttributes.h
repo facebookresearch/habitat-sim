@@ -23,6 +23,20 @@ class AudioSensorAttributes : public AbstractSensorAttributes {
   explicit AudioSensorAttributes(const std::string& handle = "");
 
   /**
+   * @brief Populate this audio attributes from an appropriate @ref sensor::AudioSensorSpec.
+   * @todo Remove when SensorSpecs are removed
+   *
+   */
+  void populateWithSensorSpec(
+      const std::shared_ptr<esp::sensor::SensorSpec>& spec) override;
+
+#ifdef ESP_BUILD_WITH_AUDIO
+ private:
+  RLRAudioPropagation::Configuration acousticsConfig_;
+  RLRAudioPropagation::ChannelLayout channelLayout_;
+
+ public:
+  /**
    * @brief Set the output directory
    */
   void setOutputDirectory(const std::string& output_directory) {
@@ -36,12 +50,6 @@ class AudioSensorAttributes : public AbstractSensorAttributes {
     return get<std::string>("output_directory");
   }
 
-#ifdef ESP_BUILD_WITH_AUDIO
- private:
-  RLRAudioPropagation::Configuration acousticsConfig_;
-  RLRAudioPropagation::ChannelLayout channelLayout_;
-
- public:
   /**
    * @brief Sets the acoustics configuration.
    */

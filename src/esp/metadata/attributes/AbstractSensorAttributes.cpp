@@ -21,6 +21,15 @@ AbstractSensorAttributes::AbstractSensorAttributes(
                  getSensorSubTypeName(sensor::SensorSubType::Unspecified));
 }  // AbstractSensorAttributes ctor
 
+void AbstractSensorAttributes::populateWithSensorSpec(
+    const sensor::SensorSpec::ptr& spec) {
+  setPosition(spec->position);
+  setOrientation(spec->orientation);
+  setNoiseModel(spec->noiseModel);
+  setSensorTypeEnum(spec->sensorType);
+  setSensorSubTypeEnum(spec->sensorSubType);
+}  // AbstractSensorAttributes::populateWithSensorSpec
+
 void AbstractSensorAttributes::writeValuesToJson(
     io::JsonGenericValue& jsonObj,
     io::JsonAllocator& allocator) const {

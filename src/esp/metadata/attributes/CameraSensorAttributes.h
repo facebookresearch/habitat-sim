@@ -20,6 +20,12 @@ class CameraSensorAttributes : public AbstractVisualSensorAttributes {
   explicit CameraSensorAttributes(const std::string& handle = "");
 
   /**
+   * @brief Populate this CameraSensorAttributes from an appropriate @ref sensor::SensorSpec.
+   * @todo Remove when SensorSpecs are removed
+   *
+   */
+  void populateWithSensorSpec(const sensor::SensorSpec::ptr& spec) override;
+  /**
    * @brief Set the horizontal Field of View (in degrees) for the CameraSensor
    * built by this attributes.
    */

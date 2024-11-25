@@ -21,6 +21,13 @@ class AbstractVisualSensorAttributes : public AbstractSensorAttributes {
                                  const std::string& handle);
 
   /**
+   * @brief Populate this AbstractVisualSensorAttributes from an appropriate @ref sensor::SensorSpec.
+   * @todo Remove when SensorSpecs are removed
+   *
+   */
+  void populateWithSensorSpec(const sensor::SensorSpec::ptr& spec) override;
+
+  /**
    * @brief Set the resolution (Height, Width) of the Visual Sensor built from
    * this attributes.
    */
@@ -118,6 +125,25 @@ class AbstractVisualSensorAttributes : public AbstractSensorAttributes {
                   << "attempted to be set in AbstractVisualSensorAttributes:"
                   << getHandle() << ". Aborting.");
     setTranslated("semantic_sensor_target", semantic_target);
+  }
+
+  /**
+   * @brief Set the SemanticSensorTarget to use for a Semantic Sensor built
+   * from this attributes given the specified S
+   */
+  void setSemanticSensorTargetEnum(
+      sensor::SemanticSensorTarget semanticTargetEnum) {
+    // force to lowercase before setting
+    const std::string semanticTarget =
+        getSemanitcSensorTargetName(semanticTargetEnum);
+    auto mapIter = SemanticSensorTargetMap.find(semanticTarget);
+    ESP_CHECK(mapIter != SemanticSensorTargetMap.end(),
+              "Illegal Semantic Sensor Tyarget enum value given"
+                  << static_cast<int>(semanticTargetEnum) << ":"
+                  << semanticTarget
+                  << "attempted to be set in AbstractVisualSensorAttributes:"
+                  << getHandle() << ". Aborting.");
+    setTranslated("semantic_sensor_target", semanticTarget);
   }
 
   /**

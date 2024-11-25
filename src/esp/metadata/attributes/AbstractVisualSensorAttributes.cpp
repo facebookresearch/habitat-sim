@@ -3,6 +3,8 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "AbstractVisualSensorAttributes.h"
+#include "esp/sensor/VisualSensor.h"
+
 namespace esp {
 namespace metadata {
 namespace attributes {
@@ -22,6 +24,24 @@ AbstractVisualSensorAttributes::AbstractVisualSensorAttributes(
                      esp::sensor::SemanticSensorTarget::SemanticID));
 
 }  // AbstractVisualSensorAttributes ctor
+
+void AbstractVisualSensorAttributes::populateWithSensorSpec(
+    const sensor::SensorSpec::ptr& spec) {
+  // Call Base class version
+  AbstractSensorAttributes::populateWithSensorSpec(spec);
+  // Appropriately cast to get visual spec data if exists
+  const esp::sensor::VisualSensorSpec::ptr& visualSpec =
+      std::dynamic_pointer_cast<esp::sensor::VisualSensorSpec>(spec);
+
+  setResolution(visualSpec->resolution);
+  setChannels(visualSpec->channels);
+  setGPUToGPUTransfer(visualSpec->gpu2gpuTransfer);
+  setNearPlane(visualSpec->near);
+  setFarPlane(visualSpec->far);
+  setClearColor(visualSpec->clearColor);
+  setSemanticSensorTargetEnum(visualSpec->semanticTarget);
+
+}  // AbstractVisualSensorAttributes::populateWithSensorSpec
 
 void AbstractVisualSensorAttributes::writeValuesToJsonInternal(
     io::JsonGenericValue& jsonObj,

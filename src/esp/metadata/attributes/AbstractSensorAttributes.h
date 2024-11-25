@@ -19,7 +19,12 @@ class AbstractSensorAttributes : public AbstractAttributes {
   AbstractSensorAttributes(const std::string& classKey,
                            const std::string& handle);
 
-  ~AbstractSensorAttributes() override = default;
+  /**
+   * @brief Populate this attributes from an appropriate @ref sensor::SensorSpec.
+   * @todo Remove when SensorSpecs are removed
+   *
+   */
+  virtual void populateWithSensorSpec(const sensor::SensorSpec::ptr& spec);
 
   /** @brief Set the position of the sensor. */
   void setPosition(const Magnum::Vector3& position) {
@@ -121,13 +126,13 @@ class AbstractSensorAttributes : public AbstractAttributes {
   /**
    * @brief Set the sensor subtype for this sensor as specified by given @ref SensorSubType
    */
-  void setSensorSubTypeEnum(sensor::SensorType sensorSubTypeEnum) {
+  void setSensorSubTypeEnum(sensor::SensorSubType sensorSubTypeEnum) {
     // force to lowercase to check if present
-    const std::string sensorSubType = getSensorTypeName(sensorSubTypeEnum);
+    const std::string sensorSubType = getSensorSubTypeName(sensorSubTypeEnum);
     auto mapIter = SensorSubTypeNamesMap.find(sensorSubType);
 
     ESP_CHECK(mapIter != SensorSubTypeNamesMap.end(),
-              "Illegal SensorType enum value given"
+              "Illegal SensorSubType enum value given"
                   << static_cast<int>(sensorSubTypeEnum) << ":" << sensorSubType
                   << "attempted to be initialized in AbstractSensorAttributes:"
                   << getHandle() << ". Aborting.");

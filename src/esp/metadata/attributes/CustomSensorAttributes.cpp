@@ -12,6 +12,11 @@ CustomSensorAttributes::CustomSensorAttributes(const std::string& handle)
     : AbstractSensorAttributes("CustomSensorAttributes", handle) {
 }  // CustomSensorAttributes ctor
 
+void CustomSensorAttributes::populateWithSensorSpec(
+    const sensor::SensorSpec::ptr& spec) {
+  // Call Base class version
+  AbstractSensorAttributes::populateWithSensorSpec(spec);
+}  // CustomSensorAttributes::populateWithSensorSpec
 std::string CustomSensorAttributes::getObjectInfoHeaderInternal() const {
   const std::vector<std::string> sortedKeys = getKeys(true);
   std::string res = "";
