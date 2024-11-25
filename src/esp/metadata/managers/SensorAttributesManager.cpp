@@ -163,9 +163,40 @@ void SensorAtttributesManager::setValsFromJSONDoc(
     const io::JsonGenericValue& jsonConfig) {
   // TODO support loading values from JSON docs for each type of
   // SensorAttributes.
+  // position of sensor
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonConfig, "position", [attribs](const Magnum::Vector3& position) {
+        attribs->setPosition(position);
+      });
+
+  // orientation
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonConfig, "orientation", [attribs](const Magnum::Vector3& orientation) {
+        attribs->setOrientation(orientation);
+      });
+
+  // noise model
+  io::jsonIntoConstSetter<std::string>(
+      jsonConfig, "noise_model", [attribs](const std::string& noise_model) {
+        attribs->setNoiseModel(noise_model);
+      });
+
+  // sensor type
+  this->setEnumStringFromJsonDoc(
+      jsonConfig, "sensor_type", "SensorTypeNamesMap", false,
+      attributes::SensorTypeNamesMap,
+      [attribs](const std::string& val) { attribs->setSensorType(val); });
+
+  // sensor subtype
+  this->setEnumStringFromJsonDoc(
+      jsonConfig, "sensor_subtype", "SensorSubTypeNamesMap", false,
+      attributes::SensorSubTypeNamesMap,
+      [attribs](const std::string& val) { attribs->setSensorSubType(val); });
+
+  // TODO populate other types of sensor attributes from json
 
   // check for user defined attributes
-  // this->parseUserDefinedJsonVals(attribs, jsonConfig);
+  this->parseUserDefinedJsonVals(attribs, jsonConfig);
 
 }  // SensorAtttributesManager::setValsFromJSONDoc
 

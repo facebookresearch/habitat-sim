@@ -152,7 +152,7 @@ class SensorAtttributesManager
   core::managedContainers::ManagedObjectPreregistration
   preRegisterObjectFinalize(attributes::AbstractSensorAttributes::ptr object,
                             const std::string& objectHandle,
-                            bool forceRegistration) override;
+                            CORRADE_UNUSED bool forceRegistration) override;
 
   /**
    * @brief Not required for this manager.
