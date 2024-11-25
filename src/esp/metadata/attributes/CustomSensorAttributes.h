@@ -26,27 +26,73 @@ class CustomSensorAttributes : public AbstractSensorAttributes {
    */
   void populateWithSensorSpec(const sensor::SensorSpec::ptr& spec) override;
 
+  /**
+   * @brief Gets a smart pointer reference to a copy of the custom attributes
+   * configuration data from config file. Habitat does not parse or process this
+   * data, but it will be available to the user via python bindings for each
+   * object.
+   */
+  std::shared_ptr<Configuration> getCustomAttrFields() const {
+    return getSubconfigCopy<Configuration>("custom_attributes");
+  }
+
+  /**
+   * @brief Gets a const smart pointer reference to a view of the custom
+   * attributes configuration data from config file. Habitat does not parse or
+   * process this data, but it will be available to the user via python bindings
+   * for each object.
+   */
+  std::shared_ptr<const Configuration> getCustomAttrFieldsView() const {
+    return getSubconfigView("custom_attributes");
+  }
+
+  /**
+   * @brief Gets a smart pointer reference to the actual custom attributes
+   * configuration data from config file. Habitat does not parse or process this
+   * data, but it will be available to the user via python bindings for each
+   * object. This method is for editing the configuration.
+   */
+  std::shared_ptr<Configuration> editCustomAttrFields() {
+    return editSubconfig<Configuration>("custom_attributes");
+  }
+
+  /**
+   * @brief Move an existing custom_attributes subconfiguration into this
+   * configuration, overwriting the existing copy if it exists. Habitat does not
+   * parse or process this data, but it will be available to the user via python
+   * bindings for each object. This method is for editing the configuration.
+   */
+  void setCustomAttrFields(std::shared_ptr<Configuration>& custAttrs) {
+    setSubconfigPtr("custom_attributes", custAttrs);
+  }
+
+  /**
+   * @brief Returns the number of custom attributes values (within the
+   * "custom_attributes" sub-Configuration) this attributes has.
+   */
+  int getNumCustomAttrFields() const {
+    return getSubconfigNumEntries("custom_attributes");
+  }
+
+  /**
+   * @brief Returns the number of custom attributes values and subconfig values
+   * (recursive) (within the "custom_attributes" sub-Configuration) this
+   * attributes has in its entire tree.
+   */
+  int getTotalNumCustomAttrFields() const {
+    return getSubconfigTreeNumEntries("custom_attributes");
+  }
+
  protected:
   /**
-   * @brief Write CustomSensorAttributes data to JSON
+   * @brief get AbstractSensorAttributes-specific info header
    */
-  void writeValuesToJson(io::JsonGenericValue& jsonObj,
-                         io::JsonAllocator& allocator) const override {
-    Configuration::writeValuesToJson(jsonObj, allocator);
-  };
+  std::string getAbstractSensorInfoHeaderInternal() const override;
 
   /**
-   * @brief Retrieve a comma-separated string holding the header values for the
-   * info returned for this managed object, type-specific.
+   * @brief get AbstractSensorAttributes specific info for csv string
    */
-
-  std::string getObjectInfoHeaderInternal() const override;
-
-  /**
-   * @brief Retrieve a comma-separated informational string about the contents
-   * of this managed object.
-   */
-  std::string getObjectInfoInternal() const override;
+  std::string getAbstractSensorInfoInternal() const override;
 
  public:
   ESP_SMART_POINTERS(CustomSensorAttributes)

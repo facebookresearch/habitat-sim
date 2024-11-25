@@ -10,15 +10,23 @@ namespace attributes {
 
 CustomSensorAttributes::CustomSensorAttributes(const std::string& handle)
     : AbstractSensorAttributes("CustomSensorAttributes", handle) {
+  addOrEditSubgroup<Configuration>("custom_attributes");
 }  // CustomSensorAttributes ctor
 
 void CustomSensorAttributes::populateWithSensorSpec(
     const sensor::SensorSpec::ptr& spec) {
   // Call Base class version
   AbstractSensorAttributes::populateWithSensorSpec(spec);
+  // TODO handle setting custom_attributes subconfig with any values in spec
+  // beyond base values.
+  // std::shared_ptr<Configuration> custAttrs = editCustomAttrFields();
+  // put values in custAttrs directly
 }  // CustomSensorAttributes::populateWithSensorSpec
-std::string CustomSensorAttributes::getObjectInfoHeaderInternal() const {
-  const std::vector<std::string> sortedKeys = getKeys(true);
+std::string CustomSensorAttributes::getAbstractSensorInfoHeaderInternal()
+    const {
+  // get every key from custom attributes
+  const std::vector<std::string> sortedKeys =
+      getCustomAttrFieldsView()->getKeys(true);
   std::string res = "";
   for (const std::string& key : sortedKeys) {
     Cr::Utility::formatInto(res, res.size(), "{},", key);
@@ -26,11 +34,14 @@ std::string CustomSensorAttributes::getObjectInfoHeaderInternal() const {
   return res;
 }  // CustomSensorAttributes::getObjectInfoHeaderInternal
 
-std::string CustomSensorAttributes::getObjectInfoInternal() const {
-  const std::vector<std::string> sortedKeys = getKeys(true);
+std::string CustomSensorAttributes::getAbstractSensorInfoInternal() const {
+  std::shared_ptr<const Configuration> custAttrs = getCustomAttrFieldsView();
+  // get every key from custom attributes
+  const std::vector<std::string> sortedKeys = custAttrs->getKeys(true);
   std::string res = "";
   for (const std::string& key : sortedKeys) {
-    Cr::Utility::formatInto(res, res.size(), "{},", getAsString(key));
+    Cr::Utility::formatInto(res, res.size(), "{},",
+                            custAttrs->getAsString(key));
   }
   return res;
 }  // CustomSensorAttributes::getObjectInfoInternal
