@@ -255,6 +255,7 @@ std::string getMotionTypeName(esp::physics::MotionType motionTypeEnum) {
 
 const std::map<std::string, esp::sensor::SensorType> SensorTypeNamesMap = {
     {"unspecified", esp::sensor::SensorType::Unspecified},
+    {"custom", esp::sensor::SensorType::Custom},
     {"color", esp::sensor::SensorType::Color},
     {"depth", esp::sensor::SensorType::Depth},
     {"normal", esp::sensor::SensorType::Normal},

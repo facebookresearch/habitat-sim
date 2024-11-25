@@ -22,6 +22,7 @@ namespace sensor {
 // Enumeration of types of sensors
 enum class SensorType : int32_t {
   Unspecified = 0,
+  Custom,
   Color,
   Depth,
   Normal,
