@@ -283,7 +283,7 @@ jobs:
           git diff-index --quiet HEAD || git commit -m "Build habitat-sim and habitat-lab ${NOW}"
           git push origin gh-pages
         else
-          echo "Not a nightly build, no deployment needed."
+          echo "Not a nightly build, no deployment needed. "
         fi
 
   build_conda_binaries:
