@@ -19,6 +19,7 @@
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
 #include "esp/metadata/managers/SceneDatasetAttributesManager.h"
 #include "esp/metadata/managers/SemanticAttributesManager.h"
+#include "esp/metadata/managers/SensorAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
 #include "esp/sim/SimulatorConfiguration.h"
 
@@ -197,6 +198,15 @@ class MetadataMediator {
   getPbrShaderAttributesManager() const {
     return pbrShaderAttributesManager_;
   }  // getPbrShaderAttributesManager
+
+  /**
+   * @brief Return manager for construction and access to Sensor attributes;
+   * @return A shared pointer to the current @ref esp::metadata::managers::SensorAttributesManager.
+   */
+  const managers::SensorAttributesManager::ptr& getSensorAttributesManager()
+      const {
+    return sensorAttributesManager_;
+  }  // getSensorAttributesManager
 
   /**
    * @brief Return manager for construction and access to
@@ -682,6 +692,12 @@ class MetadataMediator {
    */
   managers::PbrShaderAttributesManager::ptr pbrShaderAttributesManager_ =
       nullptr;
+
+  /**
+   * @brief Manages all the SensorAttributes configuration settings, used to
+   * build sensors, independent of loaded datasets.
+   */
+  managers::SensorAttributesManager::ptr sensorAttributesManager_ = nullptr;
 
  public:
   ESP_SMART_POINTERS(MetadataMediator)
