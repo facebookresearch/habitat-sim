@@ -19,6 +19,6 @@ runs:
       sudo apt-get install -y nvidia-gds-${CUDA_VERSION}
       sudo apt-get install -y libnvidia-common-${UBUNTU_PACKAGE_SUFFIX}
       sudo apt-get install -y libnvidia-gl-${UBUNTU_PACKAGE_SUFFIX}
-      sudo apt-get install -y libnvidia-compute-${UBUNTU_PACKAGE_SUFFIX}
+      sudo apt-get install -y libnvidia-compute-${UBUNTU_PACKAGE_SUFFIX} --allow-downgrades
       sudo apt-get install -y libnvidia-decode-${UBUNTU_PACKAGE_SUFFIX}
       sudo apt-get install -y libnvidia-encode-${UBUNTU_PACKAGE_SUFFIX}
