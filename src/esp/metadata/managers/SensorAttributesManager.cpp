@@ -3,8 +3,6 @@
 // LICENSE file in the root directory of this source tree.
 #include "SensorAttributesManager.h"
 
-#include "AbstractAttributesManager.h"
-
 #include "esp/metadata/attributes/AbstractSensorAttributes.h"
 #include "esp/metadata/attributes/AudioSensorAttributes.h"
 #include "esp/metadata/attributes/CameraSensorAttributes.h"
