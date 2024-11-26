@@ -251,13 +251,17 @@ jobs:
         conda install -y -c conda-forge doxygen=1.9.5
         conda install -y  jinja2 pygments docutils
         ./build-public.sh
+    - name: Set up SSH
+      run: |-
+        mkdir -p ~/.ssh
+        echo "${{ secrets.HABITAT-WEBISTE-DEPLOY-KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
     - name: Deploy documentation
       run: |-
         echo "Deploy documentation"
         #if [[ ${{ github.event_name }} == 'schedule' ]]; then
         echo "Trigger: a nightly build. Deploying the docs."
-        eval `ssh-agent -s`
-        ssh-add - <<< '${{ secrets.HABITAT-WEBISTE-DEPLOY-KEY }}'
         git clone git@github.com:facebookmicrosites/habitat-website.git
         cd habitat-website
         git submodule update --init
