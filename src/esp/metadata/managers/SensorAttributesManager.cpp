@@ -233,9 +233,9 @@ AbstractSensorAttributes::ptr SensorAttributesManager::initNewObjectInternal(
 
 core::managedContainers::ManagedObjectPreregistration
 SensorAttributesManager::preRegisterObjectFinalize(
-    AbstractSensorAttributes::ptr object,
-    const std::string& objectHandle,
-    bool forceRegistration) {
+    AbstractSensorAttributes::ptr sensorAttrs,
+    const std::string& sensorAttrsHandle,
+    CORRADE_UNUSED bool forceRegistration) {
   // This method will verify syntax and uniqueness of given handle, and once it
   // is verified, it will set the object's handle and use it as the registration
   // key.
@@ -244,9 +244,9 @@ SensorAttributesManager::preRegisterObjectFinalize(
   // level.
   // Find first unique variant of given objectHandle.
   const std::string newHandle =
-      this->getUniqueHandleFromCandidate(objectHandle);
+      this->getUniqueHandleFromCandidate(sensorAttrsHandle);
   // Set handle to be first unique variant of given objectHandle
-  object->setHandle(newHandle);
+  sensorAttrs->setHandle(newHandle);
   // if this succeeds the registration should use the object's handle and not
   // the given
   return core::managedContainers::ManagedObjectPreregistration::

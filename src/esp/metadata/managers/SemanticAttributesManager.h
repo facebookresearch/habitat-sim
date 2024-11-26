@@ -148,7 +148,7 @@ class SemanticAttributesManager
    */
   core::managedContainers::ManagedObjectPreregistration
   preRegisterObjectFinalize(attributes::SemanticAttributes::ptr object,
-                            const std::string& objectHandle,
+                            CORRADE_UNUSED const std::string& objectHandle,
                             CORRADE_UNUSED bool forceRegistration) override;
 
   /**
