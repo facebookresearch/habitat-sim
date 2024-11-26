@@ -5,14 +5,17 @@
 #ifndef ESP_SENSOR_SENSOR_H_
 #define ESP_SENSOR_SENSOR_H_
 
-#include "esp/scene/SceneNode.h"
-
+#include <Magnum/Math/Vector3.h>
+#include <Magnum/SceneGraph/Object.h>
 #include "esp/core/Buffer.h"
 #include "esp/core/Esp.h"
 
 #include "esp/sensor/configure.h"
 
 namespace esp {
+namespace scene {
+class SceneNode;
+}
 
 namespace sim {
 class Simulator;
@@ -93,14 +96,9 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
   const scene::SceneNode& node() const { return object(); }
 
   // Overloads to avoid confusion
-  scene::SceneNode& object() {
-    return static_cast<scene::SceneNode&>(
-        Magnum::SceneGraph::AbstractFeature3D::object());
-  }
-  const scene::SceneNode& object() const {
-    return static_cast<const scene::SceneNode&>(
-        Magnum::SceneGraph::AbstractFeature3D::object());
-  }
+  scene::SceneNode& object();
+  const scene::SceneNode& object() const;
+
   /**
    * @brief Return a pointer to this Sensor's SensorSpec
    */
@@ -169,14 +167,9 @@ class SensorSuite : public Magnum::SceneGraph::AbstractFeature3D {
   const scene::SceneNode& node() const { return object(); }
 
   // Overloads to avoid confusion
-  scene::SceneNode& object() {
-    return static_cast<scene::SceneNode&>(
-        Magnum::SceneGraph::AbstractFeature3D::object());
-  }
-  const scene::SceneNode& object() const {
-    return static_cast<const scene::SceneNode&>(
-        Magnum::SceneGraph::AbstractFeature3D::object());
-  }
+  scene::SceneNode& object();
+
+  const scene::SceneNode& object() const;
 
   /**
    * @brief Add Sensor sensor to existing sensors_ with key sensor's uuid
