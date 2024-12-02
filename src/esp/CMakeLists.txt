@@ -110,6 +110,11 @@ if(BUILD_GUI_VIEWERS)
   find_package(Magnum REQUIRED GlfwApplication)
 endif()
 
+if(BUILD_WITH_BULLET)
+  find_package(MagnumIntegration REQUIRED Bullet)
+  find_package(Bullet REQUIRED Dynamics)
+endif()
+
 find_package(
   MagnumPlugins
   REQUIRED
@@ -413,10 +418,7 @@ set(
 
 if(BUILD_WITH_BULLET)
 
-  find_package(MagnumIntegration REQUIRED Bullet)
-  find_package(Bullet REQUIRED Dynamics)
   # Add bullet sources
-
   list(
     APPEND
     physics_SOURCES
