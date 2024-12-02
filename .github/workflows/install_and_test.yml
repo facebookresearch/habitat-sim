@@ -184,11 +184,9 @@ jobs:
     - name: Set up SSH
       run: |-
         mkdir -p ~/.ssh
-        echo $HABITAT_WEBSITE_DEPLOY_KEY >> ~/.ssh/id_ed25519
+        echo "${{ secrets.HABITAT_WEBSITE_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
         chmod 600 ~/.ssh/id_ed25519
         ssh-keyscan github.com >> ~/.ssh/known_hosts
-      env:
-        HABITAT_WEBSITE_DEPLOY_KEY : ${{ secrets.HABITAT_WEBSITE_DEPLOY_KEY }}
     - name: Debugging with tmate
       uses: mxschmitt/action-tmate@v3.18
     - name: Build, install habitat-sim
