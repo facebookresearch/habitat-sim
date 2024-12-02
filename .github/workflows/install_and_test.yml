@@ -257,6 +257,8 @@ jobs:
         echo "${{ secrets.HABITAT-WEBISTE-DEPLOY-KEY }}" > ~/.ssh/id_ed25519
         chmod 600 ~/.ssh/id_ed25519
         ssh-keyscan github.com >> ~/.ssh/known_hosts
+    - name: Debugging with tmate
+      uses: mxschmitt/action-tmate@v3.18
     - name: Deploy documentation
       run: |-
         echo "Deploy documentation"
