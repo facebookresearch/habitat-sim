@@ -315,8 +315,6 @@ target_link_libraries(
   PUBLIC Magnum::WindowlessApplication
 )
 
-# add_subdirectory(gfx)
-
 # Keeping gfx_batch separate
 add_subdirectory(gfx_batch)
 
@@ -386,8 +384,6 @@ endif()
 if(OpenMP_CXX_FOUND)
   target_link_libraries(assets PUBLIC OpenMP::OpenMP_CXX)
 endif()
-
-# add_subdirectory(assets)
 
 #################
 ## metadata
@@ -462,8 +458,6 @@ target_link_libraries(
   PRIVATE core geo io tinyxml2
 )
 
-#add_subdirectory(metadata)
-
 #################
 ## io
 
@@ -492,8 +486,6 @@ target_link_libraries(
   io
   PUBLIC core
 )
-
-#add_subdirectory(io)
 
 #################
 ## scene
@@ -532,8 +524,6 @@ target_link_libraries(
          io
          sensor
 )
-
-#add_subdirectory(scene)
 
 #################
 ## physics
@@ -619,8 +609,6 @@ if(BUILD_WITH_BULLET)
   target_link_libraries(physics PUBLIC MagnumIntegration::Bullet Bullet::Dynamics)
 endif() #BUILD_WITH_BULLET
 
-# add_subdirectory(physics)
-
 #################
 ## nav
 
@@ -643,8 +631,6 @@ target_link_libraries(
   PUBLIC core scene
   PRIVATE Detour Recast
 )
-
-# add_subdirectory(nav)
 
 #################
 ## sensor
@@ -709,8 +695,6 @@ if(BUILD_WITH_AUDIO)
   target_link_libraries(sensor PUBLIC ${RLRAudioPropagation_LIBRARY})
 endif()
 
-#add_subdirectory(sensor)
-
 #################
 ## sim
 set(
@@ -738,7 +722,6 @@ target_link_libraries(
   sim
   PUBLIC nav gfx_batch sensor scene
 )
-#add_subdirectory(sim)
 
 # enable when finished? Slows compilation substantially
 # set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
