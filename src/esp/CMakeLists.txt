@@ -106,6 +106,9 @@ find_package(
   Primitives
   AnyImageConverter
 )
+if(BUILD_GUI_VIEWERS)
+  find_package(Magnum REQUIRED GlfwApplication)
+endif()
 
 find_package(
   MagnumPlugins
@@ -574,6 +577,11 @@ target_link_libraries(
          Magnum::AnyImageConverter
   PRIVATE tinyxml2 Detour Recast
 )
+
+# Link windowed application library if needed
+if(BUILD_GUI_VIEWERS)
+  target_link_libraries(habsim PUBLIC Magnum::GlfwApplication)
+endif()
 
 if(BUILD_WITH_BACKGROUND_RENDERER)
   target_link_libraries(habsim PUBLIC atomic_wait)
