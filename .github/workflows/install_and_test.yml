@@ -181,6 +181,14 @@ jobs:
         path: "./habitat-sim"
     - uses: "./habitat-sim/.github/actions/install_ubuntu_deps"
     - uses: "./habitat-sim/.github/actions/install_ubuntu_gpu_deps"
+    - name: Set up SSH
+      run: |-
+        mkdir -p ~/.ssh
+        echo "${{ secrets.HABITAT-WEBSITE-DEPLOY-KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
+    - name: Debugging with tmate
+      uses: mxschmitt/action-tmate@v3.18
     - name: Build, install habitat-sim
       run: |-
         #give cmake ownership to the runner for installation
