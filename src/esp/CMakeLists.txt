@@ -140,6 +140,8 @@ else()
   message(FATAL_ERROR "Unsupported platform")
 endif()
 
+#####################
+## Set sources
 #################
 ## core
 set(
@@ -165,18 +167,6 @@ set(
   core/Utility.h
 )
 
-add_library(
-  core STATIC
-  ${core_SOURCES}
-)
-
-target_link_libraries(
-  core
-  PUBLIC Corrade::Utility Magnum::Magnum MagnumIntegration::Eigen
-)
-
-target_include_directories(core PUBLIC ${PROJECT_BINARY_DIR})
-
 #################
 ## geo
 
@@ -190,19 +180,8 @@ set(
   geo/OBB.h
 )
 
-add_library(
-  geo STATIC
-  ${geo_SOURCES}
-)
-
-target_link_libraries(
-  geo
-  PUBLIC core gfx
-)
-
 #################
 ## gfx
-
 set(
   gfx_SOURCES
   gfx/CubeMap.cpp
@@ -273,54 +252,8 @@ endif()
 
 list(APPEND gfx_SOURCES ${GfxShaderResources})
 
-add_library(
-  gfx STATIC
-  ${gfx_SOURCES}
-)
-
-if(BUILD_WITH_CUDA)
-  target_link_libraries(gfx PUBLIC ${CUDART_LIBRARY})
-endif()
-
-target_link_libraries(
-  gfx
-  PUBLIC assets
-         core
-         io
-         gfx_batch
-         physics
-         Magnum::AnyImageImporter
-         Magnum::AnySceneImporter
-         Magnum::GL
-         Magnum::Magnum
-         Magnum::MeshTools
-         Magnum::DebugTools
-         Magnum::SceneGraph
-         Magnum::Shaders
-         Magnum::Trade
-         MagnumPlugins::GltfImporter
-         MagnumPlugins::StbImageImporter
-         MagnumPlugins::StbImageConverter
-         MagnumIntegration::Eigen
-         Corrade::Utility
-         Magnum::AnyImageConverter
-)
-
-if(BUILD_WITH_BACKGROUND_RENDERER)
-  target_link_libraries(gfx PUBLIC atomic_wait)
-endif()
-
-target_link_libraries(
-  gfx
-  PUBLIC Magnum::WindowlessApplication
-)
-
-# Keeping gfx_batch separate
-add_subdirectory(gfx_batch)
-
 #################
 ## assets
-
 set(
   assets_SOURCES
   assets/Asset.cpp
@@ -344,50 +277,8 @@ set(
 
 list(APPEND assets_SOURCES ${PbrIBlImageResources})
 
-add_library(
-  assets STATIC
-  ${assets_SOURCES}
-)
-
-target_link_libraries(
-  assets
-  PUBLIC core
-         metadata
-         physics
-         scene
-         nav
-         Magnum::AnyImageImporter
-         Magnum::AnySceneImporter
-         Magnum::GL
-         Magnum::Magnum
-         Magnum::MeshTools
-         Magnum::SceneGraph
-         Magnum::SceneTools
-         Magnum::Shaders
-         Magnum::Trade
-         Magnum::Primitives
-         MagnumPlugins::BasisImporter
-         MagnumPlugins::GltfImporter
-         MagnumPlugins::PrimitiveImporter
-         MagnumPlugins::StanfordImporter
-         MagnumPlugins::StbImageImporter
-         MagnumPlugins::StbImageConverter
-  PRIVATE geo io Magnum::MaterialTools
-)
-
-if(BUILD_ASSIMP_SUPPORT)
-  target_link_libraries(
-    assets PUBLIC MagnumPlugins::AssimpImporter PRIVATE Assimp::Assimp
-  )
-endif()
-
-if(OpenMP_CXX_FOUND)
-  target_link_libraries(assets PUBLIC OpenMP::OpenMP_CXX)
-endif()
-
 #################
 ## metadata
-
 set(
   metadata_SOURCES
   metadata/attributes/AbstractAttributes.h
@@ -445,22 +336,8 @@ set(
   metadata/URDFParser.h
 )
 
-add_library(
-  metadata STATIC
-  ${metadata_SOURCES}
-)
-
-target_include_directories(metadata PRIVATE "${DEPS_DIR}/tinyxml2")
-
-target_link_libraries(
-  metadata
-  PUBLIC Magnum::Magnum Magnum::Primitives
-  PRIVATE core geo io tinyxml2
-)
-
 #################
 ## io
-
 set(
   io_SOURCES
   io/Io.cpp
@@ -478,18 +355,8 @@ set(
   io/JsonUtils.h
 )
 
-add_library(
-  io STATIC
-  ${io_SOURCES}
-)
-target_link_libraries(
-  io
-  PUBLIC core
-)
-
 #################
 ## scene
-
 set(
   scene_SOURCES
   scene/GibsonSemanticScene.cpp
@@ -510,24 +377,8 @@ set(
   scene/SemanticScene.h
 )
 
-add_library(
-  scene STATIC
-  ${scene_SOURCES}
-)
-
-target_link_libraries(
-  scene
-  PUBLIC assets
-         core
-         geo
-         gfx
-         io
-         sensor
-)
-
 #################
 ## physics
-
 set(
   physics_SOURCES
   physics/ArticulatedLink.h
@@ -590,51 +441,14 @@ if(BUILD_WITH_BULLET)
 
 endif() #BUILD_WITH_BULLET
 
-add_library(
-  physics STATIC
-  ${physics_SOURCES}
-)
-
-target_link_libraries(
-  physics
-  PUBLIC core
-         scene
-         assets
-         MagnumPlugins::GltfImporter
-         MagnumPlugins::StbImageImporter
-         MagnumPlugins::StbImageConverter
-)
-
-if(BUILD_WITH_BULLET)
-  target_link_libraries(physics PUBLIC MagnumIntegration::Bullet Bullet::Dynamics)
-endif() #BUILD_WITH_BULLET
-
 #################
 ## nav
-
 set(nav_SOURCES nav/GreedyFollower.cpp nav/GreedyFollower.h nav/PathFinder.cpp
                 nav/PathFinder.h
 )
 
-add_library(
-  nav STATIC
-  ${nav_SOURCES}
-)
-
-target_include_directories(
-  nav PRIVATE "${DEPS_DIR}/recastnavigation/Detour/Include"
-              "${DEPS_DIR}/recastnavigation/Recast/Include"
-)
-
-target_link_libraries(
-  nav
-  PUBLIC core scene
-  PRIVATE Detour Recast
-)
-
 #################
 ## sensor
-
 set(
   sensor_SOURCES
   sensor/CameraSensor.cpp
@@ -658,41 +472,8 @@ set(
 
 if(BUILD_WITH_CUDA)
   list(APPEND sensor_SOURCES sensor/RedwoodNoiseModel.cpp sensor/RedwoodNoiseModel.h)
-endif()
-
-add_library(
-  sensor STATIC
-  ${sensor_SOURCES}
-)
-
-target_link_libraries(
-  sensor
-  PUBLIC core gfx gfx_batch scene sim
-)
-
-# ATTENTION developers !!!!!!!!!!!!!!!!!!!!
-# the codebase has a deep architectural problem that needs solving -- lib dependency cycles !!!!
-# the following is just a "crutch", a temporary remedy here.
-# https://cmake.org/cmake/help/latest/prop_tgt/LINK_INTERFACE_MULTIPLICITY.html
-set_target_properties(sensor PROPERTIES LINK_INTERFACE_MULTIPLICITY 3)
-
-if(BUILD_WITH_CUDA)
-  add_library(
-    noise_model_kernels STATIC sensor/RedwoodNoiseModel.cu sensor/RedwoodNoiseModel.cuh
-  )
-  target_link_libraries(noise_model_kernels PUBLIC ${CUDART_LIBRARY})
-  target_include_directories(
-    noise_model_kernels PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
-  )
-  target_compile_features(noise_model_kernels PUBLIC cxx_std_11)
-
-  target_link_libraries(sensor PUBLIC noise_model_kernels)
-  target_include_directories(sensor PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-endif()
-
-if(BUILD_WITH_AUDIO)
-  include_directories(${DEPS_DIR}/rlr-audio-propagation/RLRAudioPropagationPkg/headers)
-  target_link_libraries(sensor PUBLIC ${RLRAudioPropagation_LIBRARY})
+  # CUDA kernel sources
+  set(noise_model_SOURCES sensor/RedwoodNoiseModel.cu sensor/RedwoodNoiseModel.cuh)
 endif()
 
 #################
@@ -713,6 +494,261 @@ set(
   sim/SimulatorConfiguration.h
 )
 
+#################
+## build library
+
+################################
+# Keeping gfx_batch a separate library
+add_subdirectory(gfx_batch)
+##############################
+
+set(habsim_SOURCES ${core_SOURCES})
+list(
+  APPEND
+  habsim_SOURCES
+  ${geo_SOURCES}
+  ${gfx_SOURCES}
+  ${assets_SOURCES}
+  ${metadata_SOURCES}
+  ${io_SOURCES}
+  ${scene_SOURCES}
+  ${physics_SOURCES}
+  ${nav_SOURCES}
+  ${sensor_SOURCES}
+  ${sim_SOURCES}
+)
+#################
+## core
+add_library(
+  core STATIC
+  ${core_SOURCES}
+)
+
+target_link_libraries(
+  core
+  PUBLIC Corrade::Utility Magnum::Magnum MagnumIntegration::Eigen
+)
+
+target_include_directories(core PUBLIC ${PROJECT_BINARY_DIR})
+
+#################
+## geo
+add_library(
+  geo STATIC
+  ${geo_SOURCES}
+)
+
+target_link_libraries(
+  geo
+  PUBLIC core gfx
+)
+
+#################
+## gfx
+add_library(
+  gfx STATIC
+  ${gfx_SOURCES}
+)
+
+if(BUILD_WITH_CUDA)
+  target_link_libraries(gfx PUBLIC ${CUDART_LIBRARY})
+endif()
+
+target_link_libraries(
+  gfx
+  PUBLIC assets
+         core
+         io
+         gfx_batch
+         physics
+         Magnum::AnyImageImporter
+         Magnum::AnySceneImporter
+         Magnum::GL
+         Magnum::Magnum
+         Magnum::MeshTools
+         Magnum::DebugTools
+         Magnum::SceneGraph
+         Magnum::Shaders
+         Magnum::Trade
+         MagnumPlugins::GltfImporter
+         MagnumPlugins::StbImageImporter
+         MagnumPlugins::StbImageConverter
+         MagnumIntegration::Eigen
+         Corrade::Utility
+         Magnum::AnyImageConverter
+)
+
+if(BUILD_WITH_BACKGROUND_RENDERER)
+  target_link_libraries(gfx PUBLIC atomic_wait)
+endif()
+
+target_link_libraries(
+  gfx
+  PUBLIC Magnum::WindowlessApplication
+)
+
+#################
+## assets
+add_library(
+  assets STATIC
+  ${assets_SOURCES}
+)
+
+target_link_libraries(
+  assets
+  PUBLIC core
+         metadata
+         physics
+         scene
+         nav
+         Magnum::AnyImageImporter
+         Magnum::AnySceneImporter
+         Magnum::GL
+         Magnum::Magnum
+         Magnum::MeshTools
+         Magnum::SceneGraph
+         Magnum::SceneTools
+         Magnum::Shaders
+         Magnum::Trade
+         Magnum::Primitives
+         MagnumPlugins::BasisImporter
+         MagnumPlugins::GltfImporter
+         MagnumPlugins::PrimitiveImporter
+         MagnumPlugins::StanfordImporter
+         MagnumPlugins::StbImageImporter
+         MagnumPlugins::StbImageConverter
+  PRIVATE geo io Magnum::MaterialTools
+)
+
+if(BUILD_ASSIMP_SUPPORT)
+  target_link_libraries(
+    assets PUBLIC MagnumPlugins::AssimpImporter PRIVATE Assimp::Assimp
+  )
+endif()
+
+if(OpenMP_CXX_FOUND)
+  target_link_libraries(assets PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
+#################
+## metadata
+add_library(
+  metadata STATIC
+  ${metadata_SOURCES}
+)
+
+target_include_directories(metadata PRIVATE "${DEPS_DIR}/tinyxml2")
+
+target_link_libraries(
+  metadata
+  PUBLIC Magnum::Magnum Magnum::Primitives
+  PRIVATE core geo io tinyxml2
+)
+
+#################
+## io
+add_library(
+  io STATIC
+  ${io_SOURCES}
+)
+target_link_libraries(
+  io
+  PUBLIC core
+)
+
+#################
+## scene
+add_library(
+  scene STATIC
+  ${scene_SOURCES}
+)
+
+target_link_libraries(
+  scene
+  PUBLIC assets
+         core
+         geo
+         gfx
+         io
+         sensor
+)
+
+#################
+## physics
+add_library(
+  physics STATIC
+  ${physics_SOURCES}
+)
+
+target_link_libraries(
+  physics
+  PUBLIC core
+         scene
+         assets
+         MagnumPlugins::GltfImporter
+         MagnumPlugins::StbImageImporter
+         MagnumPlugins::StbImageConverter
+)
+
+if(BUILD_WITH_BULLET)
+  target_link_libraries(physics PUBLIC MagnumIntegration::Bullet Bullet::Dynamics)
+endif() #BUILD_WITH_BULLET
+
+#################
+## nav
+add_library(
+  nav STATIC
+  ${nav_SOURCES}
+)
+
+target_include_directories(
+  nav PRIVATE "${DEPS_DIR}/recastnavigation/Detour/Include"
+              "${DEPS_DIR}/recastnavigation/Recast/Include"
+)
+
+target_link_libraries(
+  nav
+  PUBLIC core scene
+  PRIVATE Detour Recast
+)
+
+#################
+## sensor
+add_library(
+  sensor STATIC
+  ${sensor_SOURCES}
+)
+
+target_link_libraries(
+  sensor
+  PUBLIC core gfx gfx_batch scene sim
+)
+
+# ATTENTION developers !!!!!!!!!!!!!!!!!!!!
+# the codebase has a deep architectural problem that needs solving -- lib dependency cycles !!!!
+# the following is just a "crutch", a temporary remedy here.
+# https://cmake.org/cmake/help/latest/prop_tgt/LINK_INTERFACE_MULTIPLICITY.html
+set_target_properties(sensor PROPERTIES LINK_INTERFACE_MULTIPLICITY 3)
+
+if(BUILD_WITH_CUDA)
+  add_library(noise_model_kernels STATIC ${noise_model_SOURCES})
+  target_link_libraries(noise_model_kernels PUBLIC ${CUDART_LIBRARY})
+  target_include_directories(
+    noise_model_kernels PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+  )
+  target_compile_features(noise_model_kernels PUBLIC cxx_std_11)
+
+  target_link_libraries(sensor PUBLIC noise_model_kernels)
+  target_include_directories(sensor PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+endif()
+
+if(BUILD_WITH_AUDIO)
+  include_directories(${DEPS_DIR}/rlr-audio-propagation/RLRAudioPropagationPkg/headers)
+  target_link_libraries(sensor PUBLIC ${RLRAudioPropagation_LIBRARY})
+endif()
+
+#################
+## sim
 add_library(
   sim STATIC
   ${sim_SOURCES}
