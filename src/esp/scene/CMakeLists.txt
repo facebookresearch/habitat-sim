@@ -24,5 +24,10 @@ add_library(
 
 target_link_libraries(
   scene
-  PUBLIC assets core geo gfx io
+  PUBLIC assets
+         core
+         geo
+         gfx
+         io
+         sensor
 )

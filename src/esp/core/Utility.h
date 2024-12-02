@@ -9,6 +9,7 @@
 
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Algorithms/GramSchmidt.h>
+#include <Magnum/Math/Matrix3.h>
 #include <Magnum/Math/Matrix4.h>
 #include <Magnum/Math/Quaternion.h>
 #include <Magnum/Math/Vector3.h>

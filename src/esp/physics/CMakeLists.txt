@@ -83,7 +83,6 @@ target_link_libraries(
   physics
   PUBLIC core
          scene
-         sensor
          assets
          MagnumPlugins::GltfImporter
          MagnumPlugins::StbImageImporter
