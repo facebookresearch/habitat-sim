@@ -14,13 +14,5 @@ add_executable(viewer ${viewer_SOURCES} ${viewer_RESOURCES})
 
 target_link_libraries(
   viewer
-  PRIVATE assets
-          gfx
-          nav
-          scene
-          sim
-          geo
-          Magnum::DebugTools
-          Magnum::Text
-          MagnumPlugins::StbTrueTypeFont
+  PRIVATE habsim Magnum::DebugTools Magnum::Text MagnumPlugins::StbTrueTypeFont
 )

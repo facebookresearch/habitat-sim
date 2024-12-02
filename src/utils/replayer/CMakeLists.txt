@@ -8,5 +8,5 @@ find_package(MagnumPlugins REQUIRED KtxImporter)
 add_executable(replayer replayer.cpp)
 target_link_libraries(
   replayer
-  PRIVATE sensor gfx_batch Magnum::Application MagnumPlugins::KtxImporter
+  PRIVATE habsim gfx_batch Magnum::Application MagnumPlugins::KtxImporter
 )

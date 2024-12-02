@@ -194,6 +194,7 @@ set(
   gfx/DrawableGroup.h
   gfx/GenericDrawable.cpp
   gfx/GenericDrawable.h
+  ${gfx_SOURCES}
   gfx/SkinData.h
   gfx/MeshVisualizerDrawable.cpp
   gfx/MeshVisualizerDrawable.h
@@ -517,95 +518,46 @@ list(
   ${sensor_SOURCES}
   ${sim_SOURCES}
 )
-#################
-## core
+
 add_library(
-  core STATIC
-  ${core_SOURCES}
+  habsim STATIC
+  ${habsim_SOURCES}
 )
 
-target_link_libraries(
-  core
-  PUBLIC Corrade::Utility Magnum::Magnum MagnumIntegration::Eigen
-)
-
-target_include_directories(core PUBLIC ${PROJECT_BINARY_DIR})
-
-#################
-## geo
-add_library(
-  geo STATIC
-  ${geo_SOURCES}
-)
-
-target_link_libraries(
-  geo
-  PUBLIC core gfx
-)
-
-#################
-## gfx
-add_library(
-  gfx STATIC
-  ${gfx_SOURCES}
+target_include_directories(
+  habsim PUBLIC ${PROJECT_BINARY_DIR}
+  PRIVATE "${DEPS_DIR}/tinyxml2" "${DEPS_DIR}/recastnavigation/Detour/Include"
+          "${DEPS_DIR}/recastnavigation/Recast/Include"
 )
 
 if(BUILD_WITH_CUDA)
-  target_link_libraries(gfx PUBLIC ${CUDART_LIBRARY})
+  add_library(noise_model_kernels STATIC ${noise_model_SOURCES})
+  target_link_libraries(noise_model_kernels PUBLIC ${CUDART_LIBRARY})
+  target_include_directories(
+    noise_model_kernels PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+  )
+  target_compile_features(noise_model_kernels PUBLIC cxx_std_11)
+
+  target_link_libraries(habsim PUBLIC noise_model_kernels ${CUDART_LIBRARY})
+
+  target_include_directories(habsim PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+endif()
+
+if(BUILD_WITH_AUDIO)
+  include_directories(${DEPS_DIR}/rlr-audio-propagation/RLRAudioPropagationPkg/headers)
+  target_link_libraries(habsim PUBLIC ${RLRAudioPropagation_LIBRARY})
 endif()
 
 target_link_libraries(
-  gfx
-  PUBLIC assets
-         core
-         io
-         gfx_batch
-         physics
+  habsim
+  PUBLIC gfx_batch
          Magnum::AnyImageImporter
          Magnum::AnySceneImporter
          Magnum::GL
          Magnum::Magnum
+         Magnum::MaterialTools
          Magnum::MeshTools
          Magnum::DebugTools
-         Magnum::SceneGraph
-         Magnum::Shaders
-         Magnum::Trade
-         MagnumPlugins::GltfImporter
-         MagnumPlugins::StbImageImporter
-         MagnumPlugins::StbImageConverter
-         MagnumIntegration::Eigen
-         Corrade::Utility
-         Magnum::AnyImageConverter
-)
-
-if(BUILD_WITH_BACKGROUND_RENDERER)
-  target_link_libraries(gfx PUBLIC atomic_wait)
-endif()
-
-target_link_libraries(
-  gfx
-  PUBLIC Magnum::WindowlessApplication
-)
-
-#################
-## assets
-add_library(
-  assets STATIC
-  ${assets_SOURCES}
-)
-
-target_link_libraries(
-  assets
-  PUBLIC core
-         metadata
-         physics
-         scene
-         nav
-         Magnum::AnyImageImporter
-         Magnum::AnySceneImporter
-         Magnum::GL
-         Magnum::Magnum
-         Magnum::MeshTools
          Magnum::SceneGraph
          Magnum::SceneTools
          Magnum::Shaders
@@ -617,147 +569,33 @@ target_link_libraries(
          MagnumPlugins::StanfordImporter
          MagnumPlugins::StbImageImporter
          MagnumPlugins::StbImageConverter
-  PRIVATE geo io Magnum::MaterialTools
+         MagnumIntegration::Eigen
+         Corrade::Utility
+         Magnum::AnyImageConverter
+  PRIVATE tinyxml2 Detour Recast
 )
+
+if(BUILD_WITH_BACKGROUND_RENDERER)
+  target_link_libraries(habsim PUBLIC atomic_wait)
+endif()
 
 if(BUILD_ASSIMP_SUPPORT)
   target_link_libraries(
-    assets PUBLIC MagnumPlugins::AssimpImporter PRIVATE Assimp::Assimp
+    habsim PUBLIC MagnumPlugins::AssimpImporter PRIVATE Assimp::Assimp
   )
 endif()
 
 if(OpenMP_CXX_FOUND)
-  target_link_libraries(assets PUBLIC OpenMP::OpenMP_CXX)
+  target_link_libraries(habsim PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
-#################
-## metadata
-add_library(
-  metadata STATIC
-  ${metadata_SOURCES}
-)
-
-target_include_directories(metadata PRIVATE "${DEPS_DIR}/tinyxml2")
-
 target_link_libraries(
-  metadata
-  PUBLIC Magnum::Magnum Magnum::Primitives
-  PRIVATE core geo io tinyxml2
+  habsim
+  PUBLIC Magnum::WindowlessApplication
 )
-
-#################
-## io
-add_library(
-  io STATIC
-  ${io_SOURCES}
-)
-target_link_libraries(
-  io
-  PUBLIC core
-)
-
-#################
-## scene
-add_library(
-  scene STATIC
-  ${scene_SOURCES}
-)
-
-target_link_libraries(
-  scene
-  PUBLIC assets
-         core
-         geo
-         gfx
-         io
-         sensor
-)
-
-#################
-## physics
-add_library(
-  physics STATIC
-  ${physics_SOURCES}
-)
-
-target_link_libraries(
-  physics
-  PUBLIC core
-         scene
-         assets
-         MagnumPlugins::GltfImporter
-         MagnumPlugins::StbImageImporter
-         MagnumPlugins::StbImageConverter
-)
-
 if(BUILD_WITH_BULLET)
-  target_link_libraries(physics PUBLIC MagnumIntegration::Bullet Bullet::Dynamics)
+  target_link_libraries(habsim PUBLIC MagnumIntegration::Bullet Bullet::Dynamics)
 endif() #BUILD_WITH_BULLET
-
-#################
-## nav
-add_library(
-  nav STATIC
-  ${nav_SOURCES}
-)
-
-target_include_directories(
-  nav PRIVATE "${DEPS_DIR}/recastnavigation/Detour/Include"
-              "${DEPS_DIR}/recastnavigation/Recast/Include"
-)
-
-target_link_libraries(
-  nav
-  PUBLIC core scene
-  PRIVATE Detour Recast
-)
-
-#################
-## sensor
-add_library(
-  sensor STATIC
-  ${sensor_SOURCES}
-)
-
-target_link_libraries(
-  sensor
-  PUBLIC core gfx gfx_batch scene sim
-)
-
-# ATTENTION developers !!!!!!!!!!!!!!!!!!!!
-# the codebase has a deep architectural problem that needs solving -- lib dependency cycles !!!!
-# the following is just a "crutch", a temporary remedy here.
-# https://cmake.org/cmake/help/latest/prop_tgt/LINK_INTERFACE_MULTIPLICITY.html
-set_target_properties(sensor PROPERTIES LINK_INTERFACE_MULTIPLICITY 3)
-
-if(BUILD_WITH_CUDA)
-  add_library(noise_model_kernels STATIC ${noise_model_SOURCES})
-  target_link_libraries(noise_model_kernels PUBLIC ${CUDART_LIBRARY})
-  target_include_directories(
-    noise_model_kernels PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
-  )
-  target_compile_features(noise_model_kernels PUBLIC cxx_std_11)
-
-  target_link_libraries(sensor PUBLIC noise_model_kernels)
-  target_include_directories(sensor PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-endif()
-
-if(BUILD_WITH_AUDIO)
-  include_directories(${DEPS_DIR}/rlr-audio-propagation/RLRAudioPropagationPkg/headers)
-  target_link_libraries(sensor PUBLIC ${RLRAudioPropagation_LIBRARY})
-endif()
-
-#################
-## sim
-add_library(
-  sim STATIC
-  ${sim_SOURCES}
-)
-
-target_link_libraries(
-  sim
-  PUBLIC nav gfx_batch sensor scene
-)
 
 # enable when finished? Slows compilation substantially
 # set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
