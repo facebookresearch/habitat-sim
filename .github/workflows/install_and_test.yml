@@ -260,40 +260,40 @@ jobs:
     - name: Deploy documentation
       run: |-
         echo "Deploy documentation"
-        #start ssh agent and add the key
-        eval `ssh-agent -s`
-        ssh-add ~/.ssh/id_ed25519
-        #if [[ ${{ github.event_name }} == 'schedule' ]]; then
-        echo "Trigger: a nightly build. Deploying the docs."
-        git clone git@github.com:facebookmicrosites/habitat-website.git
-        cd habitat-website
-        git submodule update --init
-        for dir in habitat-sim habitat-lab
-        do
-            rm -rf published/docs/${dir}
-            cp -r ../habitat-sim/build/docs-public/${dir} published/docs/.
-        done
+        if [[ ${{ github.event_name }} == 'schedule' ]]; then
+          #start ssh agent and add the key
+          eval `ssh-agent -s`
+          ssh-add ~/.ssh/id_ed25519
+          echo "Trigger: a nightly build. Deploying the docs."
+          git clone git@github.com:facebookmicrosites/habitat-website.git
+          cd habitat-website
+          git submodule update --init
+          for dir in habitat-sim habitat-lab
+          do
+              rm -rf published/docs/${dir}
+              cp -r ../habitat-sim/build/docs-public/${dir} published/docs/.
+          done
 
-        git config --global user.name "Habitat"
-        git config --global user.email habitat@fb.com
-        NOW=$(date +"%m-%d-%Y")
-        git add .
-        git diff-index --quiet HEAD || git commit -m "Build habitat-sim and habitat-lab ${NOW}"
-        git push origin main
+          git config --global user.name "Habitat"
+          git config --global user.email habitat@fb.com
+          NOW=$(date +"%m-%d-%Y")
+          git add .
+          git diff-index --quiet HEAD || git commit -m "Build habitat-sim and habitat-lab ${NOW}"
+          git push origin main
 
-        # Deploy to public
-        git checkout gh-pages
-        git checkout main published
-        sudo apt-get update || true
-        sudo apt-get install -yq rsync
-        rsync -a published/ ./.
-        rm -rf published
-        git add .
-        git diff-index --quiet HEAD || git commit -m "Build habitat-sim and habitat-lab ${NOW}"
-        git push origin gh-pages
-        #else
-        #  echo "Not a nightly build, no deployment needed. "
-        #fi
+          # Deploy to public
+          git checkout gh-pages
+          git checkout main published
+          sudo apt-get update || true
+          sudo apt-get install -yq rsync
+          rsync -a published/ ./.
+          rm -rf published
+          git add .
+          git diff-index --quiet HEAD || git commit -m "Build habitat-sim and habitat-lab ${NOW}"
+          git push origin gh-pages
+        else
+          echo "Not a nightly build, no deployment needed. "
+        fi
 
   build_conda_binaries:
     runs-on: 4-core-ubuntu-gpu-t4
@@ -411,8 +411,6 @@ jobs:
           elif [[ ${{ github.event_name }} == 'pull_request' ]]; then
             echo "trigger: a pull request"
           fi
-      #- name: Debugging with tmate
-      #  uses: mxschmitt/action-tmate@v3.18
       - name: Build conda OSX packages
         run: |-
           export PATH=$HOME/miniconda/bin:$PATH
