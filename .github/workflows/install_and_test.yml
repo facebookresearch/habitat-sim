@@ -251,10 +251,19 @@ jobs:
         conda install -y -c conda-forge doxygen=1.9.5
         conda install -y  jinja2 pygments docutils
         ./build-public.sh
+    - name: Set up SSH
+      run: |-
+        mkdir -p ~/.ssh
+        echo "${{ secrets.HABITAT_WEBSITE_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
     - name: Deploy documentation
       run: |-
         echo "Deploy documentation"
         if [[ ${{ github.event_name }} == 'schedule' ]]; then
+          #start ssh agent and add the key
+          eval `ssh-agent -s`
+          ssh-add ~/.ssh/id_ed25519
           echo "Trigger: a nightly build. Deploying the docs."
           git clone git@github.com:facebookmicrosites/habitat-website.git
           cd habitat-website
@@ -402,8 +411,6 @@ jobs:
           elif [[ ${{ github.event_name }} == 'pull_request' ]]; then
             echo "trigger: a pull request"
           fi
-      #- name: Debugging with tmate
-      #  uses: mxschmitt/action-tmate@v3.18
       - name: Build conda OSX packages
         run: |-
           export PATH=$HOME/miniconda/bin:$PATH
