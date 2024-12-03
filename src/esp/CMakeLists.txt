@@ -202,7 +202,6 @@ set(
   gfx/DrawableGroup.h
   gfx/GenericDrawable.cpp
   gfx/GenericDrawable.h
-  ${gfx_SOURCES}
   gfx/SkinData.h
   gfx/MeshVisualizerDrawable.cpp
   gfx/MeshVisualizerDrawable.h
