@@ -56,7 +56,7 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
         libjpeg-dev libglm-dev libgl1-mesa-glx libegl1-mesa-dev mesa-utils xorg-dev freeglut3-dev
    ```
 
-   See this [configuration for a full list of dependencies](https://github.com/facebookresearch/habitat-sim/blob/main/.circleci/config.yml#L64) that our CI installs on a clean Ubuntu VM. If you run into build errors later, this is a good place to check if all dependencies are installed.
+   See the github actions and workflow [configs for a full list of dependencies](https://github.com/facebookresearch/habitat-sim/blob/main/.github) that our CI installs on a clean Ubuntu VM. If you run into build errors later, this is a good place to check if all dependencies are installed.
 
 1. Build Habitat-Sim
 
