@@ -10,5 +10,5 @@ target_include_directories(Datatool SYSTEM PRIVATE "${DEPS_DIR}/tinyobjloader")
 
 target_link_libraries(
   Datatool
-  PRIVATE habsim
+  PRIVATE habitat_sim
 )

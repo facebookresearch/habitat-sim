@@ -14,5 +14,5 @@ add_executable(viewer ${viewer_SOURCES} ${viewer_RESOURCES})
 
 target_link_libraries(
   viewer
-  PRIVATE habsim Magnum::DebugTools Magnum::Text MagnumPlugins::StbTrueTypeFont
+  PRIVATE habitat_sim Magnum::DebugTools Magnum::Text MagnumPlugins::StbTrueTypeFont
 )

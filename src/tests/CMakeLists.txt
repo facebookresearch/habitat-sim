@@ -29,10 +29,12 @@ configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/configure.h
 )
 
-corrade_add_test(AttributesConfigsTest AttributesConfigsTest.cpp LIBRARIES habsim)
+corrade_add_test(AttributesConfigsTest AttributesConfigsTest.cpp LIBRARIES habitat_sim)
 target_include_directories(AttributesConfigsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(AttributesManagersTest AttributesManagersTest.cpp LIBRARIES habsim)
+corrade_add_test(
+  AttributesManagersTest AttributesManagersTest.cpp LIBRARIES habitat_sim
+)
 target_include_directories(AttributesManagersTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(
@@ -60,9 +62,9 @@ if(MagnumPlugins_KtxImageConverter_FOUND)
   target_link_libraries(GfxBatchRendererTest PRIVATE MagnumPlugins::KtxImageConverter)
 endif()
 
-corrade_add_test(ConfigurationTest ConfigurationTest.cpp LIBRARIES habsim)
+corrade_add_test(ConfigurationTest ConfigurationTest.cpp LIBRARIES habitat_sim)
 
-corrade_add_test(CullingTest CullingTest.cpp LIBRARIES habsim)
+corrade_add_test(CullingTest CullingTest.cpp LIBRARIES habitat_sim)
 target_include_directories(CullingTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(
@@ -76,10 +78,10 @@ corrade_add_test(
   Magnum::Primitives
 )
 
-corrade_add_test(DrawableTest DrawableTest.cpp LIBRARIES habsim)
+corrade_add_test(DrawableTest DrawableTest.cpp LIBRARIES habitat_sim)
 target_include_directories(DrawableTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(GeoTest GeoTest.cpp LIBRARIES habsim)
+corrade_add_test(GeoTest GeoTest.cpp LIBRARIES habitat_sim)
 
 corrade_add_test(
   GfxBatchHbaoTest
@@ -100,7 +102,7 @@ corrade_add_test(
 )
 target_include_directories(GfxBatchHbaoTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(GfxReplayTest GfxReplayTest.cpp LIBRARIES habsim)
+corrade_add_test(GfxReplayTest GfxReplayTest.cpp LIBRARIES habitat_sim)
 target_include_directories(GfxReplayTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 if(BUILD_WITH_BACKGROUND_RENDERER)
@@ -108,7 +110,7 @@ if(BUILD_WITH_BACKGROUND_RENDERER)
     BatchReplayRendererTest
     BatchReplayRendererTest.cpp
     LIBRARIES
-    habsim
+    habitat_sim
     gfx_batch
     MagnumPlugins::OpenExrImageConverter
     MagnumPlugins::OpenExrImporter
@@ -118,51 +120,53 @@ if(BUILD_WITH_BACKGROUND_RENDERER)
   )
 endif()
 
-corrade_add_test(GibsonSceneTest GibsonSceneTest.cpp LIBRARIES habsim)
+corrade_add_test(GibsonSceneTest GibsonSceneTest.cpp LIBRARIES habitat_sim)
 target_include_directories(GibsonSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(HM3DSceneTest HM3DSceneTest.cpp LIBRARIES habsim)
+corrade_add_test(HM3DSceneTest HM3DSceneTest.cpp LIBRARIES habitat_sim)
 target_include_directories(HM3DSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(IOTest IOTest.cpp LIBRARIES habsim)
+corrade_add_test(IOTest IOTest.cpp LIBRARIES habitat_sim)
 target_include_directories(IOTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(LoggingTest LoggingTest.cpp LIBRARIES habsim)
+corrade_add_test(LoggingTest LoggingTest.cpp LIBRARIES habitat_sim)
 set_tests_properties(LoggingTest PROPERTIES ENVIRONMENT HABITAT_SIM_LOG="")
 
-corrade_add_test(MetadataMediatorTest MetadataMediatorTest.cpp LIBRARIES habsim)
+corrade_add_test(MetadataMediatorTest MetadataMediatorTest.cpp LIBRARIES habitat_sim)
 target_include_directories(MetadataMediatorTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(Mp3dTest Mp3dTest.cpp LIBRARIES habsim)
+corrade_add_test(Mp3dTest Mp3dTest.cpp LIBRARIES habitat_sim)
 target_include_directories(Mp3dTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(NavTest NavTest.cpp LIBRARIES habsim)
+corrade_add_test(NavTest NavTest.cpp LIBRARIES habitat_sim)
 target_include_directories(NavTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(PathFinderTest PathFinderTest.cpp LIBRARIES habsim Corrade::Utility)
+corrade_add_test(
+  PathFinderTest PathFinderTest.cpp LIBRARIES habitat_sim Corrade::Utility
+)
 target_include_directories(PathFinderTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(PhysicsTest PhysicsTest.cpp LIBRARIES habsim)
+corrade_add_test(PhysicsTest PhysicsTest.cpp LIBRARIES habitat_sim)
 target_include_directories(PhysicsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(ReplicaSceneTest ReplicaSceneTest.cpp LIBRARIES habsim)
+corrade_add_test(ReplicaSceneTest ReplicaSceneTest.cpp LIBRARIES habitat_sim)
 target_include_directories(ReplicaSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(ResourceManagerTest ResourceManagerTest.cpp LIBRARIES habsim)
+corrade_add_test(ResourceManagerTest ResourceManagerTest.cpp LIBRARIES habitat_sim)
 target_include_directories(ResourceManagerTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(SceneGraphTest SceneGraphTest.cpp LIBRARIES habsim)
+corrade_add_test(SceneGraphTest SceneGraphTest.cpp LIBRARIES habitat_sim)
 
-corrade_add_test(SemanticTest SemanticTest.cpp LIBRARIES habsim)
+corrade_add_test(SemanticTest SemanticTest.cpp LIBRARIES habitat_sim)
 target_include_directories(SemanticTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(SensorTest SensorTest.cpp LIBRARIES habsim)
+corrade_add_test(SensorTest SensorTest.cpp LIBRARIES habitat_sim)
 
 corrade_add_test(
   SimTest
   SimTest.cpp
   LIBRARIES
-  habsim
+  habitat_sim
   Magnum::DebugTools
   Magnum::AnyImageConverter
   MagnumPlugins::StbImageImporter

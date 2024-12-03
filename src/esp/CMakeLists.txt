@@ -3,8 +3,6 @@
 # LICENSE file in the root directory of this source tree.
 
 # https://embeddedartistry.com/blog/2017/3/7/clang-weverything
-# TODO(msb) enable CORRADE_USE_PEDANTIC
-# set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
 
 option(BUILD_WARNINGS_AS_ERRORS "Build with warnings as errors" OFF)
 if(BUILD_WARNINGS_AS_ERRORS)
@@ -57,6 +55,8 @@ set(ESP_DEFAULT_PHYSICS_CONFIG
 
 #################################
 # Configure.h file generation
+# Namespace-specific compile-time generated configurations
+
 # core
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/core/configure.h.cmake
@@ -177,7 +177,6 @@ set(
 
 #################
 ## geo
-
 set(
   geo_SOURCES
   geo/CoordinateFrame.cpp
@@ -281,9 +280,8 @@ set(
   assets/ResourceManager.h
   assets/RigManager.cpp
   assets/RigManager.h
+  ${PbrIBlImageResources}
 )
-
-list(APPEND assets_SOURCES ${PbrIBlImageResources})
 
 #################
 ## metadata
@@ -448,9 +446,14 @@ endif() #BUILD_WITH_BULLET
 
 #################
 ## nav
-set(nav_SOURCES nav/GreedyFollower.cpp nav/GreedyFollower.h nav/PathFinder.cpp
-                nav/PathFinder.h
+# cmake-format: off
+set(nav_SOURCES
+  nav/GreedyFollower.cpp
+  nav/GreedyFollower.h
+  nav/PathFinder.cpp
+  nav/PathFinder.h
 )
+# cmake-format: on
 
 #################
 ## sensor
@@ -507,10 +510,9 @@ set(
 add_subdirectory(gfx_batch)
 ##############################
 
-set(habsim_SOURCES ${core_SOURCES})
-list(
-  APPEND
+set(
   habsim_SOURCES
+  ${core_SOURCES}
   ${geo_SOURCES}
   ${gfx_SOURCES}
   ${assets_SOURCES}
@@ -524,36 +526,41 @@ list(
 )
 
 add_library(
-  habsim STATIC
+  habitat_sim STATIC
   ${habsim_SOURCES}
 )
 
 target_include_directories(
-  habsim PUBLIC ${PROJECT_BINARY_DIR}
+  habitat_sim PUBLIC ${PROJECT_BINARY_DIR}
   PRIVATE "${DEPS_DIR}/tinyxml2" "${DEPS_DIR}/recastnavigation/Detour/Include"
           "${DEPS_DIR}/recastnavigation/Recast/Include"
 )
 
 if(BUILD_WITH_CUDA)
   add_library(noise_model_kernels STATIC ${noise_model_SOURCES})
+  # Use this until this change in Corrade is included in Habitat
+  # https://github.com/mosra/corrade/commit/280e6b6874e0902086e321d733ce0e90e0c52920
+  set_target_properties(noise_model_kernels PROPERTIES CORRADE_USE_PEDANTIC_FLAGS OFF)
   target_link_libraries(noise_model_kernels PUBLIC ${CUDART_LIBRARY})
   target_include_directories(
     noise_model_kernels PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
   )
   target_compile_features(noise_model_kernels PUBLIC cxx_std_11)
 
-  target_link_libraries(habsim PUBLIC noise_model_kernels ${CUDART_LIBRARY})
+  target_link_libraries(habitat_sim PUBLIC noise_model_kernels ${CUDART_LIBRARY})
 
-  target_include_directories(habsim PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+  target_include_directories(
+    habitat_sim PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+  )
 endif()
 
 if(BUILD_WITH_AUDIO)
   include_directories(${DEPS_DIR}/rlr-audio-propagation/RLRAudioPropagationPkg/headers)
-  target_link_libraries(habsim PUBLIC ${RLRAudioPropagation_LIBRARY})
+  target_link_libraries(habitat_sim PUBLIC ${RLRAudioPropagation_LIBRARY})
 endif()
 
 target_link_libraries(
-  habsim
+  habitat_sim
   PUBLIC gfx_batch
          Magnum::AnyImageImporter
          Magnum::AnySceneImporter
@@ -581,30 +588,30 @@ target_link_libraries(
 
 # Link windowed application library if needed
 if(BUILD_GUI_VIEWERS)
-  target_link_libraries(habsim PUBLIC Magnum::GlfwApplication)
+  target_link_libraries(habitat_sim PUBLIC Magnum::GlfwApplication)
 endif()
 
 if(BUILD_WITH_BACKGROUND_RENDERER)
-  target_link_libraries(habsim PUBLIC atomic_wait)
+  target_link_libraries(habitat_sim PUBLIC atomic_wait)
 endif()
 
 if(BUILD_ASSIMP_SUPPORT)
   target_link_libraries(
-    habsim PUBLIC MagnumPlugins::AssimpImporter PRIVATE Assimp::Assimp
+    habitat_sim PUBLIC MagnumPlugins::AssimpImporter PRIVATE Assimp::Assimp
   )
 endif()
 
 if(OpenMP_CXX_FOUND)
-  target_link_libraries(habsim PUBLIC OpenMP::OpenMP_CXX)
+  target_link_libraries(habitat_sim PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
 target_link_libraries(
-  habsim
+  habitat_sim
   PUBLIC Magnum::WindowlessApplication
 )
 if(BUILD_WITH_BULLET)
-  target_link_libraries(habsim PUBLIC MagnumIntegration::Bullet Bullet::Dynamics)
+  target_link_libraries(habitat_sim PUBLIC MagnumIntegration::Bullet Bullet::Dynamics)
 endif() #BUILD_WITH_BULLET
 
 # enable when finished? Slows compilation substantially
-# set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
+set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)

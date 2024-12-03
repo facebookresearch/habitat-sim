@@ -29,7 +29,7 @@ pybind11_add_module(
 target_link_libraries(
   habitat_sim_bindings
   PRIVATE MagnumBindings::Python MagnumPlugins::KtxImporter
-  PUBLIC habsim
+  PUBLIC habitat_sim
 )
 
 if(BUILD_WITH_AUDIO)
