@@ -2,8 +2,18 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-find_package(Magnum REQUIRED DebugTools Text)
-find_package(MagnumPlugins REQUIRED StbTrueTypeFont)
+find_package(Magnum REQUIRED DebugTools GlfwApplication Text)
+find_package(
+  MagnumPlugins
+  REQUIRED
+  BasisImporter
+  GltfImporter
+  PrimitiveImporter
+  StanfordImporter
+  StbImageImporter
+  StbImageConverter
+  StbTrueTypeFont
+)
 
 set(viewer_SOURCES viewer.cpp ObjectPickingHelper.cpp ObjectPickingHelper.h)
 
@@ -14,5 +24,15 @@ add_executable(viewer ${viewer_SOURCES} ${viewer_RESOURCES})
 
 target_link_libraries(
   viewer
-  PRIVATE habitat_sim Magnum::DebugTools Magnum::Text MagnumPlugins::StbTrueTypeFont
+  PRIVATE habitat_sim
+          Magnum::DebugTools
+          Magnum::GlfwApplication
+          Magnum::Text
+          MagnumPlugins::BasisImporter
+          MagnumPlugins::GltfImporter
+          MagnumPlugins::KtxImporter
+          MagnumPlugins::StanfordImporter
+          MagnumPlugins::StbImageImporter
+          MagnumPlugins::StbImageConverter
+          MagnumPlugins::StbTrueTypeFont
 )

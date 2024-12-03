@@ -106,25 +106,13 @@ find_package(
   Primitives
   AnyImageConverter
 )
-if(BUILD_GUI_VIEWERS)
-  find_package(Magnum REQUIRED GlfwApplication)
-endif()
 
 if(BUILD_WITH_BULLET)
   find_package(MagnumIntegration REQUIRED Bullet)
   find_package(Bullet REQUIRED Dynamics)
 endif()
 
-find_package(
-  MagnumPlugins
-  REQUIRED
-  BasisImporter
-  GltfImporter
-  PrimitiveImporter
-  StanfordImporter
-  StbImageImporter
-  StbImageConverter
-)
+find_package(MagnumPlugins REQUIRED PrimitiveImporter)
 if(BUILD_ASSIMP_SUPPORT)
   find_package(MagnumPlugins REQUIRED AssimpImporter)
 endif()
@@ -574,22 +562,12 @@ target_link_libraries(
          Magnum::Shaders
          Magnum::Trade
          Magnum::Primitives
-         MagnumPlugins::BasisImporter
-         MagnumPlugins::GltfImporter
          MagnumPlugins::PrimitiveImporter
-         MagnumPlugins::StanfordImporter
-         MagnumPlugins::StbImageImporter
-         MagnumPlugins::StbImageConverter
          MagnumIntegration::Eigen
          Corrade::Utility
          Magnum::AnyImageConverter
   PRIVATE tinyxml2 Detour Recast
 )
-
-# Link windowed application library if needed
-if(BUILD_GUI_VIEWERS)
-  target_link_libraries(habitat_sim PUBLIC Magnum::GlfwApplication)
-endif()
 
 if(BUILD_WITH_BACKGROUND_RENDERER)
   target_link_libraries(habitat_sim PUBLIC atomic_wait)

@@ -3,7 +3,18 @@
 # LICENSE file in the root directory of this source tree.
 
 find_package(MagnumBindings REQUIRED Python)
-find_package(MagnumPlugins REQUIRED KtxImporter)
+
+find_package(
+  MagnumPlugins
+  REQUIRED
+  BasisImporter
+  GltfImporter
+  KtxImporter
+  PrimitiveImporter
+  StanfordImporter
+  StbImageImporter
+  StbImageConverter
+)
 
 pybind11_add_module(
   habitat_sim_bindings
@@ -28,7 +39,13 @@ pybind11_add_module(
 )
 target_link_libraries(
   habitat_sim_bindings
-  PRIVATE MagnumBindings::Python MagnumPlugins::KtxImporter
+  PRIVATE MagnumBindings::Python
+          MagnumPlugins::BasisImporter
+          MagnumPlugins::GltfImporter
+          MagnumPlugins::KtxImporter
+          MagnumPlugins::StanfordImporter
+          MagnumPlugins::StbImageImporter
+          MagnumPlugins::StbImageConverter
   PUBLIC habitat_sim
 )
 

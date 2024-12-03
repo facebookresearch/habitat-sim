@@ -13,17 +13,16 @@ find_package(
 find_package(
   MagnumPlugins
   REQUIRED
+  BasisImporter
   GltfImporter
-  StbImageImporter
   KtxImporter
+  OpenExrImporter
+  OpenExrImageConverter
+  StanfordImporter
+  StbImageImporter
   StbImageConverter
-  OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter StanfordImporter
-                      OpenExrImporter OpenExrImageConverter
+  OPTIONAL_COMPONENTS GltfSceneConverter KtxImageConverter
 )
-
-if(BUILD_WITH_BACKGROUND_RENDERER)
-  find_package(MagnumPlugins REQUIRED OpenExrImporter OpenExrImageConverter)
-endif()
 
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/configure.h
@@ -46,6 +45,8 @@ if(BUILD_WITH_BACKGROUND_RENDERER)
     gfx_batch
     MagnumPlugins::OpenExrImageConverter
     MagnumPlugins::OpenExrImporter
+    MagnumPlugins::StbImageImporter
+    MagnumPlugins::StbImageConverter
   )
   target_include_directories(
     BatchReplayRendererTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
@@ -103,6 +104,7 @@ corrade_add_test(
   MagnumPlugins::GltfImporter
   MagnumPlugins::KtxImporter
   MagnumPlugins::StbImageImporter
+  MagnumPlugins::StbImageConverter
 )
 target_include_directories(GfxBatchRendererTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 if(BUILD_WITH_CUDA)
@@ -123,7 +125,14 @@ target_include_directories(GfxReplayTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 corrade_add_test(GibsonSceneTest GibsonSceneTest.cpp LIBRARIES habitat_sim)
 target_include_directories(GibsonSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(HM3DSceneTest HM3DSceneTest.cpp LIBRARIES habitat_sim)
+corrade_add_test(
+  HM3DSceneTest
+  HM3DSceneTest.cpp
+  LIBRARIES
+  habitat_sim
+  MagnumPlugins::StbImageImporter
+  MagnumPlugins::StbImageConverter
+)
 target_include_directories(HM3DSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(IOTest IOTest.cpp LIBRARIES habitat_sim)
@@ -146,13 +155,36 @@ corrade_add_test(
 )
 target_include_directories(PathFinderTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(PhysicsTest PhysicsTest.cpp LIBRARIES habitat_sim)
+corrade_add_test(
+  PhysicsTest
+  PhysicsTest.cpp
+  LIBRARIES
+  habitat_sim
+  MagnumPlugins::StbImageImporter
+  MagnumPlugins::StbImageConverter
+)
 target_include_directories(PhysicsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(ReplicaSceneTest ReplicaSceneTest.cpp LIBRARIES habitat_sim)
+corrade_add_test(
+  ReplicaSceneTest
+  ReplicaSceneTest.cpp
+  LIBRARIES
+  habitat_sim
+  MagnumPlugins::GltfImporter
+  MagnumPlugins::StanfordImporter
+  MagnumPlugins::StbImageImporter
+  MagnumPlugins::StbImageConverter
+)
 target_include_directories(ReplicaSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(ResourceManagerTest ResourceManagerTest.cpp LIBRARIES habitat_sim)
+corrade_add_test(
+  ResourceManagerTest
+  ResourceManagerTest.cpp
+  LIBRARIES
+  habitat_sim
+  MagnumPlugins::BasisImporter
+  MagnumPlugins::GltfImporter
+)
 target_include_directories(ResourceManagerTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(SceneGraphTest SceneGraphTest.cpp LIBRARIES habitat_sim)
@@ -169,7 +201,9 @@ corrade_add_test(
   habitat_sim
   Magnum::DebugTools
   Magnum::AnyImageConverter
+  MagnumPlugins::GltfImporter
   MagnumPlugins::StbImageImporter
+  MagnumPlugins::StbImageConverter
 )
 target_include_directories(SimTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
