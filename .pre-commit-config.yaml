@@ -149,8 +149,3 @@ repos:
     rev: v0.8.0.4
     hooks:
     -   id: shellcheck
-
--   repo: https://github.com/AleksaC/circleci-cli-py
-    rev: v0.1.16737
-    hooks:
-    -   id: circle-ci-validator
