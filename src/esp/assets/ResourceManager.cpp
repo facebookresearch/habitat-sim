@@ -133,8 +133,14 @@ ResourceManager::~ResourceManager() = default;
 
 void ResourceManager::buildImporters() {
   // Preferred plugins, Basis target GPU format
-  importerManager_.setPreferredPlugins("ObjImporter", {"UfbxImporter"});
-  importerManager_.setPreferredPlugins("FbxImporter", {"UfbxImporter"});
+  if (importerManager_.loadState("ObjImporter") !=
+      Cr::PluginManager::LoadState::NotFound) {
+    importerManager_.setPreferredPlugins("ObjImporter", {"UfbxImporter"});
+  }
+  if (importerManager_.loadState("FbxImporter") !=
+      Cr::PluginManager::LoadState::NotFound) {
+    importerManager_.setPreferredPlugins("FbxImporter", {"UfbxImporter"});
+  }
 #ifdef ESP_BUILD_ASSIMP_SUPPORT
   if (Cr::PluginManager::PluginMetadata* const assimpmetadata =
           importerManager_.metadata("AssimpImporter")) {
