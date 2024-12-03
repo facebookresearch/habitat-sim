@@ -133,12 +133,14 @@ ResourceManager::~ResourceManager() = default;
 
 void ResourceManager::buildImporters() {
   // Preferred plugins, Basis target GPU format
+  importerManager_.setPreferredPlugins("ObjImporter", {"UfbxImporter"});
+  importerManager_.setPreferredPlugins("FbxImporter", {"UfbxImporter"});
 #ifdef ESP_BUILD_ASSIMP_SUPPORT
-  importerManager_.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
-  Cr::PluginManager::PluginMetadata* const assimpmetadata =
-      importerManager_.metadata("AssimpImporter");
-  assimpmetadata->configuration().setValue("ImportColladaIgnoreUpDirection",
-                                           "true");
+  if (Cr::PluginManager::PluginMetadata* const assimpmetadata =
+          importerManager_.metadata("AssimpImporter")) {
+    assimpmetadata->configuration().setValue("ImportColladaIgnoreUpDirection",
+                                             "true");
+  }
 #endif
 
   // instantiate a primitive importer
