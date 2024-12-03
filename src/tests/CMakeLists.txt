@@ -37,29 +37,19 @@ corrade_add_test(
 )
 target_include_directories(AttributesManagersTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(
-  GfxBatchRendererTest
-  GfxBatchRendererTest.cpp
-  LIBRARIES
-  gfx_batch
-  Magnum::DebugTools
-  Magnum::AnyImageConverter
-  Magnum::AnySceneImporter
-  MagnumPlugins::GltfImporter
-  MagnumPlugins::KtxImporter
-  MagnumPlugins::StbImageImporter
-)
-target_include_directories(GfxBatchRendererTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-if(BUILD_WITH_CUDA)
-  target_include_directories(
-    GfxBatchRendererTest PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+if(BUILD_WITH_BACKGROUND_RENDERER)
+  corrade_add_test(
+    BatchReplayRendererTest
+    BatchReplayRendererTest.cpp
+    LIBRARIES
+    habitat_sim
+    gfx_batch
+    MagnumPlugins::OpenExrImageConverter
+    MagnumPlugins::OpenExrImporter
   )
-endif()
-if(MagnumPlugins_GltfSceneConverter_FOUND)
-  target_link_libraries(GfxBatchRendererTest PRIVATE MagnumPlugins::GltfSceneConverter)
-endif()
-if(MagnumPlugins_KtxImageConverter_FOUND)
-  target_link_libraries(GfxBatchRendererTest PRIVATE MagnumPlugins::KtxImageConverter)
+  target_include_directories(
+    BatchReplayRendererTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+  )
 endif()
 
 corrade_add_test(ConfigurationTest ConfigurationTest.cpp LIBRARIES habitat_sim)
@@ -102,23 +92,33 @@ corrade_add_test(
 )
 target_include_directories(GfxBatchHbaoTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(GfxReplayTest GfxReplayTest.cpp LIBRARIES habitat_sim)
-target_include_directories(GfxReplayTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-
-if(BUILD_WITH_BACKGROUND_RENDERER)
-  corrade_add_test(
-    BatchReplayRendererTest
-    BatchReplayRendererTest.cpp
-    LIBRARIES
-    habitat_sim
-    gfx_batch
-    MagnumPlugins::OpenExrImageConverter
-    MagnumPlugins::OpenExrImporter
-  )
+corrade_add_test(
+  GfxBatchRendererTest
+  GfxBatchRendererTest.cpp
+  LIBRARIES
+  gfx_batch
+  Magnum::DebugTools
+  Magnum::AnyImageConverter
+  Magnum::AnySceneImporter
+  MagnumPlugins::GltfImporter
+  MagnumPlugins::KtxImporter
+  MagnumPlugins::StbImageImporter
+)
+target_include_directories(GfxBatchRendererTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+if(BUILD_WITH_CUDA)
   target_include_directories(
-    BatchReplayRendererTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+    GfxBatchRendererTest PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
   )
 endif()
+if(MagnumPlugins_GltfSceneConverter_FOUND)
+  target_link_libraries(GfxBatchRendererTest PRIVATE MagnumPlugins::GltfSceneConverter)
+endif()
+if(MagnumPlugins_KtxImageConverter_FOUND)
+  target_link_libraries(GfxBatchRendererTest PRIVATE MagnumPlugins::KtxImageConverter)
+endif()
+
+corrade_add_test(GfxReplayTest GfxReplayTest.cpp LIBRARIES habitat_sim)
+target_include_directories(GfxReplayTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(GibsonSceneTest GibsonSceneTest.cpp LIBRARIES habitat_sim)
 target_include_directories(GibsonSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
