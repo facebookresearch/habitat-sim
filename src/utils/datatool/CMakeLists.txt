@@ -10,8 +10,11 @@ find_package(
   StanfordImporter
   StbImageImporter
   StbImageConverter
+  UfbxImporter
 )
-
+if(BUILD_ASSIMP_SUPPORT)
+  find_package(MagnumPlugins REQUIRED AssimpImporter)
+endif()
 set(Datatool_SOURCES Datatool.cpp SceneLoader.cpp Mp3dInstanceMeshData.cpp)
 
 add_executable(Datatool ${Datatool_SOURCES})
@@ -26,4 +29,10 @@ target_link_libraries(
           MagnumPlugins::StanfordImporter
           MagnumPlugins::StbImageImporter
           MagnumPlugins::StbImageConverter
+          MagnumPlugins::UfbxImporter
 )
+if(BUILD_ASSIMP_SUPPORT)
+  target_link_libraries(
+    Datatool PUBLIC MagnumPlugins::AssimpImporter PRIVATE Assimp::Assimp
+  )
+endif()

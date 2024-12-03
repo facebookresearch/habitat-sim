@@ -13,6 +13,7 @@ find_package(
   StbImageImporter
   StbImageConverter
   StbTrueTypeFont
+  UfbxImporter
 )
 
 set(viewer_SOURCES viewer.cpp ObjectPickingHelper.cpp ObjectPickingHelper.h)
@@ -35,4 +36,5 @@ target_link_libraries(
           MagnumPlugins::StbImageImporter
           MagnumPlugins::StbImageConverter
           MagnumPlugins::StbTrueTypeFont
+          MagnumPlugins::UfbxImporter
 )

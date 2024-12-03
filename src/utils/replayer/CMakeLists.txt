@@ -12,6 +12,7 @@ find_package(
   StanfordImporter
   StbImageImporter
   StbImageConverter
+  UfbxImporter
 )
 
 add_executable(replayer replayer.cpp)
@@ -27,4 +28,5 @@ target_link_libraries(
           MagnumPlugins::StanfordImporter
           MagnumPlugins::StbImageImporter
           MagnumPlugins::StbImageConverter
+          MagnumPlugins::UfbxImporter
 )

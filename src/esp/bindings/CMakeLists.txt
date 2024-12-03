@@ -14,7 +14,11 @@ find_package(
   StanfordImporter
   StbImageImporter
   StbImageConverter
+  UfbxImporter
 )
+if(BUILD_ASSIMP_SUPPORT)
+  find_package(MagnumPlugins REQUIRED AssimpImporter)
+endif()
 
 pybind11_add_module(
   habitat_sim_bindings
@@ -46,8 +50,14 @@ target_link_libraries(
           MagnumPlugins::StanfordImporter
           MagnumPlugins::StbImageImporter
           MagnumPlugins::StbImageConverter
+          MagnumPlugins::UfbxImporter
   PUBLIC habitat_sim
 )
+if(BUILD_ASSIMP_SUPPORT)
+  target_link_libraries(
+    habitat_sim_bindings PUBLIC MagnumPlugins::AssimpImporter PRIVATE Assimp::Assimp
+  )
+endif()
 
 if(BUILD_WITH_AUDIO)
   add_custom_command(

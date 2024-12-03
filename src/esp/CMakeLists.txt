@@ -113,9 +113,6 @@ if(BUILD_WITH_BULLET)
 endif()
 
 find_package(MagnumPlugins REQUIRED PrimitiveImporter)
-if(BUILD_ASSIMP_SUPPORT)
-  find_package(MagnumPlugins REQUIRED AssimpImporter)
-endif()
 
 find_package(MagnumIntegration REQUIRED Eigen)
 
@@ -571,12 +568,6 @@ target_link_libraries(
 
 if(BUILD_WITH_BACKGROUND_RENDERER)
   target_link_libraries(habitat_sim PUBLIC atomic_wait)
-endif()
-
-if(BUILD_ASSIMP_SUPPORT)
-  target_link_libraries(
-    habitat_sim PUBLIC MagnumPlugins::AssimpImporter PRIVATE Assimp::Assimp
-  )
 endif()
 
 if(OpenMP_CXX_FOUND)
