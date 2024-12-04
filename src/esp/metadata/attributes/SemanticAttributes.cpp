@@ -22,7 +22,7 @@ std::string SemanticVolumeAttributes::getObjectInfoHeaderInternal() const {
   std::string res =
       "Name,Label,Floor Height,Extrusion Height,Min Bounds,Max Bounds,";
   const auto& polyLoop = getPolyLoop();
-  for (int iter = 0; iter < polyLoop.size(); ++iter) {
+  for (uint32_t iter = 0; iter < polyLoop.size(); ++iter) {
     Cr::Utility::formatInto(res, res.size(), "Poly Vert {} XYZ,",
                             std::to_string(iter));
   }
@@ -90,7 +90,7 @@ SemanticAttributes::SemanticAttributes(const SemanticAttributes& otr)
 }  // SemanticAttributes copy ctor
 
 SemanticAttributes::SemanticAttributes(SemanticAttributes&& otr) noexcept
-    : AbstractAttributes(std::move(static_cast<AbstractAttributes>(otr))),
+    : AbstractAttributes(static_cast<AbstractAttributes>(otr)),
       availableRegionInstIDs_(std::move(otr.availableRegionInstIDs_)) {
   // get refs to internal subconfigs for semantic region attributes
   // original data were moved over so should retain full derived class
