@@ -20,10 +20,12 @@ py::object getObjectForConfigValue(const ConfigValue& value) {
       return py::cast(value.get<bool>());
     case ConfigValType::Integer:
       return py::cast(value.get<int>());
+    case ConfigValType::MagnumRad:
+      return py::cast(static_cast<Mn::Radd>(value.get<Mn::Rad>()));
+    case ConfigValType::MagnumDeg:
+      return py::cast(static_cast<Mn::Degd>(value.get<Mn::Deg>()));
     case ConfigValType::Double:
       return py::cast(value.get<double>());
-    case ConfigValType::String:
-      return py::cast(value.get<std::string>());
     case ConfigValType::MagnumVec2:
       return py::cast(value.get<Mn::Vector2>());
     case ConfigValType::MagnumVec2i:
@@ -38,10 +40,8 @@ py::object getObjectForConfigValue(const ConfigValue& value) {
       return py::cast(value.get<Mn::Matrix4>());
     case ConfigValType::MagnumQuat:
       return py::cast(value.get<Mn::Quaternion>());
-    case ConfigValType::MagnumRad:
-      return py::cast(static_cast<Mn::Radd>(value.get<Mn::Rad>()));
-    case ConfigValType::MagnumDeg:
-      return py::cast(static_cast<Mn::Degd>(value.get<Mn::Deg>()));
+    case ConfigValType::String:
+      return py::cast(value.get<std::string>());
   }
   return py::cast(nullptr);
 }
@@ -83,8 +83,9 @@ void initConfigBindings(py::module& m) {
       .value("Unknown", ConfigValType::Unknown)
       .value("Boolean", ConfigValType::Boolean)
       .value("Integer", ConfigValType::Integer)
+      .value("MagnumRad", ConfigValType::MagnumRad)
+      .value("MagnumDeg", ConfigValType::MagnumDeg)
       .value("Float", ConfigValType::Double)
-      .value("String", ConfigValType::String)
       .value("MagnumVec2", ConfigValType::MagnumVec2)
       .value("MagnumVec2i", ConfigValType::MagnumVec2i)
       .value("MagnumVec3", ConfigValType::MagnumVec3)
@@ -92,8 +93,7 @@ void initConfigBindings(py::module& m) {
       .value("MagnumQuat", ConfigValType::MagnumQuat)
       .value("MagnumMat3", ConfigValType::MagnumMat3)
       .value("MagnumMat4", ConfigValType::MagnumMat4)
-      .value("MagnumRad", ConfigValType::MagnumRad)
-      .value("MagnumDeg", ConfigValType::MagnumDeg);
+      .value("String", ConfigValType::String);
 
   auto pyConfiguration =
       py::class_<Configuration, Configuration::ptr>(m, "Configuration");
