@@ -131,7 +131,7 @@ void BatchPlayerImplementation::changeLightSetup(
   }
 
   renderer_.clearLights(sceneId_);
-  for (std::size_t i = 0; i != lights.size(); ++i) {
+  for (std::size_t i = 0; i < lights.size(); ++i) {
     const gfx::LightInfo& light = lights[i];
     CORRADE_INTERNAL_ASSERT(light.model == gfx::LightPositionModel::Global);
 

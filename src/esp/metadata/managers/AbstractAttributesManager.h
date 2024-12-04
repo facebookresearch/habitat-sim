@@ -413,7 +413,7 @@ AbstractAttributesManager<T, Access>::loadAllFileBasedTemplates(
     std::string dir = CrPath::split(paths[0]).first();
     ESP_DEBUG() << "Loading" << paths.size() << "" << this->objectType_
                 << "templates found in" << dir;
-    for (int i = 0; i < paths.size(); ++i) {
+    for (uint32_t i = 0; i < paths.size(); ++i) {
       auto attributesFilename = paths[i];
       ESP_VERY_VERBOSE() << "Load" << this->objectType_ << "template:"
                          << CrPath::split(attributesFilename).second();
