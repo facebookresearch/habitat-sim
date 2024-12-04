@@ -73,8 +73,8 @@ void EquirectangularSensorAttributes::populateWithSensorSpec(
 }  // EquirectangularSensorAttributes::populateWithSensorSpec
 
 void EquirectangularSensorAttributes::writeCubeMapSensorValuesToJsonInternal(
-    io::JsonGenericValue& jsonObj,
-    io::JsonAllocator& allocator) const {
+    CORRADE_UNUSED io::JsonGenericValue& jsonObj,
+    CORRADE_UNUSED io::JsonAllocator& allocator) const {
   // Currently no EquirectangularSensor-specific attributes to write
 }  // EquirectangularSensorAttributes::writeCubeMapSensorValuesToJsonInternal
 
