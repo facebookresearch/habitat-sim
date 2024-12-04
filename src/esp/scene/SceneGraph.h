@@ -13,8 +13,6 @@
 #include "SceneNode.h"
 #include "esp/gfx/DrawableGroup.h"
 
-#include "esp/sensor/VisualSensor.h"
-
 namespace esp {
 namespace scene {
 class SceneGraph {

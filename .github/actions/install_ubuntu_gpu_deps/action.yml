@@ -1,0 +1,24 @@
+# This action installs required Ubuntu NVIDIA dependencies.
+# It assumes that `nvidia-smi` is available on the system.
+name: "Install GPU Dependencies"
+runs:
+  using: composite
+  steps:
+  - name: Install GPU Dependencies
+    shell: bash
+    run: |
+      NVIDIA_SMI_OUTPUT=$(nvidia-smi)
+      # Extract CUDA version (e.g., 11.7)
+      CUDA_VERSION=$(echo "$NVIDIA_SMI_OUTPUT" | grep -oP 'CUDA Version:\s+\K[\d.]+')
+
+      FULL_DRIVER_VERSION=$(echo "$NVIDIA_SMI_OUTPUT" | grep -oP 'Driver Version:\s+\K[\d.]+')
+      MAJOR_DRIVER_VERSION=$(echo "$NVIDIA_SMI_OUTPUT" | grep -oP 'Driver Version:\s+\K\d+')
+      UBUNTU_PACKAGE_SUFFIX="${MAJOR_DRIVER_VERSION}=${FULL_DRIVER_VERSION}-0ubuntu1"
+      sudo apt-get update
+      sudo apt-get install -y cuda-toolkit-${CUDA_VERSION}
+      sudo apt-get install -y nvidia-gds-${CUDA_VERSION}
+      sudo apt-get install -y libnvidia-common-${UBUNTU_PACKAGE_SUFFIX}
+      sudo apt-get install -y libnvidia-gl-${UBUNTU_PACKAGE_SUFFIX}
+      sudo apt-get install -y libnvidia-compute-${UBUNTU_PACKAGE_SUFFIX} --allow-downgrades
+      sudo apt-get install -y libnvidia-decode-${UBUNTU_PACKAGE_SUFFIX}
+      sudo apt-get install -y libnvidia-encode-${UBUNTU_PACKAGE_SUFFIX}

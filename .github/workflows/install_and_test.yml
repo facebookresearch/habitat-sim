@@ -1,0 +1,439 @@
+name: Install and test
+on:
+  pull_request: {}
+  push:
+    branches:
+    - main
+    tags: [ "v*" ]
+  schedule:
+    - cron: "0 5 * * *"
+    #this is 9PM PST
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4.1.1
+    - name: Setup python
+      uses: actions/setup-python@v5.0.0
+      with:
+        python-version: '3.9.16'
+    - name: install dependencies
+      run: |-
+        pip install -U pip setuptools pre-commit
+        # Install the hooks now so that they'll be cached
+        pre-commit install-hooks
+    - name: Check Code Style using pre-commit
+      run: |-
+        SKIP=eslint pre-commit run --show-diff-on-failure --all-files
+
+  python_lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4.1.1
+    - name: Setup python
+      uses: actions/setup-python@v5.0.0
+      with:
+        python-version: '3.9.16'
+    - name: setup
+      run: |-
+        pip install -U pip
+        pip install -U --prefer-binary \
+          black==23.1.0 \
+          flake8 \
+          flake8-bugbear==22.6.22 \
+          flake8-builtins \
+          flake8-comprehensions \
+          flake8-return \
+          flake8-simplify \
+          hypothesis==6.29.3 \
+          isort==5.12.0 \
+          mypy \
+          numpy==1.26.4 \
+          pytest \
+          sphinx \
+          tqdm
+        pip install --prefer-binary -r requirements.txt torch --progress-bar off
+    - name: run black
+      run: |-
+        black --version
+        black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(notebooks|nb_python)'  src_python/habitat_sim/. examples/. tests/. setup.py --diff
+        black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(notebooks|nb_python)'  src_python/habitat_sim/. examples/. tests/. setup.py --check
+    - name: run isort
+      run: |-
+        isort --version
+        isort src_python/habitat_sim/. examples/. tests/. setup.py --diff
+        isort src_python/habitat_sim/. examples/. tests/. setup.py --check-only
+    - name: run flake8
+      run: |-
+        flake8 --version
+        flake8 src_python/habitat_sim/. examples/. tests/. setup.py
+    - name: run mypy
+      run: mypy
+
+  install_and_test_sim_ubuntu:
+    runs-on: 4-core-ubuntu-gpu-t4
+    env:
+      FPS_THRESHOLD: 900
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+    - uses: actions/checkout@v4.1.1
+      with:
+        path: "./habitat-sim"
+    - name: CPU info
+      run: cat /proc/cpuinfo
+    - uses: "./habitat-sim/.github/actions/install_ubuntu_deps"
+    - uses: "./habitat-sim/.github/actions/install_ubuntu_gpu_deps"
+    - name: Build, install habitat-sim
+      run: |-
+        #give cmake ownership to the runner for installation
+        sudo chown runner -R /opt/cmake312/
+        #activate conda env
+        export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+        conda activate habitat
+        #install habitat-sim
+        cd habitat-sim
+        pip install -r requirements.txt --progress-bar off
+        git submodule update --init --recursive --jobs 8
+        python -u setup.py install --build-type "Release" --lto --headless --bullet
+    - uses: "./habitat-sim/.github/actions/download_test_data"
+    - name: Run sim benchmark
+      run: |-
+        export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+        conda activate habitat
+        cd habitat-sim
+        python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
+    - name: Run sim tests
+      run: |-
+        #give cmake ownership to the runner for installation
+        sudo chown runner -R /opt/cmake312/
+        #activate conda env
+        export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+        conda activate habitat
+        cd habitat-sim
+        export PYTHONPATH=$(pwd):$PYTHONPATH
+
+        #set pytest to show partial progress
+        export PYTHONUNBUFFERED=1
+
+        # run tests with code coverage
+        CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless \
+          --bullet \
+          --with-cuda \
+          --build-datatool \
+          --run-tests \
+          --no-lto \
+          --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
+        PYTHONPATH=src_python pytest -n 4 --durations=10 --cov-report=xml --cov=./
+
+        #run the marked pytest-benchmark tests and print the results
+        PYTHONPATH=src_python pytest -m sim_benchmarks
+
+        #re-build without bullet and cuda and run physics tests again
+        ./build.sh --headless --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
+        PYTHONPATH=src_python pytest -n 4 --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
+    - name: upload test coverage
+      run: |-
+        export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+        conda activate habitat
+        cd habitat-sim
+
+        curl -Os https://uploader.codecov.io/latest/linux/codecov
+        chmod +x codecov
+        #Uploading test coverage for Python code
+        ./codecov -f coverage.xml -cF Python
+
+        #Uploading test coverage for C++ code
+        lcov --directory . --capture --output-file coverage.info
+        # Replaces -1 linecount with zero to prevent lcov from crashing:
+        # https://github.com/psycofdj/coverxygen/issues/6
+        sed -i -e 's/,-1$/,0/g' coverage.info
+        #lcov --remove coverage.info "*/deps/*" --output-file coverage.info > /dev/null
+        #lcov --remove coverage.info "*/test/*" --output-file coverage.info > /dev/null
+        #lcov --remove coverage.info "*/tests/*" --output-file coverage.info > /dev/null
+        ./codecov -f coverage.info -cF CPP
+    - name: install habitat-sim with audio and run audio_agent script
+      run: |-
+        #give cmake ownership to the runner for installation
+        sudo chown runner -R /opt/cmake312/
+        export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+        conda activate habitat
+        cd habitat-sim
+        pip install -r requirements.txt --progress-bar off
+        pip install imageio imageio-ffmpeg
+        git submodule update --init --recursive --jobs 8
+        python -u setup.py install --build-type "Release" --lto --headless --audio
+        python examples/tutorials/audio_agent.py
+    #NOTE: use the below to debug with ssh: simply move this "job" just before the crashing job to intercept the workflow
+    #- name: Debugging with tmate
+    #  uses: mxschmitt/action-tmate@v3.18
+
+  install_and_test_lab_ubuntu:
+    runs-on: 4-core-ubuntu-gpu-t4
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+    - uses: actions/checkout@v4.1.1
+      with:
+        path: "./habitat-sim"
+    - uses: "./habitat-sim/.github/actions/install_ubuntu_deps"
+    - uses: "./habitat-sim/.github/actions/install_ubuntu_gpu_deps"
+    - name: Build, install habitat-sim
+      run: |-
+        #give cmake ownership to the runner for installation
+        sudo chown runner -R /opt/cmake312/
+        #activate conda env
+        export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+        conda activate habitat
+        #install habitat-sim
+        cd habitat-sim
+        pip install -r requirements.txt --progress-bar off
+        git submodule update --init --recursive --jobs 8
+        python -u setup.py install --build-type "Release" --lto --headless --bullet
+    - uses: "./habitat-sim/.github/actions/download_test_data"
+    - name: Build habitat-sim and docs
+      run: |-
+        export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+        conda activate habitat
+        cd habitat-sim
+        pip install -r requirements.txt --progress-bar off
+        git submodule update --init --recursive --jobs 8
+        pip install imageio imageio-ffmpeg
+        conda install -y -c conda-forge doxygen=1.9.5
+        conda install -y  jinja2 pygments docutils
+        sudo apt install --yes --allow-change-held-packages \
+          texlive-base \
+          texlive-latex-extra \
+          texlive-fonts-extra \
+          texlive-fonts-recommended
+        # Rebuild with all options enabled
+        ./build.sh --with-cuda --with-bullet
+        cd docs
+        git submodule update --init
+        ./build-public.sh
+    - name: Install Habitat Sim and Habitat Lab
+      run: |-
+        export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+        conda activate habitat
+        cd habitat-sim
+        #Rebuild headless
+        python setup.py install --headless --with-bullet --with-cuda
+        cd ..
+        if [ ! -d ./habitat-lab ]
+        then
+          git clone -q --depth 1 https://github.com/facebookresearch/habitat-lab.git
+        fi
+        cd habitat-lab
+        pip install -r habitat-lab/requirements.txt --progress-bar off
+        ln -s ../habitat-sim/data data
+    - name: Run Habitat Lab tests
+      run: |-
+        export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+        conda activate habitat
+        cd habitat-lab
+        pip install -e habitat-lab
+        pip install -e habitat-baselines
+        export PYTHONPATH=.:$PYTHONPATH
+        export MULTI_PROC_OFFSET=0 && export MAGNUM_LOG=quiet && export HABITAT_SIM_LOG=quiet
+        python -m pytest
+    - name: Build Habitat Lab documentation
+      run: |-
+        export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+        conda activate habitat
+        cd habitat-lab
+        # Install requirments first to avoid errors related to gym
+        pip install -r habitat-lab/requirements.txt --progress-bar off
+        pip install -e habitat-lab
+        cd docs
+        conda install -y -c conda-forge doxygen=1.9.5
+        conda install -y  jinja2 pygments docutils
+        ./build-public.sh
+    - name: Set up SSH
+      run: |-
+        mkdir -p ~/.ssh
+        echo "${{ secrets.HABITAT_WEBSITE_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
+    - name: Deploy documentation
+      run: |-
+        echo "Deploy documentation"
+        if [[ ${{ github.event_name }} == 'schedule' ]]; then
+          #start ssh agent and add the key
+          eval `ssh-agent -s`
+          ssh-add ~/.ssh/id_ed25519
+          echo "Trigger: a nightly build. Deploying the docs."
+          git clone git@github.com:facebookmicrosites/habitat-website.git
+          cd habitat-website
+          git submodule update --init
+          for dir in habitat-sim habitat-lab
+          do
+              rm -rf published/docs/${dir}
+              cp -r ../habitat-sim/build/docs-public/${dir} published/docs/.
+          done
+
+          git config --global user.name "Habitat"
+          git config --global user.email habitat@fb.com
+          NOW=$(date +"%m-%d-%Y")
+          git add .
+          git diff-index --quiet HEAD || git commit -m "Build habitat-sim and habitat-lab ${NOW}"
+          git push origin main
+
+          # Deploy to public
+          git checkout gh-pages
+          git checkout main published
+          sudo apt-get update || true
+          sudo apt-get install -yq rsync
+          rsync -a published/ ./.
+          rm -rf published
+          git add .
+          git diff-index --quiet HEAD || git commit -m "Build habitat-sim and habitat-lab ${NOW}"
+          git push origin gh-pages
+        else
+          echo "Not a nightly build, no deployment needed. "
+        fi
+
+  build_conda_binaries:
+    runs-on: 4-core-ubuntu-gpu-t4
+    env:
+      AIHABITAT_CONDA_USERNAME: aihabitat
+      AIHABITAT_CONDA_PWD: ${{ secrets.AIHABITAT_CONDA_PWD }}
+      AIHABITAT_NIGHTLY_CONDA_USERNAME: aihabitat-nightly
+      AIHABITAT_NIGHTLY_CONDA_PWD: ${{ secrets.AIHABITAT_NIGHTLY_CONDA_PWD }}
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4.1.1
+        with:
+          path: "./habitat-sim"
+      - name: Set CI_TEST variable based on "main merge" vs. "pull_request" workflow
+        run: |-
+          echo "NIGHTLY=''" >> $GITHUB_ENV
+          echo "CI_TEST='true'" >> $GITHUB_ENV
+          if [[ ${{ github.event_name }} == 'push' ]]; then
+            if [[ ${GITHUB_REF} == refs/heads/* ]]; then
+              echo "trigger: a push to main branch"
+            elif [[ ${GITHUB_REF} == refs/tags/* ]]; then
+              echo "trigger: a version tag push"
+              echo "CI_TEST='false'" >> $GITHUB_ENV
+              echo "CONDA_USERNAME=$AIHABITAT_CONDA_USERNAME" >> $GITHUB_ENV
+              echo "CONDA_PWD=$AIHABITAT_CONDA_PWD" >> $GITHUB_ENV
+            fi
+          elif [[ ${{ github.event_name }} == 'schedule' ]]; then
+            echo "trigger: a nightly build"
+            echo "CI_TEST='false'" >> $GITHUB_ENV
+            echo "NIGHTLY='--nightly'" >> $GITHUB_ENV
+            echo "CONDA_USERNAME=$AIHABITAT_NIGHTLY_CONDA_USERNAME" >> $GITHUB_ENV
+            echo "CONDA_PWD=$AIHABITAT_NIGHTLY_CONDA_PWD" >> $GITHUB_ENV
+          elif [[ ${{ github.event_name }} == 'pull_request' ]]; then
+            echo "trigger: a pull request"
+          fi
+      - name: Build conda Linux packages
+        run: |-
+          cd habitat-sim/conda-build
+          echo "Current event name: $GITHUB_EVENT_NAME"
+          echo ${{ env.CI_TEST }}
+          echo ${{ env.NIGHTLY }}
+
+          #pivot on the build type
+          if [[ ${{ env.CI_TEST }} ]]; then
+            echo "This is a CI test."
+          else
+            echo "This is a full conda build with deployment."
+            # Install anaconda to work with packages repo
+            curl -O https://repo.anaconda.com/archive/Anaconda3-2020.11-Linux-x86_64.sh
+            bash Anaconda3-2020.11-Linux-x86_64.sh -b -p $HOME/anaconda
+            export PATH=$HOME/anaconda/bin:$PATH
+
+            # Delete old nightly builds
+            #NOTE: The ${{ env.NIGHTLY }} == "--nightly" variable is necessary to trigger this
+            #python common/delete_old_night_packages.py --username ${{ env.CONDA_USERNAME }} --password ${{ env.CONDA_PWD }} ${{ env.NIGHTLY }}
+          fi
+
+          #install Docker
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+          sudo apt-get update
+          apt-cache policy docker-ce
+          sudo apt-get install -y docker-ce
+
+          #build the container
+          docker build -t hsim_condabuild_dcontainer -f Dockerfile .
+
+          if [[ ${{ env.CI_TEST }} ]]; then
+            docker run --ipc=host --rm -v $(pwd)/../../:/remote hsim_condabuild_dcontainer /bin/bash -c "source ~/.bashrc && conda activate py39 && cd /remote/habitat-sim/ && git config --global --add safe.directory '*' && cd /remote/habitat-sim/conda-build && python matrix_builder.py --ci_test"
+          else
+            docker run --ipc=host --rm -v $(pwd)/../../:/remote --env ${{ env.CONDA_PWD }} hsim_condabuild_dcontainer /bin/bash -c "source ~/.bashrc && conda activate py39 && cd /remote/habitat-sim/ && git config --global --add safe.directory '*' && cd /remote/habitat-sim/conda-build && yes | anaconda login --username ${{ env.CONDA_USERNAME }} --password ${{ env.CONDA_PWD }} --hostname "aihabitat-conda-ci-builder-linux" && python matrix_builder.py --conda_upload ${{ env.NIGHTLY }}"
+          fi
+
+  build_conda_osx:
+    runs-on: macos-14
+    env:
+      AIHABITAT_CONDA_USERNAME: aihabitat
+      AIHABITAT_CONDA_PWD: ${{ secrets.AIHABITAT_CONDA_PWD }}
+      AIHABITAT_NIGHTLY_CONDA_USERNAME: aihabitat-nightly
+      AIHABITAT_NIGHTLY_CONDA_PWD: ${{ secrets.AIHABITAT_NIGHTLY_CONDA_PWD }}
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4.1.1
+        with:
+          path: "./habitat-sim"
+      - name: Setup miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniconda-version: "latest"
+          python-version: "3.9"
+          activate-environment: "habitat"
+      - name: Set CI_TEST variable based on "main merge" vs. "pull_request" workflow
+        run: |-
+          echo "NIGHTLY=''" >> $GITHUB_ENV
+          echo "CI_TEST='true'" >> $GITHUB_ENV
+          echo "CONDA_USERNAME=$AIHABITAT_CONDA_USERNAME" >> $GITHUB_ENV
+          echo "CONDA_PWD=$AIHABITAT_CONDA_PWD" >> $GITHUB_ENV
+          if [[ ${{ github.event_name }} == 'push' ]]; then
+            if [[ ${GITHUB_REF} == refs/heads/* ]]; then
+              echo "trigger: a push to main branch"
+            elif [[ ${GITHUB_REF} == refs/tags/* ]]; then
+              echo "trigger: a version tag push"
+              echo "CI_TEST='false'" >> $GITHUB_ENV
+            fi
+          elif [[ ${{ github.event_name }} == 'schedule' ]]; then
+            echo "trigger: a nightly build"
+            echo "CI_TEST='false'" >> $GITHUB_ENV
+            echo "NIGHTLY='--nightly'" >> $GITHUB_ENV
+            echo "CONDA_USERNAME=$AIHABITAT_NIGHTLY_CONDA_USERNAME" >> $GITHUB_ENV
+            echo "CONDA_PWD=$AIHABITAT_NIGHTLY_CONDA_PWD" >> $GITHUB_ENV
+          elif [[ ${{ github.event_name }} == 'pull_request' ]]; then
+            echo "trigger: a pull request"
+          fi
+      - name: Build conda OSX packages
+        run: |-
+          export PATH=$HOME/miniconda/bin:$PATH
+          conda init
+          conda activate habitat
+          conda install -y anaconda-client ccache cmake git ninja conda-build pip
+          echo $(which -a python)
+          pip install gitpython
+          cd habitat-sim
+          git submodule update --init --recursive --jobs 8
+          pip install .
+          pip uninstall -y habitat-sim
+          rm -rf build
+          (yes || true) | anaconda login --username ${{ env.CONDA_USERNAME }} --password ${{ env.CONDA_PWD }} --hostname "aihabitat-conda-ci-builder-macos"
+          #pivot on the build type
+          if [[ ${{ env.CI_TEST }} ]]; then
+            echo "This is a CI test."
+            cd conda-build
+            export PYTHONIOENCODING="utf-8"
+            python matrix_builder.py --ci_test
+          else
+            conda config --set anaconda_upload yes
+            cd conda-build
+            export PYTHONIOENCODING="utf-8"
+            python matrix_builder.py ${{ env.NIGHTLY }}
+          fi

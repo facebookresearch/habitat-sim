@@ -10,7 +10,7 @@ using esp::gfx::DrawableGroup;
 using esp::scene::SceneGraph;
 
 namespace {
-struct SceneGraphTest : Cr::TestSuite::Tester {
+struct SceneGraphTest : Corrade::TestSuite::Tester {
   explicit SceneGraphTest();
   void testGetDrawableGroup();
   void testDeleteDrawableGroup();

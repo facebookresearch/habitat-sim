@@ -19,7 +19,7 @@ namespace Cr = Corrade;
 namespace {
 
 void printPathPoint(int run, int step, const esp::vec3f& p, float distance) {
-  ESP_VERY_VERBOSE() << run << "," << step << "," << Mn::Vector3{p} << ","
+  ESP_VERY_VERBOSE() << run << "," << step << "," << Magnum::Vector3{p} << ","
                      << distance;
 }
 
