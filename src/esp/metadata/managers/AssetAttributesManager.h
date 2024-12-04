@@ -143,8 +143,9 @@ class AssetAttributesManager
    * @param attribs (out) an existing attributes to be modified.
    * @param jsonConfig json document to parse
    */
-  void setValsFromJSONDoc(AttribsPtr attribs,
-                          const io::JsonGenericValue& jsonConfig) override;
+  void setValsFromJSONDoc(
+      CORRADE_UNUSED AttribsPtr attribs,
+      CORRADE_UNUSED const io::JsonGenericValue& jsonConfig) override;
 
   /**
    * @brief Creates a template based on the provided template handle. Since the
