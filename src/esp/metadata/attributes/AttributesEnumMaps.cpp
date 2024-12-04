@@ -344,23 +344,26 @@ const std::map<std::string, esp::sensor::FisheyeSensorModelType>
  * the string key it maps to in the FisheyeSensorModelTypeMap
  */
 std::string getFisheyeSensorModelTypeName(
-    esp::sensor::FisheyeSensorModelType fisheyeSensorModelTypeEnum) {
+    CORRADE_UNUSED esp::sensor::FisheyeSensorModelType
+        fisheyeSensorModelTypeEnum) {
   // this verifies that enum value being checked is supported by string-keyed
   // map. The values below should be the minimum and maximum enums supported by
   // FisheyeSensorModelTypeMap
-  if ((fisheyeSensorModelTypeEnum <=
-       esp::sensor::FisheyeSensorModelType::DoubleSphere) ||
-      (fisheyeSensorModelTypeEnum >=
-       esp::sensor::FisheyeSensorModelType::EndFisheyeSensorModelType)) {
-    // default to double_sphere for illegal values
-    return "double_sphere";
-  }
-  // Must always be valid value
-  for (const auto& it : FisheyeSensorModelTypeMap) {
-    if (it.second == fisheyeSensorModelTypeEnum) {
-      return it.first;
-    }
-  }
+
+  // TODO expand to handle more types of FisheyeSensors
+  // if ((fisheyeSensorModelTypeEnum <=
+  //      esp::sensor::FisheyeSensorModelType::DoubleSphere) ||
+  //     (fisheyeSensorModelTypeEnum >=
+  //      esp::sensor::FisheyeSensorModelType::EndFisheyeSensorModelType)) {
+  //   // default to double_sphere for illegal values
+  //   return "double_sphere";
+  // }
+  // // Must always be valid value
+  // for (const auto& it : FisheyeSensorModelTypeMap) {
+  //   if (it.second == fisheyeSensorModelTypeEnum) {
+  //     return it.first;
+  //   }
+  // }
   return "double_sphere";
 }  // getFisheyeSensorModelTypeName
 

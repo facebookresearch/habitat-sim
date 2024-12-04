@@ -231,7 +231,8 @@ PbrShaderAttributesManager::preRegisterObjectFinalize(
 }  // PbrShaderAttributesManager::preRegisterObjectFinalize
 
 void PbrShaderAttributesManager::finalizeAttrPathsBeforeRegister(
-    const attributes::PbrShaderAttributes::ptr& attributes) const {
+    CORRADE_UNUSED const attributes::PbrShaderAttributes::ptr& attributes)
+    const {
   // TODO Verify getIBLBrdfLUTAssetHandle and getIBLEnvMapAssetHandle exist as
   // either file-based assets or resources and build paths to be relative if
   // file-based
