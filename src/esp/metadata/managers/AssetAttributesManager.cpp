@@ -250,8 +250,8 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::buildObjectFromJSONDoc(
 }  // AssetAttributesManager::buildObjectFromJSONDoc
 
 void AssetAttributesManager::setValsFromJSONDoc(
-    AttribsPtr attribs,
-    const io::JsonGenericValue& jsonConfig) {
+    CORRADE_UNUSED AttribsPtr attribs,
+    CORRADE_UNUSED const io::JsonGenericValue& jsonConfig) {
   // TODO support loading values from JSON docs
   // check for user defined attributes
   // this->parseUserDefinedJsonVals(attribs, jsonConfig);
