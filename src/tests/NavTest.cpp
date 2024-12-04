@@ -15,6 +15,7 @@
 #include "configure.h"
 
 namespace Cr = Corrade;
+namespace Mn = Magnum;
 
 namespace {
 
