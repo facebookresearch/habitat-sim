@@ -8,6 +8,7 @@
 
 #include <utility>
 
+namespace Mn = Magnum;
 namespace esp {
 namespace sensor {
 
