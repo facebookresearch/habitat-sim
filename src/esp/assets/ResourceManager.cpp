@@ -1238,7 +1238,8 @@ void ResourceManager::buildPrimitiveAssetData(
       << "Primitive Asset Added : ID : " << primTemplate->getID()
       << ": Attributes key : `" << primTemplate->getHandle() << "`| Class : `"
       << primClassName << "` | Importer Conf has group for this obj type : "
-      << conf.hasGroup(primClassName);
+      << conf.hasGroup(primClassName) << " | Asset placed in resourceDict : "
+      << (inserted.second ? "True" : "False");
 
 }  // ResourceManager::buildPrimitiveAssetData
 
@@ -1397,7 +1398,7 @@ bool ResourceManager::loadRenderAssetSemantic(const AssetInfo& info) {
 
   // specify colormap to use to build TextureVisualizerShader
   // If this is true, we want to build a colormap from the vertex colors.
-  for (int meshIDLocal = 0; meshIDLocal < instanceMeshes.size();
+  for (uint32_t meshIDLocal = 0; meshIDLocal < instanceMeshes.size();
        ++meshIDLocal) {
     if (getCreateRenderer()) {
       instanceMeshes[meshIDLocal]->uploadBuffersToGPU(false);
@@ -1546,7 +1547,7 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
           "Error loading general mesh data from file '{}'", filename));
 
   // load file and add it to the dictionary
-  LoadedAssetData loadedAssetData{info};
+  LoadedAssetData loadedAssetData{info, {}};
   if (requiresTextures_) {
     loadTextures(*fileImporter_, loadedAssetData);
     loadMaterials(*fileImporter_, loadedAssetData);
@@ -1826,8 +1827,8 @@ bool ResourceManager::buildTrajectoryVisualization(
   // if (resourceDict_.count(trajVisName) != 0) {
   //   resourceDict_.erase(trajVisName);
   // }
-  auto inserted =
-      resourceDict_.emplace(trajVisName, std::move(loadedAssetData));
+  // auto inserted =
+  resourceDict_.emplace(trajVisName, std::move(loadedAssetData));
 
   return true;
 }  // ResourceManager::loadTrajectoryVisualization
@@ -2046,7 +2047,7 @@ Mn::Trade::MaterialData createUniversalMaterial(
       arrayAppend(newAttributes,
                   {{MaterialAttribute::AmbientTexture, BCTexture},
                    {MaterialAttribute::DiffuseTexture, BCTexture}});
-      if (metalness >= 0.5) {
+      if (metalness >= 0.5f) {
         arrayAppend(newAttributes,
                     {MaterialAttribute::SpecularTexture, BCTexture});
       }
@@ -2634,7 +2635,7 @@ void ResourceManager::loadMeshes(Importer& importer,
   nextMeshID_ = meshEnd + 1;
   loadedAssetData.meshMetaData.setMeshIndices(meshStart, meshEnd);
 
-  for (int iMesh = 0; iMesh < importer.meshCount(); ++iMesh) {
+  for (uint32_t iMesh = 0; iMesh < importer.meshCount(); ++iMesh) {
     // don't need normals if we aren't using lighting
     auto gltfMeshData = std::make_unique<GenericMeshData>(
         !loadedAssetData.assetInfo.forceFlatShading);
@@ -2659,7 +2660,7 @@ void ResourceManager::loadSkins(Importer& importer,
   nextSkinID_ = skinEnd + 1;
   loadedAssetData.meshMetaData.setSkinIndices(skinStart, skinEnd);
 
-  for (int iSkin = 0; iSkin < importer.skin3DCount(); ++iSkin) {
+  for (uint32_t iSkin = 0; iSkin < importer.skin3DCount(); ++iSkin) {
     auto skinData = std::make_shared<gfx::SkinData>();
 
     Cr::Containers::Optional<Mn::Trade::SkinData3D> skin =
@@ -2694,10 +2695,10 @@ Mn::Image2D ResourceManager::convertRGBToSemanticId(
       srcImage.pixels<Mn::Color3ub>();
   Cr::Containers::StridedArrayView2D<Mn::UnsignedShort> output =
       resImage.pixels<Mn::UnsignedShort>();
-  for (std::size_t y = 0; y != size.y(); ++y) {
+  for (long y = 0; y != size.y(); ++y) {
     Cr::Containers::StridedArrayView1D<const Mn::Color3ub> inputRow = input[y];
     Cr::Containers::StridedArrayView1D<Mn::UnsignedShort> outputRow = output[y];
-    for (std::size_t x = 0; x != size.x(); ++x) {
+    for (long x = 0; x != size.x(); ++x) {
       const Mn::Color3ub color = inputRow[x];
       /* Fugly. Sorry. Needs better API on Magnum side. */
       const Mn::UnsignedInt colorInt = geo::getValueAsUInt(color);
@@ -2739,7 +2740,8 @@ void ResourceManager::loadTextures(Importer& importer,
           static_cast<Mn::UnsignedShort>(i);
     }
 
-    for (int iTexture = 0; iTexture < importer.textureCount(); ++iTexture) {
+    for (uint32_t iTexture = 0; iTexture < importer.textureCount();
+         ++iTexture) {
       auto currentTextureID = textureStart + iTexture;
       auto txtrIter = textures_.emplace(currentTextureID,
                                         std::make_shared<Mn::GL::Texture2D>());
@@ -2775,7 +2777,8 @@ void ResourceManager::loadTextures(Importer& importer,
       // Whether semantic RGB or not
     }
   } else {
-    for (int iTexture = 0; iTexture < importer.textureCount(); ++iTexture) {
+    for (uint32_t iTexture = 0; iTexture < importer.textureCount();
+         ++iTexture) {
       auto currentTextureID = textureStart + iTexture;
       auto txtrIter = textures_.emplace(currentTextureID,
                                         std::make_shared<Mn::GL::Texture2D>());
