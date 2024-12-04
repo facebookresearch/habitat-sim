@@ -315,7 +315,7 @@ SceneInstanceAttributes::SceneInstanceAttributes(
 }
 SceneInstanceAttributes::SceneInstanceAttributes(
     SceneInstanceAttributes&& otr) noexcept
-    : AbstractAttributes(static_cast<AbstractAttributes>(otr)),
+    : AbstractAttributes(std::move(static_cast<AbstractAttributes&&>(otr))),
       availableObjInstIDs_(std::move(otr.availableObjInstIDs_)),
       availableArtObjInstIDs_(std::move(otr.availableArtObjInstIDs_)) {
   // get refs to internal subconfigs for object and ao instances

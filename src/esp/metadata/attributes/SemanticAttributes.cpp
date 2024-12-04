@@ -90,7 +90,7 @@ SemanticAttributes::SemanticAttributes(const SemanticAttributes& otr)
 }  // SemanticAttributes copy ctor
 
 SemanticAttributes::SemanticAttributes(SemanticAttributes&& otr) noexcept
-    : AbstractAttributes(static_cast<AbstractAttributes>(otr)),
+    : AbstractAttributes(std::move(static_cast<AbstractAttributes&&>(otr))),
       availableRegionInstIDs_(std::move(otr.availableRegionInstIDs_)) {
   // get refs to internal subconfigs for semantic region attributes
   // original data were moved over so should retain full derived class
