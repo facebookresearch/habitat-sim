@@ -196,31 +196,38 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
 
   io::JsonGenericValue::ConstMemberIterator pbrShaderRegionJSONIter =
       jsonConfig.FindMember("pbr_shader_region_configs");
-  if ((pbrShaderRegionJSONIter != jsonConfig.MemberEnd()) &&
-      (pbrShaderRegionJSONIter->value.IsObject())) {
-    const auto& articulatedObjArray = artObjJSONIter->value;
+  if (pbrShaderRegionJSONIter != jsonConfig.MemberEnd()) {
+    if (pbrShaderRegionJSONIter->value.IsObject()) {
+      // pbr_shader_region_configs tag exists, and should be an object, holding
+      // unique region names and the handle to the PbrShaderAttributes to use
+      // for that region.
 
-    // pbr_shader_region_configs tag exists, and should be an object, holding
-    // unique region names and the handle to the PbrShaderAttributes to use for
-    // that region.
-
-    // Tag should have the format of an array of key-value
-    // pairs, where the key is some region identifier and the value is a
-    // string representing the PbrShaderAttributes to use, as specified in the
-    // PbrShaderAttributesManager.
-    const auto& pbrShaderRegionHandles = pbrShaderRegionJSONIter->value;
-    int count = 0;
-    // iterate through objects
-    for (rapidjson::Value::ConstMemberIterator it =
-             pbrShaderRegionHandles.MemberBegin();
-         it != pbrShaderRegionHandles.MemberEnd(); ++it) {
-      // create attributes and set its name to be the tag in the JSON for the
-      // individual light
-      const std::string region = it->name.GetString();
-      const std::string pbrHandle = it->value.GetString();
-      attribs->addRegionPbrShaderAttributesHandle(region, pbrHandle);
+      // Tag should have the format of an array of key-value
+      // pairs, where the key is some region identifier and the value is a
+      // string representing the PbrShaderAttributes to use, as specified in the
+      // PbrShaderAttributesManager.
+      const auto& pbrShaderRegionHandles = pbrShaderRegionJSONIter->value;
+      // iterate through objects
+      for (rapidjson::Value::ConstMemberIterator it =
+               pbrShaderRegionHandles.MemberBegin();
+           it != pbrShaderRegionHandles.MemberEnd(); ++it) {
+        // create attributes and set its name to be the tag in the JSON for the
+        // individual light
+        const std::string region = it->name.GetString();
+        const std::string pbrHandle = it->value.GetString();
+        attribs->addRegionPbrShaderAttributesHandle(region, pbrHandle);
+      }
+    } else {
+      // Non-object (i.e. array) quantities are not supported for
+      // pbrShaderRegionConfigs
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
+          << "PBR/IBL Shader configurations were specified for Scene "
+             "Instance `"
+          << attribsDispName
+          << "` but they were specified incorrectly. Please make sure the "
+             "value with tag `pbr_shader_region_configs` is of proper format "
+             "(a JSON Object, not array)";
     }
-
   } else {
     // No pbr_shader_region_configs tag exists in scene instance. Not
     // necessarily a bad thing, not all datasets have specified PBR/IBL

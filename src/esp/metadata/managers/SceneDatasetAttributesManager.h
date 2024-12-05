@@ -105,7 +105,7 @@ class SceneDatasetAttributesManager
    * @param attributes The attributes to be filtered.
    */
   void finalizeAttrPathsBeforeRegister(
-      const attributes::SceneDatasetAttributes::ptr& attributes)
+      CORRADE_UNUSED const attributes::SceneDatasetAttributes::ptr& attributes)
       const override {}
 
  protected:

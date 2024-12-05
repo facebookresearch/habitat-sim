@@ -58,7 +58,7 @@ LightLayoutAttributes::LightLayoutAttributes(const LightLayoutAttributes& otr)
 }
 LightLayoutAttributes::LightLayoutAttributes(
     LightLayoutAttributes&& otr) noexcept
-    : AbstractAttributes(std::move(static_cast<AbstractAttributes>(otr))),
+    : AbstractAttributes(std::move(static_cast<AbstractAttributes&&>(otr))),
       availableLightIDs_(std::move(otr.availableLightIDs_)) {
   lightInstConfig_ = editSubconfig<Configuration>("lights");
 }

@@ -49,7 +49,7 @@ void VisualSensorSpec::sanityCheck() const {
       "VisualSensorSpec::sanityCheck(): the value of the channels which is"
           << channels << "is illegal", );
   CORRADE_ASSERT(
-      near > 0.0 && far > near,
+      near > 0.0f && far > near,
       "VisualSensorSpec::sanityCheck(): the near or far plane is illegal.", );
 }
 

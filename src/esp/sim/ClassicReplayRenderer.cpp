@@ -59,7 +59,7 @@ ClassicReplayRenderer::ClassicReplayRenderer(
                 "A rig instance with the specified ID already exists.");
 
       gfx::Rig rig{};
-      for (int i = 0; i < boneNames.size(); ++i) {
+      for (uint32_t i = 0; i < boneNames.size(); ++i) {
         const std::string& boneName = boneNames[i];
         rig.boneNames[boneName] = i;
 
@@ -82,7 +82,7 @@ ClassicReplayRenderer::ClassicReplayRenderer(
                     const std::vector<gfx::replay::Transform>& pose) override {
       auto& rig = self_.resourceManager_->getRigManager().getRigInstance(rigId);
       const size_t boneCount = rig.bones.size();
-      for (int i = 0; i < boneCount; ++i) {
+      for (uint32_t i = 0; i < boneCount; ++i) {
         const auto& transform = pose[i];
         rig.bones[i]
             ->setTranslation(transform.translation)
@@ -181,7 +181,7 @@ void ClassicReplayRenderer::doClose() {
 }
 
 void ClassicReplayRenderer::doCloseImpl() {
-  for (int envIdx = 0; envIdx < envs_.size(); ++envIdx) {
+  for (uint32_t envIdx = 0; envIdx < envs_.size(); ++envIdx) {
     envs_[envIdx].player_.close();
     auto& sensorMap = envs_[envIdx].sensorMap_;
     for (auto& sensorPair : sensorMap) {

@@ -19,7 +19,7 @@ namespace metadata {
  * attributes should replace this tag with the base filename (minus all paths
  * and extensions)
  */
-constexpr char CONFIG_NAME_AS_ASSET_FILENAME[] =
+static constexpr char CONFIG_NAME_AS_ASSET_FILENAME[] =
     "%%CONFIG_NAME_AS_ASSET_FILENAME%%";
 
 namespace attributes {
