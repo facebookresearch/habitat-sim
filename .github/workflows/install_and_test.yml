@@ -349,7 +349,7 @@ jobs:
             export PATH=$HOME/anaconda/bin:$PATH
 
             if [[ ${{ env.NIGHTLY }} == --nightly ]]; then
-              echo "TODO: Delete old nightly builds"
+              echo "Delete old nightly builds"
               python common/delete_old_night_packages.py --username ${{ env.CONDA_USERNAME }} --password ${{ env.CONDA_PWD }} ${{ env.NIGHTLY }}
             fi
 
