@@ -378,8 +378,6 @@ jobs:
             echo "Running matrix_builder for deployment."
             docker run --ipc=host --rm -v $(pwd)/../../:/remote --env ${{ env.CONDA_PWD }} hsim_condabuild_dcontainer /bin/bash -c "source ~/.bashrc && conda activate py39 && cd /remote/habitat-sim/ && git config --global --add safe.directory '*' && cd /remote/habitat-sim/conda-build && yes | anaconda login --username ${{ env.CONDA_USERNAME }} --password ${{ env.CONDA_PWD }} --hostname aihabitat-conda-ci-builder-linux && python matrix_builder.py --conda_upload ${{ env.NIGHTLY }}"
           fi
-      - name: Debugging with tmate
-        uses: mxschmitt/action-tmate@v3.18
 
   build_conda_osx:
     runs-on: macos-14
