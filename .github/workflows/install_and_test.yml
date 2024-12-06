@@ -311,28 +311,28 @@ jobs:
           path: "./habitat-sim"
       - name: Set CI_TEST variable based on "main merge" vs. "pull_request" workflow
         run: |-
-          echo "NIGHTLY=''" >> $GITHUB_ENV
-          echo "CI_TEST='true'" >> $GITHUB_ENV
+          echo "NIGHTLY=" >> $GITHUB_ENV
+          echo "CI_TEST=true" >> $GITHUB_ENV
           if [[ ${{ github.event_name }} == 'push' ]]; then
             if [[ ${GITHUB_REF} == refs/heads/* ]]; then
               echo "trigger: a push to main branch"
             elif [[ ${GITHUB_REF} == refs/tags/* ]]; then
               echo "trigger: a version tag push"
-              echo "CI_TEST='false'" >> $GITHUB_ENV
+              echo "CI_TEST=false" >> $GITHUB_ENV
               echo "CONDA_USERNAME=$AIHABITAT_CONDA_USERNAME" >> $GITHUB_ENV
               echo "CONDA_PWD=$AIHABITAT_CONDA_PWD" >> $GITHUB_ENV
             fi
           elif [[ ${{ github.event_name }} == 'schedule' ]]; then
             echo "trigger: a nightly build"
-            echo "CI_TEST='false'" >> $GITHUB_ENV
-            echo "NIGHTLY='--nightly'" >> $GITHUB_ENV
+            echo "CI_TEST=false" >> $GITHUB_ENV
+            echo "NIGHTLY=--nightly" >> $GITHUB_ENV
             echo "CONDA_USERNAME=$AIHABITAT_NIGHTLY_CONDA_USERNAME" >> $GITHUB_ENV
             echo "CONDA_PWD=$AIHABITAT_NIGHTLY_CONDA_PWD" >> $GITHUB_ENV
           elif [[ ${{ github.event_name }} == 'pull_request' ]]; then
             echo "trigger: a pull request"
             echo "DEBUGGING: setting the nightly==true and ci==false to trigger a nightly style build process"
-            echo "CI_TEST='false'" >> $GITHUB_ENV
-            echo "NIGHTLY='--nightly'" >> $GITHUB_ENV
+            echo "CI_TEST=false" >> $GITHUB_ENV
+            echo "NIGHTLY=--nightly" >> $GITHUB_ENV
             echo "CONDA_USERNAME=$AIHABITAT_NIGHTLY_CONDA_USERNAME" >> $GITHUB_ENV
             echo "CONDA_PWD=$AIHABITAT_NIGHTLY_CONDA_PWD" >> $GITHUB_ENV
           fi
@@ -344,7 +344,7 @@ jobs:
           echo ${{ env.NIGHTLY }}
 
           #pivot on the build type
-          if [[ ${{ env.CI_TEST }} == 'true' ]]; then
+          if [[ ${{ env.CI_TEST }} == true ]]; then
             echo "This is a CI test."
           else
             echo "This is a full conda build with deployment."
@@ -353,7 +353,7 @@ jobs:
             bash Anaconda3-2020.11-Linux-x86_64.sh -b -p $HOME/anaconda
             export PATH=$HOME/anaconda/bin:$PATH
 
-            if [[ ${{ env.NIGHTLY }} == '--nightly' ]]; then
+            if [[ ${{ env.NIGHTLY }} == --nightly ]]; then
               echo "TODO: Delete old nightly builds"
               #python common/delete_old_night_packages.py --username ${{ env.CONDA_USERNAME }} --password ${{ env.CONDA_PWD }} ${{ env.NIGHTLY }}
             fi
@@ -371,12 +371,12 @@ jobs:
           echo "Building the docker container"
           docker build -t hsim_condabuild_dcontainer -f Dockerfile .
 
-          if [[ ${{ env.CI_TEST }} == 'true' ]]; then
+          if [[ ${{ env.CI_TEST }} == true ]]; then
             echo "Running matrix_builder for CI test."
             #docker run --ipc=host --rm -v $(pwd)/../../:/remote hsim_condabuild_dcontainer /bin/bash -c "source ~/.bashrc && conda activate py39 && cd /remote/habitat-sim/ && git config --global --add safe.directory '*' && cd /remote/habitat-sim/conda-build && python matrix_builder.py --ci_test"
           else
             echo "Running matrix_builder for deployment."
-            #docker run --ipc=host --rm -v $(pwd)/../../:/remote --env ${{ env.CONDA_PWD }} hsim_condabuild_dcontainer /bin/bash -c "source ~/.bashrc && conda activate py39 && cd /remote/habitat-sim/ && git config --global --add safe.directory '*' && cd /remote/habitat-sim/conda-build && yes | anaconda login --username ${{ env.CONDA_USERNAME }} --password ${{ env.CONDA_PWD }} --hostname 'aihabitat-conda-ci-builder-linux' && python matrix_builder.py --conda_upload ${{ env.NIGHTLY }}"
+            docker run --ipc=host --rm -v $(pwd)/../../:/remote --env ${{ env.CONDA_PWD }} hsim_condabuild_dcontainer /bin/bash -c "source ~/.bashrc && conda activate py39 && cd /remote/habitat-sim/ && git config --global --add safe.directory '*' && cd /remote/habitat-sim/conda-build && yes | anaconda login --username ${{ env.CONDA_USERNAME }} --password ${{ env.CONDA_PWD }} --hostname \"aihabitat-conda-ci-builder-linux\" && python matrix_builder.py --conda_upload ${{ env.NIGHTLY }}"
           fi
 
   build_conda_osx:
