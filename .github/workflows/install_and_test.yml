@@ -330,6 +330,11 @@ jobs:
             echo "CONDA_PWD=$AIHABITAT_NIGHTLY_CONDA_PWD" >> $GITHUB_ENV
           elif [[ ${{ github.event_name }} == 'pull_request' ]]; then
             echo "trigger: a pull request"
+            echo "DEBUGGING: setting the nightly==true and ci==false to trigger a nightly style build process"
+            echo "CI_TEST='false'" >> $GITHUB_ENV
+            echo "NIGHTLY='--nightly'" >> $GITHUB_ENV
+            echo "CONDA_USERNAME=$AIHABITAT_NIGHTLY_CONDA_USERNAME" >> $GITHUB_ENV
+            echo "CONDA_PWD=$AIHABITAT_NIGHTLY_CONDA_PWD" >> $GITHUB_ENV
           fi
       - name: Build conda Linux packages
         run: |-
@@ -348,9 +353,11 @@ jobs:
             bash Anaconda3-2020.11-Linux-x86_64.sh -b -p $HOME/anaconda
             export PATH=$HOME/anaconda/bin:$PATH
 
-            # TODO: Delete old nightly builds
-            #NOTE: The ${{ env.NIGHTLY }} == "--nightly" variable is necessary to trigger this
-            #python common/delete_old_night_packages.py --username ${{ env.CONDA_USERNAME }} --password ${{ env.CONDA_PWD }} ${{ env.NIGHTLY }}
+            if [[ ${{ env.NIGHTLY }} == '--nightly' ]]; then
+              echo "TODO: Delete old nightly builds"
+              #python common/delete_old_night_packages.py --username ${{ env.CONDA_USERNAME }} --password ${{ env.CONDA_PWD }} ${{ env.NIGHTLY }}
+            fi
+
           fi
 
           #install Docker
@@ -361,6 +368,7 @@ jobs:
           sudo apt-get install -y docker-ce
 
           #build the container
+          echo "Building the docker container"
           docker build -t hsim_condabuild_dcontainer -f Dockerfile .
 
           if [[ ${{ env.CI_TEST }} == 'true' ]]; then
