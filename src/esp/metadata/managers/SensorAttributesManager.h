@@ -15,6 +15,13 @@
 
 namespace esp {
 namespace metadata {
+namespace attributes {
+class AudioSensorAttributes;
+class CameraSensorAttributes;
+class CustomSensorAttributes;
+class EquirectangularSensorAttributes;
+class FisheyeSensorAttributes;
+}  // namespace attributes
 
 namespace managers {
 

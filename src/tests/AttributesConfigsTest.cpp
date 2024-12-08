@@ -12,6 +12,7 @@
 #include "esp/metadata/managers/ObjectAttributesManager.h"
 #include "esp/metadata/managers/PbrShaderAttributesManager.h"
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
+#include "esp/metadata/managers/SensorAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
 
 #include "esp/physics/RigidBase.h"
@@ -32,6 +33,11 @@ using esp::physics::MotionType;
 
 using AttrMgrs::AbstractAttributesManager;
 using Attrs::ArticulatedObjectAttributes;
+using Attrs::AudioSensorAttributes;
+using Attrs::CameraSensorAttributes;
+using Attrs::CustomSensorAttributes;
+using Attrs::EquirectangularSensorAttributes;
+using Attrs::FisheyeSensorAttributes;
 using Attrs::MarkerSets;
 using Attrs::ObjectAttributes;
 using Attrs::PbrShaderAttributes;
@@ -127,6 +133,10 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
       const AllMarkerSetsTestMap&  // markers in link subset
           markerSetsInfoHierarchy);
 
+  //////////////////////////////
+  // Test attributes values
+  // These tests validate passed attributes' values to what is expected.
+
   /**
    * @brief This test will verify that the physics attributes' managers' JSON
    * loading process is working as expected.
@@ -167,6 +177,14 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
   void testSemanticAttrVals(
       std::shared_ptr<Attrs::SemanticAttributes> semanticAttr,
       const std::string& assetPath);
+
+  /**
+   * @brief This test will verify that the AudioSensorAttributes' managers' load
+   * from sensorSpec process is working as expected.
+   */
+  void testAudioSensorAttrValsSpec(
+      std::shared_ptr<Attrs::AudioSensorAttributes> audioAttr,
+      const std::string& assetPath);
   /**
    * @brief This test will verify that the Stage attributes' managers' JSON
    * loading process is working as expected.
@@ -200,6 +218,7 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
   void testLightJSONLoad();
   void testSceneInstanceJSONLoad();
   void testSemanticJSONLoad();
+  void testSensorAttrJSONLoad();
   void testStageJSONLoad();
   void testObjectJSONLoad();
   void testArticulatedObjectJSONLoad();
@@ -219,6 +238,8 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
       sceneInstanceAttributesManager_ = nullptr;
   AttrMgrs::SemanticAttributesManager::ptr semanticAttributesManager_ = nullptr;
 
+  AttrMgrs::SensorAttributesManager::ptr sensorAttributesManager_ = nullptr;
+
   AttrMgrs::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
 
 };  // struct AttributesConfigsTest
@@ -235,6 +256,7 @@ AttributesConfigsTest::AttributesConfigsTest() {
   pbrShaderAttributesManager_ = MM->getPbrShaderAttributesManager();
   sceneInstanceAttributesManager_ = MM->getSceneInstanceAttributesManager();
   semanticAttributesManager_ = MM->getSemanticAttributesManager();
+  sensorAttributesManager_ = MM->getSensorAttributesManager();
   stageAttributesManager_ = MM->getStageAttributesManager();
 
   addTests({
@@ -243,6 +265,7 @@ AttributesConfigsTest::AttributesConfigsTest() {
       &AttributesConfigsTest::testLightJSONLoad,
       &AttributesConfigsTest::testSceneInstanceJSONLoad,
       &AttributesConfigsTest::testSemanticJSONLoad,
+      &AttributesConfigsTest::testSensorAttrJSONLoad,
       &AttributesConfigsTest::testStageJSONLoad,
       &AttributesConfigsTest::testObjectJSONLoad,
       &AttributesConfigsTest::testArticulatedObjectJSONLoad,
@@ -1298,6 +1321,11 @@ void AttributesConfigsTest::testSemanticJSONLoad() {
   Cr::Utility::Path::remove(newAttrName);
 
 }  // AttributesConfigsTest::testSemanticJSONLoad
+
+void AttributesConfigsTest::testSensorAttrJSONLoad() {
+  // add dummy test so that test will run
+  CORRADE_VERIFY(true);
+}  // AttributesConfigsTest::testSensorAttrJSONLoad
 
 void AttributesConfigsTest::testStageAttrVals(
     std::shared_ptr<Attrs::StageAttributes> stageAttr,

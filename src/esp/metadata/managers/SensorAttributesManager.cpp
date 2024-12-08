@@ -204,6 +204,9 @@ AbstractSensorAttributes::ptr SensorAttributesManager::initNewObjectInternal(
     const std::string& sensorAttrClassName,
     bool builtFromConfig) {
   // sensorAttrClassName is the class of the sensor attributes to build
+  // Instead of building the attributes using whatever name is passed into the
+  // create workflow, we use the sensorAttrClassName to determine which
+  // constructor to invoke.
 
   auto sensorTypeCtorIter = sensorTypeConstructorMap_.find(sensorAttrClassName);
   if (sensorTypeCtorIter == sensorTypeConstructorMap_.end()) {
