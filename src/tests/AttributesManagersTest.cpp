@@ -46,6 +46,136 @@ using Attrs::UVSpherePrimitiveAttributes;
 
 namespace {
 
+namespace detail {
+
+/**
+ * @brief Test creation, copying and removal of templates for Object,
+ * Physics and Stage Attributes Managers
+ * @tparam Class of attributes manager
+ * @param mgr the Attributes Manager being tested,
+ * @param handle the handle of the desired attributes template to work with
+ */
+template <typename T>
+void testCreateAndRemove(std::shared_ptr<T> mgr, const std::string& handle) {
+  // get starting number of templates
+  int orignNumTemplates = mgr->getNumObjects();
+  // verify template is not present - should not be
+  bool isPresentAlready = mgr->getObjectLibHasHandle(handle);
+  CORRADE_VERIFY(!isPresentAlready);
+
+  // create template from source handle, register it and retrieve it
+  // Note: registration of template means this is a copy of registered
+  // template
+  auto attrTemplate1 = mgr->createObject(handle, true);
+  // verify it exists
+  CORRADE_VERIFY(attrTemplate1);
+  // verify ID exists
+  bool idIsPresent = mgr->getObjectLibHasID(attrTemplate1->getID());
+  CORRADE_VERIFY(idIsPresent);
+  // retrieve a copy of the named attributes template
+  auto attrTemplate2 = mgr->getObjectOrCopyByHandle(handle);
+  // verify copy has same quantities and values as original
+  CORRADE_COMPARE(attrTemplate1->getHandle(), attrTemplate2->getHandle());
+
+  // test changing a user-defined field in each template, verify the templates
+  // are not now the same
+  attrTemplate1->setFileDirectory("temp_dir_1");
+  attrTemplate2->setFileDirectory("temp_dir_2");
+  CORRADE_COMPARE_AS(attrTemplate1->getFileDirectory(),
+                     attrTemplate2->getFileDirectory(),
+                     Cr::TestSuite::Compare::NotEqual);
+  // get original template ID
+  int oldID = attrTemplate1->getID();
+
+  // register modified template and verify that this is the template now
+  // stored
+  int newID = mgr->registerObject(attrTemplate2, handle);
+  // verify IDs are the same
+  CORRADE_COMPARE(oldID, newID);
+
+  // get another copy
+  auto attrTemplate3 = mgr->getObjectOrCopyByHandle(handle);
+  // verify added field is present and the same
+  CORRADE_COMPARE(attrTemplate3->getFileDirectory(),
+                  attrTemplate2->getFileDirectory());
+  // change field in new copy
+  attrTemplate3->setFileDirectory("temp_dir_3");
+  // verify that now they are different
+  CORRADE_COMPARE_AS(attrTemplate3->getFileDirectory(),
+                     attrTemplate2->getFileDirectory(),
+                     Cr::TestSuite::Compare::NotEqual);
+
+  // test removal
+  int removeID = attrTemplate2->getID();
+  // remove template by ID, acquire copy of removed template
+  auto oldTemplate = mgr->removeObjectByID(removeID);
+  // verify it exists
+  CORRADE_VERIFY(oldTemplate);
+  // verify there are same number of templates as when we started
+  CORRADE_COMPARE(orignNumTemplates, mgr->getNumObjects());
+  // re-add template copy via registration
+  int newAddID = mgr->registerObject(attrTemplate2, handle);
+  // verify IDs are the same
+  CORRADE_COMPARE(removeID, newAddID);
+
+  // lock template referenced by handle
+  bool success = mgr->setLock(handle, true);
+  // attempt to remove attributes via handle
+  auto oldTemplate2 = mgr->removeObjectByHandle(handle);
+  // verify no template was deleted
+  CORRADE_VERIFY(!oldTemplate2);
+  // unlock template
+  success = mgr->setLock(handle, false);
+
+  // remove  attributes via handle
+  auto oldTemplate3 = mgr->removeObjectByHandle(handle);
+  // verify deleted template exists
+  CORRADE_VERIFY(oldTemplate3);
+  // verify ID does not exist in library now
+  idIsPresent = mgr->getObjectLibHasID(oldTemplate3->getID());
+  CORRADE_VERIFY(!idIsPresent);
+  // verify there are same number of templates as when we started
+  CORRADE_COMPARE(orignNumTemplates, mgr->getNumObjects());
+}  // AttributesManagersTest::testCreateAndRemove
+
+/**
+ * @brief Specialization : Test creation, copying and removal of templates for
+ * lights attributes managers.
+ * @param mgr the Attributes Manager being tested,
+ * @param handle the handle of the desired attributes template to work with
+ */
+template <>
+void testCreateAndRemove(AttrMgrs::LightLayoutAttributesManager::ptr mgr,
+                         const std::string& handle) {
+  // get starting number of templates
+  int origNumTemplates = mgr->getNumObjects();
+
+  // Source config for lights holds multiple light configurations.
+  // Create a single template for each defined light in configuration and
+  // register it.
+  mgr->createObject(handle, true);
+  // get number of templates loaded
+  int numLoadedLights = mgr->getNumObjects();
+
+  // verify lights were added
+  CORRADE_COMPARE_AS(numLoadedLights, origNumTemplates,
+                     Cr::TestSuite::Compare::NotEqual);
+
+  // get handles of all lights added
+  auto lightHandles = mgr->getObjectHandlesBySubstring();
+  CORRADE_COMPARE(lightHandles.size(), numLoadedLights);
+
+  // remove all added handles
+  for (auto handle : lightHandles) {
+    mgr->removeObjectByHandle(handle);
+  }
+  // verify there are same number of templates as when we started
+  CORRADE_COMPARE(mgr->getNumObjects(), origNumTemplates);
+
+}  // AttributesManagersTest::testCreateAndRemove lighting specialization
+
+}  // namespace detail
+
 /**
  * @brief Test attributesManagers' functionality via loading, creating, copying
  * and deleting Attributes.
@@ -61,17 +191,9 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
    * @param handle the handle of the desired attributes template to work with
    */
   template <typename T>
-  void testCreateAndRemove(std::shared_ptr<T> mgr, const std::string& handle);
-
-  /**
-   * @brief Test creation, copying and removal of templates for lights
-   * attributes managers.
-   * @param mgr the Attributes Manager being tested,
-   * @param handle the handle of the desired attributes template to work with
-   */
-  void testCreateAndRemoveLights(
-      AttrMgrs::LightLayoutAttributesManager::ptr mgr,
-      const std::string& handle);
+  void testCreateAndRemove(std::shared_ptr<T> mgr, const std::string& handle) {
+    detail::testCreateAndRemove<T>(mgr, handle);
+  }
 
   /**
    * @brief Test creation many templates and removing all but defaults.
@@ -278,128 +400,6 @@ AttributesManagersTest::AttributesManagersTest() {
       &AttributesManagersTest::testPrimitiveBasedObjectAttributes,
   });
 }
-
-/**
- * @brief Test creation, copying and removal of templates for Object, Physics
- * and Stage Attributes Managers
- * @tparam Class of attributes manager
- * @param mgr the Attributes Manager being tested,
- * @param handle the handle of the desired attributes template to work with.
- */
-template <typename T>
-void AttributesManagersTest::testCreateAndRemove(std::shared_ptr<T> mgr,
-                                                 const std::string& handle) {
-  // get starting number of templates
-  int orignNumTemplates = mgr->getNumObjects();
-  // verify template is not present - should not be
-  bool isPresentAlready = mgr->getObjectLibHasHandle(handle);
-  CORRADE_VERIFY(!isPresentAlready);
-
-  // create template from source handle, register it and retrieve it
-  // Note: registration of template means this is a copy of registered
-  // template
-  auto attrTemplate1 = mgr->createObject(handle, true);
-  // verify it exists
-  CORRADE_VERIFY(attrTemplate1);
-  // verify ID exists
-  bool idIsPresent = mgr->getObjectLibHasID(attrTemplate1->getID());
-  CORRADE_VERIFY(idIsPresent);
-  // retrieve a copy of the named attributes template
-  auto attrTemplate2 = mgr->getObjectOrCopyByHandle(handle);
-  // verify copy has same quantities and values as original
-  CORRADE_COMPARE(attrTemplate1->getHandle(), attrTemplate2->getHandle());
-
-  // test changing a user-defined field in each template, verify the templates
-  // are not now the same
-  attrTemplate1->setFileDirectory("temp_dir_1");
-  attrTemplate2->setFileDirectory("temp_dir_2");
-  CORRADE_COMPARE_AS(attrTemplate1->getFileDirectory(),
-                     attrTemplate2->getFileDirectory(),
-                     Cr::TestSuite::Compare::NotEqual);
-  // get original template ID
-  int oldID = attrTemplate1->getID();
-
-  // register modified template and verify that this is the template now
-  // stored
-  int newID = mgr->registerObject(attrTemplate2, handle);
-  // verify IDs are the same
-  CORRADE_COMPARE(oldID, newID);
-
-  // get another copy
-  auto attrTemplate3 = mgr->getObjectOrCopyByHandle(handle);
-  // verify added field is present and the same
-  CORRADE_COMPARE(attrTemplate3->getFileDirectory(),
-                  attrTemplate2->getFileDirectory());
-  // change field in new copy
-  attrTemplate3->setFileDirectory("temp_dir_3");
-  // verify that now they are different
-  CORRADE_COMPARE_AS(attrTemplate3->getFileDirectory(),
-                     attrTemplate2->getFileDirectory(),
-                     Cr::TestSuite::Compare::NotEqual);
-
-  // test removal
-  int removeID = attrTemplate2->getID();
-  // remove template by ID, acquire copy of removed template
-  auto oldTemplate = mgr->removeObjectByID(removeID);
-  // verify it exists
-  CORRADE_VERIFY(oldTemplate);
-  // verify there are same number of templates as when we started
-  CORRADE_COMPARE(orignNumTemplates, mgr->getNumObjects());
-  // re-add template copy via registration
-  int newAddID = mgr->registerObject(attrTemplate2, handle);
-  // verify IDs are the same
-  CORRADE_COMPARE(removeID, newAddID);
-
-  // lock template referenced by handle
-  bool success = mgr->setLock(handle, true);
-  // attempt to remove attributes via handle
-  auto oldTemplate2 = mgr->removeObjectByHandle(handle);
-  // verify no template was deleted
-  CORRADE_VERIFY(!oldTemplate2);
-  // unlock template
-  success = mgr->setLock(handle, false);
-
-  // remove  attributes via handle
-  auto oldTemplate3 = mgr->removeObjectByHandle(handle);
-  // verify deleted template exists
-  CORRADE_VERIFY(oldTemplate3);
-  // verify ID does not exist in library now
-  idIsPresent = mgr->getObjectLibHasID(oldTemplate3->getID());
-  CORRADE_VERIFY(!idIsPresent);
-  // verify there are same number of templates as when we started
-  CORRADE_COMPARE(orignNumTemplates, mgr->getNumObjects());
-
-}  // AttributesManagersTest::testCreateAndRemove
-
-void AttributesManagersTest::testCreateAndRemoveLights(
-    AttrMgrs::LightLayoutAttributesManager::ptr mgr,
-    const std::string& handle) {
-  // get starting number of templates
-  int origNumTemplates = mgr->getNumObjects();
-
-  // Source config for lights holds multiple light configurations.
-  // Create a single template for each defined light in configuration and
-  // register it.
-  mgr->createObject(handle, true);
-  // get number of templates loaded
-  int numLoadedLights = mgr->getNumObjects();
-
-  // verify lights were added
-  CORRADE_COMPARE_AS(numLoadedLights, origNumTemplates,
-                     Cr::TestSuite::Compare::NotEqual);
-
-  // get handles of all lights added
-  auto lightHandles = mgr->getObjectHandlesBySubstring();
-  CORRADE_COMPARE(lightHandles.size(), numLoadedLights);
-
-  // remove all added handles
-  for (auto handle : lightHandles) {
-    mgr->removeObjectByHandle(handle);
-  }
-  // verify there are same number of templates as when we started
-  CORRADE_COMPARE(mgr->getNumObjects(), origNumTemplates);
-
-}  // AttributesManagersTest::testCreateAndRemove
 
 /**
  * @brief Test creation many templates and removing all but defaults.
@@ -778,7 +778,7 @@ void AttributesManagersTest::testLightLayoutAttributesManager() {
       "LightLayoutAttributesManager @"
       << lightConfigFile);
   // LightAttributesManager config-loaded attributes processing verification
-  testCreateAndRemoveLights(lightLayoutAttributesManager_, lightConfigFile);
+  testCreateAndRemove(lightLayoutAttributesManager_, lightConfigFile);
 
 }  // AttributesManagersTest::LightLayoutAttributesManagerTest
 
