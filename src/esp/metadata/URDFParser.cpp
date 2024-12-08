@@ -453,24 +453,25 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
       ESP_VERY_VERBOSE() << link.m_name;
       return false;
     }
-    link.m_inertia.m_mass *= model->getGlobalScaling();
+    link.m_inertia.m_mass *= static_cast<double>(model->getGlobalScaling());
   } else {
     if ((strlen(linkName) == 5) && (strncmp(linkName, "world", 5)) == 0) {
-      link.m_inertia.m_mass = 0.f;
+      link.m_inertia.m_mass = 0.0;
       link.m_inertia.m_linkLocalFrame = Mn::Matrix4();  // Identity
-      link.m_inertia.m_ixx = 0.f;
-      link.m_inertia.m_iyy = 0.f;
-      link.m_inertia.m_izz = 0.f;
+      link.m_inertia.m_ixx = 0.0;
+      link.m_inertia.m_iyy = 0.0;
+      link.m_inertia.m_izz = 0.0;
     } else {
       ESP_VERY_VERBOSE()
           << "W - No inertial data for link:" << link.m_name
           << ", using mass=1, localinertiadiagonal = 1,1,1, identity local "
              "inertial frame";
-      link.m_inertia.m_mass = 1.f * model->getMassScaling();
+      link.m_inertia.m_mass =
+          1.0 * static_cast<double>(model->getMassScaling());
       link.m_inertia.m_linkLocalFrame = Mn::Matrix4();  // Identity
-      link.m_inertia.m_ixx = 1.f;
-      link.m_inertia.m_iyy = 1.f;
-      link.m_inertia.m_izz = 1.f;
+      link.m_inertia.m_ixx = 1.0;
+      link.m_inertia.m_iyy = 1.0;
+      link.m_inertia.m_izz = 1.0;
     }
   }
 
@@ -625,9 +626,9 @@ bool Parser::parseTransform(Mn::Matrix4& tr, const XMLElement* xml) const {
   if (rpy_str != nullptr) {
     Mn::Vector3 rpy;
     if (parseVector3(rpy, std::string(rpy_str))) {
-      double roll = rpy[0];
-      double pitch = rpy[1];
-      double yaw = rpy[2];
+      double roll = static_cast<double>(rpy[0]);
+      double pitch = static_cast<double>(rpy[1]);
+      double yaw = static_cast<double>(rpy[2]);
 
       double phi = roll / 2.0;
       double the = pitch / 2.0;
@@ -766,7 +767,7 @@ bool Parser::parseGeometry(Geometry& geom, const XMLElement* g) {
 
 bool Parser::parseInertia(Inertia& inertia, const XMLElement* config) {
   inertia.m_linkLocalFrame = Mn::Matrix4();  // Identity
-  inertia.m_mass = 0.f;
+  inertia.m_mass = 0.0;
 
   // Origin
   const XMLElement* o = config->FirstChildElement("origin");
@@ -913,12 +914,12 @@ bool Parser::initTreeAndRoot(const std::shared_ptr<Model>& model) const {
 
 bool Parser::parseJointLimits(Joint& joint,
                               const tinyxml2::XMLElement* config) const {
-  joint.m_lowerLimit = 0.f;
-  joint.m_upperLimit = -1.f;
-  joint.m_effortLimit = 0.f;
-  joint.m_velocityLimit = 0.f;
-  joint.m_jointDamping = 0.f;
-  joint.m_jointFriction = 0.f;
+  joint.m_lowerLimit = 0.0;
+  joint.m_upperLimit = -1.0;
+  joint.m_effortLimit = 0.0;
+  joint.m_velocityLimit = 0.0;
+  joint.m_jointDamping = 0.0;
+  joint.m_jointFriction = 0.0;
 
   const char* lower_str = config->Attribute("lower");
   if (lower_str) {

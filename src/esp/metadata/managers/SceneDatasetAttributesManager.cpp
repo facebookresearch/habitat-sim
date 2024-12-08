@@ -151,7 +151,7 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
       // Get the count of the number of expected members found. If more members
       // than this exist in the cell, then we will read for extra key-value
       // mappings.
-      int numMembersFound = 0;
+      uint32_t numMembersFound = 0;
       // process JSON jCell here - this cell potentially holds :
       // 1. "default_attributes" : a single attributes default of the
       // specified type.

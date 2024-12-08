@@ -29,7 +29,7 @@ void CameraSensorSpec::sanityCheck() const {
                  "SensorSubType "
                  "Pinhole or Orthographic", );
   CORRADE_ASSERT(
-      orthoScale > 0,
+      orthoScale > 0.0f,
       "CameraSensorSpec::sanityCheck(): orthoScale must be greater than 0", );
 }
 

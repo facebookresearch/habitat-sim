@@ -47,7 +47,7 @@ BatchReplayRenderer::BatchReplayRenderer(
   theOnlySensorName_ = sensor.uuid;
   theOnlySensorProjection_ = sensor.projectionMatrix();
 
-  for (Mn::UnsignedInt i = 0; i != cfg.numEnvironments; ++i) {
+  for (int i = 0; i < cfg.numEnvironments; ++i) {
     arrayAppend(
         envs_, EnvironmentRecord{
                    std::make_shared<BatchPlayerImplementation>(*renderer_, i)});
@@ -63,7 +63,7 @@ void BatchReplayRenderer::doClose() {
 }
 
 void BatchReplayRenderer::doCloseImpl() {
-  for (int i = 0; i < envs_.size(); ++i) {
+  for (uint32_t i = 0; i < envs_.size(); ++i) {
     envs_[i].player_.close();
   }
   envs_ = {};
@@ -125,7 +125,8 @@ void BatchReplayRenderer::doRender(
   // todo: integrate debugLineRender_->flushLines
   CORRADE_INTERNAL_ASSERT(!debugLineRender_);
 
-  for (int envIndex = 0; envIndex != envs_.size(); ++envIndex) {
+  for (int envIndex = 0; envIndex < static_cast<int>(envs_.size());
+       ++envIndex) {
     const auto rectangle = Mn::Range2Di::fromSize(
         renderer_->tileSize() *
             Mn::Vector2i{envIndex % renderer_->tileCount().x(),

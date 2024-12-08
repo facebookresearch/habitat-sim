@@ -229,17 +229,13 @@ SceneAOInstanceAttributes::SceneAOInstanceAttributes(
 std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoHeaderInternal()
     const {
   std::string infoHdr{"Base Type,Inertia Source,Link Order,Render Mode,"};
-  int iter = 0;
   const auto initJointPose = getInitJointPose();
-  for (const auto& it : initJointPose) {
-    Cr::Utility::formatInto(infoHdr, infoHdr.size(), "Init Pose {},",
-                            std::to_string(iter++));
+  for (uint32_t iter = 0; iter < initJointPose.size(); ++iter) {
+    Cr::Utility::formatInto(infoHdr, infoHdr.size(), "Init Pose {},", iter);
   }
-  iter = 0;
   const auto initJointVel = getInitJointVelocities();
-  for (const auto& it : initJointVel) {
-    Cr::Utility::formatInto(infoHdr, infoHdr.size(), "Init Vel {},",
-                            std::to_string(iter++));
+  for (uint32_t iter = 0; iter < initJointPose.size(); ++iter) {
+    Cr::Utility::formatInto(infoHdr, infoHdr.size(), "Init Vel {},", iter);
   }
   return infoHdr;
 }  // SceneAOInstanceAttributes::getSceneObjInstanceInfoHeaderInternal
@@ -319,7 +315,7 @@ SceneInstanceAttributes::SceneInstanceAttributes(
 }
 SceneInstanceAttributes::SceneInstanceAttributes(
     SceneInstanceAttributes&& otr) noexcept
-    : AbstractAttributes(std::move(static_cast<AbstractAttributes>(otr))),
+    : AbstractAttributes(std::move(static_cast<AbstractAttributes&&>(otr))),
       availableObjInstIDs_(std::move(otr.availableObjInstIDs_)),
       availableArtObjInstIDs_(std::move(otr.availableArtObjInstIDs_)) {
   // get refs to internal subconfigs for object and ao instances
