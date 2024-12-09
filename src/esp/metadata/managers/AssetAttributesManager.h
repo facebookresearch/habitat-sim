@@ -555,6 +555,11 @@ class AssetAttributesManager
    */
   template <typename T, bool isWireFrame, PrimObjTypes primitiveType>
   attributes::AbstractPrimitiveAttributes::ptr createPrimAttributes() {
+    static_assert(
+        std::is_base_of<attributes::AbstractPrimitiveAttributes, T>::value,
+        "AbstractPrimitiveAttributes must be base class of desired "
+        "PrimitiveAttributes class.");
+
     if (primitiveType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
       ESP_ERROR() << "Cannot instantiate "
                      "attributes::AbstractPrimitiveAttributes object for "

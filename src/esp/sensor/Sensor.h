@@ -5,14 +5,17 @@
 #ifndef ESP_SENSOR_SENSOR_H_
 #define ESP_SENSOR_SENSOR_H_
 
-#include "esp/scene/SceneNode.h"
-
+#include <Magnum/Math/Vector3.h>
+#include <Magnum/SceneGraph/Object.h>
 #include "esp/core/Buffer.h"
 #include "esp/core/Esp.h"
 
 #include "esp/sensor/configure.h"
 
 namespace esp {
+namespace scene {
+class SceneNode;
+}
 
 namespace sim {
 class Simulator;
@@ -21,7 +24,8 @@ class Simulator;
 namespace sensor {
 // Enumeration of types of sensors
 enum class SensorType : int32_t {
-  None = 0,
+  Unspecified = 0,
+  Custom,
   Color,
   Depth,
   Normal,
@@ -38,7 +42,8 @@ enum class ObservationSpaceType {
 };
 
 enum class SensorSubType : int32_t {
-  None = 0,
+  Unspecified = 0,
+  Custom,
   Pinhole,
   Orthographic,
   Fisheye,
@@ -51,8 +56,8 @@ enum class SensorSubType : int32_t {
 // User should make sure all uuids are unique
 struct SensorSpec {
   std::string uuid = "";
-  SensorType sensorType = SensorType::None;
-  SensorSubType sensorSubType = SensorSubType::None;
+  SensorType sensorType = SensorType::Unspecified;
+  SensorSubType sensorSubType = SensorSubType::Unspecified;
   Magnum::Vector3 position = {0, 1.5, 0};
   Magnum::Vector3 orientation = {0, 0, 0};
   std::string noiseModel = "None";
@@ -91,14 +96,9 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
   const scene::SceneNode& node() const { return object(); }
 
   // Overloads to avoid confusion
-  scene::SceneNode& object() {
-    return static_cast<scene::SceneNode&>(
-        Magnum::SceneGraph::AbstractFeature3D::object());
-  }
-  const scene::SceneNode& object() const {
-    return static_cast<const scene::SceneNode&>(
-        Magnum::SceneGraph::AbstractFeature3D::object());
-  }
+  scene::SceneNode& object();
+  const scene::SceneNode& object() const;
+
   /**
    * @brief Return a pointer to this Sensor's SensorSpec
    */
@@ -167,14 +167,9 @@ class SensorSuite : public Magnum::SceneGraph::AbstractFeature3D {
   const scene::SceneNode& node() const { return object(); }
 
   // Overloads to avoid confusion
-  scene::SceneNode& object() {
-    return static_cast<scene::SceneNode&>(
-        Magnum::SceneGraph::AbstractFeature3D::object());
-  }
-  const scene::SceneNode& object() const {
-    return static_cast<const scene::SceneNode&>(
-        Magnum::SceneGraph::AbstractFeature3D::object());
-  }
+  scene::SceneNode& object();
+
+  const scene::SceneNode& object() const;
 
   /**
    * @brief Add Sensor sensor to existing sensors_ with key sensor's uuid

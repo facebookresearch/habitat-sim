@@ -16,7 +16,7 @@ namespace sensor {
 
 CubeMapSensorBaseSpec::CubeMapSensorBaseSpec() : VisualSensorSpec() {
   uuid = "cubemap_sensor_base";
-  sensorSubType = SensorSubType::None;
+  sensorSubType = SensorSubType::Unspecified;
 }
 
 void CubeMapSensorBaseSpec::sanityCheck() const {

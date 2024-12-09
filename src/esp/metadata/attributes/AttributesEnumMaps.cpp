@@ -254,7 +254,8 @@ std::string getMotionTypeName(esp::physics::MotionType motionTypeEnum) {
 }  // getMotionTypeName
 
 const std::map<std::string, esp::sensor::SensorType> SensorTypeNamesMap = {
-    {"none", esp::sensor::SensorType::None},
+    {"unspecified", esp::sensor::SensorType::Unspecified},
+    {"custom", esp::sensor::SensorType::Custom},
     {"color", esp::sensor::SensorType::Color},
     {"depth", esp::sensor::SensorType::Depth},
     {"normal", esp::sensor::SensorType::Normal},
@@ -266,9 +267,9 @@ std::string getSensorTypeName(esp::sensor::SensorType sensorTypeEnum) {
   // this verifies that enum value being checked is supported by string-keyed
   // map. The values below should be the minimum and maximum enums supported by
   // SensorTypeNamesMap
-  if ((sensorTypeEnum <= esp::sensor::SensorType::None) ||
+  if ((sensorTypeEnum <= esp::sensor::SensorType::Unspecified) ||
       (sensorTypeEnum >= esp::sensor::SensorType::EndSensorType)) {
-    return "none";
+    return "unspecified";
   }
   // Must always be valid value
   for (const auto& it : SensorTypeNamesMap) {
@@ -276,12 +277,13 @@ std::string getSensorTypeName(esp::sensor::SensorType sensorTypeEnum) {
       return it.first;
     }
   }
-  return "none";
+  return "unspecified";
 }  // getSensorTypeName
 
 const std::map<std::string, esp::sensor::SensorSubType> SensorSubTypeNamesMap =
     {
-        {"none", esp::sensor::SensorSubType::None},
+        {"unspecified", esp::sensor::SensorSubType::Unspecified},
+        {"custom", esp::sensor::SensorSubType::Custom},
         {"pinhole", esp::sensor::SensorSubType::Pinhole},
         {"orthographic", esp::sensor::SensorSubType::Orthographic},
         {"fisheye", esp::sensor::SensorSubType::Fisheye},
@@ -293,9 +295,9 @@ std::string getSensorSubTypeName(esp::sensor::SensorSubType sensorSubTypeEnum) {
   // this verifies that enum value being checked is supported by string-keyed
   // map. The values below should be the minimum and maximum enums supported by
   // SensorSubTypeNamesMap
-  if ((sensorSubTypeEnum <= esp::sensor::SensorSubType::None) ||
+  if ((sensorSubTypeEnum <= esp::sensor::SensorSubType::Unspecified) ||
       (sensorSubTypeEnum >= esp::sensor::SensorSubType::EndSensorSubType)) {
-    return "none";
+    return "unspecified";
   }
   // Must always be valid value
   for (const auto& it : SensorSubTypeNamesMap) {
@@ -303,11 +305,11 @@ std::string getSensorSubTypeName(esp::sensor::SensorSubType sensorSubTypeEnum) {
       return it.first;
     }
   }
-  return "none";
+  return "unspecified";
 }  // getSensorSubTypeName
 
 const std::map<std::string, esp::sensor::SemanticSensorTarget>
-    SemanticSensorTargetNamesMap = {
+    SemanticSensorTargetMap = {
         {"semantic_id", esp::sensor::SemanticSensorTarget::SemanticID},
         {"object_id", esp::sensor::SemanticSensorTarget::ObjectID},
         {"drawable_id", esp::sensor::SemanticSensorTarget::DrawableID},
@@ -317,7 +319,7 @@ std::string getSemanitcSensorTargetName(
     esp::sensor::SemanticSensorTarget semanticSensorTargetEnum) {
   // this verifies that enum value being checked is supported by string-keyed
   // map. The values below should be the minimum and maximum enums supported by
-  // SemanticSensorTargetNamesMap
+  // SemanticSensorTargetMap
   if ((semanticSensorTargetEnum <=
        esp::sensor::SemanticSensorTarget::SemanticID) ||
       (semanticSensorTargetEnum >=
@@ -326,7 +328,7 @@ std::string getSemanitcSensorTargetName(
     return "semantic_id";
   }
   // Must always be valid value
-  for (const auto& it : SemanticSensorTargetNamesMap) {
+  for (const auto& it : SemanticSensorTargetMap) {
     if (it.second == semanticSensorTargetEnum) {
       return it.first;
     }

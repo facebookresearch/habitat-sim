@@ -27,11 +27,11 @@ void SensorSpec::sanityCheck() const {
   // Check that all parameters are initialized to legal values
   CORRADE_ASSERT(!uuid.empty(),
                  "SensorSpec::sanityCheck(): uuid cannot be an empty string", );
-  CORRADE_ASSERT(
-      sensorType > SensorType::None && sensorType < SensorType::EndSensorType,
-      "SensorSpec::sanityCheck(): sensorType" << int32_t(sensorType)
-                                              << "is illegal", );
-  CORRADE_ASSERT(sensorSubType > SensorSubType::None &&
+  CORRADE_ASSERT(sensorType > SensorType::Unspecified &&
+                     sensorType < SensorType::EndSensorType,
+                 "SensorSpec::sanityCheck(): sensorType" << int32_t(sensorType)
+                                                         << "is illegal", );
+  CORRADE_ASSERT(sensorSubType > SensorSubType::Unspecified &&
                      sensorSubType < SensorSubType::EndSensorSubType,
                  "SensorSpec::sanityCheck(): sensorSubType"
                      << int32_t(sensorType) << "is illegal", );
@@ -69,6 +69,15 @@ Sensor::~Sensor() {
   ESP_DEBUG() << "Deconstructing Sensor";
 }
 
+scene::SceneNode& Sensor::object() {
+  return static_cast<scene::SceneNode&>(
+      Magnum::SceneGraph::AbstractFeature3D::object());
+}
+const scene::SceneNode& Sensor::object() const {
+  return static_cast<const scene::SceneNode&>(
+      Magnum::SceneGraph::AbstractFeature3D::object());
+}
+
 void Sensor::setTransformationFromSpec() {
   CORRADE_ASSERT(spec_,
                  "Sensor::setTransformationFromSpec: Cannot set "
@@ -84,6 +93,15 @@ void Sensor::setTransformationFromSpec() {
 
 SensorSuite::SensorSuite(scene::SceneNode& node)
     : Magnum::SceneGraph::AbstractFeature3D{node} {}
+
+scene::SceneNode& SensorSuite::object() {
+  return static_cast<scene::SceneNode&>(
+      Magnum::SceneGraph::AbstractFeature3D::object());
+}
+const scene::SceneNode& SensorSuite::object() const {
+  return static_cast<const scene::SceneNode&>(
+      Magnum::SceneGraph::AbstractFeature3D::object());
+}
 
 void SensorSuite::add(sensor::Sensor& sensor) {
   sensors_.emplace(sensor.specification()->uuid, std::ref(sensor));

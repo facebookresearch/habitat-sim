@@ -53,14 +53,16 @@ void initSensorBindings(py::module& m) {
   // TODO fill out other SensorTypes
   // ==== enum SensorType ====
   py::enum_<SensorType>(m, "SensorType")
-      .value("NONE", SensorType::None)
+      .value("NONE", SensorType::Unspecified)
+      .value("CUSTOM", SensorType::Custom)
       .value("COLOR", SensorType::Color)
       .value("DEPTH", SensorType::Depth)
       .value("SEMANTIC", SensorType::Semantic)
       .value("AUDIO", SensorType::Audio);
 
   py::enum_<SensorSubType>(m, "SensorSubType")
-      .value("NONE", SensorSubType::None)
+      .value("NONE", SensorSubType::Unspecified)
+      .value("CUSTOM", SensorSubType::Custom)
       .value("PINHOLE", SensorSubType::Pinhole)
       .value("ORTHOGRAPHIC", SensorSubType::Orthographic)
       .value("FISHEYE", SensorSubType::Fisheye)
@@ -70,6 +72,7 @@ void initSensorBindings(py::module& m) {
   // NOTE : esp::sensor::SemanticSensorTarget is an alias for
   // esp::scene::SceneNodeSemanticDataIDX.
   py::enum_<SemanticSensorTarget>(m, "SemanticSensorTarget")
+      .value("DRAWABLE_ID", SemanticSensorTarget::DrawableID)
       .value("SEMANTIC_ID", SemanticSensorTarget::SemanticID)
       .value("OBJECT_ID", SemanticSensorTarget::ObjectID);
 

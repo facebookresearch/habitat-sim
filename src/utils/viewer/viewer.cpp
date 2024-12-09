@@ -1105,7 +1105,7 @@ void Viewer::switchCameraType() {
     case esp::sensor::SensorSubType::Equirectangular: {
       return;
     }
-    case esp::sensor::SensorSubType::None: {
+    case esp::sensor::SensorSubType::Unspecified: {
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
       return;
     }
