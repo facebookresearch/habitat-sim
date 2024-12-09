@@ -43,8 +43,8 @@ class AbstractCubeMapSensorAttributes : public AbstractVisualSensorAttributes {
   }
 
   /**
-   * @brief Set user-specified CubeMap Size. -1 means ignore this field and use
-   * the max dimension of the resolution as the size
+   * @brief Set user-specified CubeMap Size. 0 means ignore this field and use
+   * the min dimension of the resolution as the size
    */
   void setCubeMapSize(int cubemap_size) {
     set("cubemap_size", cubemap_size);
@@ -52,15 +52,28 @@ class AbstractCubeMapSensorAttributes : public AbstractVisualSensorAttributes {
   }
 
   void clearCubeMapSize() {
-    set("cubemap_size", -1);
+    set("cubemap_size", 0);
     setUseSpecifiedCubeMapSize(false);
   }
 
   /**
-   * @brief Get user-specified CubeMap Size. -1 means ignore this field and use
+   * @brief Get user-specified CubeMap Size. 0 means ignore this field and use
    * the max dimension of the resolution as the size
    */
   int getCubeMapSize() const { return get<int>("cubemap_size"); }
+
+  /**
+   * @brief Get the actual cube map size to use when constructing the cube map -
+   * either the user's specified value or the minimum resolution dimension. This
+   * should not be saved, and is just offered as a convenience accessor.
+   */
+  int getCubeMapSizeToUse() const {
+    if (getUseSpecifiedCubeMapSize()) {
+      return get<int>("cubemap_size");
+    }
+    // If no cubemap size is specified, use the minimum resolution dimension
+    return getResolution().min();
+  }
 
  protected:
   /**
@@ -190,6 +203,7 @@ class FisheyeSensorAttributes : public AbstractCubeMapSensorAttributes {
    * principal point relative to the image plane's origin.
    */
   void setPrincipalPointOffset(const Magnum::Vector2& principle_point_offset) {
+    // TODO both values should always be > 0
     set<Magnum::Vector2>("principle_point_offset", principle_point_offset);
     setUsePrincipalPointOffset(true);
   }
@@ -199,16 +213,25 @@ class FisheyeSensorAttributes : public AbstractCubeMapSensorAttributes {
    * set.
    */
   void clearPrincipalPointOffset() {
-    set<Magnum::Vector2>("principle_point_offset",
-                         Magnum::Vector2(getResolution()) * 0.5);
+    set<Magnum::Vector2>("principle_point_offset", Magnum::Vector2(0.0, 0.0));
     setUsePrincipalPointOffset(false);
   }
   /**
-   * @brief Get the Principal Point Offset in pixel, cx, cy, location of the
+   * @brief Get the Principal Point Offset - the pixel, cx, cy, location of the
    * principal point relative to the image plane's origin. If not specified use
-   * center of image.
+   * center of the sensor image.
    */
   Magnum::Vector2 getPrincipalPointOffset() const {
+    return get<Magnum::Vector2>("principle_point_offset");
+  }
+  /**
+   * @brief Get the Actual Principal Point Offset to use; pixel, cx, cy,
+   * location of the principal point relative to the image plane's origin. This
+   * value is what should be used to create the sensor - if not specified, use
+   * the halfway point of the resolution specified (i.e. the center of the
+   * sensor image).
+   */
+  Magnum::Vector2 getPrincipalPointOffsetToUse() const {
     if (getUsePrincipalPointOffset()) {
       return get<Magnum::Vector2>("principle_point_offset");
     }

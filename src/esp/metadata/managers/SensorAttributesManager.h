@@ -12,17 +12,13 @@
 
 #include "AbstractAttributesManager.h"
 #include "esp/metadata/attributes/AbstractSensorAttributes.h"
+#include "esp/metadata/attributes/AudioSensorAttributes.h"
+#include "esp/metadata/attributes/CameraSensorAttributes.h"
+#include "esp/metadata/attributes/CubeMapSensorAttributes.h"
+#include "esp/metadata/attributes/CustomSensorAttributes.h"
 
 namespace esp {
 namespace metadata {
-namespace attributes {
-class AudioSensorAttributes;
-class CameraSensorAttributes;
-class CustomSensorAttributes;
-class EquirectangularSensorAttributes;
-class FisheyeSensorAttributes;
-}  // namespace attributes
-
 namespace managers {
 
 class SensorAttributesManager
@@ -51,9 +47,22 @@ class SensorAttributesManager
    * template.
    * @return a reference to the desired template.
    */
-  attributes::AbstractSensorAttributes::ptr createAttributesFromSensorSpec(
+
+  template <typename T>
+  std::shared_ptr<T> createAttributesFromSensorSpec(
       const sensor::SensorSpec::ptr& sensorSpec,
-      bool registerTemplate = true);
+      bool registerTemplate = true) {
+    static_assert(
+        std::is_base_of<attributes::AbstractSensorAttributes, T>::value,
+        "AbstractSensorAttributes must be the base type of the requested new "
+        "SensorSpec-based attributes");
+
+    attributes::AbstractSensorAttributes::ptr attrs =
+        this->createAttributesFromSensorSpecInternal(sensorSpec,
+                                                     registerTemplate);
+
+    return std::static_pointer_cast<T>(attrs);
+  }
 
   /**
    * @brief Should only be called internally. Creates an instance of a sensor
@@ -110,6 +119,25 @@ class SensorAttributesManager
           attributes) const override {}
 
  protected:
+  /**
+   * @brief Internal only. Create an attributes from a SensorSpec.
+   *
+   * TODO : Once SensorSpecs are removed, this should be removed as well.
+   *
+   * @param sensorSpec The SensorSpec holding the values to use to create a
+   * sensor.
+   * @param registerTemplate whether to add this template to the library.
+   * If the user is going to edit this template, this should be false - any
+   * subsequent editing will require re-registration. Defaults to true. If
+   * specified as true, then this function returns a copy of the registered
+   * template.
+   * @return a reference to the desired template.
+   */
+  attributes::AbstractSensorAttributes::ptr
+  createAttributesFromSensorSpecInternal(
+      const sensor::SensorSpec::ptr& sensorSpec,
+      bool registerTemplate);
+
   /**
    * @brief Used Internally. Create and configure newly-created attributes with
    * any default values, before any specific values are set.

@@ -12,8 +12,8 @@ AbstractCubeMapSensorAttributes::AbstractCubeMapSensorAttributes(
     const std::string& handle)
     : AbstractVisualSensorAttributes(classKey, handle) {
   setHidden("__useSpecifiedCubeMapSize", false);
-  // Replacing nullopt field - -1 means to ignore
-  init("cubemap_size", -1);
+  // Replacing nullopt field - 0 means to ignore
+  init("cubemap_size", 0);
 }  // AbstractCubeMapSensorAttributes ctor
 
 void AbstractCubeMapSensorAttributes::populateWithSensorSpec(
@@ -44,7 +44,7 @@ void AbstractCubeMapSensorAttributes::writeVisualSensorValuesToJsonInternal(
 std::string
 AbstractCubeMapSensorAttributes::getAbstractVisualSensorInfoHeaderInternal()
     const {
-  return "User-specified CubeMap Size (-1 means unspecified)" +
+  return "User-specified CubeMap Size (0 : use min dim of resolution)" +
          getCubeMapSensorInfoHeaderInternal();
 }  // AbstractCubeMapSensorAttributes::getAbstractVisualSensorInfoHeaderInternal()
 
@@ -108,16 +108,13 @@ void FisheyeSensorAttributes::populateWithSensorSpec(
   // Call Parent class version
   AbstractCubeMapSensorAttributes::populateWithSensorSpec(spec);
   // Appropriately cast to get FisheyeSensorDoubleSphereSpec-spec data if exists
-  const esp::sensor::FisheyeSensorSpec::ptr& fisheyeSpec =
-      std::dynamic_pointer_cast<esp::sensor::FisheyeSensorSpec>(spec);
-  setFocalLength(fisheyeSpec->focalLength);
-  if (fisheyeSpec->principalPointOffset != Cr::Containers::NullOpt) {
-    setPrincipalPointOffset(*fisheyeSpec->principalPointOffset);
-  }
-  // Doublesphere Fisheye
   const esp::sensor::FisheyeSensorDoubleSphereSpec::ptr& fisheyeDSSpec =
       std::dynamic_pointer_cast<esp::sensor::FisheyeSensorDoubleSphereSpec>(
           spec);
+  setFocalLength(fisheyeDSSpec->focalLength);
+  if (fisheyeDSSpec->principalPointOffset != Cr::Containers::NullOpt) {
+    setPrincipalPointOffset(*fisheyeDSSpec->principalPointOffset);
+  }
   setDoubleSphereXi(fisheyeDSSpec->xi);
   setDoubleSphereAlpha(fisheyeDSSpec->alpha);
   // Currently no other Fisheye algorithm is implemented

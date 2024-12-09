@@ -68,7 +68,7 @@ SensorAttributesManager::SensorAttributesManager()
 }  // SensorAttributesManager ctor
 
 AbstractSensorAttributes::ptr
-SensorAttributesManager::createAttributesFromSensorSpec(
+SensorAttributesManager::createAttributesFromSensorSpecInternal(
     const sensor::SensorSpec::ptr& sensorSpec,
     bool registerTemplate) {
   // Get attributes class name from sensorSpec

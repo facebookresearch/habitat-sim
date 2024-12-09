@@ -19,12 +19,30 @@
 
 #include "configure.h"
 
+// Remove once SensorSpecs are removed
+#ifdef ESP_BUILD_WITH_AUDIO
+#include "esp/sensor/AudioSensor.h"
+#endif
+#include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/EquirectangularSensor.h"
+#include "esp/sensor/FisheyeSensor.h"
+
+#ifdef ESP_BUILD_WITH_AUDIO
+using esp::sensor::AudioSensorSpec;
+#endif
+using esp::sensor::CameraSensorSpec;
+using esp::sensor::EquirectangularSensorSpec;
+using esp::sensor::FisheyeSensorDoubleSphereSpec;
+using esp::sensor::SensorSpec;
+// End SensorSpec remove
+
 namespace Cr = Corrade;
 namespace Mn = Magnum;
-
-using Mn::Math::Literals::operator""_radf;
 namespace AttrMgrs = esp::metadata::managers;
 namespace Attrs = esp::metadata::attributes;
+
+using Mn::Math::Literals::operator""_degf;
+using Mn::Math::Literals::operator""_radf;
 
 using esp::metadata::MetadataMediator;
 using esp::metadata::PrimObjTypes;
@@ -33,7 +51,9 @@ using esp::physics::MotionType;
 
 using AttrMgrs::AbstractAttributesManager;
 using Attrs::ArticulatedObjectAttributes;
+#ifdef ESP_BUILD_WITH_AUDIO
 using Attrs::AudioSensorAttributes;
+#endif
 using Attrs::CameraSensorAttributes;
 using Attrs::CustomSensorAttributes;
 using Attrs::EquirectangularSensorAttributes;
@@ -179,12 +199,48 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
       const std::string& assetPath);
 
   /**
-   * @brief This test will verify that the AudioSensorAttributes' managers' load
-   * from sensorSpec process is working as expected.
+   * @brief This test will verify that the AudioSensorAttributes' will match
+   * expected values.
    */
-  void testAudioSensorAttrValsSpec(
+
+#ifdef ESP_BUILD_WITH_AUDIO
+
+  void testAudioSensorAttrVals(
       std::shared_ptr<Attrs::AudioSensorAttributes> audioAttr,
       const std::string& assetPath);
+#endif
+  /**
+   * @brief This test will verify that the CameraSensorAttributes' will match
+   * expected values.
+   */
+  void testCameraSensorAttrVals(
+      std::shared_ptr<Attrs::CameraSensorAttributes> cameraAttr,
+      const std::string& assetPath);
+
+  /**
+   * @brief This test will verify that the CustomSensorAttributes' will match
+   * expected values.
+   */
+  void testCustomSensorAttrVals(
+      std::shared_ptr<Attrs::CustomSensorAttributes> customAttr,
+      const std::string& assetPath);
+
+  /**
+   * @brief This test will verify that the EquirectangularSensorAttributes' will
+   * match expected values.
+   */
+  void testEquirectangularSensorAttrVals(
+      std::shared_ptr<Attrs::EquirectangularSensorAttributes> equirectAttr,
+      const std::string& assetPath);
+
+  /**
+   * @brief This test will verify that the FisheyeSensorAttributes' will match
+   * expected values.
+   */
+  void testFisheyeSensorAttrVals(
+      std::shared_ptr<Attrs::FisheyeSensorAttributes> fisheyeAttr,
+      const std::string& assetPath);
+
   /**
    * @brief This test will verify that the Stage attributes' managers' JSON
    * loading process is working as expected.
@@ -218,6 +274,10 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
   void testLightJSONLoad();
   void testSceneInstanceJSONLoad();
   void testSemanticJSONLoad();
+  /**
+   * @brief Remove once SensorSpec is removed
+   */
+  void testSensorAttrSpecLoad();
   void testSensorAttrJSONLoad();
   void testStageJSONLoad();
   void testObjectJSONLoad();
@@ -264,6 +324,7 @@ AttributesConfigsTest::AttributesConfigsTest() {
       &AttributesConfigsTest::testPbrShaderAttrJSONLoad,
       &AttributesConfigsTest::testLightJSONLoad,
       &AttributesConfigsTest::testSceneInstanceJSONLoad,
+      &AttributesConfigsTest::testSensorAttrSpecLoad,
       &AttributesConfigsTest::testSemanticJSONLoad,
       &AttributesConfigsTest::testSensorAttrJSONLoad,
       &AttributesConfigsTest::testStageJSONLoad,
@@ -1322,6 +1383,293 @@ void AttributesConfigsTest::testSemanticJSONLoad() {
 
 }  // AttributesConfigsTest::testSemanticJSONLoad
 
+#ifdef ESP_BUILD_WITH_AUDIO
+void AttributesConfigsTest::testAudioSensorAttrVals(
+    std::shared_ptr<Attrs::AudioSensorAttributes> audioAttr,
+    const std::string& assetPath) {
+  // match values to expected values in JSON or spec
+  CORRADE_COMPARE(audioAttr->getHandle(), "audio_sensor_handle_:0000");
+  CORRADE_COMPARE(static_cast<int>(audioAttr->getSensorType()),
+                  static_cast<int>(esp::sensor::SensorType::Audio));
+  CORRADE_COMPARE(
+      static_cast<int>(audioAttr->getSensorSubType()),
+      static_cast<int>(esp::sensor::SensorSubType::ImpulseResponse));
+  CORRADE_COMPARE(audioAttr->getPosition(), Mn::Vector3(1.5, 2.5, 3.5));
+  CORRADE_COMPARE(audioAttr->getOrientation(), Mn::Vector3(1.0, 2.0, 3.0));
+  CORRADE_COMPARE(audioAttr->getNoiseModel(), "audio_noise");
+  CORRADE_COMPARE(audioAttr->getOutputDirectory(), "audio_sensor_output_dir");
+  // TODO :
+  // Support user_defined attributes once being read from JSON
+}  // AttributesConfigsTest::testAudioSensorAttrVals
+#endif  // ESP_BUILD_WITH_AUDIO
+
+void AttributesConfigsTest::testCameraSensorAttrVals(
+    std::shared_ptr<Attrs::CameraSensorAttributes> cameraAttr,
+    const std::string& assetPath) {
+  // base SensorSpec values
+  CORRADE_COMPARE(cameraAttr->getHandle(), "camera_sensor_handle_:0000");
+  CORRADE_COMPARE(static_cast<int>(cameraAttr->getSensorType()),
+                  static_cast<int>(esp::sensor::SensorType::Color));
+  CORRADE_COMPARE(static_cast<int>(cameraAttr->getSensorSubType()),
+                  static_cast<int>(esp::sensor::SensorSubType::Pinhole));
+  CORRADE_COMPARE(cameraAttr->getPosition(), Mn::Vector3(2.1, 3.2, 4.3));
+  CORRADE_COMPARE(cameraAttr->getOrientation(), Mn::Vector3(4.0, 3.0, 2.0));
+  CORRADE_COMPARE(cameraAttr->getNoiseModel(), "pinhole_camera_noise");
+  // visual SensorSpec values
+  CORRADE_COMPARE(cameraAttr->getResolution(), Mn::Vector2i(256, 512));
+  CORRADE_COMPARE(cameraAttr->getChannels(), 3);
+  CORRADE_COMPARE(cameraAttr->getGPUToGPUTransfer(), true);
+  CORRADE_COMPARE(cameraAttr->getNearPlane(), 0.1f);
+  CORRADE_COMPARE(cameraAttr->getFarPlane(), 2000.0f);
+  // camera SensorSpec values
+  CORRADE_COMPARE(cameraAttr->getOrthoScale(), 0.2f);
+  CORRADE_COMPARE(cameraAttr->getHFOV(), 120.0_degf);
+  // TODO :
+  // Support user_defined attributes once being read from JSON
+}  // AttributesConfigsTest::testCameraSensorAttrVals
+
+void AttributesConfigsTest::testCustomSensorAttrVals(
+    std::shared_ptr<Attrs::CustomSensorAttributes> customAttr,
+    const std::string& assetPath) {
+  // base SensorSpec values
+  CORRADE_COMPARE(customAttr->getHandle(), "custom_sensor_handle_:0000");
+  CORRADE_COMPARE(static_cast<int>(customAttr->getSensorType()),
+                  static_cast<int>(esp::sensor::SensorType::Custom));
+  CORRADE_COMPARE(static_cast<int>(customAttr->getSensorSubType()),
+                  static_cast<int>(esp::sensor::SensorSubType::Custom));
+  CORRADE_COMPARE(customAttr->getPosition(), Mn::Vector3(1.5, 2.5, 3.5));
+  CORRADE_COMPARE(customAttr->getOrientation(), Mn::Vector3(1.0, 2.0, 3.0));
+  CORRADE_COMPARE(customAttr->getNoiseModel(), "custom_noise");
+
+  // TODO
+  // Custom sensor specifying attributes only available from JSON load.
+
+  // TODO :
+  // Support user_defined attributes once being read from JSON
+}  // AttributesConfigsTest::testCustomSensorAttrVals
+
+void AttributesConfigsTest::testEquirectangularSensorAttrVals(
+    std::shared_ptr<Attrs::EquirectangularSensorAttributes> equirectAttr,
+    const std::string& assetPath) {
+  // base SensorSpec values
+  CORRADE_COMPARE(equirectAttr->getHandle(), "equirect_sensor_handle_:0000");
+  CORRADE_COMPARE(static_cast<int>(equirectAttr->getSensorType()),
+                  static_cast<int>(esp::sensor::SensorType::Depth));
+  CORRADE_COMPARE(
+      static_cast<int>(equirectAttr->getSensorSubType()),
+      static_cast<int>(esp::sensor::SensorSubType::Equirectangular));
+  CORRADE_COMPARE(equirectAttr->getPosition(), Mn::Vector3(1.1, 2.2, 3.3));
+  CORRADE_COMPARE(equirectAttr->getOrientation(),
+                  Mn::Vector3(20.0, 10.0, 30.0));
+  CORRADE_COMPARE(equirectAttr->getNoiseModel(), "equirect_camera_noise");
+  // visual SensorSpec values
+  CORRADE_COMPARE(equirectAttr->getResolution(), Mn::Vector2i(300, 400));
+  CORRADE_COMPARE(equirectAttr->getChannels(), 1);
+  CORRADE_COMPARE(equirectAttr->getGPUToGPUTransfer(), true);
+  CORRADE_COMPARE(equirectAttr->getNearPlane(), 0.7f);
+  CORRADE_COMPARE(equirectAttr->getFarPlane(), 1200.0f);
+  // cubemap sensor spec values
+  CORRADE_COMPARE(equirectAttr->getCubeMapSize(), 320);
+  CORRADE_COMPARE(equirectAttr->getCubeMapSizeToUse(), 320);
+
+  // TODO :
+  // Support user_defined attributes once being read from JSON
+}  // AttributesConfigsTest::testEquirectangularSensorAttrVals
+
+void AttributesConfigsTest::testFisheyeSensorAttrVals(
+    std::shared_ptr<Attrs::FisheyeSensorAttributes> fisheyeAttr,
+    const std::string& assetPath) {
+  // base SensorSpec values
+  CORRADE_COMPARE(fisheyeAttr->getHandle(), "fisheye_sensor_handle_:0000");
+  CORRADE_COMPARE(static_cast<int>(fisheyeAttr->getSensorType()),
+                  static_cast<int>(esp::sensor::SensorType::Semantic));
+  CORRADE_COMPARE(static_cast<int>(fisheyeAttr->getSensorSubType()),
+                  static_cast<int>(esp::sensor::SensorSubType::Fisheye));
+  CORRADE_COMPARE(fisheyeAttr->getPosition(), Mn::Vector3(2.1, 3.2, 4.3));
+  CORRADE_COMPARE(fisheyeAttr->getOrientation(), Mn::Vector3(40.0, 34.0, 21.0));
+  CORRADE_COMPARE(fisheyeAttr->getNoiseModel(), "fisheye_camera_noise");
+  // visual SensorSpec values
+  CORRADE_COMPARE(fisheyeAttr->getResolution(), Mn::Vector2i(500, 300));
+  CORRADE_COMPARE(fisheyeAttr->getChannels(), 3);
+  CORRADE_COMPARE(fisheyeAttr->getGPUToGPUTransfer(), true);
+  CORRADE_COMPARE(fisheyeAttr->getNearPlane(), 0.05f);
+  CORRADE_COMPARE(fisheyeAttr->getFarPlane(), 1500.0f);
+  // cubemap SensorSpec values
+  CORRADE_COMPARE(fisheyeAttr->getCubeMapSize(), 0);
+  CORRADE_COMPARE(fisheyeAttr->getCubeMapSizeToUse(), 300);
+  // fisheye SensorSpec values
+
+  CORRADE_COMPARE(fisheyeAttr->getFocalLength(), Mn::Vector2(5.1, 2.5));
+  CORRADE_COMPARE(fisheyeAttr->getPrincipalPointOffset(),
+                  Mn::Vector2(200, 100));
+  CORRADE_COMPARE(fisheyeAttr->getPrincipalPointOffsetToUse(),
+                  Mn::Vector2(200, 100));
+
+  // TODO :
+  // Support user_defined attributes once being read from JSON
+}  // AttributesConfigsTest::testFisheyeSensorAttrVals
+
+void AttributesConfigsTest::testSensorAttrSpecLoad() {
+  // add dummy test so that test will run
+  CORRADE_VERIFY(true);
+  // to be removed once specs are removed
+  // build one of each of 5 types of SensorAttributes, driven by data values,
+  // from the appropriate SensorSpec, and then test their values.
+
+#ifdef ESP_BUILD_WITH_AUDIO
+  {
+    AudioSensorSpec::ptr audioSpec = AudioSensorSpec::create();
+    // base SensorSpec values
+    audioSpec->uuid = "audio_sensor_handle";
+    audioSpec->sensorType = esp::sensor::SensorType::Audio;
+    audioSpec->sensorSubType = esp::sensor::SensorSubType::ImpulseResponse;
+    audioSpec->position = {1.5, 2.5, 3.5};
+    audioSpec->orientation = {1.0, 2.0, 3.0};
+    audioSpec->noiseModel = "audio_noise";
+    audioSpec->outputDirectory_ = "audio_sensor_output_dir";
+
+    // build audio attributes - data should direct manager to build correct
+    // attributes type
+    AudioSensorAttributes::ptr audioAttr =
+        sensorAttributesManager_
+            ->createAttributesFromSensorSpec<AudioSensorAttributes>(audioSpec,
+                                                                    true);
+    CORRADE_VERIFY(audioAttr);
+    // Verify attributes are correct class
+    CORRADE_COMPARE(audioAttr->getClassKey(), "AudioSensorAttributes");
+
+    // test audio attributes' values
+    testAudioSensorAttrVals(audioAttr, "");
+  }
+#endif  // ESP_BUILD_WITH_AUDIO
+  {
+    CameraSensorSpec::ptr cameraSpec = CameraSensorSpec::create();
+    // base SensorSpec values
+    cameraSpec->uuid = "camera_sensor_handle";
+    cameraSpec->sensorType = esp::sensor::SensorType::Color;
+    cameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
+    cameraSpec->position = {2.1, 3.2, 4.3};
+    cameraSpec->orientation = {4.0, 3.0, 2.0};
+    cameraSpec->noiseModel = "pinhole_camera_noise";
+    // visual SensorSpec values
+    cameraSpec->resolution = Mn::Vector2i(256, 512);
+    cameraSpec->channels = 3;
+    cameraSpec->gpu2gpuTransfer = true;
+    cameraSpec->near = 0.1f;
+    cameraSpec->far = 2000.0f;
+    // camera SensorSpec values
+    cameraSpec->orthoScale = 0.2f;
+    cameraSpec->hfov = 120.0_degf;
+
+    // build camera attributes - data should direct manager to build correct
+    // attributes type
+    CameraSensorAttributes::ptr cameraAttr =
+        sensorAttributesManager_
+            ->createAttributesFromSensorSpec<CameraSensorAttributes>(cameraSpec,
+                                                                     true);
+    CORRADE_VERIFY(cameraAttr);
+    // Verify attributes are correct class
+    CORRADE_COMPARE(cameraAttr->getClassKey(), "CameraSensorAttributes");
+
+    // test camera attributes' values
+    testCameraSensorAttrVals(cameraAttr, "");
+  }
+  {
+    SensorSpec::ptr customSpec = SensorSpec::create();
+    // base SensorSpec values
+    customSpec->uuid = "custom_sensor_handle";
+    customSpec->sensorType = esp::sensor::SensorType::Custom;
+    customSpec->sensorSubType = esp::sensor::SensorSubType::Custom;
+    customSpec->position = {1.5, 2.5, 3.5};
+    customSpec->orientation = {1.0, 2.0, 3.0};
+    customSpec->noiseModel = "custom_noise";
+
+    // build custom attributes - data should direct manager to build correct
+    // attributes type
+
+    CustomSensorAttributes::ptr custAttr =
+        sensorAttributesManager_
+            ->createAttributesFromSensorSpec<CustomSensorAttributes>(customSpec,
+                                                                     true);
+    CORRADE_VERIFY(custAttr);
+    // Verify attributes are correct class
+    CORRADE_COMPARE(custAttr->getClassKey(), "CustomSensorAttributes");
+
+    // test custom attributes' values
+    testCustomSensorAttrVals(custAttr, "");
+  }
+  {
+    EquirectangularSensorSpec::ptr equirectSpec =
+        EquirectangularSensorSpec::create();
+    // base SensorSpec values
+    equirectSpec->uuid = "equirect_sensor_handle";
+    equirectSpec->sensorType = esp::sensor::SensorType::Depth;
+    equirectSpec->sensorSubType = esp::sensor::SensorSubType::Equirectangular;
+    equirectSpec->position = {1.1, 2.2, 3.3};
+    equirectSpec->orientation = {20.0, 10.0, 30.0};
+    equirectSpec->noiseModel = "equirect_camera_noise";
+    // visual SensorSpec values
+    equirectSpec->resolution = Mn::Vector2i(300, 400);
+    equirectSpec->channels = 1;
+    equirectSpec->gpu2gpuTransfer = true;
+    equirectSpec->near = 0.7f;
+    equirectSpec->far = 1200.0f;
+    // cubemap sensor spec values
+    equirectSpec->cubemapSize = 320;
+    // No further sensorSpec vaues for equirect
+
+    // build equirect attributes - data should direct manager to build correct
+    // attributes type
+    EquirectangularSensorAttributes::ptr equiAttr =
+        sensorAttributesManager_
+            ->createAttributesFromSensorSpec<EquirectangularSensorAttributes>(
+                equirectSpec, true);
+
+    CORRADE_VERIFY(equiAttr);
+    // Verify attributes are correct class
+    CORRADE_COMPARE(equiAttr->getClassKey(), "EquirectangularSensorAttributes");
+
+    // test equirect attributes' values
+    testEquirectangularSensorAttrVals(equiAttr, "");
+  }
+  {
+    FisheyeSensorDoubleSphereSpec::ptr fisheyeSpec =
+        FisheyeSensorDoubleSphereSpec::create();
+    // base SensorSpec values
+    fisheyeSpec->uuid = "fisheye_sensor_handle";
+    fisheyeSpec->sensorType = esp::sensor::SensorType::Semantic;
+    fisheyeSpec->sensorSubType = esp::sensor::SensorSubType::Fisheye;
+    fisheyeSpec->position = {2.1, 3.2, 4.3};
+    fisheyeSpec->orientation = {40.0, 34.0, 21.0};
+    fisheyeSpec->noiseModel = "fisheye_camera_noise";
+    // visual SensorSpec values
+    fisheyeSpec->resolution = Mn::Vector2i(500, 300);
+    fisheyeSpec->channels = 3;
+    fisheyeSpec->gpu2gpuTransfer = true;
+    fisheyeSpec->near = 0.05f;
+    fisheyeSpec->far = 1500.0f;
+    // cubemap SensorSpec values
+    fisheyeSpec->cubemapSize = Cr::Containers::NullOpt;
+    // fisheye SensorSpec values
+    fisheyeSpec->fisheyeModelType =
+        esp::sensor::FisheyeSensorModelType::DoubleSphere;
+    fisheyeSpec->focalLength = Mn::Vector2(5.1, 2.5);
+    fisheyeSpec->principalPointOffset = Mn::Vector2(200, 100);
+    // build Fisheye attributes - data should direct manager to build correct
+    // attributes type
+    FisheyeSensorAttributes::ptr fisheyeAttr =
+        sensorAttributesManager_
+            ->createAttributesFromSensorSpec<FisheyeSensorAttributes>(
+                fisheyeSpec, true);
+
+    CORRADE_VERIFY(fisheyeAttr);
+    // Verify attributes are correct class
+    CORRADE_COMPARE(fisheyeAttr->getClassKey(), "FisheyeSensorAttributes");
+
+    // test Fisheye attributes' values
+    testFisheyeSensorAttrVals(fisheyeAttr, "");
+  }
+}  // AttributesConfigsTest::testSensorAttrSpecLoad
 void AttributesConfigsTest::testSensorAttrJSONLoad() {
   // add dummy test so that test will run
   CORRADE_VERIFY(true);
