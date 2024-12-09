@@ -98,7 +98,7 @@ FisheyeSensorAttributes::FisheyeSensorAttributes(const std::string& handle)
   init("ds_xi", -0.18f);
   // TODO not a legal assignment - focal length needs to be positive in both
   // fields
-  init("focal_length", Magnum::Vector2(0.0, 0.0));
+  init("focal_length", Magnum::Vector2(0.01, 0.01));
   setHidden("__useSpecifiedPPO", false);
   init("principle_point_offset", Magnum::Vector2(0.0, 0.0));
 }  // FisheyeSensorAttributes ctor
