@@ -129,7 +129,7 @@ class AbstractVisualSensorAttributes : public AbstractSensorAttributes {
 
   /**
    * @brief Set the SemanticSensorTarget to use for a Semantic Sensor built
-   * from this attributes given the specified S
+   * from this attributes using the given @ref sensor::SemanticSensorTarget enum value.
    */
   void setSemanticSensorTargetEnum(
       sensor::SemanticSensorTarget semanticTargetEnum) {
