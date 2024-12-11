@@ -457,23 +457,25 @@ set(nav_SOURCES
 ## sensor
 set(
   sensor_SOURCES
+  sensor/AudioSensor.cpp
+  sensor/AudioSensor.h
+  sensor/AudioSensorStubs.h
   sensor/CameraSensor.cpp
   sensor/CameraSensor.h
   sensor/CubeMapSensorBase.cpp
   sensor/CubeMapSensorBase.h
+  sensor/EquirectangularSensor.cpp
+  sensor/EquirectangularSensor.h
+  sensor/FisheyeSensor.cpp
+  sensor/FisheyeSensor.h
+  sensor/sensorManagers/SensorBaseManager.h
+  sensor/sensorWrappers/ManagedSensorBase.h
   sensor/Sensor.cpp
   sensor/Sensor.h
   sensor/SensorFactory.cpp
   sensor/SensorFactory.h
   sensor/VisualSensor.cpp
   sensor/VisualSensor.h
-  sensor/FisheyeSensor.cpp
-  sensor/FisheyeSensor.h
-  sensor/EquirectangularSensor.cpp
-  sensor/EquirectangularSensor.h
-  sensor/AudioSensor.cpp
-  sensor/AudioSensor.h
-  sensor/AudioSensorStubs.h
 )
 
 if(BUILD_WITH_CUDA)
