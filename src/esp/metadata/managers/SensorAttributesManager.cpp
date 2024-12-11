@@ -158,7 +158,7 @@ AbstractSensorAttributes::ptr SensorAttributesManager::buildObjectFromJSONDoc(
   return sensorAttributes;
 }  // SensorAttributesManager::buildObjectFromJSONDoc
 
-void SensorAttributesManager::setValsFromJSONDoc(
+void SensorAttributesManager::setValsFromJSONDocInternal(
     AbstractSensorAttributes::ptr attribs,
     const io::JsonGenericValue& jsonConfig) {
   // TODO support loading values from JSON docs for each type of
