@@ -9,7 +9,6 @@
 
 #include "esp/assets/MeshData.h"
 #include "esp/core/Esp.h"
-#include "esp/scene/SemanticScene.h"
 #include "esp/sensor/Sensor.h"
 
 #ifdef ESP_BUILD_WITH_AUDIO

@@ -278,8 +278,20 @@ set(
   metadata/attributes/AttributesEnumMaps.cpp
   metadata/attributes/AbstractObjectAttributes.h
   metadata/attributes/AbstractObjectAttributes.cpp
+  metadata/attributes/AbstractSensorAttributes.h
+  metadata/attributes/AbstractSensorAttributes.cpp
+  metadata/attributes/AbstractVisualSensorAttributes.h
+  metadata/attributes/AbstractVisualSensorAttributes.cpp
   metadata/attributes/ArticulatedObjectAttributes.h
   metadata/attributes/ArticulatedObjectAttributes.cpp
+  metadata/attributes/AudioSensorAttributes.h
+  metadata/attributes/AudioSensorAttributes.cpp
+  metadata/attributes/CameraSensorAttributes.h
+  metadata/attributes/CameraSensorAttributes.cpp
+  metadata/attributes/CustomSensorAttributes.h
+  metadata/attributes/CustomSensorAttributes.cpp
+  metadata/attributes/CubeMapSensorAttributes.h
+  metadata/attributes/CubeMapSensorAttributes.cpp
   metadata/attributes/LightLayoutAttributes.h
   metadata/attributes/LightLayoutAttributes.cpp
   metadata/attributes/MarkerSets.h
@@ -319,6 +331,8 @@ set(
   metadata/managers/SceneDatasetAttributesManager.cpp
   metadata/managers/SemanticAttributesManager.h
   metadata/managers/SemanticAttributesManager.cpp
+  metadata/managers/SensorAttributesManager.h
+  metadata/managers/SensorAttributesManager.cpp
   metadata/managers/StageAttributesManager.h
   metadata/managers/StageAttributesManager.cpp
   metadata/MetadataMediator.h
