@@ -69,7 +69,7 @@ requirements:
     - scipy>=1.3.0
     - tqdm
     - imageio
-    - matplotlib
+    - imageio-ffmpeg
     - libxcb                             # [linux]
     - xorg-libx11                        # [linux]
     - xorg-libxau                        # [linux]
