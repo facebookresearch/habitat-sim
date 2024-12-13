@@ -468,7 +468,8 @@ set(
   sensor/EquirectangularSensor.h
   sensor/FisheyeSensor.cpp
   sensor/FisheyeSensor.h
-  sensor/sensorManagers/SensorBaseManager.h
+  sensor/sensorManagers/SensorManager.cpp
+  sensor/sensorManagers/SensorManager.h
   sensor/sensorWrappers/ManagedSensorBase.h
   sensor/Sensor.cpp
   sensor/Sensor.h

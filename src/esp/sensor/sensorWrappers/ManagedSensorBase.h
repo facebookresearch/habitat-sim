@@ -5,11 +5,12 @@
 #ifndef ESP_SENSOR_MANAGEDSENSORBASE_H_
 #define ESP_SENSOR_MANAGEDSENSORBASE_H_
 
-#include <Corrade/Containers/StringStl.h>
+#include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Macros.h>
 
 #include "esp/core/managedContainers/AbstractManagedObject.h"
 #include "esp/sensor/Sensor.h"
+#include "esp/sensor/VisualSensor.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
@@ -17,61 +18,60 @@ namespace esp {
 namespace sensor {
 
 /**
- * @brief Base class template for wrapper for sensor objects of all kinds to
- * enable Managed Container access.
+ * @brief Base class for wrappers of sensor objects of all kinds to enable
+ * Managed Container access.
  */
-template <class T>
-class AbstractManagedSensor
+class ManagedSensorBase
     : public esp::core::managedContainers::AbstractManagedObject {
  public:
-  static_assert(std::is_base_of<esp::sensor::Sensor, T>::value,
-                "AbstractManagedSensor :: Managed sensor object type must be "
-                "derived from esp::sensor::Sensor");
-
-  typedef std::weak_ptr<T> WeakObjRef;
-
-  explicit AbstractManagedSensor(const std::string& classKey) {
-    AbstractManagedSensor::setClassKey(classKey);
+  explicit ManagedSensorBase(const std::string& classKey) {
+    ManagedSensorBase::setClassKey(classKey);
   }
-
-  void setObjectRef(const std::shared_ptr<T>& objRef) { weakObjRef_ = objRef; }
-
-  ~AbstractManagedSensor() override = default;
+  ~ManagedSensorBase() override = default;
+  /**
+   * @brief Get the instancing class of the ManagedSensorBase instance. Should
+   * only be set from implementer's constructor. Used as key in constructor
+   * function pointer maps in @ref
+   * esp::core::managedContainers::ManagedContainer.
+   */
+  std::string getClassKey() const override { return classKey_; }
 
   /**
-   * @brief Retrieve a comma-separated string holding the header values for the
-   * info returned for this managed object.
+   *  @brief Managed Sensor objects manage their own handles, so this is
+   * currently unsettable.
    */
-  std::string getObjectInfoHeader() const override {
-    return "Type," + getSensorObjInfoHeaderInternal();
-  }
+  void setHandle(CORRADE_UNUSED const std::string& name) override {}
 
   /**
-   * @brief Retrieve a comma-separated informational string about the contents
-   * of this managed object.
+   * @brief Retrieve this Managed Sensor object's unique handle.
    */
-  std::string getObjectInfo() const override {
-    if (auto sp = this->getObjectReference()) {
-      namespace CrUt = Cr::Utility;
-      return Cr::Utility::formatString("{},{},", classKey_,
-                                       getSensorObjInfoInternal(sp));
+  std::string getHandle() const override {
+    if (auto sp = getObjectReferenceInternal<Sensor>()) {
+      return sp->getSensorHandle();
     }
-    return Cr::Utility::formatString("Unknown classkey {},", classKey_);
+    return "";
   }
+
+  /**
+   *  @brief Managed Sensor objects manage their own IDs, so this is
+   * unsettable.
+   */
+  void setID(CORRADE_UNUSED int ID) override {}
+
+  /**
+   * @brief Retrieve this object's unique ID.
+   */
+  int getID() const override {
+    if (auto sp = getObjectReferenceInternal<Sensor>()) {
+      return sp->getSensorID();
+    }
+    return ID_UNDEFINED;
+  }  // getID()
 
  protected:
-  /**
-   * @brief Retrieve a comma-separated string holding the header values for
-   * the info returned for this managed object, type-specific.
-   */
-
-  virtual std::string getSensorObjInfoHeaderInternal() const = 0;
-  /**
-   * @brief Specialization-specific extension of getObjectInfo, comma
-   * separated info ideal for saving to csv
-   */
-  virtual std::string getSensorObjInfoInternal(
-      std::shared_ptr<T>& sp) const = 0;
+  void setObjectRefInternal(const std::shared_ptr<void>& objRef) {
+    weakObjRef_ = objRef;
+  }
 
   /**
    * @brief This function accesses the underlying shared pointer of this
@@ -79,15 +79,16 @@ class AbstractManagedSensor
    * @return Either a shared pointer of this wrapper's object, or nullptr if
    * DNE.
    */
-  std::shared_ptr<T> inline getObjectReference() const {
-    std::shared_ptr<T> sp = weakObjRef_.lock();
+  template <class T>
+  std::shared_ptr<T> inline getObjectReferenceInternal() const {
+    std::shared_ptr<void> sp = weakObjRef_.lock();
     if (!sp) {
       // TODO: Verify object is removed from manager here?
       ESP_ERROR()
-          << "This sensor object no longer exists.  Please delete any variable "
+          << "This sensor object no longer exists. Please delete any variable "
              "references.";
     }
-    return sp;
+    return std::static_pointer_cast<T>(sp);
   }  // getObjectReference
 
   /**
@@ -105,7 +106,7 @@ class AbstractManagedSensor
    * @brief Weak ref to object. If user has copy of this wrapper but object
    * has been deleted, this will be nullptr.
    */
-  WeakObjRef weakObjRef_{};
+  std::weak_ptr<void> weakObjRef_{};
 
   /**
    * @brief Name of instancing class responsible for this managed object
@@ -113,8 +114,9 @@ class AbstractManagedSensor
   std::string classKey_;
 
  public:
-  ESP_SMART_POINTERS(AbstractManagedSensor<T>)
+  ESP_SMART_POINTERS(ManagedSensorBase)
 };  // class AbstractManagedSensor
+
 }  // namespace sensor
 }  // namespace esp
 
