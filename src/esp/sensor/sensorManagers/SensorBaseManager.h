@@ -95,7 +95,7 @@ class SensorBaseManager
         managedSensorTypeConstructorMap_.find(sensorTypeName);
     if (mgdSensorTypeCtorMapIter == managedSensorTypeConstructorMap_.end()) {
       ESP_ERROR(Mn::Debug::Flag::NoSpace)
-          << "<" << this->sensorType_ << "> Unknown constructor type "
+          << "<" << this->objectType_ << "> Unknown constructor type "
           << sensorTypeName << ", so initNewObject aborted.";
       return nullptr;
     }

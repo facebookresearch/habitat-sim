@@ -121,6 +121,16 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
   void setTransformationFromSpec();
 
   /**
+   * @brief The unique handle assigned to this sensor at creation
+   */
+  std::string getSensorHandle() const { return sensorHandle_; }
+
+  /**
+   * @brief The unique ID assigned to this sensor at creation
+   */
+  int getSensorID() const { return sensorId_; }
+
+  /**
    * @brief Draws an observation to the frame buffer using simulator's renderer,
    * then reads the observation to the sensor's memory buffer
    * @return true if success, otherwise false (e.g., failed to draw or read
@@ -150,6 +160,11 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
   virtual bool displayObservation(sim::Simulator& sim) = 0;
 
  protected:
+  // unique handle for sensor built when sensor is constructed.
+  std::string sensorHandle_;
+
+  // unique id for sensor set when sensor is built.
+  int sensorId_ = ID_UNDEFINED;
   SensorSpec::ptr spec_ = nullptr;
   core::Buffer::ptr buffer_ = nullptr;
 
