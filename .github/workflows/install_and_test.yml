@@ -162,7 +162,7 @@ jobs:
         conda activate habitat
         cd habitat-sim
         pip install -r requirements.txt --progress-bar off
-        pip install imageio imageio-ffmpeg
+        pip install imageio
         git submodule update --init --recursive --jobs 8
         python -u setup.py install --build-type "Release" --lto --headless --audio
         python examples/tutorials/audio_agent.py
@@ -201,7 +201,7 @@ jobs:
         cd habitat-sim
         pip install -r requirements.txt --progress-bar off
         git submodule update --init --recursive --jobs 8
-        pip install imageio imageio-ffmpeg
+        pip install imageio
         conda install -y -c conda-forge doxygen=1.9.5
         conda install -y  jinja2 pygments docutils
         sudo apt install --yes --allow-change-held-packages \
