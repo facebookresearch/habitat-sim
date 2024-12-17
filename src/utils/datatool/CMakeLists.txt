@@ -15,14 +15,14 @@ find_package(
 if(BUILD_ASSIMP_SUPPORT)
   find_package(MagnumPlugins REQUIRED AssimpImporter)
 endif()
-set(Datatool_SOURCES Datatool.cpp SceneLoader.cpp Mp3dInstanceMeshData.cpp)
+set(datatool_SOURCES Datatool.cpp SceneLoader.cpp Mp3dInstanceMeshData.cpp)
 
-add_executable(Datatool ${Datatool_SOURCES})
+add_executable(datatool ${datatool_SOURCES})
 set(DEPS_DIR "${CMAKE_CURRENT_LIST_DIR}/../../deps")
-target_include_directories(Datatool SYSTEM PRIVATE "${DEPS_DIR}/tinyobjloader")
+target_include_directories(datatool SYSTEM PRIVATE "${DEPS_DIR}/tinyobjloader")
 
 target_link_libraries(
-  Datatool
+  datatool
   PRIVATE habitat_sim
           MagnumPlugins::BasisImporter
           MagnumPlugins::GltfImporter
@@ -33,6 +33,6 @@ target_link_libraries(
 )
 if(BUILD_ASSIMP_SUPPORT)
   target_link_libraries(
-    Datatool PUBLIC MagnumPlugins::AssimpImporter PRIVATE Assimp::Assimp
+    datatool PUBLIC MagnumPlugins::AssimpImporter PRIVATE Assimp::Assimp
   )
 endif()
