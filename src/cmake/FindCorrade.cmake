@@ -118,8 +118,13 @@
 #  CORRADE_*_LIBRARY_DEBUG      - Debug version of given library, if found
 #  CORRADE_*_LIBRARY_RELEASE    - Release version of given library, if found
 #  CORRADE_*_EXECUTABLE         - Location of given executable, if found
+#  CORRADE_*_EXECUTABLE_EMULATOR - Emulator to run CORRADE_*_EXECUTABLE, if a
+#   non-native version was found when cross-compiling
 #  CORRADE_USE_MODULE           - Path to UseCorrade.cmake module (included
 #   automatically)
+#  CORRADE_DEPENDENCY_MODULE_DIR - Path to Find modules for dependencies used
+#   internally by Corrade. Defined only if any such modules are expected to
+#   exist on given platform.
 #  CORRADE_TESTSUITE_XCTEST_RUNNER - Path to XCTestRunner.mm.in file
 #  CORRADE_TESTSUITE_ADB_RUNNER - Path to AdbRunner.sh file
 #  CORRADE_UTILITY_JS           - Path to CorradeUtility.js file
@@ -272,7 +277,7 @@
 #   This file is part of Corrade.
 #
 #   Copyright © 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016,
-#               2017, 2018, 2019, 2020, 2021, 2022, 2023
+#               2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -355,6 +360,12 @@ find_path(_CORRADE_MODULE_DIR
     NAMES UseCorrade.cmake CorradeLibSuffix.cmake
     PATH_SUFFIXES share/cmake/Corrade)
 mark_as_advanced(_CORRADE_MODULE_DIR)
+if(CORRADE_TARGET_EMSCRIPTEN)
+    find_path(CORRADE_DEPENDENCY_MODULE_DIR
+        NAMES FindNodeJs.cmake
+        PATH_SUFFIXES share/cmake/Corrade/dependencies)
+    mark_as_advanced(CORRADE_DEPENDENCY_MODULE_DIR)
+endif()
 
 set(CORRADE_USE_MODULE ${_CORRADE_MODULE_DIR}/UseCorrade.cmake)
 set(CORRADE_LIB_SUFFIX_MODULE ${_CORRADE_MODULE_DIR}/CorradeLibSuffix.cmake)
@@ -363,6 +374,9 @@ set(CORRADE_LIB_SUFFIX_MODULE ${_CORRADE_MODULE_DIR}/CorradeLibSuffix.cmake)
 # unknown components)
 set(_CORRADE_LIBRARY_COMPONENTS
     Containers Interconnect Main PluginManager TestSuite Utility)
+# These libraries are excluded from DLL detection if Corrade is built as shared
+set(_CORRADE_LIBRARY_COMPONENTS_ALWAYS_STATIC
+    Main)
 set(_CORRADE_HEADER_ONLY_COMPONENTS Containers)
 if(NOT CORRADE_TARGET_WINDOWS)
     # CorradeMain is a real library only on windows, a dummy target elsewhere
@@ -407,6 +421,11 @@ if(Corrade_FIND_COMPONENTS)
     list(REMOVE_DUPLICATES Corrade_FIND_COMPONENTS)
 endif()
 
+# Special cases of include paths. Libraries not listed here have a path suffix
+# and include name derived from the library name in the loop below.
+set(_CORRADE_MAIN_INCLUDE_PATH_SUFFIX Corrade)
+set(_CORRADE_MAIN_INCLUDE_PATH_NAMES Corrade.h)
+
 # Find all components
 foreach(_component ${Corrade_FIND_COMPONENTS})
     string(TOUPPER ${_component} _COMPONENT)
@@ -414,59 +433,152 @@ foreach(_component ${Corrade_FIND_COMPONENTS})
     # Create imported target in case the library is found. If the project is
     # added as subproject to CMake, the target already exists and all the
     # required setup is already done from the build tree.
-    if(TARGET Corrade::${_component})
+    if(TARGET "Corrade::${_component}") # Quotes to "fix" KDE's higlighter
         set(Corrade_${_component}_FOUND TRUE)
     else()
-        unset(Corrade_${_component}_FOUND)
+        # Default include path names to look for for library / header-only
+        # components, unless set above already
+        if(_component IN_LIST _CORRADE_LIBRARY_COMPONENTS)
+            if(NOT _CORRADE_${_COMPONENT}_INCLUDE_PATH_SUFFIX)
+                set(_CORRADE_${_COMPONENT}_INCLUDE_PATH_SUFFIX Corrade/${_component})
+            endif()
+            if(NOT _CORRADE_${_COMPONENT}_INCLUDE_PATH_NAMES)
+                set(_CORRADE_${_COMPONENT}_INCLUDE_PATH_NAMES ${_component}.h)
+            endif()
+        endif()
 
         # Library (and not header-only) components
         if(_component IN_LIST _CORRADE_LIBRARY_COMPONENTS AND NOT _component IN_LIST _CORRADE_HEADER_ONLY_COMPONENTS)
-            add_library(Corrade::${_component} UNKNOWN IMPORTED)
-
             # Try to find both debug and release version
             find_library(CORRADE_${_COMPONENT}_LIBRARY_DEBUG Corrade${_component}-d)
             find_library(CORRADE_${_COMPONENT}_LIBRARY_RELEASE Corrade${_component})
             mark_as_advanced(CORRADE_${_COMPONENT}_LIBRARY_DEBUG
                 CORRADE_${_COMPONENT}_LIBRARY_RELEASE)
 
-            if(CORRADE_${_COMPONENT}_LIBRARY_RELEASE)
-                set_property(TARGET Corrade::${_component} APPEND PROPERTY
-                    IMPORTED_CONFIGURATIONS RELEASE)
-                set_property(TARGET Corrade::${_component} PROPERTY
-                    IMPORTED_LOCATION_RELEASE ${CORRADE_${_COMPONENT}_LIBRARY_RELEASE})
+            # On Windows, if we have a dynamic build of given library, find the
+            # DLLs as well. Abuse find_program() since the DLLs should be
+            # alongside usual executables. On MinGW they however have a lib
+            # prefix.
+            if(CORRADE_TARGET_WINDOWS AND NOT CORRADE_BUILD_STATIC AND NOT _component IN_LIST _CORRADE_LIBRARY_COMPONENTS_ALWAYS_STATIC)
+                find_program(CORRADE_${_COMPONENT}_DLL_DEBUG ${CMAKE_SHARED_LIBRARY_PREFIX}Corrade${_component}-d.dll)
+                find_program(CORRADE_${_COMPONENT}_DLL_RELEASE ${CMAKE_SHARED_LIBRARY_PREFIX}Corrade${_component}.dll)
+                mark_as_advanced(CORRADE_${_COMPONENT}_DLL_DEBUG
+                    CORRADE_${_COMPONENT}_DLL_RELEASE)
+            # If not on Windows or on a static build, unset the DLL variables
+            # to avoid leaks when switching shared and static builds
+            else()
+                unset(CORRADE_${_COMPONENT}_DLL_DEBUG CACHE)
+                unset(CORRADE_${_COMPONENT}_DLL_RELEASE CACHE)
             endif()
-
-            if(CORRADE_${_COMPONENT}_LIBRARY_DEBUG)
-                set_property(TARGET Corrade::${_component} APPEND PROPERTY
-                    IMPORTED_CONFIGURATIONS DEBUG)
-                set_property(TARGET Corrade::${_component} PROPERTY
-                    IMPORTED_LOCATION_DEBUG ${CORRADE_${_COMPONENT}_LIBRARY_DEBUG})
-            endif()
-        endif()
-
-        # Header-only library components
-        if(_component IN_LIST _CORRADE_HEADER_ONLY_COMPONENTS)
-            add_library(Corrade::${_component} INTERFACE IMPORTED)
-        endif()
-
-        # Default include path names to look for for library / header-only
-        # components
-        if(_component IN_LIST _CORRADE_LIBRARY_COMPONENTS)
-            set(_CORRADE_${_COMPONENT}_INCLUDE_PATH_SUFFIX Corrade/${_component})
-            set(_CORRADE_${_COMPONENT}_INCLUDE_PATH_NAMES ${_component}.h)
-        endif()
 
         # Executable components
-        if(_component IN_LIST _CORRADE_EXECUTABLE_COMPONENTS)
-            add_executable(Corrade::${_component} IMPORTED)
-
+        elseif(_component IN_LIST _CORRADE_EXECUTABLE_COMPONENTS)
             find_program(CORRADE_${_COMPONENT}_EXECUTABLE corrade-${_component})
             mark_as_advanced(CORRADE_${_COMPONENT}_EXECUTABLE)
 
-            if(CORRADE_${_COMPONENT}_EXECUTABLE)
-                set_property(TARGET Corrade::${_component} PROPERTY
-                    IMPORTED_LOCATION ${CORRADE_${_COMPONENT}_EXECUTABLE})
+            # If the executable wasn't found, we're cross-compiling, an
+            # emulator is set and we're on CMake 3.6+ that actually uses
+            # CMAKE_CROSSCOMPILING_EMULATOR in add_custom_command((), try to
+            # find the cross-compiled version as a (slower) fallback. This
+            # assumes the toolchain sets CMAKE_FIND_ROOT_PATH_MODE_PROGRAM to
+            # NEVER, i.e. that the search is restricted to native executables
+            # by default.
+            if(NOT CORRADE_${_COMPONENT}_EXECUTABLE AND CMAKE_CROSSCOMPILING AND CMAKE_CROSSCOMPILING_EMULATOR AND NOT CMAKE_VERSION VERSION_LESS 3.6)
+                # Additionally, there are no CMAKE_FIND_PROGRAM_SUFFIXES akin
+                # to CMAKE_FIND_LIBRARY_SUFFIXES for libraries, so we have to
+                # try manually.
+                if(CORRADE_TARGET_EMSCRIPTEN)
+                    set(_CORRADE_PROGRAM_EXTENSION .js)
+                endif()
+                find_program(CORRADE_${_COMPONENT}_EXECUTABLE
+                    NAMES
+                        corrade-${_component}
+                        corrade-${_component}${_CORRADE_PROGRAM_EXTENSION}
+                    ONLY_CMAKE_FIND_ROOT_PATH)
+                if(CORRADE_${_COMPONENT}_EXECUTABLE)
+                    set(CORRADE_${_COMPONENT}_EXECUTABLE_EMULATOR ${CMAKE_CROSSCOMPILING_EMULATOR} CACHE PATH "Emulator for running a cross-compiled corrade-${_component} executable")
+                    mark_as_advanced(CORRADE_${_COMPONENT}_EXECUTABLE_EMULATOR)
+                endif()
             endif()
+
+        # If not a header-only component it's something unknown, skip. FPHSA
+        # will take care of handling this below.
+        elseif(NOT _component IN_LIST _CORRADE_HEADER_ONLY_COMPONENTS)
+            continue()
+        endif()
+
+        # Find library includes
+        if(_component IN_LIST _CORRADE_LIBRARY_COMPONENTS)
+            find_path(_CORRADE_${_COMPONENT}_INCLUDE_DIR
+                NAMES ${_CORRADE_${_COMPONENT}_INCLUDE_PATH_NAMES}
+                HINTS ${CORRADE_INCLUDE_DIR}/${_CORRADE_${_COMPONENT}_INCLUDE_PATH_SUFFIX})
+            mark_as_advanced(_CORRADE_${_COMPONENT}_INCLUDE_DIR)
+        endif()
+
+        # Decide if the component was found. If not, skip the rest, which
+        # creates and populates the target and finds additional dependencies.
+        # If found, the _FOUND variable may still get reset by something below.
+        if(
+            # If the component is a library, it should have the include dir
+            (_component IN_LIST _CORRADE_LIBRARY_COMPONENTS AND _CORRADE_${_COMPONENT}_INCLUDE_DIR AND (
+                # And it should be either header-only
+                _component IN_LIST _CORRADE_HEADER_ONLY_COMPONENTS OR
+                # Or have a debug library, and a DLL found if expected
+                (CORRADE_${_COMPONENT}_LIBRARY_DEBUG AND (
+                    NOT DEFINED CORRADE_${_COMPONENT}_DLL_DEBUG OR
+                    CORRADE_${_COMPONENT}_DLL_DEBUG)) OR
+                # Or have a release library, and a DLL found if expected
+                (CORRADE_${_COMPONENT}_LIBRARY_RELEASE AND (
+                    NOT DEFINED CORRADE_${_COMPONENT}_DLL_RELEASE OR
+                    CORRADE_${_COMPONENT}_DLL_RELEASE)))) OR
+            # If the component is an executable, it should have just the
+            # location
+            (_component IN_LIST _CORRADE_EXECUTABLE_COMPONENTS AND CORRADE_${_COMPONENT}_EXECUTABLE)
+        )
+            set(Corrade_${_component}_FOUND TRUE)
+        else()
+            set(Corrade_${_component}_FOUND FALSE)
+            continue()
+        endif()
+
+        # Target for header-only library components
+        if(_component IN_LIST _CORRADE_HEADER_ONLY_COMPONENTS)
+            add_library(Corrade::${_component} INTERFACE IMPORTED)
+
+        # Target and location for (non-header-only) libraries
+        elseif(_component IN_LIST _CORRADE_LIBRARY_COMPONENTS)
+            if(CORRADE_BUILD_STATIC OR _component IN_LIST _CORRADE_LIBRARY_COMPONENTS_ALWAYS_STATIC)
+                add_library(Corrade::${_component} STATIC IMPORTED)
+            else()
+                add_library(Corrade::${_component} SHARED IMPORTED)
+            endif()
+
+            foreach(_CONFIG DEBUG RELEASE)
+                if(NOT CORRADE_${_COMPONENT}_LIBRARY_${_CONFIG})
+                    continue()
+                endif()
+
+                set_property(TARGET Corrade::${_component} APPEND PROPERTY
+                    IMPORTED_CONFIGURATIONS ${_CONFIG})
+                # Unfortunately for a DLL the two properties are swapped out,
+                # *.lib goes to IMPLIB, so it's duplicated like this
+                if(DEFINED CORRADE_${_COMPONENT}_DLL_${_CONFIG})
+                    # Quotes to "fix" KDE's higlighter
+                    set_target_properties("Corrade::${_component}" PROPERTIES
+                        IMPORTED_LOCATION_${_CONFIG} ${CORRADE_${_COMPONENT}_DLL_${_CONFIG}}
+                        IMPORTED_IMPLIB_${_CONFIG} ${CORRADE_${_COMPONENT}_LIBRARY_${_CONFIG}})
+                else()
+                    set_property(TARGET Corrade::${_component} PROPERTY
+                        IMPORTED_LOCATION_${_CONFIG} ${CORRADE_${_COMPONENT}_LIBRARY_${_CONFIG}})
+                endif()
+            endforeach()
+
+        # Target and location for executable components
+        elseif(_component IN_LIST _CORRADE_EXECUTABLE_COMPONENTS)
+            add_executable(Corrade::${_component} IMPORTED)
+
+            set_property(TARGET Corrade::${_component} PROPERTY
+                IMPORTED_LOCATION ${CORRADE_${_COMPONENT}_EXECUTABLE})
         endif()
 
         # No special setup for Containers library
@@ -488,9 +600,6 @@ foreach(_component ${Corrade_FIND_COMPONENTS})
 
         # Main library
         elseif(_component STREQUAL Main)
-            set(_CORRADE_${_COMPONENT}_INCLUDE_PATH_SUFFIX Corrade)
-            set(_CORRADE_${_COMPONENT}_INCLUDE_PATH_NAMES Corrade.h)
-
             if(CORRADE_TARGET_WINDOWS)
                 if(NOT MINGW)
                     # Abusing INTERFACE_LINK_LIBRARIES because
@@ -551,6 +660,16 @@ foreach(_component ${Corrade_FIND_COMPONENTS})
             set_property(TARGET Corrade::${_component} APPEND PROPERTY
                 COMPATIBLE_INTERFACE_NUMBER_MAX CORRADE_CXX_STANDARD)
 
+            # -fno-strict-aliasing is set in UseCorrade.cmake for everyone who
+            # enables CORRADE_USE_PEDANTIC_FLAGS. Not all projects linking to
+            # Corrade enable it (or can't enable it), but this flag is
+            # essential to prevent insane bugs and random breakages, so force
+            # it for anyone linking to Corrade::Utility. Similar code is in
+            # Corrade/Utility/CMakeLists.txt.
+            if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR (CMAKE_CXX_COMPILER_ID MATCHES "(Apple)?Clang" AND NOT CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC") OR CORRADE_TARGET_EMSCRIPTEN)
+                set_property(TARGET Corrade::${_component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS -fno-strict-aliasing)
+            endif()
+
             # Path::libraryLocation() needs this
             if(CORRADE_TARGET_UNIX)
                 set_property(TARGET Corrade::${_component} APPEND PROPERTY
@@ -572,14 +691,6 @@ foreach(_component ${Corrade_FIND_COMPONENTS})
             endif()
         endif()
 
-        # Find library includes
-        if(_component IN_LIST _CORRADE_LIBRARY_COMPONENTS)
-            find_path(_CORRADE_${_COMPONENT}_INCLUDE_DIR
-                NAMES ${_CORRADE_${_COMPONENT}_INCLUDE_PATH_NAMES}
-                HINTS ${CORRADE_INCLUDE_DIR}/${_CORRADE_${_COMPONENT}_INCLUDE_PATH_SUFFIX})
-            mark_as_advanced(_CORRADE_${_COMPONENT}_INCLUDE_DIR)
-        endif()
-
         # Add inter-library dependencies
         if(_component IN_LIST _CORRADE_LIBRARY_COMPONENTS OR _component IN_LIST _CORRADE_HEADER_ONLY_COMPONENTS)
             foreach(_dependency ${_CORRADE_${_component}_DEPENDENCIES})
@@ -588,16 +699,6 @@ foreach(_component ${Corrade_FIND_COMPONENTS})
                         INTERFACE_LINK_LIBRARIES Corrade::${_dependency})
                 endif()
             endforeach()
-        endif()
-
-        # Decide if the component was found, unless the _FOUND is already set
-        # by something above.
-        if(NOT DEFINED Corrade_${_component}_FOUND)
-            if((_component IN_LIST _CORRADE_LIBRARY_COMPONENTS AND _CORRADE_${_COMPONENT}_INCLUDE_DIR AND (_component IN_LIST _CORRADE_HEADER_ONLY_COMPONENTS OR CORRADE_${_COMPONENT}_LIBRARY_RELEASE OR CORRADE_${_COMPONENT}_LIBRARY_DEBUG)) OR (_component IN_LIST _CORRADE_EXECUTABLE_COMPONENTS AND CORRADE_${_COMPONENT}_EXECUTABLE))
-                set(Corrade_${_component}_FOUND TRUE)
-            else()
-                set(Corrade_${_component}_FOUND FALSE)
-            endif()
         endif()
     endif()
 endforeach()
