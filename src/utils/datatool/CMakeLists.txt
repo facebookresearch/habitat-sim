@@ -34,7 +34,5 @@ target_link_libraries(
           MagnumPlugins::UfbxImporter
 )
 if(BUILD_ASSIMP_SUPPORT)
-  target_link_libraries(
-    datatool PUBLIC MagnumPlugins::AssimpImporter
-  )
+  target_link_libraries(datatool PUBLIC MagnumPlugins::AssimpImporter)
 endif()

@@ -54,9 +54,7 @@ target_link_libraries(
   PUBLIC habitat_sim
 )
 if(BUILD_ASSIMP_SUPPORT)
-  target_link_libraries(
-    habitat_sim_bindings PUBLIC MagnumPlugins::AssimpImporter
-  )
+  target_link_libraries(habitat_sim_bindings PUBLIC MagnumPlugins::AssimpImporter)
 endif()
 
 if(BUILD_WITH_AUDIO)

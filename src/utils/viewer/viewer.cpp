@@ -208,12 +208,11 @@ class Viewer : public Mn::Platform::Application {
  private:
   // Keys for moving/looking are recorded according to whether they are
   // currently being pressed
-  std::map<Key, bool> keysPressed = {
-      {Key::Left, false}, {Key::Right, false},
-      {Key::Up, false},   {Key::Down, false},
-      {Key::A, false},    {Key::D, false},
-      {Key::S, false},    {Key::W, false},
-      {Key::X, false},    {Key::Z, false}};
+  std::map<Key, bool> keysPressed = {{Key::Left, false}, {Key::Right, false},
+                                     {Key::Up, false},   {Key::Down, false},
+                                     {Key::A, false},    {Key::D, false},
+                                     {Key::S, false},    {Key::W, false},
+                                     {Key::X, false},    {Key::Z, false}};
 
   MouseInteractionMode mouseInteractionMode = LOOK;
 
@@ -1901,8 +1900,8 @@ void Viewer::pointerPressEvent(PointerEvent& event) {
 
         // Read the object Id - takes unscaled mouse position, and scales it in
         // objectPicker
-        unsigned int pickedObject =
-            objectPickingHelper_->getObjectId(Mn::Vector2i{event.position()}, windowSize());
+        unsigned int pickedObject = objectPickingHelper_->getObjectId(
+            Mn::Vector2i{event.position()}, windowSize());
 
         // if an object is selected, create a visualizer
         createPickedObjectVisualizer(pickedObject);
@@ -2174,9 +2173,8 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         setSceneInstanceFromListAndShow(curSceneInstanceIDX_);
       } else {
         ESP_DEBUG() << "Cycling to"
-                    << ((event.modifiers() & Modifier::Shift)
-                            ? "previous"
-                            : "next")
+                    << ((event.modifiers() & Modifier::Shift) ? "previous"
+                                                              : "next")
                     << "SceneInstance";
         setSceneInstanceFromListAndShow(getNextSceneInstanceIDX(
             (event.modifiers() & Modifier::Shift) ? -1 : 1));
@@ -2330,8 +2328,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
 
       // add an ArticulatedObject from provided filepath
       std::string ArtObjConfigFilepath;
-      if (event.modifiers() & Modifier::Shift &&
-          !cachedAOConfig_.empty()) {
+      if (event.modifiers() & Modifier::Shift && !cachedAOConfig_.empty()) {
         // quick-reload the most recently loaded URDF
         ESP_WARNING() << "Articulated Object config quick-reload: "
                       << cachedAOConfig_;

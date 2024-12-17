@@ -24,8 +24,8 @@
 #include <Magnum/MeshTools/Transform.h>
 #include <Magnum/SceneTools/Hierarchy.h>
 #include <Magnum/Trade/AbstractImporter.h>
-#include <Magnum/Trade/SceneData.h>
 #include <Magnum/Trade/MeshData.h>
+#include <Magnum/Trade/SceneData.h>
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
@@ -44,9 +44,10 @@ SceneLoader::SceneLoader()
 MeshData SceneLoader::load(const AssetInfo& info) {
   MeshData mesh;
 
-  Cr::Containers::Pointer<Importer> importer = importerManager_.loadAndInstantiate("AnySceneImporter");
+  Cr::Containers::Pointer<Importer> importer =
+      importerManager_.loadAndInstantiate("AnySceneImporter");
   ESP_CHECK(importer && importer->openFile(info.filepath),
-      "Error opening" << info.filepath);
+            "Error opening" << info.filepath);
 
   if (info.type == metadata::attributes::AssetType::InstanceMesh) {
     // dummy colormap
@@ -74,8 +75,9 @@ MeshData SceneLoader::load(const AssetInfo& info) {
     /* Get all meshes */
     Cr::Containers::Array<Mn::Trade::MeshData> meshes;
     Cr::Containers::Optional<Mn::Trade::MeshData> meshData;
-    for(Mn::UnsignedInt i = 0; i != importer->meshCount(); ++i) {
-      Cr::Containers::Optional<Mn::Trade::MeshData> meshData = importer->mesh(i);
+    for (Mn::UnsignedInt i = 0; i != importer->meshCount(); ++i) {
+      Cr::Containers::Optional<Mn::Trade::MeshData> meshData =
+          importer->mesh(i);
       ESP_CHECK(meshData, "Error loading mesh data from" << info.filepath);
       arrayAppend(meshes, *std::move(meshData));
     }
@@ -84,44 +86,58 @@ MeshData SceneLoader::load(const AssetInfo& info) {
     Cr::Containers::Optional<Mn::Trade::SceneData> scene = importer->scene(0);
     ESP_CHECK(scene, "Error loading scene data from" << info.filepath);
 
-    Cr::Containers::Array<Cr::Containers::Pair<Mn::UnsignedInt, Cr::Containers::Pair<Mn::UnsignedInt, Mn::Int>>> meshesMaterials = scene->meshesMaterialsAsArray();
+    Cr::Containers::Array<Cr::Containers::Pair<
+        Mn::UnsignedInt, Cr::Containers::Pair<Mn::UnsignedInt, Mn::Int>>>
+        meshesMaterials = scene->meshesMaterialsAsArray();
     /* Add an extra transform to align to habitat's gravity. Keeping the
        original Eigen expression just to avoid some silly error, worthy of a
        future cleanup. */
     const quatf alignSceneToEspGravityEigen =
         quatf::FromTwoVectors(info.frame.gravity(), esp::geo::ESP_GRAVITY);
-    const Mn::Matrix4 alignSceneToEspGravity = Mn::Matrix4::from(Mn::Quaternion{alignSceneToEspGravityEigen}.toMatrix(), {});
-    Cr::Containers::Array<Mn::Matrix4> transformations = Mn::SceneTools::absoluteFieldTransformations3D(*scene, Mn::Trade::SceneField::Mesh, alignSceneToEspGravity);
+    const Mn::Matrix4 alignSceneToEspGravity = Mn::Matrix4::from(
+        Mn::Quaternion{alignSceneToEspGravityEigen}.toMatrix(), {});
+    Cr::Containers::Array<Mn::Matrix4> transformations =
+        Mn::SceneTools::absoluteFieldTransformations3D(
+            *scene, Mn::Trade::SceneField::Mesh, alignSceneToEspGravity);
 
     /* Apply those transforms to meshes, concatenate them all together */
     Cr::Containers::Array<Mn::Trade::MeshData> flattenedMeshes;
-    for(std::size_t i = 0; i != meshesMaterials.size(); ++i) {
-        arrayAppend(flattenedMeshes, Mn::MeshTools::transform3D(
-            meshes[meshesMaterials[i].second().first()], transformations[i]));
+    for (std::size_t i = 0; i != meshesMaterials.size(); ++i) {
+      arrayAppend(
+          flattenedMeshes,
+          Mn::MeshTools::transform3D(
+              meshes[meshesMaterials[i].second().first()], transformations[i]));
     }
-    Mn::Trade::MeshData concatenated = Mn::MeshTools::concatenate(flattenedMeshes);
+    Mn::Trade::MeshData concatenated =
+        Mn::MeshTools::concatenate(flattenedMeshes);
 
     /* Extract data from the nice and tidy Magnum MeshData into a bunch of STL
        vectors, worthy of a future cleanup as well */
     {
       mesh.vbo.resize(concatenated.vertexCount());
-      concatenated.positions3DInto(Cr::Containers::arrayCast<Mn::Vector3>(Cr::Containers::arrayView(mesh.vbo)));
+      concatenated.positions3DInto(Cr::Containers::arrayCast<Mn::Vector3>(
+          Cr::Containers::arrayView(mesh.vbo)));
     }
-    if(concatenated.hasAttribute(Mn::Trade::MeshAttribute::Normal)) {
+    if (concatenated.hasAttribute(Mn::Trade::MeshAttribute::Normal)) {
       mesh.nbo.resize(concatenated.vertexCount());
-      concatenated.normalsInto(Cr::Containers::arrayCast<Mn::Vector3>(Cr::Containers::arrayView(mesh.nbo)));
+      concatenated.normalsInto(Cr::Containers::arrayCast<Mn::Vector3>(
+          Cr::Containers::arrayView(mesh.nbo)));
     }
-    if(concatenated.hasAttribute(Mn::Trade::MeshAttribute::TextureCoordinates)) {
+    if (concatenated.hasAttribute(
+            Mn::Trade::MeshAttribute::TextureCoordinates)) {
       mesh.tbo.resize(concatenated.vertexCount());
-      concatenated.textureCoordinates2DInto(Cr::Containers::arrayCast<Mn::Vector2>(Cr::Containers::arrayView(mesh.tbo)));
+      concatenated.textureCoordinates2DInto(
+          Cr::Containers::arrayCast<Mn::Vector2>(
+              Cr::Containers::arrayView(mesh.tbo)));
     }
-    if(concatenated.hasAttribute(Mn::Trade::MeshAttribute::Color)) {
+    if (concatenated.hasAttribute(Mn::Trade::MeshAttribute::Color)) {
       mesh.cbo.resize(concatenated.vertexCount());
       /* The colors are generally four-component, copy just the first 3
          components */
       Cr::Containers::Array<Mn::Color4> colors = concatenated.colorsAsArray();
       Cr::Utility::copy(stridedArrayView(colors).slice(&Mn::Color4::rgb),
-        Cr::Containers::arrayCast<Mn::Color3>(Cr::Containers::arrayView(mesh.cbo)));
+                        Cr::Containers::arrayCast<Mn::Color3>(
+                            Cr::Containers::arrayView(mesh.cbo)));
     }
   }
 
