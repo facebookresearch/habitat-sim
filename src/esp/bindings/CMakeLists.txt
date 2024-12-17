@@ -55,7 +55,7 @@ target_link_libraries(
 )
 if(BUILD_ASSIMP_SUPPORT)
   target_link_libraries(
-    habitat_sim_bindings PUBLIC MagnumPlugins::AssimpImporter PRIVATE Assimp::Assimp
+    habitat_sim_bindings PUBLIC MagnumPlugins::AssimpImporter
   )
 endif()
 

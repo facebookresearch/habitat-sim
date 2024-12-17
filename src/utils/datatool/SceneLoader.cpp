@@ -9,23 +9,26 @@
 #include <vector>
 
 #include <Corrade/Containers/ArrayViewStl.h>
+#include <Corrade/Containers/GrowableArray.h>
 #include <Corrade/Utility/Algorithms.h>
-#include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Path.h>
 #include "esp/assets/GenericSemanticMeshData.h"
 #include "esp/core/Esp.h"
 #include "esp/geo/Geo.h"
 #include "esp/metadata/attributes/AttributesEnumMaps.h"
 
-#include <assimp/postprocess.h>
-#include <assimp/scene.h>
-#include <assimp/Importer.hpp>
-
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/EigenIntegration/Integration.h>
+#include <Magnum/Math/Color.h>
+#include <Magnum/MeshTools/Concatenate.h>
+#include <Magnum/MeshTools/Transform.h>
+#include <Magnum/SceneTools/Hierarchy.h>
 #include <Magnum/Trade/AbstractImporter.h>
+#include <Magnum/Trade/SceneData.h>
+#include <Magnum/Trade/MeshData.h>
 
 namespace Cr = Corrade;
+namespace Mn = Magnum;
 
 namespace esp {
 namespace assets {
@@ -40,23 +43,16 @@ SceneLoader::SceneLoader()
 
 MeshData SceneLoader::load(const AssetInfo& info) {
   MeshData mesh;
-  if (!Cr::Utility::Path::exists(info.filepath)) {
-    ESP_ERROR() << "Could not find file" << info.filepath;
-    return mesh;
-  }
+
+  Cr::Containers::Pointer<Importer> importer = importerManager_.loadAndInstantiate("AnySceneImporter");
+  ESP_CHECK(importer && importer->openFile(info.filepath),
+      "Error opening" << info.filepath);
 
   if (info.type == metadata::attributes::AssetType::InstanceMesh) {
-    Cr::Containers::Pointer<Importer> importer;
-    CORRADE_INTERNAL_ASSERT_OUTPUT(
-        importer = importerManager_.loadAndInstantiate("StanfordImporter"));
     // dummy colormap
     std::vector<Magnum::Vector3ub> dummyColormap;
-    Cr::Containers::Optional<Mn::Trade::MeshData> meshData;
-
-    ESP_CHECK(
-        (importer->openFile(info.filepath) && (meshData = importer->mesh(0))),
-        Cr::Utility::formatString(
-            "Error loading instance mesh data from file {}", info.filepath));
+    Cr::Containers::Optional<Mn::Trade::MeshData> meshData = importer->mesh(0);
+    ESP_CHECK(meshData, "Error loading mesh data from" << info.filepath);
 
     GenericSemanticMeshData::uptr instanceMeshData =
         GenericSemanticMeshData::buildSemanticMeshData(*meshData, info.filepath,
@@ -75,54 +71,58 @@ MeshData SceneLoader::load(const AssetInfo& info) {
       mesh.cbo.emplace_back(clr.cast<float>() / 255.0f);
     }
   } else {
-    const aiScene* scene;
-    Assimp::Importer Importer;
+    /* Get all meshes */
+    Cr::Containers::Array<Mn::Trade::MeshData> meshes;
+    Cr::Containers::Optional<Mn::Trade::MeshData> meshData;
+    for(Mn::UnsignedInt i = 0; i != importer->meshCount(); ++i) {
+      Cr::Containers::Optional<Mn::Trade::MeshData> meshData = importer->mesh(i);
+      ESP_CHECK(meshData, "Error loading mesh data from" << info.filepath);
+      arrayAppend(meshes, *std::move(meshData));
+    }
 
-    // Flags for loading the mesh
-    static const int assimpFlags =
-        aiProcess_Triangulate | aiProcess_PreTransformVertices;
+    /* Get absolute transformations for all objects with a mesh assigned */
+    Cr::Containers::Optional<Mn::Trade::SceneData> scene = importer->scene(0);
+    ESP_CHECK(scene, "Error loading scene data from" << info.filepath);
 
-    scene = Importer.ReadFile(info.filepath.c_str(), assimpFlags);
-
-    const quatf alignSceneToEspGravity =
+    Cr::Containers::Array<Cr::Containers::Pair<Mn::UnsignedInt, Cr::Containers::Pair<Mn::UnsignedInt, Mn::Int>>> meshesMaterials = scene->meshesMaterialsAsArray();
+    /* Add an extra transform to align to habitat's gravity. Keeping the
+       original Eigen expression just to avoid some silly error, worthy of a
+       future cleanup. */
+    const quatf alignSceneToEspGravityEigen =
         quatf::FromTwoVectors(info.frame.gravity(), esp::geo::ESP_GRAVITY);
+    const Mn::Matrix4 alignSceneToEspGravity = Mn::Matrix4::from(Mn::Quaternion{alignSceneToEspGravityEigen}.toMatrix(), {});
+    Cr::Containers::Array<Mn::Matrix4> transformations = Mn::SceneTools::absoluteFieldTransformations3D(*scene, Mn::Trade::SceneField::Mesh, alignSceneToEspGravity);
 
-    // Iterate through all meshes in the file and extract the vertex components
-    for (uint32_t m = 0, indexBase = 0; m < scene->mNumMeshes; ++m) {
-      const aiMesh& assimpMesh = *scene->mMeshes[m];
-      for (uint32_t v = 0; v < assimpMesh.mNumVertices; ++v) {
-        // Use Eigen::Map to convert ASSIMP vectors to eigen vectors
-        const Eigen::Map<const vec3f> xyz_scene(&assimpMesh.mVertices[v].x);
-        const vec3f xyz_esp = alignSceneToEspGravity * xyz_scene;
-        mesh.vbo.push_back(xyz_esp);
+    /* Apply those transforms to meshes, concatenate them all together */
+    Cr::Containers::Array<Mn::Trade::MeshData> flattenedMeshes;
+    for(std::size_t i = 0; i != meshesMaterials.size(); ++i) {
+        arrayAppend(flattenedMeshes, Mn::MeshTools::transform3D(
+            meshes[meshesMaterials[i].second().first()], transformations[i]));
+    }
+    Mn::Trade::MeshData concatenated = Mn::MeshTools::concatenate(flattenedMeshes);
 
-        if (assimpMesh.mNormals) {
-          const Eigen::Map<const vec3f> normal_scene(&assimpMesh.mNormals[v].x);
-          const vec3f normal_esp = alignSceneToEspGravity * normal_scene;
-          mesh.nbo.push_back(normal_esp);
-        }
-
-        if (assimpMesh.HasTextureCoords(0)) {
-          const Eigen::Map<const vec2f> texCoord(
-              &assimpMesh.mTextureCoords[0][v].x);
-          mesh.tbo.push_back(texCoord);
-        }
-
-        if (assimpMesh.HasVertexColors(0)) {
-          const Eigen::Map<const vec3f> color(&assimpMesh.mColors[0][v].r);
-          mesh.cbo.push_back(color);
-        }
-      }  // vertices
-
-      // Generate and append index buffer for mesh
-      for (uint32_t f = 0; f < assimpMesh.mNumFaces; ++f) {
-        const aiFace& face = assimpMesh.mFaces[f];
-        for (uint32_t i = 0; i < face.mNumIndices; ++i) {
-          mesh.ibo.push_back(face.mIndices[i] + indexBase);
-        }
-      }  // faces
-      indexBase += assimpMesh.mNumVertices;
-    }  // meshes
+    /* Extract data from the nice and tidy Magnum MeshData into a bunch of STL
+       vectors, worthy of a future cleanup as well */
+    {
+      mesh.vbo.resize(concatenated.vertexCount());
+      concatenated.positions3DInto(Cr::Containers::arrayCast<Mn::Vector3>(Cr::Containers::arrayView(mesh.vbo)));
+    }
+    if(concatenated.hasAttribute(Mn::Trade::MeshAttribute::Normal)) {
+      mesh.nbo.resize(concatenated.vertexCount());
+      concatenated.normalsInto(Cr::Containers::arrayCast<Mn::Vector3>(Cr::Containers::arrayView(mesh.nbo)));
+    }
+    if(concatenated.hasAttribute(Mn::Trade::MeshAttribute::TextureCoordinates)) {
+      mesh.tbo.resize(concatenated.vertexCount());
+      concatenated.textureCoordinates2DInto(Cr::Containers::arrayCast<Mn::Vector2>(Cr::Containers::arrayView(mesh.tbo)));
+    }
+    if(concatenated.hasAttribute(Mn::Trade::MeshAttribute::Color)) {
+      mesh.cbo.resize(concatenated.vertexCount());
+      /* The colors are generally four-component, copy just the first 3
+         components */
+      Cr::Containers::Array<Mn::Color4> colors = concatenated.colorsAsArray();
+      Cr::Utility::copy(stridedArrayView(colors).slice(&Mn::Color4::rgb),
+        Cr::Containers::arrayCast<Mn::Color3>(Cr::Containers::arrayView(mesh.cbo)));
+    }
   }
 
   ESP_DEBUG() << "Loaded" << mesh.vbo.size() << "vertices," << mesh.ibo.size()

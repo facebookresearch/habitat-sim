@@ -2,6 +2,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+find_package(Magnum REQUIRED AnySceneImporter)
 find_package(
   MagnumPlugins
   REQUIRED
@@ -24,6 +25,7 @@ target_include_directories(datatool SYSTEM PRIVATE "${DEPS_DIR}/tinyobjloader")
 target_link_libraries(
   datatool
   PRIVATE habitat_sim
+          Magnum::AnySceneImporter
           MagnumPlugins::BasisImporter
           MagnumPlugins::GltfImporter
           MagnumPlugins::StanfordImporter
@@ -33,6 +35,6 @@ target_link_libraries(
 )
 if(BUILD_ASSIMP_SUPPORT)
   target_link_libraries(
-    datatool PUBLIC MagnumPlugins::AssimpImporter PRIVATE Assimp::Assimp
+    datatool PUBLIC MagnumPlugins::AssimpImporter
   )
 endif()
