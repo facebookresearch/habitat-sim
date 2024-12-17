@@ -6,6 +6,10 @@ import math
 
 import hypothesis
 import pytest
+
+# Need to import quaternion library here despite it not being used or else importing
+# habitat_sim below will cause an invalid free() when audio is enabled in sim compilation
+import quaternion  # noqa: F401
 from hypothesis import strategies as st
 
 import habitat_sim
