@@ -23,7 +23,7 @@ find_package(OpenMP)
 # We don't find_package(OpenGL REQUIRED) here, but let Magnum do that instead
 # as it sets up various things related to GLVND.
 
-include_directories("deps")
+include_directories(SYSTEM "deps")
 
 # Eigen. Use a system package, if preferred.
 if(USE_SYSTEM_EIGEN)
@@ -51,7 +51,7 @@ if(NOT USE_SYSTEM_ZSTD)
 endif()
 
 # tinyxml2
-include_directories("${DEPS_DIR}/tinyxml2")
+include_directories(SYSTEM "${DEPS_DIR}/tinyxml2")
 add_subdirectory("${DEPS_DIR}/tinyxml2")
 
 # RapidJSON. Use a system package, if preferred.
