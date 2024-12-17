@@ -32,6 +32,11 @@ Known limitations/issues:
     back to the main thread by calling sim.get_sensor_observations_async_finish() by default.
 """
 
+
+# Need to import quaternion library here despite it not being used or else importing
+# habitat_sim below will cause an invalid free() when audio is enabled in sim compilation
+import quaternion  # noqa: F401
+
 import habitat_sim
 
 

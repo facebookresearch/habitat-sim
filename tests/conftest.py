@@ -10,6 +10,10 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
 import pytest
 
+# Need to import quaternion library here despite it not being used or else importing
+# habitat_sim below will cause an invalid free() when audio is enabled in sim compilation
+import quaternion  # noqa: F401
+
 import habitat_sim
 
 _test_scene = osp.abspath(

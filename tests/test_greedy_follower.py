@@ -7,6 +7,10 @@ from os import path as osp
 
 import numpy as np
 import pytest
+
+# Need to import quaternion library here despite it not being used or else importing
+# habitat_sim below will cause an invalid free() when audio is enabled in sim compilation
+import quaternion  # noqa: F401
 import tqdm
 
 import habitat_sim
@@ -78,6 +82,7 @@ def test_greedy_follower(test_navmesh, move_filter_fn, action_noise, pbar):
 
     scene_graph = habitat_sim.SceneGraph()
     agent = habitat_sim.Agent(scene_graph.get_root_node().create_child())
+    print(f"move_filter_fn : {move_filter_fn} action noise : {action_noise}")
     agent.controls.move_filter_fn = getattr(pathfinder, move_filter_fn)
 
     agent.agent_config.action_space["turn_left"].actuation.amount = TURN_DEGREE

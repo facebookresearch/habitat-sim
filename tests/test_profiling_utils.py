@@ -12,6 +12,10 @@ from unittest.mock import patch
 
 import pytest
 
+# Need to import quaternion library here despite it not being used or else importing
+# habitat_sim below will cause an invalid free() when audio is enabled in sim compilation
+import quaternion  # noqa: F401
+
 from habitat_sim.utils import profiling_utils
 
 _ENV_VAR_NAME = "HABITAT_PROFILING"
