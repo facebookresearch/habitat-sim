@@ -120,7 +120,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   }  // ManagedFileBasedContainer::createObjectFromJSONString
 
   /**
-   * @brief Method to load a Managed Object's data from a file.  If the file
+   * @brief Method to load a Managed Object's data from a file. If the file
    * type is not supported by specialization of this method, this method
    * executes and an error is thrown.
    * @tparam type of document to load.
@@ -131,15 +131,19 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   template <typename U>
   ManagedFileIOPtr buildManagedObjectFromDoc(const std::string& filename,
                                              CORRADE_UNUSED const U& config) {
-    ESP_ERROR(Mn::Debug::Flag::NoSpace)
-        << "<" << this->objectType_
-        << "> : Failure loading attributes from document `" << filename
-        << "` of unknown type `" << typeid(U).name()
-        << "` so unable to build object.";
+    CORRADE_ASSERT(false,
+                   Cr::Utility::formatString(
+                       "<{}> : Failure loading attributes from document `{}` "
+                       "of unsupported file type `{}` so unable to build "
+                       "object. Make sure a specialization of "
+                       "ManagedFileBasedContainer::buildManagedObjectFromDoc() "
+                       "supporting this file type has been implemented.",
+                       this->objectType_, filename, typeid(U).name()),
+                   nullptr);
   }  // ManagedFileBasedContainer::buildManagedObjectFromDoc
 
   /**
-   * @brief Method to load a Managed Object's data from a file.  This is the
+   * @brief Method to load a Managed Object's data from a file. This is the
    * JSON specialization, using type inference.
    * @param filename name of file document to load from
    * @param config JSON document to read for data

@@ -8,6 +8,10 @@ import sqlite3
 from io import StringIO
 from unittest.mock import patch
 
+# Need to import quaternion library here despite it not being used or else importing
+# habitat_sim below will cause an invalid free() when audio is enabled in sim compilation
+import quaternion  # noqa: F401
+
 from habitat_sim.utils import compare_profiles
 
 

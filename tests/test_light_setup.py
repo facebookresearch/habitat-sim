@@ -2,6 +2,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# Need to import quaternion library here despite it not being used or else importing
+# habitat_sim below will cause an invalid free() when audio is enabled in sim compilation
+import quaternion  # noqa: F401
+
 import habitat_sim
 from habitat_sim.gfx import (
     DEFAULT_LIGHTING_KEY,

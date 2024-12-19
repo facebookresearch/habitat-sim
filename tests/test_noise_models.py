@@ -9,6 +9,10 @@ from os import path as osp
 import numpy as np
 import pytest
 
+# Need to import quaternion library here despite it not being used or else importing
+# habitat_sim below will cause an invalid free() when audio is enabled in sim compilation
+import quaternion  # noqa: F401
+
 import habitat_sim
 from habitat_sim.sensors.noise_models import redwood_depth_noise_model
 from habitat_sim.sensors.noise_models.redwood_depth_noise_model import (
