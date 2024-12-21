@@ -6,6 +6,8 @@
 
 #include "esp/geo/Geo.h"
 
+#include <Magnum/Math/Matrix4.h>
+
 namespace esp {
 namespace geo {
 
@@ -21,9 +23,12 @@ CoordinateFrame::CoordinateFrame(const quatf& rotation,
     : CoordinateFrame(rotation * ESP_UP, rotation * ESP_FRONT, origin) {}
 
 quatf CoordinateFrame::rotationWorldToFrame() const {
-  const quatf R_frameUp_worldUp = quatf::FromTwoVectors(ESP_UP, up_);
-  return quatf::FromTwoVectors(R_frameUp_worldUp * ESP_FRONT, front_) *
-         R_frameUp_worldUp;
+  auto front = (Mn::Vector3(front_)).normalized();
+  auto right = Mn::Math::cross(Mn::Vector3(up_), front).normalized();
+  auto realUp = Mn::Math::cross(front, right);
+  auto myMat = Mn::Matrix4::from({front, right, realUp}, Mn::Vector3());
+  return Magnum::EigenIntegration::cast<quatf>(
+      Mn::Quaternion::fromMatrix(myMat.rotation()));
 }
 
 quatf CoordinateFrame::rotationFrameToWorld() const {

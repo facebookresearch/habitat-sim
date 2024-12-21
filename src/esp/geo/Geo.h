@@ -46,11 +46,11 @@ enum class ColorSpace {
 };
 
 //! global/world up direction
-static const vec3f ESP_UP = vec3f::UnitY();
+static const vec3f ESP_UP = vec3f::UnitZ();
 //! global/world gravity (down) direction
 static const vec3f ESP_GRAVITY = -ESP_UP;
 //! global/world front direction
-static const vec3f ESP_FRONT = -vec3f::UnitZ();
+static const vec3f ESP_FRONT = vec3f::UnitX();
 //! global/world back direction
 static const vec3f ESP_BACK = -ESP_FRONT;
 

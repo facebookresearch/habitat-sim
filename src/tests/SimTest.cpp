@@ -454,7 +454,7 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
   simulator->recomputeNavMesh(*simulator->getPathFinder().get(),
                               navMeshSettings);
 
-  esp::vec3f randomNavPoint =
+  Magnum::Vector3 randomNavPoint =
       simulator->getPathFinder()->getRandomNavigablePoint();
   while (simulator->getPathFinder()->distanceToClosestObstacle(randomNavPoint) <
              1.0 ||
@@ -490,10 +490,10 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
   int tmplateID = objectAttribsMgr->registerObject(objectTemplate);
 
   obj = rigidObjMgr->addObjectByHandle(objs[0]);
-  obj->setTranslation(Magnum::Vector3{randomNavPoint});
+  obj->setTranslation(randomNavPoint);
   obj->setTranslation(obj->getTranslation() + Magnum::Vector3{0, 0.5, 0});
   obj->setMotionType(esp::physics::MotionType::STATIC);
-  esp::vec3f offset(0.75, 0, 0);
+  Magnum::Vector3 offset(0.75, 0, 0);
   CORRADE_VERIFY(simulator->getPathFinder()->isNavigable(randomNavPoint, 0.1));
   CORRADE_VERIFY(
       simulator->getPathFinder()->isNavigable(randomNavPoint + offset, 0.2));

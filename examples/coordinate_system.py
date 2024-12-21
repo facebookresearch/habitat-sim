@@ -55,7 +55,11 @@ def display_sensor_image(camera_sensor):
     rgb_image.show()
 
 
-if __name__ == "__main__":
+def main_coordinate_system_visual_examples():
+    """
+    Initializes a simulator and runs a set of incremental visual examples to demonstrate the default behavior of the system and cameras.
+    """
+
     # setup the settings configuration
     sim_settings: Dict[str, Any] = default_sim_settings
     # make camera coincident with agent scenenode
@@ -228,9 +232,7 @@ if __name__ == "__main__":
         axis_template.render_asset_handle = "data/test_assets/objects/axis.glb"
         # don't let the CoM be computed from centroid of the shape
         axis_template.compute_COM_from_shape = False
-        axis_template_id = rotm.register_template(
-            axis_template, specified_handle="axis"
-        )
+        rotm.register_template(axis_template, specified_handle="axis")
         rom = sim.get_rigid_object_manager()
         axis_ro = rom.add_object_by_template_handle("axis")
         print(
@@ -261,7 +263,7 @@ if __name__ == "__main__":
         display_sensor_image(camera_sensor)
 
         # add a spot robot
-        spot_urdf = aom.add_articulated_object_from_urdf(
+        aom.add_articulated_object_from_urdf(
             "data/robots/hab_spot_arm/urdf/hab_spot_arm.urdf",
             fixed_base=True,
         )
@@ -287,3 +289,79 @@ if __name__ == "__main__":
             mn.Vector3(0, 0, -1), mn.Vector3(0, 1, -1), mn.Color4.magenta()
         )
         display_sensor_image(camera_sensor)
+    # exit initial sim instancing
+
+
+def main_fremont_robotics():
+    """
+    Load a Fremont scene configured for robotics coordinate system testing.
+    """
+    # setup the settings configuration
+    sim_settings: Dict[str, Any] = default_sim_settings
+    # make camera coincident with agent scenenode
+    sim_settings["sensor_height"] = 0
+    sim_settings[
+        "scene_dataset_config_file"
+    ] = "data/Fremont-Knuckles/fremont_knuckles.scene_dataset_config.json"
+    # NOTE: This loads the scan.stage_config.json
+    # NOTE: This file is modified to re-orient into robotics coordinate system.
+    sim_settings["scene"] = "scan"
+
+    cfg = make_cfg(sim_settings)
+
+    with habitat_sim.Simulator(cfg) as sim:
+        # set gravity to -Z direction
+        sim.set_gravity(mn.Vector3(0, 0, -9.8))
+        sim.navmesh_visualization = True
+
+        # agent local transform is identity
+        camera_agent = sim.get_agent(0)
+        # set the default agent transform to identity (it gets randomized when added upon initialization if there is a navmesh)
+        camera_agent.scene_node.transformation = mn.Matrix4()
+        print(f"Agent transform: {camera_agent.scene_node.transformation}")
+        # camera local transform is identity
+        camera_sensor = sim._Simulator__sensors[0]["color_sensor"]
+        print(f"Camera transform: {camera_sensor._sensor_object.node.transformation}")
+        # camera absolute transform is identity
+        print(
+            f"Camera absolute transform: {camera_sensor._sensor_object.node.absolute_transformation()}"
+        )
+
+        # add a spot robot
+        aom = sim.get_articulated_object_manager()
+        spot = aom.add_articulated_object_from_urdf(
+            "data/robots/hab_spot_arm/urdf/hab_spot_arm_no_rot.urdf",
+            fixed_base=True,
+        )
+        spot.translation = sim.pathfinder.snap_point(spot.translation) + mn.Vector3(
+            0, 0, 0.8
+        )
+
+        render_dist = 4
+        for diagonal in [
+            mn.Vector3(2, 2, 2),
+            mn.Vector3(-2, 2, 2),
+            mn.Vector3(-2, -2, 2),
+            mn.Vector3(2, -2, 2),
+        ]:
+            diagonal = diagonal.normalized() * render_dist
+            camera_sensor._sensor_object.node.transformation = mn.Matrix4.look_at(
+                eye=diagonal,  # from along the diagonal
+                target=mn.Vector3(),  # to the origin
+                up=mn.Vector3(0, 0, 1),  # up is robotics in +Z
+            )
+
+            draw_axes(sim)
+            display_sensor_image(camera_sensor)
+
+        stage_attributes = sim.get_stage_initialization_template()
+        print(stage_attributes)
+        # breakpoint()
+        pass
+
+
+if __name__ == "__main__":
+    # test the conventions and produce images
+    # main_coordinate_system_visual_examples()
+
+    main_fremont_robotics()

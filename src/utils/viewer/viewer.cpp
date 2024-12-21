@@ -2239,9 +2239,8 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::Nine:
       if (simulator_->getPathFinder()->isLoaded()) {
-        const esp::vec3f position =
-            simulator_->getPathFinder()->getRandomNavigablePoint();
-        agentBodyNode_->setTranslation(Mn::Vector3(position));
+        auto position = simulator_->getPathFinder()->getRandomNavigablePoint();
+        agentBodyNode_->setTranslation(position);
       }
       break;
     case KeyEvent::Key::LeftBracket:
