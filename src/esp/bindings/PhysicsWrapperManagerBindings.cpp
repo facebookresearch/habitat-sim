@@ -8,7 +8,6 @@
 #include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
 #include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/PhysicsObjectBaseManager.h"
-#include "esp/physics/objectManagers/RigidBaseManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/physics/objectWrappers/ManagedRigidObject.h"
 
@@ -21,7 +20,6 @@ using PhysWraps::ManagedBulletArticulatedObject;
 using PhysWraps::ManagedBulletRigidObject;
 using PhysWraps::ManagedRigidObject;
 using PhysWraps::PhysicsObjectBaseManager;
-using PhysWraps::RigidBaseManager;
 using PhysWraps::RigidObjectManager;
 
 namespace esp {
@@ -189,37 +187,19 @@ void declareBaseWrapperManager(py::module& m,
            "search_str"_a = "", "contains"_a = true);
 }  // declareBaseWrapperManager
 
-template <typename T>
-void declareRigidBaseWrapperManager(py::module& m,
-                                    CORRADE_UNUSED const std::string& objType,
-                                    const std::string& classStrPrefix) {
-  using MgrClass = RigidBaseManager<T>;
-  std::string pyclass_name =
-      classStrPrefix + std::string("_RigidBaseWrapperManager");
-
-  py::class_<MgrClass, PhysicsObjectBaseManager<T>, std::shared_ptr<MgrClass>>(
-      m, pyclass_name.c_str());
-
-}  //
-
 void initPhysicsWrapperManagerBindings(pybind11::module& m) {
 #ifdef ESP_BUILD_WITH_BULLET
   declareBaseWrapperManager<ManagedRigidObject, ManagedBulletRigidObject>(
       m, "BulletRigidObject", "BulletRigidObject");
-
-  declareRigidBaseWrapperManager<ManagedRigidObject>(m, "BulletRigidObject",
-                                                     "BulletRigidObject");
 
 #else
   // if dynamics library not being used, just use base rigid object
   declareBaseWrapperManager<ManagedRigidObject, ManagedRigidObject>(
       m, "RigidObject", "RigidObject");
 
-  declareRigidBaseWrapperManager<ManagedRigidObject>(m, "RigidObject",
-                                                     "RigidObject");
 #endif
   // RigidObject wrapper manager
-  py::class_<RigidObjectManager, RigidBaseManager<ManagedRigidObject>,
+  py::class_<RigidObjectManager, PhysicsObjectBaseManager<ManagedRigidObject>,
              std::shared_ptr<RigidObjectManager>>(m, "RigidObjectManager")
       .def(
           "add_object_by_template_id",

@@ -393,7 +393,6 @@ set(
   physics/objectManagers/ArticulatedObjectManager.cpp
   physics/objectManagers/ArticulatedObjectManager.h
   physics/objectManagers/PhysicsObjectBaseManager.h
-  physics/objectManagers/RigidBaseManager.h
   physics/objectManagers/RigidObjectManager.cpp
   physics/objectManagers/RigidObjectManager.h
   physics/objectWrappers/ManagedArticulatedObject.h

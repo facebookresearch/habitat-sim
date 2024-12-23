@@ -7,8 +7,8 @@ namespace esp {
 namespace physics {
 
 RigidObjectManager::RigidObjectManager()
-    : esp::physics::RigidBaseManager<ManagedRigidObject>::RigidBaseManager(
-          "RigidObject") {
+    : esp::physics::PhysicsObjectBaseManager<
+          ManagedRigidObject>::PhysicsObjectBaseManager("RigidObject") {
   // build this manager's copy constructor map, keyed by the type name of the
   // wrappers it will manage
   this->copyConstructorMap_["ManagedRigidObject"] =
