@@ -35,6 +35,10 @@ class SensorWrapperBaseManager
           T,
           core::managedContainers::ManagedObjectAccess::Copy> {
  public:
+  static_assert(std::is_base_of<esp::sensor::ManagedSensorBase, T>::value,
+                "AbstractManagedSensor :: Managed sensor object type must be "
+                "derived from esp::sensor::Sensor");
+
   typedef std::shared_ptr<T> ObjWrapperPtr;
   explicit SensorWrapperBaseManager(const std::string& SensorType)
       : core::managedContainers::ManagedContainer<
