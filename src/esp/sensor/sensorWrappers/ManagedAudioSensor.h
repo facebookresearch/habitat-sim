@@ -8,11 +8,9 @@
 #include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Macros.h>
 
+#include "ManagedSensorTemplates.h"
 #include "esp/sensor/AudioSensor.h"
-#include "esp/sensor/sensorWrappers/ManagedSensorTemplates.h"
 
-namespace Cr = Corrade;
-namespace Mn = Magnum;
 namespace esp {
 namespace sensor {
 

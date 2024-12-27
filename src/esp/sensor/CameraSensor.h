@@ -21,7 +21,7 @@ struct CameraSensorSpec : public VisualSensorSpec {
   CameraSensorSpec();
   void sanityCheck() const override;
   bool operator==(const CameraSensorSpec& a) const;
-  Magnum::Matrix4 projectionMatrix() const;
+  Mn::Matrix4 projectionMatrix() const;
   ESP_SMART_POINTERS(CameraSensorSpec)
 };
 
@@ -50,8 +50,7 @@ class CameraSensor : public VisualSensor {
    * perspective projection model.
    * See @ref gfx::calculateDepthUnprojection
    */
-  Corrade::Containers::Optional<Magnum::Vector2> depthUnprojection()
-      const override;
+  Cr::Containers::Optional<Mn::Vector2> depthUnprojection() const override;
 
   /**
    * @brief Draw an observation to the frame buffer using simulator's renderer
@@ -66,8 +65,7 @@ class CameraSensor : public VisualSensor {
    * @param factor Modification amount.
    */
   void modifyZoom(float factor) {
-    zoomMatrix_ =
-        Magnum::Matrix4::scaling({factor, factor, 1.0f}) * zoomMatrix_;
+    zoomMatrix_ = Mn::Matrix4::scaling({factor, factor, 1.0f}) * zoomMatrix_;
     recomputeProjectionMatrix();
   }
 
@@ -76,7 +74,7 @@ class CameraSensor : public VisualSensor {
    * values.
    */
   void resetZoom() {
-    zoomMatrix_ = Magnum::Matrix4(Magnum::Math::IdentityInit);
+    zoomMatrix_ = Mn::Matrix4(Mn::Math::IdentityInit);
     recomputeProjectionMatrix();
   }
 
@@ -197,17 +195,17 @@ class CameraSensor : public VisualSensor {
    * @brief This camera's projection matrix. Should be recomputed every time
    * size changes.
    */
-  Magnum::Matrix4 projectionMatrix_;
+  Mn::Matrix4 projectionMatrix_;
 
   /**
    * @brief A base projection matrix based on camera's type and display size.
    */
-  Magnum::Matrix4 baseProjMatrix_;
+  Mn::Matrix4 baseProjMatrix_;
 
   /**
    * @brief A matrix to determine the zoom for the projection.
    */
-  Magnum::Matrix4 zoomMatrix_;
+  Mn::Matrix4 zoomMatrix_;
 
   /** @brief size of near plane
    */

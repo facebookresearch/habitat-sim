@@ -78,7 +78,7 @@ void AudioSensor::reset() {
   impulseResponse_.clear();
 }
 
-void AudioSensor::setAudioSourceTransform(const Magnum::Vector3& sourcePos) {
+void AudioSensor::setAudioSourceTransform(const Mn::Vector3& sourcePos) {
   ESP_DEBUG() << logHeader_
               << "Setting the audio source position : " << sourcePos << "]";
   lastSourcePos_ = sourcePos;
@@ -86,9 +86,8 @@ void AudioSensor::setAudioSourceTransform(const Magnum::Vector3& sourcePos) {
   newSource_ = true;
 }
 
-void AudioSensor::setAudioListenerTransform(
-    const Magnum::Vector3& agentPos,
-    const Magnum::Vector4& agentRotQuat) {
+void AudioSensor::setAudioListenerTransform(const Mn::Vector3& agentPos,
+                                            const Mn::Vector4& agentRotQuat) {
   ESP_DEBUG() << logHeader_ << "Setting the agent transform : position ["
               << agentPos << "], rotQuat[" << agentRotQuat << "]";
 
