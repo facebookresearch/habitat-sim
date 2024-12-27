@@ -2,11 +2,11 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_SENSOR_SENSORBASEMANAGER_H_
-#define ESP_SENSOR_SENSORBASEMANAGER_H_
+#ifndef ESP_SENSOR_SENSORWRAPPERBASEMANAGER_H_
+#define ESP_SENSOR_SENSORWRAPPERBASEMANAGER_H_
 
 /** @file
- * @brief Class Template @ref esp::sensor::SensorBaseManager
+ * @brief Class Template @ref esp::sensor::SensorWrapperBaseManager
  */
 
 #include "esp/core/managedContainers/ManagedContainer.h"
@@ -30,18 +30,18 @@ namespace sensor {
  * esp::sensor::AbstractManagedSensor
  */
 template <class T>
-class SensorBaseManager
+class SensorWrapperBaseManager
     : public esp::core::managedContainers::ManagedContainer<
           T,
           core::managedContainers::ManagedObjectAccess::Copy> {
  public:
   typedef std::shared_ptr<T> ObjWrapperPtr;
-  explicit SensorBaseManager(const std::string& SensorType)
+  explicit SensorWrapperBaseManager(const std::string& SensorType)
       : core::managedContainers::ManagedContainer<
             T,
             core::managedContainers::ManagedObjectAccess::Copy>::
             ManagedContainer(SensorType) {}
-  ~SensorBaseManager() override = default;
+  ~SensorWrapperBaseManager() override = default;
 
   /**
    * @brief Creates an empty @ref esp::sensor::AbstractManagedSensor of
@@ -146,7 +146,8 @@ class SensorBaseManager
    * createRigidObjectWrapper() keyed by string names of classes being
    * instanced
    */
-  typedef std::map<std::string, ObjWrapperPtr (SensorBaseManager<T>::*)()>
+  typedef std::map<std::string,
+                   ObjWrapperPtr (SensorWrapperBaseManager<T>::*)()>
       Map_Of_ManagedObjTypeCtors;
 
   /** @brief Map of function pointers to instantiate a @ref
@@ -158,10 +159,10 @@ class SensorBaseManager
   Map_Of_ManagedObjTypeCtors managedSensorTypeConstructorMap_;
 
  public:
-  ESP_SMART_POINTERS(SensorBaseManager<T>)
-};  // class SensorBaseManager
+  ESP_SMART_POINTERS(SensorWrapperBaseManager<T>)
+};  // class SensorWrapperBaseManager
 
 }  // namespace sensor
 }  // namespace esp
 
-#endif  // ESP_SENSOR_SENSORBASEMANAGER_H_
+#endif  // ESP_SENSOR_SENSORWRAPPERBASEMANAGER_H_

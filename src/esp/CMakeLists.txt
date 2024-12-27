@@ -468,9 +468,12 @@ set(
   sensor/EquirectangularSensor.h
   sensor/FisheyeSensor.cpp
   sensor/FisheyeSensor.h
-  sensor/sensorManagers/SensorManager.cpp
-  sensor/sensorManagers/SensorManager.h
+  sensor/sensorManagers/SensorWrapperManager.cpp
+  sensor/sensorManagers/SensorWrapperManager.h
+  sensor/sensorManagers/SensorWrapperBaseManager.h
+  sensor/sensorWrappers/ManagedAudioSensor.h
   sensor/sensorWrappers/ManagedSensorBase.h
+  sensor/sensorWrappers/ManagedSensorTemplates.h
   sensor/Sensor.cpp
   sensor/Sensor.h
   sensor/SensorFactory.cpp
