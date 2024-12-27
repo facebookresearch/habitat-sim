@@ -2,19 +2,19 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "SensorManager.h"
+#include "SensorWrapperManager.h"
 
 namespace esp {
 namespace sensor {
 
-SensorManager::SensorManager()
-    : SensorBaseManager<esp::sensor::ManagedSensorBase>::SensorBaseManager(
-          "Sensor") {
+SensorWrapperManager::SensorWrapperManager()
+    : SensorWrapperBaseManager<
+          esp::sensor::ManagedSensorBase>::SensorWrapperBaseManager("Sensor") {
   this->copyConstructorMap_["ManagedAudioSensor"] =
-      &SensorManager::createObjCopyCtorMapEntry<
+      &SensorWrapperManager::createObjCopyCtorMapEntry<
           esp::sensor::ManagedAudioSensor>;
 
-}  // SensorManager ctor
+}  // SensorWrapperManager ctor
 
 }  // namespace sensor
 }  // namespace esp
