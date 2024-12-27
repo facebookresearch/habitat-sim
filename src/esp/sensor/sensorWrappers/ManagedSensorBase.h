@@ -10,7 +10,6 @@
 
 #include "esp/core/managedContainers/AbstractManagedObject.h"
 #include "esp/sensor/Sensor.h"
-#include "esp/sensor/VisualSensor.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
