@@ -11,8 +11,6 @@
 #include "ManagedSensorBase.h"
 #include "esp/sensor/Sensor.h"
 
-namespace Cr = Corrade;
-namespace Mn = Magnum;
 namespace esp {
 namespace sensor {
 

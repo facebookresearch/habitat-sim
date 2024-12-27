@@ -8,9 +8,6 @@
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/FormatStl.h>
 
-namespace Mn = Magnum;
-namespace Cr = Corrade;
-
 namespace esp {
 namespace sensor {
 
@@ -48,7 +45,7 @@ void specSanityCheck(FisheyeSensorSpec* spec) {
   actualSpec->sanityCheck();
 }
 
-Magnum::Vector2 computePrincipalPointOffset(const FisheyeSensorSpec& spec) {
+Mn::Vector2 computePrincipalPointOffset(const FisheyeSensorSpec& spec) {
   if (bool(spec.principalPointOffset)) {
     return *spec.principalPointOffset;
   }
@@ -86,7 +83,7 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
 
   switch (fisheyeSensorSpec_->fisheyeModelType) {
     case FisheyeSensorModelType::DoubleSphere: {
-      Magnum::Resource<gfx::CubeMapShaderBase, gfx::DoubleSphereCameraShader>
+      Mn::Resource<gfx::CubeMapShaderBase, gfx::DoubleSphereCameraShader>
           shader = getShader<gfx::DoubleSphereCameraShader>();
       auto& actualSpec =
           static_cast<FisheyeSensorDoubleSphereSpec&>(*fisheyeSensorSpec_);

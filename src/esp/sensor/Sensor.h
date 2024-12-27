@@ -6,12 +6,15 @@
 #define ESP_SENSOR_SENSOR_H_
 
 #include <Magnum/Math/Vector3.h>
+#include <Magnum/Math/Vector4.h>
 #include <Magnum/SceneGraph/Object.h>
 #include "esp/core/Buffer.h"
 #include "esp/core/Esp.h"
 
 #include "esp/sensor/configure.h"
 
+namespace Mn = Magnum;
+namespace Cr = Corrade;
 namespace esp {
 namespace scene {
 class SceneNode;
@@ -58,8 +61,8 @@ struct SensorSpec {
   std::string uuid = "";
   SensorType sensorType = SensorType::Unspecified;
   SensorSubType sensorSubType = SensorSubType::Unspecified;
-  Magnum::Vector3 position = {0, 1.5, 0};
-  Magnum::Vector3 orientation = {0, 0, 0};
+  Mn::Vector3 position = {0, 1.5, 0};
+  Mn::Vector3 orientation = {0, 0, 0};
   std::string noiseModel = "None";
   SensorSpec() = default;
   virtual ~SensorSpec() = default;
@@ -86,7 +89,7 @@ struct ObservationSpace {
 };
 
 // Represents a sensor that provides data from the environment
-class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
+class Sensor : public Mn::SceneGraph::AbstractFeature3D {
  public:
   explicit Sensor(scene::SceneNode& node, SensorSpec::ptr spec);
   ~Sensor() override;
@@ -173,7 +176,7 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
 
 // Represents a set of sensors, with each sensor being identified through a
 // unique id
-class SensorSuite : public Magnum::SceneGraph::AbstractFeature3D {
+class SensorSuite : public Mn::SceneGraph::AbstractFeature3D {
  public:
   explicit SensorSuite(scene::SceneNode& node);
 
