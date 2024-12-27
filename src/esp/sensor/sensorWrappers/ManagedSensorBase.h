@@ -69,6 +69,11 @@ class ManagedSensorBase
   }  // getID()
 
  protected:
+  /**
+   * @brief Internal use only. Set weak ref as void pointer. All access will
+   * perform appropriate casting.
+   */
+
   void setObjectRefInternal(const std::shared_ptr<void>& objRef) {
     weakObjRef_ = objRef;
   }
