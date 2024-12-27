@@ -474,6 +474,7 @@ set(
   sensor/sensorWrappers/ManagedAudioSensor.h
   sensor/sensorWrappers/ManagedSensorBase.h
   sensor/sensorWrappers/ManagedSensorTemplates.h
+  sensor/sensorWrappers/ManagedVisualSensorBase.h
   sensor/Sensor.cpp
   sensor/Sensor.h
   sensor/SensorFactory.cpp
