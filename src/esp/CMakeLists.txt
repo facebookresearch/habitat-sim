@@ -472,6 +472,10 @@ set(
   sensor/sensorManagers/SensorWrapperManager.h
   sensor/sensorManagers/SensorWrapperBaseManager.h
   sensor/sensorWrappers/ManagedAudioSensor.h
+  sensor/sensorWrappers/ManagedCameraSensor.h
+  sensor/sensorWrappers/ManagedCubeMapSensorBase.h
+  sensor/sensorWrappers/ManagedEquirectangularSensor.h
+  sensor/sensorWrappers/ManagedFisheyeSensor.h
   sensor/sensorWrappers/ManagedSensorBase.h
   sensor/sensorWrappers/ManagedSensorTemplates.h
   sensor/sensorWrappers/ManagedVisualSensorBase.h

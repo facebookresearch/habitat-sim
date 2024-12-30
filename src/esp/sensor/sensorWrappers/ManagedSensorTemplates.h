@@ -25,6 +25,9 @@ class AbstractManagedSensor : public ManagedSensorBase {
                 "AbstractManagedSensor :: Managed sensor object type must be "
                 "derived from esp::sensor::Sensor");
 
+  /**
+   * @brief Alias for weak pointer to the @ref esp::sensor::Sensor this construct wraps.
+   */
   typedef std::weak_ptr<T> WeakObjRef;
 
   explicit AbstractManagedSensor(const std::string& classKey)
