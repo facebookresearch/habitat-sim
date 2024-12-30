@@ -5,9 +5,6 @@
 #ifndef ESP_SENSOR_MANAGEDAUDIOSENSOR_H_
 #define ESP_SENSOR_MANAGEDAUDIOSENSOR_H_
 
-#include <Corrade/Utility/FormatStl.h>
-#include <Corrade/Utility/Macros.h>
-
 #include "ManagedSensorTemplates.h"
 #include "esp/sensor/AudioSensor.h"
 
