@@ -15,7 +15,7 @@ namespace esp {
 namespace sensor {
 
 /**
- * @brief Base class template for wrapper for visual sensor objects of all kinds
+ * @brief Class template for wrapper for visual sensor objects of all kinds
  * that extends AbstractManagedSensorAccess
  */
 
@@ -51,10 +51,10 @@ class AbstractManagedVisualSensor
    * separated info ideal for saving to csv
    */
   std::string getSensorObjInfoInternal(
-      CORRADE_UNUSED std::shared_ptr<VisualSensor>& sp) const override {
+      CORRADE_UNUSED std::shared_ptr<T>& sp) const override {
     // TODO provide info stream for sensors
-    std::string res = Cr::Utility::formatString(
-        "{},{}", "VisualSensor", getVisualSensorObjInfoInternal());
+    std::string res =
+        Cr::Utility::formatString("{},", getVisualSensorObjInfoInternal());
 
     return res;
   }
