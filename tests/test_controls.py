@@ -65,27 +65,31 @@ def _check_state_expected(s1, s2, expected: ExpectedDelta):
 
 
 default_body_control_testdata = [
-    ("move_backward", ExpectedDelta(delta_pos=0.25 * habitat_sim.geo.BACK)),
-    ("move_forward", ExpectedDelta(delta_pos=0.25 * habitat_sim.geo.FRONT)),
-    ("move_right", ExpectedDelta(delta_pos=0.25 * habitat_sim.geo.RIGHT)),
-    ("move_left", ExpectedDelta(delta_pos=0.25 * habitat_sim.geo.LEFT)),
+    ("move_backward", ExpectedDelta(delta_pos=0.25 * np.array(habitat_sim.geo.BACK))),
+    ("move_forward", ExpectedDelta(delta_pos=0.25 * np.array(habitat_sim.geo.FRONT))),
+    ("move_right", ExpectedDelta(delta_pos=0.25 * np.array(habitat_sim.geo.RIGHT))),
+    ("move_left", ExpectedDelta(delta_pos=0.25 * np.array(habitat_sim.geo.LEFT))),
     (
         "turn_right",
         ExpectedDelta(
-            delta_rot=quat_from_angle_axis(np.deg2rad(10.0), habitat_sim.geo.GRAVITY)
+            delta_rot=quat_from_angle_axis(
+                np.deg2rad(10.0), np.array(habitat_sim.geo.GRAVITY)
+            )
         ),
     ),
     (
         "turn_left",
         ExpectedDelta(
-            delta_rot=quat_from_angle_axis(np.deg2rad(10.0), habitat_sim.geo.UP)
+            delta_rot=quat_from_angle_axis(
+                np.deg2rad(10.0), np.array(habitat_sim.geo.UP)
+            )
         ),
     ),
 ]
 
 
 @pytest.mark.parametrize("action,expected", default_body_control_testdata)
-def test_default_body_contorls(action, expected):
+def test_default_body_controls(action, expected):
     scene_graph = habitat_sim.SceneGraph()
     agent_config = habitat_sim.AgentConfiguration()
     agent_config.action_space = dict(
@@ -121,42 +125,54 @@ def test_default_body_contorls(action, expected):
 
 
 default_sensor_control_testdata = [
-    ("move_up", ExpectedDelta(delta_pos=0.25 * habitat_sim.geo.UP)),
-    ("move_down", ExpectedDelta(delta_pos=0.25 * habitat_sim.geo.GRAVITY)),
+    ("move_up", ExpectedDelta(delta_pos=0.25 * np.array(habitat_sim.geo.UP))),
+    ("move_down", ExpectedDelta(delta_pos=0.25 * np.array(habitat_sim.geo.GRAVITY))),
     (
         "look_right",
         ExpectedDelta(
-            delta_rot=quat_from_angle_axis(np.deg2rad(-10.0), habitat_sim.geo.UP)
+            delta_rot=quat_from_angle_axis(
+                np.deg2rad(-10.0), np.array(habitat_sim.geo.UP)
+            )
         ),
     ),
     (
         "look_left",
         ExpectedDelta(
-            delta_rot=quat_from_angle_axis(np.deg2rad(10.0), habitat_sim.geo.UP)
+            delta_rot=quat_from_angle_axis(
+                np.deg2rad(10.0), np.array(habitat_sim.geo.UP)
+            )
         ),
     ),
     (
         "look_up",
         ExpectedDelta(
-            delta_rot=quat_from_angle_axis(np.deg2rad(10.0), habitat_sim.geo.RIGHT)
+            delta_rot=quat_from_angle_axis(
+                np.deg2rad(10.0), np.array(habitat_sim.geo.RIGHT)
+            )
         ),
     ),
     (
         "look_down",
         ExpectedDelta(
-            delta_rot=quat_from_angle_axis(np.deg2rad(-10.0), habitat_sim.geo.RIGHT)
+            delta_rot=quat_from_angle_axis(
+                np.deg2rad(-10.0), np.array(habitat_sim.geo.RIGHT)
+            )
         ),
     ),
     (
         "rotate_sensor_clockwise",
         ExpectedDelta(
-            delta_rot=quat_from_angle_axis(np.deg2rad(-10.0), habitat_sim.geo.FRONT)
+            delta_rot=quat_from_angle_axis(
+                np.deg2rad(-10.0), np.array(habitat_sim.geo.FRONT)
+            )
         ),
     ),
     (
         "rotate_sensor_anti_clockwise",
         ExpectedDelta(
-            delta_rot=quat_from_angle_axis(np.deg2rad(10.0), habitat_sim.geo.FRONT)
+            delta_rot=quat_from_angle_axis(
+                np.deg2rad(10.0), np.array(habitat_sim.geo.FRONT)
+            )
         ),
     ),
 ]
