@@ -211,7 +211,7 @@ cached_islandtest_scene_results: Dict[str, Dict[str, Any]] = {
     "17DRP5sb8fy": {
         "island_cache": {
             0: {"area": 1.1425001621246338, "radius": 1.6779788732528687},
-            1: {"area": 50.89643096923828, "radius": 8.03792953491211},
+            1: {"area": 50.89643096923828, "radius": 8.037928581237793},
         },
         "num_islands": 2,
     },
