@@ -129,7 +129,9 @@ def main():
             np.array(scene_node.absolute_transformation().rotation_scaling())
             @ habitat_sim.geo.FRONT
         )
-        rotation = quat_from_angle_axis(np.deg2rad(strafe_angle), habitat_sim.geo.UP)
+        rotation = quat_from_angle_axis(
+            np.deg2rad(strafe_angle), np.array(habitat_sim.geo.UP)
+        )
         move_ax = quat_rotate_vector(rotation, forward_ax)
 
         scene_node.translate_local(move_ax * forward_amount)
