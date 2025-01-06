@@ -5,14 +5,10 @@
 
 #include "esp/nav/GreedyFollower.h"
 
-#include <Magnum/EigenIntegration/GeometryIntegration.h>
-#include <Magnum/EigenIntegration/Integration.h>
-
 #include "esp/core/Esp.h"
 #include "esp/geo/Geo.h"
 
 namespace Mn = Magnum;
-using Mn::EigenIntegration::cast;
 
 namespace esp {
 namespace nav {
@@ -22,9 +18,9 @@ GreedyGeodesicFollowerImpl::GreedyGeodesicFollowerImpl(
     MoveFn& moveForward,
     MoveFn& turnLeft,
     MoveFn& turnRight,
-    double goalDist,
-    double forwardAmount,
-    double turnAmount,
+    float goalDist,
+    float forwardAmount,
+    float turnAmount,
     bool fixThrashing,
     int thrashingThreshold)
     : pathfinder_{pathfinder},
@@ -35,7 +31,7 @@ GreedyGeodesicFollowerImpl::GreedyGeodesicFollowerImpl(
       goalDist_{goalDist},
       turnAmount_{turnAmount},
       fixThrashing_{fixThrashing},
-      thrashingThreshold_{thrashingThreshold} {};
+      thrashingThreshold_{thrashingThreshold} {}
 
 float GreedyGeodesicFollowerImpl::geoDist(const Mn::Vector3& start,
                                           const Mn::Vector3& end) {
@@ -56,7 +52,7 @@ GreedyGeodesicFollowerImpl::TryStepResult GreedyGeodesicFollowerImpl::tryStep(
 
   const float geoDistAfter = geoDist(newPose, end);
   const float distToObsAfter = pathfinder_->distanceToClosestObstacle(
-      newPose, 1.1 * closeToObsThreshold_);
+      newPose, 1.1f * closeToObsThreshold_);
 
   return {geoDistAfter, distToObsAfter, didCollide};
 }
@@ -106,7 +102,7 @@ GreedyGeodesicFollowerImpl::nextBestPrimAlong(const core::RigidState& state,
 
   // Plan over all primitives of the form [LEFT] * n + [FORWARD]
   // or [RIGHT] * n + [FORWARD]
-  for (float angle = 0; angle < M_PI; angle += turnAmount_) {
+  for (float angle = 0; angle < Mn::Constants::pi(); angle += turnAmount_) {
     {
       const float reward = computeReward(leftDummyNode_, path, leftPrim.size());
       if (reward > bestReward) {

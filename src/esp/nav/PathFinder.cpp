@@ -50,7 +50,7 @@ namespace esp {
 namespace nav {
 
 bool operator==(const NavMeshSettings& a, const NavMeshSettings& b) {
-#define CLOSE(name) (std::abs(a.name - b.name) < 1e-5)
+#define CLOSE(name) (std::abs(a.name - b.name) < 1e-5f)
 #define EQ(name) (a.name == b.name)
 
   return CLOSE(cellSize) && CLOSE(cellHeight) && CLOSE(agentHeight) &&
@@ -110,7 +110,7 @@ struct MultiGoalShortestPath::Impl {
 };
 
 MultiGoalShortestPath::MultiGoalShortestPath()
-    : pimpl_{spimpl::make_unique_impl<Impl>()} {};
+    : pimpl_{spimpl::make_unique_impl<Impl>()} {}
 
 void MultiGoalShortestPath::setRequestedEnds(
     const std::vector<Mn::Vector3>& newEnds) {
@@ -521,11 +521,11 @@ struct PathFinder::Impl {
   float islandRadius(int islandIndex) const;
 
   float distanceToClosestObstacle(const Mn::Vector3& pt,
-                                  float maxSearchRadius = 2.0) const;
+                                  float maxSearchRadius = 2.0f) const;
   HitRecord closestObstacleSurfacePoint(const Mn::Vector3& pt,
-                                        float maxSearchRadius = 2.0) const;
+                                        float maxSearchRadius = 2.0f) const;
 
-  bool isNavigable(const Mn::Vector3& pt, float maxYDelta = 0.5) const;
+  bool isNavigable(const Mn::Vector3& pt, float maxYDelta = 0.5f) const;
 
   std::pair<Mn::Vector3, Mn::Vector3> bounds() const { return bounds_; };
 
@@ -1010,7 +1010,7 @@ std::vector<Triangle> getPolygonTriangles(const dtPoly* poly,
   for (int j = 0; j < pd->triCount; ++j) {
     const unsigned char* t =
         &tile->detailTris[static_cast<size_t>((pd->triBase + j)) * 4];
-    const float* v[3];
+    // const float* v[3];
     for (int k = 0; k < 3; ++k) {
       if (t[k] < poly->vertCount)
         triangles[j].v[k] = Mn::Vector3::from(
@@ -1035,7 +1035,7 @@ float polyArea(const dtPoly* poly, const dtMeshTile* tile) {
   for (auto& tri : triangles) {
     const Mn::Vector3 w1 = tri.v[1] - tri.v[0];
     const Mn::Vector3 w2 = tri.v[2] - tri.v[1];
-    area += 0.5 * Mn::Math::cross(w1, w2).length();
+    area += 0.5f * Mn::Math::cross(w1, w2).length();
   }
 
   return area;
@@ -1072,7 +1072,7 @@ void impl::IslandSystem::removeZeroAreaPolys(dtNavMesh* navMesh) {
       CORRADE_INTERNAL_ASSERT(tmp != nullptr);
 
       float polygonArea = polyArea(poly, tile);
-      if (polygonArea < 1e-5) {
+      if (polygonArea < 1e-5f) {
         navMesh->setPolyFlags(polyRef, POLYFLAGS_DISABLED);
       } else if ((poly->flags & POLYFLAGS_WALK) != 0) {
         islandsToArea_[polyToIsland_[polyRef]] += polygonArea;
@@ -1241,7 +1241,7 @@ Mn::Vector3 PathFinder::Impl::getRandomNavigablePoint(
     const int maxTries /*= 10*/,
     int islandIndex /*= ID_UNDEFINED*/) {
   islandSystem_->assertValidIsland(islandIndex);
-  if (getNavigableArea(islandIndex) <= 0.0)
+  if (getNavigableArea(islandIndex) <= 0.0f)
     throw std::runtime_error(
         "NavMesh has no navigable area, this indicates an issue with the "
         "NavMesh");
@@ -1292,7 +1292,7 @@ Mn::Vector3 PathFinder::Impl::getRandomNavigablePointInCircle(
   float radSqr = radius * radius;
 
   islandSystem_->assertValidIsland(islandIndex);
-  if (getNavigableArea(islandIndex) <= 0.0)
+  if (getNavigableArea(islandIndex) <= 0.0f)
     throw std::runtime_error(
         "NavMesh has no navigable area, this indicates an issue with the "
         "NavMesh");
@@ -1341,7 +1341,7 @@ Mn::Vector3 PathFinder::Impl::getRandomNavigablePointAroundSphere(
     const int maxTries,
     int islandIndex) {
   islandSystem_->assertValidIsland(islandIndex);
-  if (getNavigableArea(islandIndex) <= 0.0)
+  if (getNavigableArea(islandIndex) <= 0.0f)
     throw std::runtime_error(
         "NavMesh has no navigable area, this indicates an issue with the "
         "NavMesh");
@@ -1533,7 +1533,7 @@ bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
     findPath(prevPath);
     const float movedAmount = prevPath.geodesicDistance;
 
-    for (int i = 0; i < path.pimpl_->requestedEnds.size(); ++i) {
+    for (std::size_t i = 0; i < path.pimpl_->requestedEnds.size(); ++i) {
       path.pimpl_->minTheoreticalDist[i] = std::max(
           path.pimpl_->minTheoreticalDist[i] - movedAmount,
           (path.pimpl_->requestedEnds[i] - path.requestedStart).length());
@@ -1637,7 +1637,7 @@ T PathFinder::Impl::tryStep(const T& start, const T& end, bool allowSliding) {
     // Calculate the center of the polygon we want the points to be in
     Mn::Vector3 polyCenter;
     for (int iVert = 0; iVert < poly->vertCount; ++iVert) {
-      auto idx = poly->verts[iVert];
+      // auto idx = poly->verts[iVert];
       polyCenter += Mn::Vector3::from(
           &tile->verts[static_cast<size_t>(poly->verts[iVert]) * 3]);
     }
@@ -1755,7 +1755,7 @@ bool PathFinder::Impl::isNavigable(const Mn::Vector3& pt,
 
   if (std::abs(polyPt[1] - pt[1]) > maxYDelta ||
       (Mn::Vector2(pt[0], pt[2]) - Mn::Vector2(polyPt[0], polyPt[2])).length() >
-          1e-2)
+          1e-2f)
     return false;
 
   return true;
@@ -1882,7 +1882,7 @@ assets::MeshData::ptr PathFinder::Impl::getNavMeshData(
   return islandMeshData_[islandIndex];
 }
 
-PathFinder::PathFinder() : pimpl_{spimpl::make_unique_impl<Impl>()} {};
+PathFinder::PathFinder() : pimpl_{spimpl::make_unique_impl<Impl>()} {}
 
 bool PathFinder::build(const NavMeshSettings& bs,
                        const float* verts,

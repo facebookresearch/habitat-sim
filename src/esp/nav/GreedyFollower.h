@@ -75,9 +75,9 @@ class GreedyGeodesicFollowerImpl {
                              MoveFn& moveForward,
                              MoveFn& turnLeft,
                              MoveFn& turnRight,
-                             double goalDist,
-                             double forwardAmount,
-                             double turnAmount,
+                             float goalDist,
+                             float forwardAmount,
+                             float turnAmount,
                              bool fixThrashing = true,
                              int thrashingThreshold = 16);
 
@@ -123,7 +123,7 @@ class GreedyGeodesicFollowerImpl {
  private:
   PathFinder::ptr pathfinder_;
   MoveFn moveForward_, turnLeft_, turnRight_;
-  const double forwardAmount_, goalDist_, turnAmount_;
+  const float forwardAmount_, goalDist_, turnAmount_;
   const bool fixThrashing_;
   const int thrashingThreshold_;
   const float closeToObsThreshold_ = 0.2f;
