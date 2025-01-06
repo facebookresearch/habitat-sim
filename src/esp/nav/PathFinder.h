@@ -22,6 +22,10 @@ struct MeshData;
 //! NavMesh namespace
 namespace nav {
 
+typedef Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> MatrixXi;
+
+typedef Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> MatrixXb;
+
 class PathFinder;
 
 /**
@@ -629,8 +633,7 @@ class PathFinder {
    *
    * @return The 2D grid marking cells as navigable or not.
    */
-  Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>
-  getTopDownView(float metersPerPixel, float height, float eps = 0.5);
+  MatrixXb getTopDownView(float metersPerPixel, float height, float eps = 0.5);
 
   /**
    * @brief Get a 2D grid marking island index for navigable cells and -1 for
@@ -646,8 +649,9 @@ class PathFinder {
    *
    * @return The 2D grid marking cell islands or -1 for not navigable.
    */
-  Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>
-  getTopDownIslandView(float metersPerPixel, float height, float eps = 0.5);
+  MatrixXi getTopDownIslandView(float metersPerPixel,
+                                float height,
+                                float eps = 0.5);
 
   /**
    * @brief Returns a MeshData object containing triangulated NavMesh polys.

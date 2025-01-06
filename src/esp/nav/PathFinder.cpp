@@ -13,9 +13,6 @@
 #include <Magnum/Math/Functions.h>
 #include <Magnum/Math/Vector3.h>
 
-#include <Magnum/EigenIntegration/GeometryIntegration.h>
-#include <Magnum/EigenIntegration/Integration.h>
-
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Utility/Path.h>
 
@@ -529,11 +526,11 @@ struct PathFinder::Impl {
 
   std::pair<Mn::Vector3, Mn::Vector3> bounds() const { return bounds_; };
 
-  Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>
-  getTopDownView(float metersPerPixel, float height, float eps) const;
+  MatrixXb getTopDownView(float metersPerPixel, float height, float eps) const;
 
-  Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>
-  getTopDownIslandView(float metersPerPixel, float height, float eps) const;
+  MatrixXi getTopDownIslandView(float metersPerPixel,
+                                float height,
+                                float eps) const;
 
   assets::MeshData::ptr getNavMeshData(int islandIndex /*= ID_UNDEFINED*/);
 
@@ -1761,12 +1758,9 @@ bool PathFinder::Impl::isNavigable(const Mn::Vector3& pt,
   return true;
 }
 
-typedef Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> MatrixXb;
-
-Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>
-PathFinder::Impl::getTopDownView(const float metersPerPixel,
-                                 const float height,
-                                 const float eps) const {
+MatrixXb PathFinder::Impl::getTopDownView(const float metersPerPixel,
+                                          const float height,
+                                          const float eps) const {
   std::pair<Mn::Vector3, Mn::Vector3> mapBounds = bounds();
   Mn::Vector3 bound1 = mapBounds.first;
   Mn::Vector3 bound2 = mapBounds.second;
@@ -1793,8 +1787,6 @@ PathFinder::Impl::getTopDownView(const float metersPerPixel,
 
   return topdownMap;
 }
-
-typedef Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> MatrixXi;
 
 MatrixXi PathFinder::Impl::getTopDownIslandView(const float metersPerPixel,
                                                 const float height,
@@ -2005,17 +1997,15 @@ std::pair<Mn::Vector3, Mn::Vector3> PathFinder::bounds() const {
   return pimpl_->bounds();
 }
 
-Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> PathFinder::getTopDownView(
-    const float metersPerPixel,
-    const float height,
-    const float eps) {
+MatrixXb PathFinder::getTopDownView(const float metersPerPixel,
+                                    const float height,
+                                    const float eps) {
   return pimpl_->getTopDownView(metersPerPixel, height, eps);
 }
 
-Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>
-PathFinder::getTopDownIslandView(const float metersPerPixel,
-                                 const float height,
-                                 const float eps) {
+MatrixXi PathFinder::getTopDownIslandView(const float metersPerPixel,
+                                          const float height,
+                                          const float eps) {
   return pimpl_->getTopDownIslandView(metersPerPixel, height, eps);
 }
 
