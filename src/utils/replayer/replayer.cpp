@@ -24,7 +24,7 @@ class Replayer : public Mn::Platform::Application {
 
  private:
   void drawEvent() override;
-  void mousePressEvent(MouseEvent& event) override;
+  void pointerPressEvent(PointerEvent& event) override;
 
   esp::logging::LoggingContext loggingContext_;
 
@@ -243,8 +243,8 @@ void Replayer::drawEvent() {
   swapBuffers();
 }
 
-void Replayer::mousePressEvent(MouseEvent& event) {
-  if (event.button() == MouseEvent::Button::Left)
+void Replayer::pointerPressEvent(PointerEvent& event) {
+  if (event.pointer() == Pointer::MouseLeft)
     paused_ ^= true;
   else
     return;

@@ -35,7 +35,8 @@
 #   This file is part of Magnum.
 #
 #   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019,
-#               2020, 2021, 2022, 2023 Vladimír Vondruš <mosra@centrum.cz>
+#               2020, 2021, 2022, 2023, 2024
+#             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
 #   copy of this software and associated documentation files (the "Software"),
@@ -69,6 +70,32 @@ find_path(MAGNUMBINDINGS_INCLUDE_DIR Magnum/versionBindings.h
     HINTS ${MAGNUM_INCLUDE_DIR})
 mark_as_advanced(MAGNUMBINDINGS_INCLUDE_DIR)
 
+# CMake module dir for dependencies. It might not be present at all if no
+# feature that needs them is enabled, in which case it'll be left at NOTFOUND.
+# But in that case it should also not be subsequently needed for any
+# find_package(). If this is called from a superproject, the
+# _MAGNUMBINDINGS_DEPENDENCY_MODULE_DIR is already set by
+# modules/CMakeLists.txt.
+#
+# There's no dependency Find modules so far. Once there are, uncomment this and
+# list the modules in NAMES.
+#find_path(_MAGNUMBINDINGS_DEPENDENCY_MODULE_DIR
+#    NAMES
+#    PATH_SUFFIXES share/cmake/MagnumBindings/dependencies)
+#mark_as_advanced(_MAGNUMBINDINGS_DEPENDENCY_MODULE_DIR)
+
+# If the module dir is found and is not present in CMAKE_MODULE_PATH already
+# (such as when someone explicitly added it, or if it's the Magnum's modules/
+# dir in case of a superproject), add it as the first before all other. Set a
+# flag to remove it again at the end, so the modules don't clash with Find
+# modules of the same name from other projects.
+if(_MAGNUMBINDINGS_DEPENDENCY_MODULE_DIR AND NOT _MAGNUMBINDINGS_DEPENDENCY_MODULE_DIR IN_LIST CMAKE_MODULE_PATH)
+    set(CMAKE_MODULE_PATH ${_MAGNUMBINDINGS_DEPENDENCY_MODULE_DIR} ${CMAKE_MODULE_PATH})
+    set(_MAGNUMBINDINGS_REMOVE_DEPENDENCY_MODULE_DIR_FROM_CMAKE_PATH ON)
+else()
+    unset(_MAGNUMBINDINGS_REMOVE_DEPENDENCY_MODULE_DIR_FROM_CMAKE_PATH)
+endif()
+
 # Component distinction (listing them explicitly to avoid mistakes with finding
 # components from other repositories)
 set(_MAGNUMBINDINGS_HEADER_ONLY_COMPONENTS Python)
@@ -99,6 +126,10 @@ if(MagnumBindings_FIND_COMPONENTS)
     list(REMOVE_DUPLICATES MagnumBindings_FIND_COMPONENTS)
 endif()
 
+# Special cases of include paths. Libraries not listed here have a path suffix
+# and include name derived from the library name in the loop below. (So far no
+# special cases.)
+
 # Find all components
 foreach(_component ${MagnumBindings_FIND_COMPONENTS})
     string(TOUPPER ${_component} _COMPONENT)
@@ -106,26 +137,42 @@ foreach(_component ${MagnumBindings_FIND_COMPONENTS})
     # Create imported target in case the library is found. If the project is
     # added as subproject to CMake, the target already exists and all the
     # required setup is already done from the build tree.
-    if(TARGET MagnumBindings::${_component})
+    if(TARGET "MagnumBindings::${_component}") # Quotes to fix KDE's higlighter
         set(MagnumBindings_${_component}_FOUND TRUE)
     else()
         # Header-only components
         if(_component IN_LIST _MAGNUMBINDINGS_HEADER_ONLY_COMPONENTS)
-          add_library(MagnumBindings::${_component} INTERFACE IMPORTED)
+            # Include path names to find, unless specified above
+            if(NOT _MAGNUMBINDINGS_${_COMPONENT}_INCLUDE_PATH_NAMES)
+                set(_MAGNUMBINDINGS_${_COMPONENT}_INCLUDE_PATH_NAMES ${_component}Bindings.h)
+            endif()
         endif()
 
-        # Python bindings
-        if(_component STREQUAL Python)
-            set(_MAGNUMBINDINGS_${_COMPONENT}_INCLUDE_PATH_NAMES Magnum/SceneGraph/PythonBindings.h)
-        endif()
-
+        # Find library includes
         if(_component IN_LIST _MAGNUMBINDINGS_HEADER_ONLY_COMPONENTS)
-            # Find includes
             find_path(_MAGNUMBINDINGS_${_COMPONENT}_INCLUDE_DIR
                 NAMES ${_MAGNUMBINDINGS_${_COMPONENT}_INCLUDE_PATH_NAMES}
                 HINTS ${MAGNUMBINDINGS_INCLUDE_DIR})
             mark_as_advanced(_MAGNUMBINDINGS_${_COMPONENT}_INCLUDE_DIR)
+        endif()
 
+        # Decide if the component was found. If not, skip the rest, which
+        # populates the target properties and finds additional dependencies.
+        if(_component IN_LIST _MAGNUMBINDINGS_HEADER_ONLY_COMPONENTS AND _MAGNUMBINDINGS_${_COMPONENT}_INCLUDE_DIR)
+            set(MagnumBindings_${_component}_FOUND TRUE)
+        else()
+            set(MagnumBindings_${_component}_FOUND FALSE)
+            continue()
+        endif()
+
+        # Target for header-only library components
+        if(_component IN_LIST _MAGNUMBINDINGS_HEADER_ONLY_COMPONENTS)
+            add_library(MagnumBindings::${_component} INTERFACE IMPORTED)
+        endif()
+
+        # No special setup for Python bindings
+
+        if(_component IN_LIST _MAGNUMBINDINGS_HEADER_ONLY_COMPONENTS)
             # Link to core Magnum library
             set_property(TARGET MagnumBindings::${_component} APPEND PROPERTY
                 INTERFACE_LINK_LIBRARIES Magnum::Magnum)
@@ -133,13 +180,6 @@ foreach(_component ${MagnumBindings_FIND_COMPONENTS})
             # Add bindings include dir
             set_property(TARGET MagnumBindings::${_component} APPEND PROPERTY
                 INTERFACE_INCLUDE_DIRECTORIES ${MAGNUMBINDINGS_INCLUDE_DIR})
-        endif()
-
-        # Decide if the component was found
-        if(_component IN_LIST _MAGNUMBINDINGS_HEADER_ONLY_COMPONENTS AND _MAGNUMBINDINGS_${_COMPONENT}_INCLUDE_DIR)
-            set(MagnumBindings_${_component}_FOUND TRUE)
-        else()
-            set(MagnumBindings_${_component}_FOUND FALSE)
         endif()
     endif()
 endforeach()
@@ -175,6 +215,13 @@ if(NOT CMAKE_VERSION VERSION_LESS 3.16)
 
     string(REPLACE ";" " " _MAGNUMBINDINGS_REASON_FAILURE_MESSAGE "${_MAGNUMBINDINGS_REASON_FAILURE_MESSAGE}")
     set(_MAGNUMBINDINGS_REASON_FAILURE_MESSAGE REASON_FAILURE_MESSAGE "${_MAGNUMBINDINGS_REASON_FAILURE_MESSAGE}")
+endif()
+
+# Remove Magnum Extras dependency module dir from CMAKE_MODULE_PATH again. Do
+# it before the FPHSA call which may exit early in case of a failure.
+if(_MAGNUMBINDINGS_REMOVE_DEPENDENCY_MODULE_DIR_FROM_CMAKE_PATH)
+    list(REMOVE_ITEM CMAKE_MODULE_PATH ${_MAGNUMBINDINGS_DEPENDENCY_MODULE_DIR})
+    unset(_MAGNUMBINDINGS_REMOVE_DEPENDENCY_MODULE_DIR_FROM_CMAKE_PATH)
 endif()
 
 include(FindPackageHandleStandardArgs)
