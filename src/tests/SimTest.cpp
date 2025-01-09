@@ -23,6 +23,7 @@
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sim/Simulator.h"
+#include "esp/sim/RenderInstanceHelper.h"
 
 #include "configure.h"
 
@@ -53,17 +54,26 @@ namespace {
 using namespace Magnum::Math::Literals;
 
 const std::string vangogh =
-    Cr::Utility::Path::join(SCENE_DATASETS,
-                            "habitat-test-scenes/van-gogh-room.glb");
+  Cr::Utility::Path::join(SCENE_DATASETS,
+                        "habitat-test-scenes/van-gogh-room.glb");
 const std::string skokloster =
-    Cr::Utility::Path::join(SCENE_DATASETS,
+  Cr::Utility::Path::join(SCENE_DATASETS,
                             "habitat-test-scenes/skokloster-castle.glb");
 const std::string planeStage =
-    Cr::Utility::Path::join(TEST_ASSETS, "scenes/plane.glb");
+  Cr::Utility::Path::join(TEST_ASSETS, "scenes/plane.glb");
 const std::string physicsConfigFile =
-    Cr::Utility::Path::join(TEST_ASSETS, "testing.physics_config.json");
+  Cr::Utility::Path::join(TEST_ASSETS, "testing.physics_config.json");
 const std::string screenshotDir =
-    Cr::Utility::Path::join(TEST_ASSETS, "screenshots/");
+  Cr::Utility::Path::join(TEST_ASSETS, "screenshots/");
+
+// Helper function to get numberOfChildrenOfRoot
+int getNumberOfChildrenOfRoot(esp::scene::SceneNode& rootNode) {
+  int numberOfChildrenOfRoot = 0;
+  for (const auto& child : rootNode.children()) {
+    ++numberOfChildrenOfRoot;
+  }
+  return numberOfChildrenOfRoot;
+}
 
 struct SimTest : Cr::TestSuite::Tester {
   explicit SimTest();
@@ -156,6 +166,7 @@ struct SimTest : Cr::TestSuite::Tester {
   void createMagnumRenderingOff();
   void getRuntimePerfStats();
   void testArticulatedObjectSkinned();
+  void testRenderInstanceHelper();
 
   esp::logging::LoggingContext loggingContext_;
   // TODO: remove outlier pixels from image and lower maxThreshold
@@ -203,8 +214,9 @@ SimTest::SimTest() {
             &SimTest::getRuntimePerfStats,
 #ifdef ESP_BUILD_WITH_BULLET
             &SimTest::createMagnumRenderingOff,
-            &SimTest::testArticulatedObjectSkinned
+            &SimTest::testArticulatedObjectSkinned,
 #endif
+            &SimTest::testRenderInstanceHelper
             }, Cr::Containers::arraySize(SimulatorBuilder) );
   // clang-format on
 }
@@ -1044,6 +1056,46 @@ void SimTest::testArticulatedObjectSkinned() {
   CORRADE_COMPARE(aoManager->getNumObjects(), 0);
 
 }  // SimTest::testArticulatedObjectSkinned
+
+
+// test recording and playback through the simulator interface
+void SimTest::testRenderInstanceHelper() {
+  const std::string boxFile =
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/transform_box.glb");
+  const auto rigidObjTranslation = Mn::Vector3(1.f, 2.f, 3.f);
+  const auto rigidObjRotation = Mn::Quaternion::rotation(
+      Mn::Deg(45.f), Mn::Vector3(1.f, 1.f, 0.f).normalized());
+
+  SimulatorConfiguration simConfig{};
+  simConfig.activeSceneName = esp::EMPTY_SCENE;
+  simConfig.enableGfxReplaySave = true;
+  simConfig.createRenderer = false;
+  simConfig.enablePhysics = false;
+  auto sim = Simulator::create_unique(simConfig);
+  CORRADE_VERIFY(sim);
+
+  auto& sceneGraph = sim->getActiveSceneGraph();
+  auto& rootNode = sceneGraph.getRootNode();
+
+  int baseNum = getNumberOfChildrenOfRoot(rootNode);
+
+  std::vector<float> identityRotation{0.f, 0.f, 0.f, 1.f};
+  esp::sim::RenderInstanceHelper instanceHelper(*sim, identityRotation);
+
+  instanceHelper.AddInstance(boxFile);
+  CORRADE_COMPARE(getNumberOfChildrenOfRoot(rootNode), baseNum + 1);
+  instanceHelper.AddInstance(boxFile);
+  CORRADE_COMPARE(getNumberOfChildrenOfRoot(rootNode), baseNum + 2);
+
+  std::vector<float> positionsVec = {0.f, 1.f, 2.f, 3.f, 4.f, 5.f};
+  std::vector<float> orientationsVec = {0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f};
+
+  instanceHelper.SetWorldPoses(positionsVec.data(), positionsVec.size(), orientationsVec.data(), orientationsVec.size());
+  CORRADE_COMPARE(instanceHelper.GetNumInstances(), 2);
+  instanceHelper.ClearAllInstances();
+  CORRADE_COMPARE(instanceHelper.GetNumInstances(), 0);
+
+}
 
 }  // namespace
 

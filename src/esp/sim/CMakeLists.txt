@@ -12,6 +12,8 @@ add_library(
   BatchReplayRenderer.h
   ClassicReplayRenderer.cpp
   ClassicReplayRenderer.h
+  RenderInstanceHelper.cpp
+  RenderInstanceHelper.h
   Simulator.cpp
   Simulator.h
   SimulatorConfiguration.cpp
