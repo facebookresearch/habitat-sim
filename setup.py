@@ -91,12 +91,6 @@ Use "HEADLESS=True pip install ." to build in headless mode with pip""",
         "--build-tests", dest="build_tests", action="store_true", help="Build tests"
     )
     parser.add_argument(
-        "--build-datatool",
-        dest="build_datatool",
-        action="store_true",
-        help="Build data tool",
-    )
-    parser.add_argument(
         "--cmake-args",
         type=str,
         default=os.environ.get("CMAKE_ARGS", ""),
@@ -319,9 +313,6 @@ class CMakeBuild(build_ext):
         cmake_args += ["-DBUILD_TEST={}".format("ON" if args.build_tests else "OFF")]
         cmake_args += [
             "-DBUILD_WITH_BULLET={}".format("ON" if args.with_bullet else "OFF")
-        ]
-        cmake_args += [
-            "-DBUILD_DATATOOL={}".format("ON" if args.build_datatool else "OFF")
         ]
         cmake_args += ["-DBUILD_WITH_CUDA={}".format("ON" if args.with_cuda else "OFF")]
         cmake_args += [

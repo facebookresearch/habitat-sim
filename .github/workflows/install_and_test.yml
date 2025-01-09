@@ -122,7 +122,6 @@ jobs:
         CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless \
           --bullet \
           --with-cuda \
-          --build-datatool \
           --run-tests \
           --no-lto \
           --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
