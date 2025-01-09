@@ -227,10 +227,6 @@ jobs:
         fi
         cd habitat-lab
         pip install -r habitat-lab/requirements.txt --progress-bar off
-        #Added to test against Eigen Refactor Lab PR DO NOT MERGE
-        git fetch
-        git switch SimBE_EigenRefactor1
-        #end Added to test against Eigen Refactor Lab PR DO NOT MERGE
         ln -s ../habitat-sim/data data
     - name: Run Habitat Lab tests
       run: |-
