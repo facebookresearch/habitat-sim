@@ -10,12 +10,20 @@ import quaternion  # noqa: F401
 
 import habitat_sim
 import habitat_sim.errors
-from habitat_sim.utils.common import angle_between_quats, quat_from_angle_axis
+from habitat_sim.utils.common import (
+    angle_between_quats,
+    quat_from_angle_axis,
+    quat_to_magnum,
+)
 
 
 def _check_state_same(s1, s2):
     assert np.allclose(s1.position, s2.position, atol=1e-5)
-    assert angle_between_quats(s1.rotation, s2.rotation) < 1e-5
+    # remove quat_to_magnum once AgentState is refactored to use magnum quaternions
+    assert (
+        angle_between_quats(quat_to_magnum(s1.rotation), quat_to_magnum(s2.rotation))
+        < 1e-5
+    )
 
 
 def test_reconfigure():
