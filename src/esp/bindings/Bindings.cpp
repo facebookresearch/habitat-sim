@@ -81,6 +81,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   esp::scene::initSceneBindings(m, pySceneNode);
   esp::nav::initShortestPathBindings(m);
   esp::sim::initSimConfigBindings(m);
+  esp::sim::initRenderInstanceHelperBindings(m);
   esp::metadata::initAttributesBindings(m);
   esp::metadata::managers::initAttributesManagersBindings(m);
   esp::metadata::initMetadataMediatorBindings(m);

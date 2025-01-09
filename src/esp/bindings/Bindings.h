@@ -185,6 +185,8 @@ void initSimBindings(pybind11::module& m);
  * @ref esp::sim::ReplayRendererConfiguration
  */
 void initSimConfigBindings(pybind11::module& m);
+void initRenderInstanceHelperBindings(pybind11::module& m);
+
 }  // namespace sim
 
 }  // namespace esp
