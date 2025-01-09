@@ -601,7 +601,6 @@ class HabitatSimInteractiveViewer(Application):
         new_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
         new_obj.translation = obj_instance.translation
         new_obj.rotation = obj_instance.rotation
-        self.sim.set_object_bb_draw(True, new_obj.object_id)
         return new_obj
 
     def draw_contact_debug(self, debug_line_render: Any):
