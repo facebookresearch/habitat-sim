@@ -4,13 +4,13 @@
  */
 :root {
   /* Text properties */
-  --font: 'Source Sans Pro', sans-serif;
+  --font: 'Optimistic Text', Helvetica, Arial, sans-serif;
   --code-font: 'Source Code Pro', monospace;
   --font-size: 16px;
   --code-font-size: 0.9em; /* *not* rem, so it follows surrounding font size */
-  --line-height: normal;
+  --line-height: 1.5;
   --paragraph-indent: 0.0rem;
-  --paragraph-align: justify;
+  --paragraph-align: left;
   --link-decoration: underline;
   --link-decoration-nav: none;
   --link-decoration-heading: none;
@@ -26,10 +26,10 @@
 
   /* Basics */
   --background-color: #ffffff;
-  --color: #171717;
+  --color: #232323;
   --line-color: #ededed;
-  --link-color: #478cc3;
-  --link-active-color: #73afdf;
+  --link-color: #344854;
+  --link-active-color: #232323;
   --mark-color: #2f83cc;
   --mark-background-color: #c7cf2f;
   --code-color: #000000;
@@ -46,22 +46,22 @@
   /* Header */
   --header-border-width: 0 0 0.25rem 0;
   --header-color: #ffffff;
-  --header-breadcrumb-color: #94bfed;
-  --header-background-color: #478cc3;
+  --header-breadcrumb-color: #1877F2;
+  --header-background-color: #67788A;
   --header-background-color-landing: rgba(99, 161, 228, 0.75);
   --header-background-color-jumbo: rgba(99, 161, 228, 0.25);
-  --header-link-color: #f6f6f6;
-  --header-link-active-color: #cee7f9;
+  --header-link-color: #232323;
+  --header-link-active-color: #232323;
   --header-link-current-color: #ffffff;
-  --header-link-active-background-color: #579dd5;
+  --header-link-active-background-color: #ffffff;
   --header-link-active-background-color-semi: rgba(122, 175, 232, 0.5);
 
   /* Footer */
-  --footer-font-size: 0.85rem;
-  --footer-color: #000000;
-  --footer-background-color: #ededed;
-  --footer-link-color: #478cc3;
-  --footer-link-active-color: #73afdf;
+  --footer-font-size: 14px;
+  --footer-color: #222222;
+  --footer-background-color: #f1f4f7;
+  --footer-link-color: #222222;
+  --footer-link-active-color: #465A69;
 
   /* Cover image */
   --cover-image-background-color: #0f1217;
@@ -73,11 +73,11 @@
   /* Article */
   --article-header-color: #0f0f0f;
   --article-footer-color: #5c5c5c;
-  --article-heading-color: #478cc3;
-  --article-heading-active-color: #73afdf;
+  --article-heading-color: #1877F2;
+  --article-heading-active-color: #0064e0;
 
   /* Right navigation panel */
-  --navpanel-link-color: #333333;
+  --navpanel-link-color: #232323;
   --navpanel-link-active-color: #000000;
 
   /* Plots */
@@ -85,12 +85,12 @@
   --plot-error-color: #000000;
 
   /* Colored components */
-  --default-color: #171717;
+  --default-color: #232323;
   --default-link-active-color: #73afdf;
-  --default-filled-color: #171717;
+  --default-filled-color: #232323;
   --default-filled-background-color: #f6f6f6;
-  --default-filled-link-color: #478cc3;
-  --default-filled-link-active-color: #73afdf;
+  --default-filled-link-color: #344854;
+  --default-filled-link-active-color: #232323;
 
   --primary-color: #478cc3;
   --primary-link-active-color: #579dd5;
