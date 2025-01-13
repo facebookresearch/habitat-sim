@@ -140,7 +140,6 @@ void ReplicaSceneTest::testSemanticSceneLoading() {
   CORRADE_VERIFY(obj12);
   CORRADE_COMPARE(obj12->id(), "_12");
   // obj12's obb
-  // Eigen Calc
   // center:[3.52103,-1.00543,-1.02705]
   // halfextents:[0.169882,0.160166,0.01264]
   // rotational quat coefficients:[-0.70592,0.0131598,0.0157815,0.707994]

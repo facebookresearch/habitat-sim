@@ -3,7 +3,6 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "SemanticScene.h"
-#include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include "GibsonSemanticScene.h"
 #include "Mp3dSemanticScene.h"
 #include "ReplicaSemanticScene.h"

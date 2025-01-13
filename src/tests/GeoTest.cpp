@@ -6,7 +6,6 @@
 #include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/DebugStl.h>
-#include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/Math/FunctionsBatch.h>
 #include <Magnum/Math/Range.h>
 #include "esp/core/Utility.h"

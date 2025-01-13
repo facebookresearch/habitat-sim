@@ -8,7 +8,6 @@
 #include <Corrade/TestSuite/Compare/Container.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/Path.h>
-#include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/Math/Range.h>
 #include <Magnum/Trade/MaterialData.h>
 #include <string>

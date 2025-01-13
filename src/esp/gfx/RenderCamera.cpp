@@ -4,11 +4,11 @@
 
 #include "RenderCamera.h"
 
-#include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/Math/Frustum.h>
 #include <Magnum/Math/Intersection.h>
 #include <Magnum/Math/Range.h>
 #include <Magnum/SceneGraph/Drawable.h>
+#include <algorithm>
 #include "esp/scene/SceneGraph.h"
 
 namespace Mn = Magnum;

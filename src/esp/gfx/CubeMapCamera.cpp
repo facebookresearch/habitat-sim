@@ -3,8 +3,6 @@
 // LICENSE file in the root directory of this source tree
 
 #include "CubeMapCamera.h"
-#include <Magnum/EigenIntegration/Integration.h>
-
 namespace Mn = Magnum;
 namespace Cr = Corrade;
 
