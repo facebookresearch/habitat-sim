@@ -20,8 +20,6 @@
 #include <Corrade/Utility/Path.h>
 #include <Corrade/Utility/Resource.h>
 #include <Corrade/Utility/String.h>
-#include <Magnum/EigenIntegration/GeometryIntegration.h>
-#include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/GL/Context.h>
 #include <Magnum/GL/Extensions.h>
 #include <Magnum/GL/TextureFormat.h>
@@ -694,11 +692,8 @@ esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
     const Mn::Vector3& up,
     const Mn::Vector3& front,
     const Mn::Vector3& origin) {
-  const vec3f upEigen{Mn::EigenIntegration::cast<vec3f>(up)};
-  const vec3f frontEigen{Mn::EigenIntegration::cast<vec3f>(front)};
-  if (upEigen.isOrthogonal(frontEigen)) {
-    const vec3f originEigen{Mn::EigenIntegration::cast<vec3f>(origin)};
-    esp::geo::CoordinateFrame frame{upEigen, frontEigen, originEigen};
+  if (abs(Mn::Math::dot(up, front)) < Mn::Math::TypeTraits<float>::epsilon()) {
+    esp::geo::CoordinateFrame frame{up, front, origin};
     return frame;
   }
   ESP_DEBUG(Mn::Debug::Flag::NoSpace)
@@ -3481,8 +3476,7 @@ void ResourceManager::joinHierarchy(
           << "` so skipping join.";
     } else {
       for (const auto& pos : meshData.positions) {
-        mesh.vbo.push_back(Mn::EigenIntegration::cast<vec3f>(
-            transformFromLocalToWorld.transformPoint(pos)));
+        mesh.vbo.push_back(transformFromLocalToWorld.transformPoint(pos));
       }
       for (const auto& index : meshData.indices) {
         mesh.ibo.push_back(index + lastIndex);
@@ -3529,8 +3523,7 @@ void ResourceManager::joinSemanticHierarchy(
 
     // Save the vertices
     for (const auto& pos : vertices) {
-      mesh.vbo.push_back(Mn::EigenIntegration::cast<vec3f>(
-          transformFromLocalToWorld.transformPoint(pos)));
+      mesh.vbo.push_back(transformFromLocalToWorld.transformPoint(pos));
     }
 
     // Save the indices

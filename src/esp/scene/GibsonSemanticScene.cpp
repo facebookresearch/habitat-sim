@@ -17,8 +17,9 @@ namespace scene {
 
 constexpr int kMaxIds = 10000; /* We shouldn't ever need more than this. */
 
-bool SemanticScene::
-    loadGibsonHouse(const std::string& houseFilename, SemanticScene& scene, const quatf& rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY) */) {
+bool SemanticScene::loadGibsonHouse(const std::string& houseFilename,
+                                    SemanticScene& scene,
+                                    const Mn::Quaternion& rotation) {
   if (!checkFileExists(houseFilename, "loadGibsonHouse")) {
     return false;
   }
@@ -33,7 +34,7 @@ bool SemanticScene::
 
 bool SemanticScene::buildGibsonHouse(const io::JsonDocument& jsonDoc,
                                      SemanticScene& scene,
-                                     const quatf& rotation) {
+                                     const Mn::Quaternion& rotation) {
   scene.categories_.clear();
   scene.objects_.clear();
 
@@ -74,19 +75,24 @@ bool SemanticScene::buildGibsonHouse(const io::JsonDocument& jsonDoc,
     if (jsonLocIter != jsonObject.MemberEnd()) {
       // if (jsonObject.HasMember("location")) {
       const auto& jsonCenter = jsonLocIter->value;
-      vec3f center = rotation * io::jsonToVec3f(jsonCenter);
-      vec3f size = vec3f::Zero();
+      Mn::Vector3 jsonVecRes;
+      io::fromJsonValue(jsonCenter, jsonVecRes);
+      Mn::Vector3 center = rotation.transformVectorNormalized(jsonVecRes);
+      Mn::Vector3 size;
       io::JsonGenericValue::ConstMemberIterator jsonSizeIter =
           jsonObject.FindMember("size");
       if (jsonSizeIter != jsonObject.MemberEnd()) {
         const auto& jsonSize = jsonSizeIter->value;
         // Rotating sizes
-        size = (rotation * io::jsonToVec3f(jsonSize)).array().abs();
+        Mn::Vector3 sizeVec;
+        io::fromJsonValue(jsonSize, sizeVec);
+
+        size = abs((rotation.transformVectorNormalized(sizeVec)));
       } else {
         ESP_WARNING() << "Object size from" << categoryName
                       << "isn't provided.";
       }
-      object->setObb(center, size, quatf::Identity());
+      object->setObb(center, size, Mn::Quaternion(Mn::Math::IdentityInit));
     } else {
       ESP_WARNING() << "Object center coordinates from" << categoryName
                     << "aren't provided.";

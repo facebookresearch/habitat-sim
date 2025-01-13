@@ -11,9 +11,9 @@
 #include <Corrade/Containers/Pair.h>
 #include <Corrade/Utility/Path.h>
 #include <Corrade/Utility/String.h>
-#include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/Context.h>
 #include <Magnum/GL/Renderer.h>
+#include <Magnum/Math/Matrix4.h>
 
 #include "esp/core/Esp.h"
 #include "esp/gfx/CubeMapCamera.h"
@@ -868,22 +868,20 @@ assets::MeshData::ptr Simulator::getJoinedMesh(
     // collect mesh components from all objects and then merge them.
     // Each mesh component could be duplicated multiple times w/ different
     // transforms.
-    std::map<std::string,
-             std::vector<Eigen::Transform<float, 3, Eigen::Affine>>>
-        meshComponentStates;
+    std::map<std::string, std::vector<Mn::Matrix4>> meshComponentStates;
     auto rigidObjMgr = getRigidObjectManager();
     // collect RigidObject mesh components
     for (auto objectID : physicsManager_->getExistingObjectIDs()) {
       auto objWrapper = rigidObjMgr->getObjectCopyByID(objectID);
       if (objWrapper->getMotionType() == physics::MotionType::STATIC) {
-        auto objectTransform = Magnum::EigenIntegration::cast<
-            Eigen::Transform<float, 3, Eigen::Affine>>(
+        auto objectTransform =
             physicsManager_->getObjectVisualSceneNode(objectID)
-                .absoluteTransformationMatrix());
+                .absoluteTransformationMatrix();
         const metadata::attributes::ObjectAttributes::cptr
             initializationTemplate = objWrapper->getInitializationAttributes();
-        objectTransform.scale(Magnum::EigenIntegration::cast<vec3f>(
-            initializationTemplate->getScale()));
+        objectTransform =
+            objectTransform *
+            Mn::Matrix4::scaling(initializationTemplate->getScale());
         std::string meshHandle =
             initializationTemplate->getCollisionAssetFullPath();
         if (meshHandle.empty()) {
@@ -907,9 +905,8 @@ assets::MeshData::ptr Simulator::getJoinedMesh(
                       .getLink(linkIx)
                       .visualAttachments_;
           for (auto& visualAttachment : visualAttachments) {
-            auto objectTransform = Magnum::EigenIntegration::cast<
-                Eigen::Transform<float, 3, Eigen::Affine>>(
-                visualAttachment.first->absoluteTransformationMatrix());
+            auto objectTransform =
+                visualAttachment.first->absoluteTransformationMatrix();
             std::string meshHandle = visualAttachment.second;
             meshComponentStates[meshHandle].push_back(objectTransform);
           }
@@ -931,7 +928,8 @@ assets::MeshData::ptr Simulator::getJoinedMesh(
         }
         joinedMesh->vbo.reserve(joinedObjectMesh->vbo.size() + prevNumVerts);
         for (auto& vert : joinedObjectMesh->vbo) {
-          joinedMesh->vbo.push_back(meshTransform * vert);
+          auto newVert = meshTransform.transformPoint(vert);
+          joinedMesh->vbo.push_back(newVert);
         }
       }
     }

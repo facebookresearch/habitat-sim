@@ -253,11 +253,11 @@ void initSceneBindings(
       .def_static(
           "load_mp3d_house",
           [](const std::string& filename, SemanticScene& scene,
-             const vec4f& rotation) {
+             const Mn::Vector4& rotation) {
             // numpy doesn't have a quaternion equivalent, use vec4
             // instead
-            return SemanticScene::loadMp3dHouse(
-                filename, scene, Eigen::Map<const quatf>(rotation.data()));
+            return SemanticScene::loadMp3dHouse(filename, scene,
+                                                {rotation.xyz(), rotation.w()});
           },
           R"(
         Loads a SemanticScene from a Matterport3D House format file into passed

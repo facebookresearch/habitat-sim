@@ -4,11 +4,11 @@
 
 #include "RenderCamera.h"
 
-#include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/Math/Frustum.h>
 #include <Magnum/Math/Intersection.h>
 #include <Magnum/Math/Range.h>
 #include <Magnum/SceneGraph/Drawable.h>
+#include <algorithm>
 #include "esp/scene/SceneGraph.h"
 
 namespace Mn = Magnum;
@@ -66,17 +66,6 @@ RenderCamera::RenderCamera(scene::SceneNode& node,
   // once it is attached, set the transformation
   resetViewingParameters(eye, target, up);
 }
-
-RenderCamera::RenderCamera(scene::SceneNode& node,
-                           esp::scene::SceneNodeSemanticDataIDX semanticDataIDX,
-                           const vec3f& eye,
-                           const vec3f& target,
-                           const vec3f& up)
-    : RenderCamera(node,
-                   semanticDataIDX,
-                   Mn::Vector3{eye},
-                   Mn::Vector3{target},
-                   Mn::Vector3{up}) {}
 
 RenderCamera& RenderCamera::resetViewingParameters(const Mn::Vector3& eye,
                                                    const Mn::Vector3& target,

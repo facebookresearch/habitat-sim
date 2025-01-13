@@ -14,17 +14,6 @@
 namespace py = pybind11;
 using py::literals::operator""_a;
 
-namespace esp {
-
-void initEspBindings(py::module& m) {
-  // ==== box3f ====
-  py::class_<box3f>(m, "BBox")
-      .def_property_readonly("sizes", &box3f::sizes)
-      .def_property_readonly("center", &box3f::center);
-}
-
-}  // namespace esp
-
 PYBIND11_MODULE(habitat_sim_bindings, m) {
   m.attr("cuda_enabled") =
 #ifdef ESP_BUILD_WITH_CUDA
@@ -59,7 +48,6 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
 
   py::bind_map<std::map<std::string, std::string>>(m, "MapStringString");
 
-  esp::initEspBindings(m);
   esp::core::config::initConfigBindings(m);
   esp::core::initCoreBindings(m);
   esp::geo::initGeoBindings(m);

@@ -6,7 +6,6 @@
 #include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/Path.h>
-#include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/GL/SampleQuery.h>
 #include <Magnum/Math/Frustum.h>
 #include <Magnum/Math/Intersection.h>

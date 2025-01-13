@@ -11,18 +11,12 @@ from os import path as osp
 import magnum as mn
 import numpy as np
 import pytest
-import quaternion
 
 import habitat_sim
 import habitat_sim.bindings
 import habitat_sim.physics
 import habitat_sim.utils.settings
-from habitat_sim.utils.common import (
-    quat_from_angle_axis,
-    quat_from_magnum,
-    quat_to_magnum,
-    random_quaternion,
-)
+from habitat_sim.utils.common import random_quaternion
 from utils import simulate
 
 
@@ -90,12 +84,12 @@ def test_kinematics():
         assert np.allclose(cheezit_box.transformation, I)
 
         # test get and set rotation
-        Q = quat_from_angle_axis(np.pi, np.array([0.0, 1.0, 0.0]))
-        expected = np.eye(4)
-        expected[0:3, 0:3] = quaternion.as_rotation_matrix(Q)
-        cheezit_box.rotation = quat_to_magnum(Q)
+        Q = mn.Quaternion.rotation(mn.Rad(math.pi), [0.0, 1.0, 0.0])
+        expected = mn.Matrix4.from_(Q.to_matrix(), [0.0, 0.0, 0.0])
+        cheezit_box.rotation = Q
         assert np.allclose(cheezit_box.transformation, expected)
-        assert np.allclose(quat_from_magnum(cheezit_box.rotation), Q)
+        assert np.allclose(cheezit_box.rotation.scalar, Q.scalar)
+        assert np.allclose(cheezit_box.rotation.vector, Q.vector)
 
         # test object removal
         rigid_obj_mgr.remove_object_by_id(cheezit_box.object_id)
@@ -212,12 +206,13 @@ def test_kinematics_no_physics():
         assert np.allclose(cheezit_box.transformation, I)
 
         # test get and set rotation
-        Q = quat_from_angle_axis(np.pi, np.array([0.0, 1.0, 0.0]))
-        expected = np.eye(4)
-        expected[0:3, 0:3] = quaternion.as_rotation_matrix(Q)
-        cheezit_box.rotation = quat_to_magnum(Q)
+        # test get and set rotation
+        Q = mn.Quaternion.rotation(mn.Rad(math.pi), [0.0, 1.0, 0.0])
+        expected = mn.Matrix4.from_(Q.to_matrix(), [0.0, 0.0, 0.0])
+        cheezit_box.rotation = Q
         assert np.allclose(cheezit_box.transformation, expected)
-        assert np.allclose(quat_from_magnum(cheezit_box.rotation), Q)
+        assert np.allclose(cheezit_box.rotation.scalar, Q.scalar)
+        assert np.allclose(cheezit_box.rotation.vector, Q.vector)
 
         # test object removal
         rigid_obj_mgr.remove_object_by_id(cheezit_box.object_id)

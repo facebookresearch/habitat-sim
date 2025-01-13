@@ -302,21 +302,21 @@ class DemoRunner:
     def print_semantic_scene(self):
         if self._sim_settings["print_semantic_scene"]:
             scene = self._sim.semantic_scene
-            print(f"House center:{scene.aabb.center} dims:{scene.aabb.sizes}")
+            print(f"House center:{scene.aabb.center} dims:{scene.aabb.size}")
             for level in scene.levels:
                 print(
                     f"Level id:{level.id}, center:{level.aabb.center},"
-                    f" dims:{level.aabb.sizes}"
+                    f" dims:{level.aabb.size}"
                 )
                 for region in level.regions:
                     print(
                         f"Region id:{region.id}, category:{region.category.name()},"
-                        f" center:{region.aabb.center}, dims:{region.aabb.sizes}"
+                        f" center:{region.aabb.center}, dims:{region.aabb.size}"
                     )
                     for obj in region.objects:
                         print(
                             f"Object id:{obj.id}, category:{obj.category.name()},"
-                            f" center:{obj.aabb.center}, dims:{obj.aabb.sizes}"
+                            f" center:{obj.aabb.center}, dims:{obj.aabb.size}"
                         )
             input("Press Enter to continue...")
 

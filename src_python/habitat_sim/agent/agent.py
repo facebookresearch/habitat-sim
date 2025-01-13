@@ -294,7 +294,7 @@ class Agent:
         return self.get_state()
 
     @state.setter
-    def state(self, new_state):
+    def state(self, new_state: AgentState):
         self.set_state(
             new_state, reset_sensors=True, infer_sensor_states=True, is_initial=False
         )

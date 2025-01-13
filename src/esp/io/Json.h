@@ -50,9 +50,6 @@ JsonDocument parseJsonString(const std::string& jsonString);
 //! Return string representation of given JsonDocument
 std::string jsonToString(const JsonDocument& d, int maxDecimalPlaces = -1);
 
-//! Return Vec3f coordinates representation of given JsonObject of array type
-esp::vec3f jsonToVec3f(const JsonGenericValue& jsonArray);
-
 /**
  * @brief Check passed json doc for existence of passed jsonTag as value of
  * type T. If present, populate passed setter with value. Returns
