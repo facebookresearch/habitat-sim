@@ -1,0 +1,67 @@
+<?xml version="1.0" ?>
+<robot name="axis">
+  <material name="grey">
+    <color rgba="0.7 0.7 0.7 1.0"/>
+  </material>
+  <material name="red">
+    <color rgba="0.7 0.0 0.0 1.0"/>
+  </material>
+  <material name="green">
+    <color rgba="0.0 0.7 0.0 1.0"/>
+  </material>
+  <material name="blue">
+    <color rgba="0.0 0.0 0.7 1.0"/>
+  </material>
+  <link name="base_box">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.05 0.05 0.05"/>
+      </geometry>
+      <material name="grey"/>
+    </visual>
+  </link>
+  <joint name="base_to_x" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="base_box"/>
+    <child link="link_x"/>
+  </joint>
+  <link name="link_x">
+    <visual>
+      <origin rpy="0 0 0" xyz="0.125 0 0"/>
+      <geometry>
+        <box size="0.2 0.05 0.05"/>
+      </geometry>
+      <material name="red"/>
+    </visual>
+  </link>
+  <joint name="base_to_y" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="base_box"/>
+    <child link="link_y"/>
+  </joint>
+  <link name="link_y">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0.125 0"/>
+      <geometry>
+        <box size="0.05 0.2 0.05"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+  </link>
+  <joint name="base_to_z" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="base_box"/>
+    <child link="link_z"/>
+  </joint>
+  <link name="link_z">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.125"/>
+      <geometry>
+        <box size="0.05 0.05 0.2"/>
+      </geometry>
+      <material name="blue"/>
+    </visual>
+  </link>
+
+</robot>

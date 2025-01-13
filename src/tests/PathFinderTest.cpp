@@ -66,7 +66,7 @@ void PathFinderTest::bounds() {
   Mn::Vector3 minExpected{-9.75916f, -0.390081f, 0.973853f};
   Mn::Vector3 maxExpected{8.56903f, 6.43441f, 25.5983f};
 
-  std::pair<esp::vec3f, esp::vec3f> bounds = pathFinder.bounds();
+  std::pair<Magnum::Vector3, Magnum::Vector3> bounds = pathFinder.bounds();
 
   CORRADE_COMPARE(Mn::Vector3{bounds.first}, minExpected);
   CORRADE_COMPARE(Mn::Vector3{bounds.second}, maxExpected);
@@ -80,12 +80,11 @@ void PathFinderTest::tryStepNoSliding() {
 
   Mn::Vector3 stepDir{0, 0, -1};
   for (int i = 0; i < 100; ++i) {
-    Mn::Vector3 pos{pathFinder.getRandomNavigablePoint()};
+    Mn::Vector3 pos = pathFinder.getRandomNavigablePoint();
     for (int j = 0; j < 10; ++j) {
       Mn::Vector3 targetPos = pos + stepDir;
       Mn::Vector3 actualEnd = pathFinder.tryStepNoSliding(pos, targetPos);
-      CORRADE_VERIFY(pathFinder.isNavigable(
-          Mn::EigenIntegration::cast<esp::vec3f>(actualEnd)));
+      CORRADE_VERIFY(pathFinder.isNavigable(actualEnd));
 
       // The test becomes unreliable if we moved a very small distance
       if (Mn::Math::gather<'x', 'z'>(actualEnd - pos).dot() < 1e-5)
@@ -108,7 +107,7 @@ void PathFinderTest::multiGoalPath() {
   pathFinder.seed(0);
 
   for (int __j = 0; __j < 1000; ++__j) {
-    std::vector<esp::vec3f> points;
+    std::vector<Magnum::Vector3> points;
     points.reserve(10);
     for (int i = 0; i < 10; ++i) {
       points.emplace_back(pathFinder.getRandomNavigablePoint());
@@ -116,7 +115,7 @@ void PathFinderTest::multiGoalPath() {
 
     esp::nav::MultiGoalShortestPath multiPath;
     multiPath.requestedStart = points[0];
-    multiPath.setRequestedEnds({points.begin() + 1, points.end()});
+    multiPath.requestedEnds = {points.begin() + 1, points.end()};
 
     CORRADE_VERIFY(pathFinder.findPath(multiPath));
 
@@ -124,7 +123,7 @@ void PathFinderTest::multiGoalPath() {
     path.requestedStart = points[0];
     float trueMinDist = 1e5;
     for (int i = 1; i < points.size(); ++i) {
-      path.setRequestedEnds({points[i]});
+      path.requestedEnds = {points[i]};
 
       CORRADE_VERIFY(pathFinder.findPath(path));
 
@@ -142,12 +141,12 @@ void PathFinderTest::testCaching() {
 
   esp::nav::MultiGoalShortestPath cachePath;
   {
-    std::vector<esp::vec3f> rqEnds;
+    std::vector<Magnum::Vector3> rqEnds;
     rqEnds.reserve(25);
     for (int i = 0; i < 25; ++i) {
       rqEnds.emplace_back(pathFinder.getRandomNavigablePoint());
     }
-    cachePath.setRequestedEnds(rqEnds);
+    cachePath.requestedEnds = rqEnds;
   }
 
   for (int i = 0; i < 1000; ++i) {
@@ -157,7 +156,7 @@ void PathFinderTest::testCaching() {
     pathFinder.findPath(cachePath);
 
     esp::nav::MultiGoalShortestPath noCachePath;
-    noCachePath.setRequestedEnds(cachePath.getRequestedEnds());
+    noCachePath.requestedEnds = cachePath.requestedEnds;
     noCachePath.requestedStart = cachePath.requestedStart;
     pathFinder.findPath(noCachePath);
 
@@ -195,12 +194,12 @@ void PathFinderTest::benchmarkMultiGoal() {
     path.requestedStart = pathFinder.getRandomNavigablePoint();
   } while (pathFinder.islandRadius(path.requestedStart) < 10.0);
 
-  std::vector<esp::vec3f> rqEnds;
+  std::vector<Magnum::Vector3> rqEnds;
   rqEnds.reserve(1000);
   for (int i = 0; i < 1000; ++i) {
     rqEnds.emplace_back(pathFinder.getRandomNavigablePoint());
   }
-  path.setRequestedEnds(rqEnds);
+  path.requestedEnds = rqEnds;
 
   if (data.cache) {
     pathFinder.findPath(path);

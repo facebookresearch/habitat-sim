@@ -45,6 +45,16 @@ namespace Cr = Corrade;
 namespace esp {
 namespace nav {
 
+// declare vector conversion functions to convert between recast and habitat
+// coordinate systems.
+inline vec3f HabVecToRecast(const Magnum::Vector3& habVec) {
+  return vec3f(habVec[0], habVec[2], -habVec[1]);
+}
+
+inline Magnum::Vector3 RecastVecToHab(const vec3f& recastVec) {
+  return Magnum::Vector3(recastVec[0], -recastVec[2], recastVec[1]);
+}
+
 bool operator==(const NavMeshSettings& a, const NavMeshSettings& b) {
 #define CLOSE(name) (std::abs(a.name - b.name) < 1e-5)
 #define EQ(name) (a.name == b.name)
@@ -90,35 +100,6 @@ void NavMeshSettings::writeToJSON(const std::string& jsonFile) const {
   const float maxDecimalPlaces = 7;
   auto ok = esp::io::writeJsonToFile(d, jsonFile, true, maxDecimalPlaces);
   ESP_CHECK(ok, "writeSavedKeyframesToFile: unable to write to " << jsonFile);
-}
-
-struct MultiGoalShortestPath::Impl {
-  std::vector<vec3f> requestedEnds;
-
-  std::vector<dtPolyRef> endRefs;
-  //! Tracks whether an endpoint is valid or not as determined by setup to avoid
-  //! extra work or issues later.
-  std::vector<bool> endIsValid;
-  std::vector<vec3f> pathEnds;
-
-  std::vector<float> minTheoreticalDist;
-  vec3f prevRequestedStart = vec3f::Zero();
-};
-
-MultiGoalShortestPath::MultiGoalShortestPath()
-    : pimpl_{spimpl::make_unique_impl<Impl>()} {};
-
-void MultiGoalShortestPath::setRequestedEnds(
-    const std::vector<vec3f>& newEnds) {
-  pimpl_->endRefs.clear();
-  pimpl_->pathEnds.clear();
-  pimpl_->requestedEnds = newEnds;
-
-  pimpl_->minTheoreticalDist.assign(newEnds.size(), 0);
-}
-
-const std::vector<vec3f>& MultiGoalShortestPath::getRequestedEnds() const {
-  return pimpl_->requestedEnds;
 }
 
 namespace {
@@ -459,6 +440,121 @@ class IslandSystem {
 };
 }  // namespace impl
 
+/**
+ * @brief Struct for shortest path finding with Eigen. Used in conjunction with
+ * findPath.
+ */
+struct ShortestPathImpl {
+  ShortestPathImpl() { points = std::vector<vec3f>(); };
+  /**
+   * Constructor from a Magnum ShortestPath object.
+   */
+  ShortestPathImpl(ShortestPath sp) {
+    points = std::vector<vec3f>();
+    requestedStart = HabVecToRecast(sp.requestedStart);
+    requestedEnd = HabVecToRecast(sp.requestedEnd);
+    for (auto& point : sp.points) {
+      points.push_back(HabVecToRecast(point));
+    }
+    geodesicDistance = sp.geodesicDistance;
+  };
+
+  /**
+   * Convert this ShortestPathImpl back to a Habitat ShortestPath object.
+   */
+  ShortestPath getHabShortestPath() {
+    ShortestPath sp = ShortestPath();
+    sp.requestedStart = RecastVecToHab(requestedStart);
+    sp.requestedEnd = RecastVecToHab(requestedEnd);
+    for (auto& point : points) {
+      sp.points.push_back(RecastVecToHab(point));
+    }
+    sp.geodesicDistance = geodesicDistance;
+    return sp;
+  }
+
+  vec3f requestedStart;
+
+  vec3f requestedEnd;
+
+  std::vector<vec3f> points;
+
+  float geodesicDistance{};
+};
+
+/**
+ * @brief Struct for multi-goal shortest path finding. Used in conjunction with
+ * @ref PathFinder.findPath
+ */
+struct MultiGoalShortestPathImpl {
+  MultiGoalShortestPathImpl() {
+    points = std::vector<vec3f>();
+    requestedEnds = std::vector<vec3f>();
+    pathEnds = std::vector<vec3f>();
+    endRefs = std::vector<dtPolyRef>();
+  };
+
+  /**
+   * Constructor from a Magnum ShortestPath object.
+   */
+  MultiGoalShortestPathImpl(MultiGoalShortestPath sp) {
+    points = std::vector<vec3f>();
+    requestedStart = HabVecToRecast(sp.requestedStart);
+    for (auto& end : sp.requestedEnds) {
+      requestedEnds.push_back(HabVecToRecast(end));
+    }
+    minTheoreticalDist.assign(requestedEnds.size(), 0);
+    for (auto& point : sp.points) {
+      points.push_back(HabVecToRecast(point));
+    }
+    geodesicDistance = sp.geodesicDistance;
+  };
+
+  /**
+   * Convert this ShortestPathImpl back to a Habitat ShortestPath object.
+   */
+  MultiGoalShortestPath getHabMultiGoalShortestPath() {
+    MultiGoalShortestPath sp = MultiGoalShortestPath();
+    sp.requestedStart = RecastVecToHab(requestedStart);
+    for (auto& end : requestedEnds) {
+      sp.requestedEnds.push_back(RecastVecToHab(end));
+    }
+    for (auto& point : points) {
+      sp.points.push_back(RecastVecToHab(point));
+    }
+    sp.geodesicDistance = geodesicDistance;
+    sp.closestEndPointIndex = closestEndPointIndex;
+    return sp;
+  }
+
+  vec3f requestedStart;
+
+  std::vector<vec3f> requestedEnds;
+
+  std::vector<dtPolyRef> endRefs;
+  //! Tracks whether an endpoint is valid or not as determined by setup to avoid
+  //! extra work or issues later.
+  std::vector<bool> endIsValid;
+  std::vector<vec3f> pathEnds;
+
+  std::vector<float> minTheoreticalDist;
+  vec3f prevRequestedStart = vec3f::Zero();
+
+  /**
+   * @brief Set the list of desired potential end points
+   */
+  void setRequestedEnds(const std::vector<vec3f>& newEnds) {
+    endRefs.clear();
+    pathEnds.clear();
+    requestedEnds = newEnds;
+    minTheoreticalDist.assign(newEnds.size(), 0);
+  }
+
+  std::vector<vec3f> points;
+  float geodesicDistance{};
+  int closestEndPointIndex{};
+};
+
 struct PathFinder::Impl {
   Impl();
   ~Impl() = default;
@@ -483,8 +579,8 @@ struct PathFinder::Impl {
                                         int maxTries,
                                         int islandIndex /*= ID_UNDEFINED*/);
 
-  bool findPath(ShortestPath& path);
-  bool findPath(MultiGoalShortestPath& path);
+  bool findPath(ShortestPathImpl& path);
+  bool findPath(MultiGoalShortestPathImpl& path);
 
   template <typename T>
   T tryStep(const T& start, const T& end, bool allowSliding);
@@ -564,7 +660,7 @@ struct PathFinder::Impl {
                    dtPolyRef endRef,
                    const vec3f& pathEnd);
 
-  bool findPathSetup(MultiGoalShortestPath& path,
+  bool findPathSetup(MultiGoalShortestPathImpl& path,
                      dtPolyRef& startRef,
                      vec3f& pathStart);
 };
@@ -731,7 +827,7 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
   //   vols[i].hmax, (unsigned char)vols[i].area, *ws.chf);
 
   // Partition the heightfield so that we can use simple algorithm later to
-  // triangulate the walkable areas. There are 3 martitioning methods, each with
+  // triangulate the walkable areas. There are 3 partitioning methods, each with
   // some pros and cons: 1) Watershed partitioning
   //   - the classic Recast partitioning
   //   - creates the nicest tessellation
@@ -1407,8 +1503,8 @@ float pathLength(const std::vector<vec3f>& points) {
 }
 }  // namespace
 
-bool PathFinder::Impl::findPath(ShortestPath& path) {
-  MultiGoalShortestPath tmp;
+bool PathFinder::Impl::findPath(ShortestPathImpl& path) {
+  MultiGoalShortestPathImpl tmp;
   tmp.requestedStart = path.requestedStart;
   tmp.setRequestedEnds({path.requestedEnd});
 
@@ -1463,7 +1559,7 @@ PathFinder::Impl::findPathInternal(const vec3f& start,
   return std::make_tuple(length, std::move(points));
 }
 
-bool PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
+bool PathFinder::Impl::findPathSetup(MultiGoalShortestPathImpl& path,
                                      dtPolyRef& startRef,
                                      vec3f& pathStart) {
   path.geodesicDistance = std::numeric_limits<float>::infinity();
@@ -1479,26 +1575,26 @@ bool PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
     return false;
   }
 
-  if (!path.pimpl_->endRefs.empty())
+  if (!path.endRefs.empty())
     return true;
 
   int numValidPoints = 0;
-  for (const auto& rqEnd : path.getRequestedEnds()) {
+  for (const auto& rqEnd : path.requestedEnds) {
     dtPolyRef endRef = 0;
     vec3f pathEnd;
     std::tie(status, endRef, pathEnd) =
         projectToPoly(rqEnd, navQuery_.get(), filter_.get());
 
     if (status != DT_SUCCESS || endRef == 0) {
-      path.pimpl_->endIsValid.emplace_back(false);
+      path.endIsValid.emplace_back(false);
       ESP_DEBUG() << "Can't project end-point to navmesh, skipping: " << rqEnd;
     } else {
-      path.pimpl_->endIsValid.emplace_back(true);
+      path.endIsValid.emplace_back(true);
       numValidPoints++;
     }
 
-    path.pimpl_->endRefs.emplace_back(endRef);
-    path.pimpl_->pathEnds.emplace_back(pathEnd);
+    path.endRefs.emplace_back(endRef);
+    path.pathEnds.emplace_back(pathEnd);
   }
   if (numValidPoints == 0) {
     ESP_DEBUG() << "Early abort, can't project any points to navmesh.";
@@ -1508,56 +1604,54 @@ bool PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
   return true;
 }
 
-bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
+bool PathFinder::Impl::findPath(MultiGoalShortestPathImpl& path) {
   dtPolyRef startRef = 0;
   vec3f pathStart;
   if (!findPathSetup(path, startRef, pathStart))
     return false;
 
-  if (path.pimpl_->requestedEnds.size() > 1) {
+  if (path.requestedEnds.size() > 1) {
     // Bound the minimum distance any point could be from the start by either
     // how close it use to be minus how much we moved from the last search point
     // or just the L2 distance.
 
-    ShortestPath prevPath;
+    ShortestPathImpl prevPath;
     prevPath.requestedStart = path.requestedStart;
-    prevPath.requestedEnd = path.pimpl_->prevRequestedStart;
+    prevPath.requestedEnd = path.prevRequestedStart;
     findPath(prevPath);
     const float movedAmount = prevPath.geodesicDistance;
 
-    for (int i = 0; i < path.pimpl_->requestedEnds.size(); ++i) {
-      path.pimpl_->minTheoreticalDist[i] = std::max(
-          path.pimpl_->minTheoreticalDist[i] - movedAmount,
-          (path.pimpl_->requestedEnds[i] - path.requestedStart).norm());
+    for (int i = 0; i < path.requestedEnds.size(); ++i) {
+      path.minTheoreticalDist[i] =
+          std::max(path.minTheoreticalDist[i] - movedAmount,
+                   (path.requestedEnds[i] - path.requestedStart).norm());
     }
 
-    path.pimpl_->prevRequestedStart = path.requestedStart;
+    path.prevRequestedStart = path.requestedStart;
   }
 
   // Explore possible goal points by their minimum theoretical distance.
-  std::vector<size_t> ordering(path.pimpl_->requestedEnds.size());
+  std::vector<size_t> ordering(path.requestedEnds.size());
   std::iota(ordering.begin(), ordering.end(), 0);
   std::sort(ordering.begin(), ordering.end(),
             [&path](const size_t a, const size_t b) -> bool {
-              return path.pimpl_->minTheoreticalDist[a] <
-                     path.pimpl_->minTheoreticalDist[b];
+              return path.minTheoreticalDist[a] < path.minTheoreticalDist[b];
             });
 
   for (size_t i : ordering) {
-    if (!path.pimpl_->endIsValid[i])
+    if (!path.endIsValid[i])
       continue;
 
-    if (path.pimpl_->minTheoreticalDist[i] > path.geodesicDistance)
+    if (path.minTheoreticalDist[i] > path.geodesicDistance)
       continue;
 
     const Cr::Containers::Optional<std::tuple<float, std::vector<vec3f>>>
-        findResult =
-            findPathInternal(path.requestedStart, startRef, pathStart,
-                             path.pimpl_->requestedEnds[i],
-                             path.pimpl_->endRefs[i], path.pimpl_->pathEnds[i]);
+        findResult = findPathInternal(path.requestedStart, startRef, pathStart,
+                                      path.requestedEnds[i], path.endRefs[i],
+                                      path.pathEnds[i]);
 
     if (findResult && std::get<0>(*findResult) < path.geodesicDistance) {
-      path.pimpl_->minTheoreticalDist[i] = std::get<0>(*findResult);
+      path.minTheoreticalDist[i] = std::get<0>(*findResult);
       path.geodesicDistance = std::get<0>(*findResult);
       path.points = std::get<1>(*findResult);
       path.closestEndPointIndex = i;
@@ -1722,7 +1816,7 @@ HitRecord PathFinder::Impl::closestObstacleSurfacePoint(
   std::tie(status, ptRef, polyPt) =
       projectToPoly(pt, navQuery_.get(), filter_.get());
   if (status != DT_SUCCESS || ptRef == 0) {
-    return {vec3f(0, 0, 0), vec3f(0, 0, 0),
+    return {Magnum::Vector3(0, 0, 0), Magnum::Vector3(0, 0, 0),
             std::numeric_limits<float>::infinity()};
   }
   vec3f hitPos, hitNormal;
@@ -1730,7 +1824,7 @@ HitRecord PathFinder::Impl::closestObstacleSurfacePoint(
   navQuery_->findDistanceToWall(ptRef, polyPt.data(), maxSearchRadius,
                                 filter_.get(), &hitDist, hitPos.data(),
                                 hitNormal.data());
-  return {std::move(hitPos), std::move(hitNormal), hitDist};
+  return {RecastVecToHab(hitPos), RecastVecToHab(hitNormal), hitDist};
 }
 
 bool PathFinder::Impl::isNavigable(const vec3f& pt,
@@ -1859,7 +1953,10 @@ assets::MeshData::ptr PathFinder::Impl::getNavMeshData(
 
         for (auto& tri : triangles) {
           for (int k = 0; k < 3; ++k) {
-            vbo.push_back(tri.v[k]);
+            // TODO: converting to Vector3 and back to vec3f to consistently
+            // apply the transform. Should be refactored when Eigen is removed.
+            vbo.push_back(
+                Mn::EigenIntegration::cast<vec3f>(RecastVecToHab(tri.v[k])));
             ibo.push_back(vbo.size() - 1);
           }
         }
@@ -1876,75 +1973,69 @@ assets::MeshData::ptr PathFinder::Impl::getNavMeshData(
 PathFinder::PathFinder() : pimpl_{spimpl::make_unique_impl<Impl>()} {};
 
 bool PathFinder::build(const NavMeshSettings& bs,
-                       const float* verts,
-                       const int nverts,
-                       const int* tris,
-                       const int ntris,
-                       const float* bmin,
-                       const float* bmax) {
-  return pimpl_->build(bs, verts, nverts, tris, ntris, bmin, bmax);
-}
-bool PathFinder::build(const NavMeshSettings& bs,
                        const esp::assets::MeshData& mesh) {
-  return pimpl_->build(bs, mesh);
+  // NOTE: we're copying the full mesh here to transform the verts, but at least
+  // we aren't modifying the passed in values directly
+  auto meshCopy = esp::assets::MeshData(mesh);
+  for (auto& vert : meshCopy.vbo) {
+    // TODO: we're converting to magnum and back to vec3f until Eigen is
+    // removed. Refactor this.
+    vert = HabVecToRecast(Mn::Vector3(vert));
+  }
+  return pimpl_->build(bs, meshCopy);
 }
 
-vec3f PathFinder::getRandomNavigablePoint(const int maxTries /*= 10*/,
-                                          int islandIndex /*= ID_UNDEFINED*/) {
-  return pimpl_->getRandomNavigablePoint(maxTries, islandIndex);
+Magnum::Vector3 PathFinder::getRandomNavigablePoint(
+    const int maxTries /*= 10*/,
+    int islandIndex /*= ID_UNDEFINED*/) {
+  return RecastVecToHab(pimpl_->getRandomNavigablePoint(maxTries, islandIndex));
 }
 
-vec3f PathFinder::getRandomNavigablePointAroundSphere(
-    const vec3f& circleCenter,
+Magnum::Vector3 PathFinder::getRandomNavigablePointAroundSphere(
+    const Magnum::Vector3& circleCenter,
     const float radius,
     const int maxTries,
     int islandIndex /*= ID_UNDEFINED*/) {
-  return pimpl_->getRandomNavigablePointInCircle(circleCenter, radius, maxTries,
-                                                 islandIndex);
+  return RecastVecToHab(pimpl_->getRandomNavigablePointInCircle(
+      HabVecToRecast(circleCenter), radius, maxTries, islandIndex));
 }
 
 bool PathFinder::findPath(ShortestPath& path) {
-  return pimpl_->findPath(path);
+  // NOTE: findPath modifies the input ShortestPath so we need to copy those
+  // changes back over before return
+  auto shortestPathImpl = ShortestPathImpl(path);
+  auto result = pimpl_->findPath(shortestPathImpl);
+  path = shortestPathImpl.getHabShortestPath();
+  return result;
 }
 
 bool PathFinder::findPath(MultiGoalShortestPath& path) {
-  return pimpl_->findPath(path);
+  // NOTE: findPath modifies the input ShortestPath so we need to copy those
+  // changes back over before return
+  auto shortestPathImpl = MultiGoalShortestPathImpl(path);
+  auto result = pimpl_->findPath(shortestPathImpl);
+  path = shortestPathImpl.getHabMultiGoalShortestPath();
+  return result;
 }
 
-template vec3f PathFinder::tryStep<vec3f>(const vec3f&, const vec3f&);
-template Mn::Vector3 PathFinder::tryStep<Mn::Vector3>(const Mn::Vector3&,
-                                                      const Mn::Vector3&);
-
-template <typename T>
-T PathFinder::tryStep(const T& start, const T& end) {
-  return pimpl_->tryStep(start, end, /*allowSliding=*/true);
+Magnum::Vector3 PathFinder::tryStep(const Magnum::Vector3& start,
+                                    const Magnum::Vector3& end) {
+  return RecastVecToHab(pimpl_->tryStep(
+      HabVecToRecast(start), HabVecToRecast(end), /*allowSliding=*/true));
 }
 
-template vec3f PathFinder::tryStepNoSliding<vec3f>(const vec3f&, const vec3f&);
-template Mn::Vector3 PathFinder::tryStepNoSliding<Mn::Vector3>(
-    const Mn::Vector3&,
-    const Mn::Vector3&);
-
-template <typename T>
-T PathFinder::tryStepNoSliding(const T& start, const T& end) {
-  return pimpl_->tryStep(start, end, /*allowSliding=*/false);
+Magnum::Vector3 PathFinder::tryStepNoSliding(const Magnum::Vector3& start,
+                                             const Magnum::Vector3& end) {
+  return RecastVecToHab(pimpl_->tryStep(
+      HabVecToRecast(start), HabVecToRecast(end), /*allowSliding=*/false));
 }
 
-template vec3f PathFinder::snapPoint<vec3f>(const vec3f& pt, int islandIndex);
-template Mn::Vector3 PathFinder::snapPoint<Mn::Vector3>(const Mn::Vector3& pt,
-                                                        int islandIndex);
-
-template int PathFinder::getIsland<vec3f>(const vec3f& pt);
-template int PathFinder::getIsland<Mn::Vector3>(const Mn::Vector3& pt);
-
-template <typename T>
-T PathFinder::snapPoint(const T& pt, int islandIndex) {
-  return pimpl_->snapPoint(pt, islandIndex);
+Mn::Vector3 PathFinder::snapPoint(const Mn::Vector3& pt, int islandIndex) {
+  return RecastVecToHab(pimpl_->snapPoint(HabVecToRecast(pt), islandIndex));
 }
 
-template <typename T>
-int PathFinder::getIsland(const T& pt) {
-  return pimpl_->getIsland(pt);
+int PathFinder::getIsland(const Mn::Vector3& pt) {
+  return pimpl_->getIsland(HabVecToRecast(pt));
 }
 
 bool PathFinder::loadNavMesh(const std::string& path) {
@@ -1963,8 +2054,8 @@ void PathFinder::seed(uint32_t newSeed) {
   return pimpl_->seed(newSeed);
 }
 
-float PathFinder::islandRadius(const vec3f& pt) const {
-  return pimpl_->islandRadius(pt);
+float PathFinder::islandRadius(const Magnum::Vector3& pt) const {
+  return pimpl_->islandRadius(HabVecToRecast(pt));
 }
 
 float PathFinder::islandRadius(int islandIndex) const {
@@ -1975,27 +2066,31 @@ int PathFinder::numIslands() const {
   return pimpl_->numIslands();
 }
 
-float PathFinder::distanceToClosestObstacle(const vec3f& pt,
+float PathFinder::distanceToClosestObstacle(const Magnum::Vector3& pt,
                                             const float maxSearchRadius) const {
-  return pimpl_->distanceToClosestObstacle(pt, maxSearchRadius);
+  return pimpl_->distanceToClosestObstacle(HabVecToRecast(pt), maxSearchRadius);
 }
 
 HitRecord PathFinder::closestObstacleSurfacePoint(
-    const vec3f& pt,
+    const Magnum::Vector3& pt,
     const float maxSearchRadius) const {
-  return pimpl_->closestObstacleSurfacePoint(pt, maxSearchRadius);
+  return pimpl_->closestObstacleSurfacePoint(HabVecToRecast(pt),
+                                             maxSearchRadius);
 }
 
-bool PathFinder::isNavigable(const vec3f& pt, const float maxYDelta) const {
-  return pimpl_->isNavigable(pt, maxYDelta);
+bool PathFinder::isNavigable(const Magnum::Vector3& pt,
+                             const float maxYDelta) const {
+  return pimpl_->isNavigable(HabVecToRecast(pt), maxYDelta);
 }
 
 float PathFinder::getNavigableArea(int islandIndex /*= ID_UNDEFINED*/) const {
   return pimpl_->getNavigableArea(islandIndex);
 }
 
-std::pair<vec3f, vec3f> PathFinder::bounds() const {
-  return pimpl_->bounds();
+std::pair<Magnum::Vector3, Magnum::Vector3> PathFinder::bounds() const {
+  return std::pair<Magnum::Vector3, Magnum::Vector3>(
+      RecastVecToHab(pimpl_->bounds().first),
+      RecastVecToHab(pimpl_->bounds().second));
 }
 
 Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> PathFinder::getTopDownView(
@@ -2014,6 +2109,8 @@ PathFinder::getTopDownIslandView(const float metersPerPixel,
 
 assets::MeshData::ptr PathFinder::getNavMeshData(
     int islandIndex /*= ID_UNDEFINED*/) {
+  // NOTE: The cached MeshDats in impl is already pre-converted to Habitat's
+  // coordinate system.
   return pimpl_->getNavMeshData(islandIndex);
 }
 
