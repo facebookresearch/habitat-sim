@@ -297,7 +297,7 @@ void declareBaseAttributesManager(py::module& m,
             "fail with a message if any subdirectories in the requested "
             "filepath do not exist.")
                .c_str(),
-           "handle"_a, "filepath"_a, "create_subdir"_a)
+           "template"_a, "filepath"_a, "create_subdir"_a)
       .def("save_template_to_filepath",
            static_cast<bool (MgrClass::*)(const AttribsPtr&, const std::string&,
                                           const std::string&, bool) const>(
@@ -309,7 +309,7 @@ void declareBaseAttributesManager(py::module& m,
             "subdirectories in the requested filepath "
             "subdirectories do not exist.")
                .c_str(),
-           "handle"_a, "filepath"_a, "filename"_a, "create_subdir"_a);
+           "template"_a, "filepath"_a, "filename"_a, "create_subdir"_a);
 }  // declareBaseAttributesManager
 
 void initAttributesManagersBindings(py::module& m) {
