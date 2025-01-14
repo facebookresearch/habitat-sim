@@ -437,5 +437,5 @@ jobs:
             conda config --set anaconda_upload yes
             cd conda-build
             export PYTHONIOENCODING="utf-8"
-            python matrix_builder.py ${{ env.NIGHTLY }}
+            python matrix_builder.py --conda_upload ${{ env.NIGHTLY }}
           fi
