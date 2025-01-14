@@ -2065,8 +2065,15 @@ class HabitatSimInteractiveViewer(Application):
             mouse_mode_string = "MARKER"
 
         edit_string = self.obj_editor.edit_disp_str()
-        self.window_text.render(
-            f"""
+        current_regions = self.sim.semantic_scene.get_regions_for_point(
+            self.render_camera.node.absolute_translation
+        )
+        region_name = (
+            "--"
+            if len(current_regions) == 0
+            else self.sim.semantic_scene.regions[current_regions[0]].id
+        )
+        window_text = f"""
 {self.fps} FPS
 Scene ID : {os.path.split(self.cfg.sim_cfg.scene_id)[1].split('.scene_instance')[0]}
 Sensor Type: {sensor_type_string}
@@ -2075,8 +2082,9 @@ Mouse Interaction Mode: {mouse_mode_string}
 {edit_string}
 Selected MarkerSets TaskSet name : {self.markersets_util.get_current_taskname()}
 Unstable Objects: {self.num_unstable_objects} of {len(self.clutter_object_instances)}
+Current Region: {region_name}
             """
-        )
+        self.window_text.render(window_text)
         self.shader.draw(self.window_text.mesh)
 
         # Disable blending for text
