@@ -10,6 +10,7 @@
  */
 
 #include "esp/metadata/attributes/AbstractAttributes.h"
+#include "esp/metadata/diagnostics/DatasetDiagnosticsTool.h"
 
 #include "esp/core/managedContainers/ManagedFileBasedContainer.h"
 #include "esp/io/Io.h"
@@ -30,6 +31,7 @@ namespace managers {
 using core::config::Configuration;
 using core::managedContainers::ManagedFileBasedContainer;
 using core::managedContainers::ManagedObjectAccess;
+using diagnostics::DatasetDiagnosticsTool;
 
 /**
  * @brief Class template defining responsibilities and functionality for
@@ -64,7 +66,8 @@ class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
                             const std::string& JSONTypeExt)
       : ManagedFileBasedContainer<T, Access>::ManagedFileBasedContainer(
             attrType,
-            JSONTypeExt) {}
+            JSONTypeExt),
+        datasetDiagnostics_(DatasetDiagnosticsTool::create_unique()) {}
   ~AbstractAttributesManager() override = default;
 
   /**
@@ -180,12 +183,52 @@ class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
 
   /**
    * @brief Method to take an existing attributes and set its values from passed
-   * json config file.
+   * json config file. The JSON functionality is encapsulated with diagnostic
+   * preparation and reporting.
    * @param attribs (out) an existing attributes to be modified.
    * @param jsonConfig json document to parse
    */
-  virtual void setValsFromJSONDoc(AttribsPtr attribs,
-                                  const io::JsonGenericValue& jsonConfig) = 0;
+
+  void setValsFromJSONDoc(AttribsPtr attribs,
+                          const io::JsonGenericValue& jsonConfig) {
+    // Clear diagnostic flags from previous run
+    this->datasetDiagnostics_->clearSaveRequired();
+    this->setValsFromJSONDocInternal(attribs, jsonConfig);
+    if (this->datasetDiagnostics_->saveRequired()) {
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "<" << this->objectType_
+          << "> : Diagnostics exposed issues in loaded attributes : `"
+          << attribs->getSimplifiedHandle()
+          << "` and the user has requested that the corrected attributes will "
+             "be saved.";
+    }
+  }  // setValsFromJSONDoc
+
+  /**
+   * @brief Configure @ref datasetDiagnostics_ tool based on if passsed jsonConfig
+   * requests them.
+   */
+  bool setDSDiagnostics(AttribsPtr attribs,
+                        const io::JsonGenericValue& jsonConfig) {
+    io::JsonGenericValue::ConstMemberIterator jsonIter =
+        jsonConfig.FindMember("request_diagnostics");
+    if (jsonIter == jsonConfig.MemberEnd()) {
+      return false;
+    }
+    return this->datasetDiagnostics_->setDiagnosticesFromJSON(
+        jsonIter->value, Cr::Utility::formatString(
+                             "(setDSDiagnostics) <{}> : {}", this->objectType_,
+                             attribs->getSimplifiedHandle()));
+  }  // setDSDiagnostics
+
+  /**
+   * @brief Merge the passed DatasetDiagnosticsTool settings into
+   * @p datasetDiagnostics_ nondestructively (i.e. retaining this one's enabled
+   * diagnostics)
+   */
+  void mergeDSDiagnosticsTool(const DatasetDiagnosticsTool& _tool) {
+    this->datasetDiagnostics_->mergeDiagnosticsTool(_tool);
+  }
 
   /**
    * @brief This function takes the json block specifying user-defined values
@@ -249,6 +292,16 @@ class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
       const AttribsPtr& attributes) const = 0;
 
  protected:
+  /**
+   * @brief Internally called only. Method to take an existing attributes and
+   * set its values from passed json config file.
+   * @param attribs (out) an existing attributes to be modified.
+   * @param jsonConfig json document to parse
+   */
+  virtual void setValsFromJSONDocInternal(
+      AttribsPtr attribs,
+      const io::JsonGenericValue& jsonConfig) = 0;
+
   /**
    * @brief Called internally right before attribute registration. Filepaths
    * in the json configs for Habitat SceneDatasets are specified relative to
@@ -395,6 +448,12 @@ class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
       const AttribsPtr& attributes,
       const std::string& srcAssetHandle,
       const std::function<void(const std::string&)>& handleSetter);
+
+  /**
+   * @brief Diagnostics tool that governs whether certain diagnostic operations
+   * should occur.
+   */
+  DatasetDiagnosticsTool::uptr datasetDiagnostics_;
 
  public:
   ESP_SMART_POINTERS(AbstractAttributesManager<T, Access>)
