@@ -11,7 +11,7 @@ import string
 import sys
 import time
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
@@ -94,7 +94,7 @@ class HabitatSimInteractiveViewer(Application):
         self.cached_urdf = ""
 
         # set up our movement map
-        key = Application.KeyEvent.Key
+        key = Application.Key
         self.pressed = {
             key.UP: False,
             key.DOWN: False,
@@ -109,7 +109,6 @@ class HabitatSimInteractiveViewer(Application):
         }
 
         # set up our movement key bindings map
-        key = Application.KeyEvent.Key
         self.key_to_action = {
             key.UP: "look_up",
             key.DOWN: "look_down",
@@ -132,7 +131,9 @@ class HabitatSimInteractiveViewer(Application):
         )
 
         # Glyphs we need to render everything
-        self.glyph_cache = text.GlyphCache(mn.Vector2i(256))
+        self.glyph_cache = text.GlyphCacheGL(
+            mn.PixelFormat.R8_UNORM, mn.Vector2i(256), mn.Vector2i(1)
+        )
         self.display_font.fill_glyph_cache(
             self.glyph_cache,
             string.ascii_lowercase
@@ -695,8 +696,8 @@ class HabitatSimInteractiveViewer(Application):
             return
 
         agent = self.sim.agents[self.agent_id]
-        press: Dict[Application.KeyEvent.Key.key, bool] = self.pressed
-        act: Dict[Application.KeyEvent.Key.key, str] = self.key_to_action
+        press: Dict[Application.Key.key, bool] = self.pressed
+        act: Dict[Application.Key.key, str] = self.key_to_action
 
         action_queue: List[str] = [act[k] for k, v in press.items() if v]
 
@@ -718,8 +719,8 @@ class HabitatSimInteractiveViewer(Application):
         key will be set to False for the next `self.move_and_look()` to update the current actions.
         """
         key = event.key
-        pressed = Application.KeyEvent.Key
-        mod = Application.InputEvent.Modifier
+        pressed = Application.Key
+        mod = Application.Modifier
 
         shift_pressed = bool(event.modifiers & mod.SHIFT)
         alt_pressed = bool(event.modifiers & mod.ALT)
@@ -874,14 +875,40 @@ class HabitatSimInteractiveViewer(Application):
         )
         self.mouse_cast_results = mouse_cast_results
 
-    def mouse_move_event(self, event: Application.MouseMoveEvent) -> None:
+    def is_left_mse_btn(
+        self, event: Union[Application.PointerEvent, Application.PointerMoveEvent]
+    ) -> bool:
         """
-        Handles `Application.MouseMoveEvent`. When in LOOK mode, enables the left
+        Returns whether the left mouse button is pressed
+        """
+        if isinstance(event, Application.PointerEvent):
+            return event.pointer == Application.Pointer.MOUSE_LEFT
+        elif isinstance(event, Application.PointerMoveEvent):
+            return event.pointers & Application.Pointer.MOUSE_LEFT
+        else:
+            return False
+
+    def is_right_mse_btn(
+        self, event: Union[Application.PointerEvent, Application.PointerMoveEvent]
+    ) -> bool:
+        """
+        Returns whether the right mouse button is pressed
+        """
+        if isinstance(event, Application.PointerEvent):
+            return event.pointer == Application.Pointer.MOUSE_RIGHT
+        elif isinstance(event, Application.PointerMoveEvent):
+            return event.pointers & Application.Pointer.MOUSE_RIGHT
+        else:
+            return False
+
+    def pointer_move_event(self, event: Application.PointerMoveEvent) -> None:
+        """
+        Handles `Application.PointerMoveEvent`. When in LOOK mode, enables the left
         mouse button to steer the agent's facing direction.
         """
-        button = Application.MouseMoveEvent.Buttons
+
         # if interactive mode -> LOOK MODE
-        if event.buttons == button.LEFT and self.mouse_interaction == MouseMode.LOOK:
+        if self.is_left_mse_btn(event) and self.mouse_interaction == MouseMode.LOOK:
             agent = self.sim.agents[self.agent_id]
             delta = self.get_mouse_position(event.relative_position) / 2
             action = habitat_sim.agent.ObjectControls()
@@ -899,24 +926,25 @@ class HabitatSimInteractiveViewer(Application):
         self.redraw()
         event.accepted = True
 
-    def mouse_press_event(self, event: Application.MouseEvent) -> None:
+    def pointer_press_event(self, event: Application.PointerEvent) -> None:
         """
-        Handles `Application.MouseEvent`. When in MARKER mode :
+        Handles `Application.PointerEvent`. When in MARKER mode :
         LEFT CLICK : places a marker at mouse position on targeted object if not the stage
         RIGHT CLICK : removes the closest marker to mouse position on targeted object
         """
-        button = Application.MouseEvent.Button
         physics_enabled = self.sim.get_physics_simulation_library()
-        mod = Application.InputEvent.Modifier
+        is_left_mse_btn = self.is_left_mse_btn(event)
+        is_right_mse_btn = self.is_right_mse_btn(event)
+        mod = Application.Modifier
         shift_pressed = bool(event.modifiers & mod.SHIFT)
-        bool(event.modifiers & mod.ALT)
+        # alt_pressed = bool(event.modifiers & mod.ALT)
         self.calc_mouse_cast_results(event.position)
 
         if physics_enabled and self.mouse_cast_has_hits:
             # If look enabled
             if self.mouse_interaction == MouseMode.LOOK:
                 mouse_cast_results = self.mouse_cast_results
-                if event.button == button.RIGHT:
+                if is_right_mse_btn:
                     # Find object being clicked
                     obj_found = False
                     obj = None
@@ -949,7 +977,7 @@ class HabitatSimInteractiveViewer(Application):
                 sel_obj = self.markersets_util.place_marker_at_hit_location(
                     self.mouse_cast_results.hits[0],
                     self.ao_link_map,
-                    event.button == button.LEFT,
+                    is_left_mse_btn,
                 )
                 # clear all selected objects and set to found obj
                 self.obj_editor.set_sel_obj(sel_obj)
@@ -958,9 +986,9 @@ class HabitatSimInteractiveViewer(Application):
         self.redraw()
         event.accepted = True
 
-    def mouse_scroll_event(self, event: Application.MouseScrollEvent) -> None:
+    def scroll_event(self, event: Application.ScrollEvent) -> None:
         """
-        Handles `Application.MouseScrollEvent`. When in LOOK mode, enables camera
+        Handles `Application.ScrollEvent`. When in LOOK mode, enables camera
         zooming (fine-grained zoom using shift) When in MARKER mode, wheel cycles through available taskset names
         """
         scroll_mod_val = (
@@ -972,9 +1000,10 @@ class HabitatSimInteractiveViewer(Application):
             return
 
         # use shift to scale action response
-        shift_pressed = bool(event.modifiers & Application.InputEvent.Modifier.SHIFT)
-        bool(event.modifiers & Application.InputEvent.Modifier.ALT)
-        bool(event.modifiers & Application.InputEvent.Modifier.CTRL)
+        mod = Application.Modifier
+        shift_pressed = bool(event.modifiers & mod.SHIFT)
+        # alt_pressed = bool(event.modifiers & mod.ALT)
+        # ctrl_pressed = bool(event.modifiers & mod.CTRL)
 
         # if interactive mode is False -> LOOK MODE
         if self.mouse_interaction == MouseMode.LOOK:
@@ -990,7 +1019,7 @@ class HabitatSimInteractiveViewer(Application):
         self.redraw()
         event.accepted = True
 
-    def mouse_release_event(self, event: Application.MouseEvent) -> None:
+    def pointer_release_event(self, event: Application.PointerEvent) -> None:
         """
         Release any existing constraints.
         """

@@ -10,7 +10,7 @@ import os
 import string
 import sys
 import time
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
@@ -84,7 +84,7 @@ class HabitatSimInteractiveViewer(Application):
         self.cached_urdf = ""
 
         # set up our movement map
-        key = Application.KeyEvent.Key
+        key = Application.Key
         self.pressed = {
             key.UP: False,
             key.DOWN: False,
@@ -109,7 +109,9 @@ class HabitatSimInteractiveViewer(Application):
         )
 
         # Glyphs we need to render everything
-        self.glyph_cache = text.GlyphCache(mn.Vector2i(256))
+        self.glyph_cache = text.GlyphCacheGL(
+            mn.PixelFormat.R8_UNORM, mn.Vector2i(256), mn.Vector2i(1)
+        )
         self.display_font.fill_glyph_cache(
             self.glyph_cache,
             string.ascii_lowercase
@@ -530,8 +532,8 @@ class HabitatSimInteractiveViewer(Application):
         if repetitions == 0:
             return
 
-        key = Application.KeyEvent.Key
-        press: Dict[Application.KeyEvent.Key.key, bool] = self.pressed
+        key = Application.Key
+        press: Dict[Application.Key.key, bool] = self.pressed
         # Set the spot up to move
         self.spot_agent.move_spot(
             move_fwd=press[key.W],
@@ -585,8 +587,8 @@ class HabitatSimInteractiveViewer(Application):
         key will be set to False for the next `self.move_and_look()` to update the current actions.
         """
         key = event.key
-        pressed = Application.KeyEvent.Key
-        mod = Application.InputEvent.Modifier
+        pressed = Application.Key
+        mod = Application.Modifier
 
         shift_pressed = bool(event.modifiers & mod.SHIFT)
         alt_pressed = bool(event.modifiers & mod.ALT)
@@ -814,19 +816,43 @@ class HabitatSimInteractiveViewer(Application):
         )
         self.mouse_cast_results = mouse_cast_results
 
-    def mouse_move_event(self, event: Application.MouseMoveEvent) -> None:
+    def is_left_mse_btn(
+        self, event: Union[Application.PointerEvent, Application.PointerMoveEvent]
+    ) -> bool:
         """
-        Handles `Application.MouseMoveEvent`. When in LOOK mode, enables the left
+        Returns whether the left mouse button is pressed
+        """
+        if isinstance(event, Application.PointerEvent):
+            return event.pointer == Application.Pointer.MOUSE_LEFT
+        elif isinstance(event, Application.PointerMoveEvent):
+            return event.pointers & Application.Pointer.MOUSE_LEFT
+        else:
+            return False
+
+    def is_right_mse_btn(
+        self, event: Union[Application.PointerEvent, Application.PointerMoveEvent]
+    ) -> bool:
+        """
+        Returns whether the right mouse button is pressed
+        """
+        if isinstance(event, Application.PointerEvent):
+            return event.pointer == Application.Pointer.MOUSE_RIGHT
+        elif isinstance(event, Application.PointerMoveEvent):
+            return event.pointers & Application.Pointer.MOUSE_RIGHT
+        else:
+            return False
+
+    def pointer_move_event(self, event: Application.PointerMoveEvent) -> None:
+        """
+        Handles `Application.PointerMoveEvent`. When in LOOK mode, enables the left
         mouse button to steer the agent's facing direction. When in GRAB mode,
         continues to update the grabber's object position with our agents position.
         """
-        button = Application.MouseMoveEvent.Buttons
+
         # if interactive mode -> LOOK MODE
-        if event.buttons == button.LEFT:
-            shift_pressed = bool(
-                event.modifiers & Application.InputEvent.Modifier.SHIFT
-            )
-            alt_pressed = bool(event.modifiers & Application.InputEvent.Modifier.ALT)
+        if self.is_left_mse_btn(event):
+            shift_pressed = bool(event.modifiers & Application.Modifier.SHIFT)
+            alt_pressed = bool(event.modifiers & Application.Modifier.ALT)
             self.spot_agent.mod_spot_cam(
                 mse_rel_pos=event.relative_position,
                 shift_pressed=shift_pressed,
@@ -837,14 +863,15 @@ class HabitatSimInteractiveViewer(Application):
         self.redraw()
         event.accepted = True
 
-    def mouse_press_event(self, event: Application.MouseEvent) -> None:
+    def pointer_press_event(self, event: Application.PointerEvent) -> None:
         """
-        Handles `Application.MouseEvent`. When in GRAB mode, click on
+        Handles `Application.PointerEvent`. When in GRAB mode, click on
         objects to drag their position. (right-click for fixed constraints)
         """
-        button = Application.MouseEvent.Button
         physics_enabled = self.sim.get_physics_simulation_library()
-        mod = Application.InputEvent.Modifier
+        # is_left_mse_btn = self.is_left_mse_btn(event)
+        is_right_mse_btn = self.is_right_mse_btn(event)
+        mod = Application.Modifier
         shift_pressed = bool(event.modifiers & mod.SHIFT)
         # alt_pressed = bool(event.modifiers & mod.ALT)
         self.calc_mouse_cast_results(event.position)
@@ -852,7 +879,7 @@ class HabitatSimInteractiveViewer(Application):
         # select an object with RIGHT-click
         if physics_enabled and self.mouse_cast_has_hits:
             mouse_cast_hit_results = self.mouse_cast_results.hits
-            if event.button == button.RIGHT:
+            if is_right_mse_btn:
                 # Find object being clicked
                 obj_found = False
                 obj = None
@@ -884,9 +911,9 @@ class HabitatSimInteractiveViewer(Application):
         self.redraw()
         event.accepted = True
 
-    def mouse_scroll_event(self, event: Application.MouseScrollEvent) -> None:
+    def scroll_event(self, event: Application.ScrollEvent) -> None:
         """
-        Handles `Application.MouseScrollEvent`. When in LOOK mode, enables camera
+        Handles `Application.ScrollEvent`. When in LOOK mode, enables camera
         zooming (fine-grained zoom using shift) When in GRAB mode, adjusts the depth
         of the grabber's object. (larger depth change rate using shift)
         """
@@ -899,9 +926,10 @@ class HabitatSimInteractiveViewer(Application):
             return
 
         # use shift to scale action response
-        shift_pressed = bool(event.modifiers & Application.InputEvent.Modifier.SHIFT)
-        alt_pressed = bool(event.modifiers & Application.InputEvent.Modifier.ALT)
-        # ctrl_pressed = bool(event.modifiers & Application.InputEvent.Modifier.CTRL)
+        mod = Application.Modifier
+        shift_pressed = bool(event.modifiers & mod.SHIFT)
+        alt_pressed = bool(event.modifiers & mod.ALT)
+        # ctrl_pressed = bool(event.modifiers & mod.CTRL)
 
         # LOOK MODE
         # use shift for fine-grained zooming
@@ -914,7 +942,7 @@ class HabitatSimInteractiveViewer(Application):
         self.redraw()
         event.accepted = True
 
-    def mouse_release_event(self, event: Application.MouseEvent) -> None:
+    def pointer_release_event(self, event: Application.PointerEvent) -> None:
         """
         Release any existing constraints.
         """

@@ -12,7 +12,7 @@ import string
 import sys
 import time
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
@@ -1064,8 +1064,8 @@ class HabitatSimInteractiveViewer(Application):
             return
 
         agent = self.sim.agents[self.agent_id]
-        press: Dict[Application.KeyEvent.Key.key, bool] = self.pressed
-        act: Dict[Application.KeyEvent.Key.key, str] = self.key_to_action
+        press: Dict[Application.Key.key, bool] = self.pressed
+        act: Dict[Application.Key.key, str] = self.key_to_action
 
         action_queue: List[str] = [act[k] for k, v in press.items() if v]
 
@@ -1760,13 +1760,17 @@ class HabitatSimInteractiveViewer(Application):
                 )
 
             if obj.object_id == hit_info.object_id:
-                # ro or ao base
+                # ro or ao base link
+                print("RO or AO Base link grabbed")
                 object_pivot = obj.transformation.inverted().transform_point(
                     hit_info.point
                 )
                 object_frame = obj.rotation.inverted()
-            elif isinstance(obj, physics.ManagedArticulatedObject):
-                # link
+            elif obj.is_articulated:
+                print(
+                    f"AO non-base link hit id `{hit_info.object_id}` on AO obj id : `{obj.object_id}`"
+                )
+                # ao non-base link - hit info object id is to link
                 ao_link = obj.link_object_ids[hit_info.object_id]
                 object_pivot = (
                     obj.get_link_scene_node(ao_link)
@@ -1775,7 +1779,7 @@ class HabitatSimInteractiveViewer(Application):
                 )
                 object_frame = obj.get_link_scene_node(ao_link).rotation.inverted()
 
-            print(f"Grabbed object {obj.handle}")
+            print(f"Grabbed object `{obj.handle}` | hit id `{hit_info.object_id}`")
             if ao_link >= 0:
                 print(f"    link id {ao_link}")
 
@@ -1807,11 +1811,31 @@ class HabitatSimInteractiveViewer(Application):
                 self.sim,
             )
 
-    def is_left_mse_btn(self, event: Application.PointerMoveEvent) -> bool:
-        return event.pointers & Application.Pointer.MOUSE_LEFT
+    def is_left_mse_btn(
+        self, event: Union[Application.PointerEvent, Application.PointerMoveEvent]
+    ) -> bool:
+        """
+        Returns whether the left mouse button is pressed
+        """
+        if isinstance(event, Application.PointerEvent):
+            return event.pointer == Application.Pointer.MOUSE_LEFT
+        elif isinstance(event, Application.PointerMoveEvent):
+            return event.pointers & Application.Pointer.MOUSE_LEFT
+        else:
+            return False
 
-    def is_right_mse_btn(self, event: Application.PointerMoveEvent) -> bool:
-        return event.pointers & Application.Pointer.MOUSE_RIGHT
+    def is_right_mse_btn(
+        self, event: Union[Application.PointerEvent, Application.PointerMoveEvent]
+    ) -> bool:
+        """
+        Returns whether the right mouse button is pressed
+        """
+        if isinstance(event, Application.PointerEvent):
+            return event.pointer == Application.Pointer.MOUSE_RIGHT
+        elif isinstance(event, Application.PointerMoveEvent):
+            return event.pointers & Application.Pointer.MOUSE_RIGHT
+        else:
+            return False
 
     def pointer_move_event(self, event: Application.PointerMoveEvent) -> None:
         """
@@ -1819,10 +1843,12 @@ class HabitatSimInteractiveViewer(Application):
         mouse button to steer the agent's facing direction. When in GRAB mode,
         continues to update the grabber's object position with our agents position.
         """
-        self.calc_mouse_cast_results(event.position)
 
         # if interactive mode -> LOOK MODE
-        if self.is_left_mse_btn(event) and self.mouse_interaction == MouseMode.LOOK:
+        if (
+            bool(event.pointers & Application.Pointer.MOUSE_LEFT)
+            and self.mouse_interaction == MouseMode.LOOK
+        ):
             agent = self.sim.agents[self.agent_id]
             delta = self.get_mouse_position(event.relative_position) / 2
             action = habitat_sim.agent.ObjectControls()
@@ -1851,9 +1877,9 @@ class HabitatSimInteractiveViewer(Application):
         objects to drag their position. (right-click for fixed constraints)
         """
         physics_enabled = self.sim.get_physics_simulation_library()
-        is_left_mse_btn = self.is_left_mse_btn(event)
-        is_right_mse_btn = self.is_right_mse_btn(event)
-        mod = Application.InputEvent.Modifier
+        is_left_mse_btn = bool(event.pointer == Application.Pointer.MOUSE_LEFT)
+        is_right_mse_btn = bool(event.pointer == Application.Pointer.MOUSE_RIGHT)
+        mod = Application.Modifier
         shift_pressed = bool(event.modifiers & mod.SHIFT)
         alt_pressed = bool(event.modifiers & mod.ALT)
         self.calc_mouse_cast_results(event.position)
