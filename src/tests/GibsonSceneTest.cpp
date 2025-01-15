@@ -11,6 +11,7 @@
 #include "configure.h"
 
 namespace Cr = Corrade;
+namespace Mn = Magnum;
 
 using esp::scene::SemanticScene;
 using esp::sim::Simulator;
@@ -49,10 +50,10 @@ void GibsonSceneTest::testGibsonScene() {
   CORRADE_VERIFY(semanticScene.objects().size() != 2);
   auto object = semanticScene.objects()[1];
   CORRADE_COMPARE(object->category()->name(""), "microwave");
-  CORRADE_VERIFY(
-      object->obb().center().isApprox(esp::vec3f(2.83999, 4.76085, 1.49223)));
-  CORRADE_VERIFY(
-      object->obb().sizes().isApprox(esp::vec3f(0.406775, 1.28023, 0.454744)));
+  CORRADE_COMPARE(object->obb().center(),
+                  Mn::Vector3(2.83999, 4.76085, 1.49223));
+  CORRADE_COMPARE(object->obb().sizes(),
+                  Mn::Vector3(0.406775, 1.28023, 0.454744));
   object = semanticScene.objects()[2];
   CORRADE_COMPARE(object->category()->name(""), "oven");
   object = semanticScene.objects()[3];
@@ -74,10 +75,10 @@ void GibsonSceneTest::testGibsonSemanticScene() {
   CORRADE_COMPARE(semanticScene->objects().size(), 34);
   const auto& microwave = semanticScene->objects()[1];
   CORRADE_COMPARE(microwave->category()->name(""), "microwave");
-  CORRADE_VERIFY(microwave->obb().center().isApprox(
-      esp::vec3f(2.83999, 4.76085, 1.49223)));
-  CORRADE_VERIFY(microwave->obb().sizes().isApprox(
-      esp::vec3f(0.406775, 1.28023, 0.454744)));
+  CORRADE_COMPARE(microwave->obb().center(),
+                  Mn::Vector3(2.83999, 4.76085, 1.49223));
+  CORRADE_COMPARE(microwave->obb().sizes(),
+                  Mn::Vector3(0.406775, 1.28023, 0.454744));
 }
 
 }  // namespace

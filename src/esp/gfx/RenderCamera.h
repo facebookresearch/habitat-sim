@@ -83,21 +83,6 @@ class RenderCamera : public MagnumCamera {
    */
   RenderCamera(scene::SceneNode& node,
                esp::scene::SceneNodeSemanticDataIDX semanticDataIDX,
-               const vec3f& eye,
-               const vec3f& target,
-               const vec3f& up);
-  /**
-   * @brief Constructor
-   * @param node the scene node to which the camera is attached
-   * @param semanticDataIDX The type of semantic id data rendered by this
-   * camera. Ignored if not rendering semantic data.
-   * @param eye the eye position (in PARENT node space)
-   * @param target the target position (in PARENT node space)
-   * @param up the up direction (in PARENT node space)
-   * NOTE: it will override any relative transformation w.r.t its parent node
-   */
-  RenderCamera(scene::SceneNode& node,
-               esp::scene::SceneNodeSemanticDataIDX semanticDataIDX,
                const Magnum::Vector3& eye,
                const Magnum::Vector3& target,
                const Magnum::Vector3& up);

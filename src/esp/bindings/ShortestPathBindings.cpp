@@ -174,24 +174,25 @@ void initShortestPathBindings(py::module& m) {
           R"(Finds the shortest path between a start point and the closest of a set of end points (in geodesic distance) on the navigation mesh using MultiGoalShortestPath module. Path variable is filled if successful. Returns boolean success.)")
       .def("try_step", &PathFinder::tryStep<Magnum::Vector3>, "start"_a,
            "end"_a)
-      .def("try_step", &PathFinder::tryStep<vec3f>, "start"_a, "end"_a)
+      .def("try_step", &PathFinder::tryStep<Magnum::Vector3>, "start"_a,
+           "end"_a)
       .def("try_step_no_sliding",
            &PathFinder::tryStepNoSliding<Magnum::Vector3>, "start"_a, "end"_a)
-      .def("try_step_no_sliding", &PathFinder::tryStepNoSliding<vec3f>,
-           "start"_a, "end"_a)
+      .def("try_step_no_sliding",
+           &PathFinder::tryStepNoSliding<Magnum::Vector3>, "start"_a, "end"_a)
       .def("snap_point", &PathFinder::snapPoint<Magnum::Vector3>, "point"_a,
            "island_index"_a = ID_UNDEFINED)
-      .def("snap_point", &PathFinder::snapPoint<vec3f>, "point"_a,
+      .def("snap_point", &PathFinder::snapPoint<Magnum::Vector3>, "point"_a,
            "island_index"_a = ID_UNDEFINED)
       .def(
           "get_island", &PathFinder::getIsland<Magnum::Vector3>, "point"_a,
           R"(Query the island closest to a point. Snaps the point to the NavMesh first, so check the snap distance also if unsure.)")
       .def(
-          "get_island", &PathFinder::getIsland<vec3f>, "point"_a,
+          "get_island", &PathFinder::getIsland<Magnum::Vector3>, "point"_a,
           R"(Query the island closest to a point. Snaps the point to the NavMesh first, so check the snap distance also if unsure.)")
       .def(
           "island_radius",
-          [](PathFinder& self, const vec3f& pt) {
+          [](PathFinder& self, const Magnum::Vector3& pt) {
             return self.islandRadius(pt);
           },
           "pt"_a,

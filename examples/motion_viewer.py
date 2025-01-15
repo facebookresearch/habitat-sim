@@ -213,11 +213,11 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         """
 
         key = event.key
-        pressed = Application.KeyEvent.Key
-        mod = Application.InputEvent.Modifier
+        pressed = Application.Key
+        mod = Application.Modifier
 
         if key == pressed.F:
-            if event.modifiers == mod.SHIFT:
+            if event.modifiers & mod.SHIFT:
                 self.remove_selector_obj()
                 self.fm_demo.hide_model()
                 logger.info("Command: hide model")
@@ -233,7 +233,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                     path_time=random.uniform(0.0, 10.0)
                 )
             elif not self.sim.pathfinder.is_loaded:
-                logger.warn("Warning: pathfinder not initialized, recompute navmesh")
+                logger.warning("Warning: pathfinder not initialized, recompute navmesh")
             else:
                 logger.info("Command: shortest path between two random points")
                 self.fm_demo.load_model()
@@ -244,7 +244,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             return
 
         elif key == pressed.U:
-            if event.modifiers == mod.SHIFT:
+            if event.modifiers & mod.SHIFT:
                 self.perpetual = not self.perpetual
                 logger.info(
                     f"Command: perpetual motion generation set to {self.perpetual}"
@@ -303,7 +303,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 
         elif key == pressed.SPACE:
             if not self.sim.config.sim_cfg.enable_physics:
-                logger.warn("Warning: physics was not enabled during setup")
+                logger.warning("Warning: physics was not enabled during setup")
             else:
                 self.simulating = not self.simulating
                 logger.info(f"Command: physics simulating set to {self.simulating}")
@@ -314,11 +314,11 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             return
 
         elif key == pressed.P:
-            if event.modifiers == mod.CTRL:
+            if event.modifiers & mod.CTRL:
                 logger.info(f"Last file loaded: {self.fm_demo.last_metadata_file}")
-            elif event.modifiers == mod.SHIFT:
+            elif event.modifiers & mod.SHIFT:
                 if self.fm_demo.last_metadata_file is None:
-                    logger.warn("Warning: No previous file loaded.")
+                    logger.warning("Warning: No previous file loaded.")
                 else:
                     self.fm_demo.save_metadata(self.fm_demo.last_metadata_file)
             else:
@@ -334,11 +334,11 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                     self.fm_demo.save_metadata(fn)
 
         elif key == pressed.L:
-            if event.modifiers == mod.CTRL:
+            if event.modifiers & mod.CTRL:
                 logger.info(f"Last file loaded: {self.fm_demo.last_metadata_file}")
-            elif event.modifiers == mod.SHIFT:
+            elif event.modifiers & mod.SHIFT:
                 if self.fm_demo.last_metadata_file is None:
-                    logger.warn("Warning: No previous file loaded.")
+                    logger.warning("Warning: No previous file loaded.")
                 else:
                     self.fm_demo.fetch_metadata(self.fm_demo.last_metadata_file)
             else:
@@ -352,7 +352,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 
         elif key == pressed.PERIOD:
             if self.simulating:
-                logger.warn("Warning: physic simulation already running")
+                logger.warning("Warning: physic simulation already running")
             else:
                 self.simulate_single_step = True
                 logger.info("Command: physics step taken")
@@ -363,14 +363,13 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 
         super().key_press_event(event)
 
-    def mouse_press_event(self, event: Application.MouseEvent) -> None:
+    def pointer_press_event(self, event: Application.PointerEvent) -> None:
         """
-        Handles `Application.MouseEvent`. When in GRAB mode, click on
+        Handles `Application.PointerEvent`. When in GRAB mode, click on
         objects to drag their position. (right-click for fixed constraints).
         When in MOTION mode select Fairmotion characters with left-click,
         place them in a new location with right-click.
         """
-        button = Application.MouseEvent.Button
         physics_enabled = self.sim.get_physics_simulation_library()
 
         # if interactive mode is True -> MOTION MODE
@@ -381,8 +380,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 
             if raycast_results.has_hits():
                 hit_info = raycast_results.hits[0]
-
-                if event.button == button.LEFT:
+                if event.pointers & Application.Pointer.MOUSE_LEFT:
                     if self.fm_demo.belongs_to(hit_info.object_id):
                         if not self.fm_demo.model:
                             self.fm_demo.load_model()
@@ -391,17 +389,20 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                     else:
                         self.remove_selector_obj()
 
-                elif event.button == button.RIGHT and self.selected_mocap_char:
+                elif (
+                    event.pointers & Application.Pointer.MOUSE_RIGHT
+                    and self.selected_mocap_char
+                ):
                     point = hit_info.point
                     self.fm_demo.set_transform_offsets(translate_offset=point)
                     self.create_selector_obj(self.fm_demo)
             # end has raycast hit
 
-        super().mouse_press_event(event)
+        super().pointer_press_event(event)
 
-    def mouse_scroll_event(self, event: Application.MouseScrollEvent) -> None:
+    def scroll_event(self, event: Application.ScrollEvent) -> None:
         """
-        Handles `Application.MouseScrollEvent`. When in LOOK mode, enables camera
+        Handles `Application.ScrollEvent`. When in LOOK mode, enables camera
         zooming (fine-grained zoom using shift). When in GRAB mode, adjusts the depth
         of the grabber's object. (larger depth change rate using shift). When in MOTION
         mode, rotate them about the floor-normal axis with the scroll wheel. (fine-grained
@@ -420,7 +421,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                 return
 
             # use shift to scale action response
-            shift_pressed = event.modifiers == Application.InputEvent.Modifier.SHIFT
+            shift_pressed = bool(event.modifiers & Application.Modifier.SHIFT)
 
             if (
                 self.mouse_interaction == MouseMode.MOTION
@@ -436,7 +437,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                 )
             self.create_selector_obj(self.fm_demo)
 
-        super().mouse_scroll_event(event)
+        super().pointer_scroll_event(event)
 
     def cycle_mouse_mode(self):
         """

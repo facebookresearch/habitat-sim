@@ -23,7 +23,7 @@ find_package(OpenMP)
 # We don't find_package(OpenGL REQUIRED) here, but let Magnum do that instead
 # as it sets up various things related to GLVND.
 
-include_directories("deps")
+include_directories(SYSTEM "deps")
 
 # Eigen. Use a system package, if preferred.
 if(USE_SYSTEM_EIGEN)
@@ -51,7 +51,7 @@ if(NOT USE_SYSTEM_ZSTD)
 endif()
 
 # tinyxml2
-include_directories("${DEPS_DIR}/tinyxml2")
+include_directories(SYSTEM "${DEPS_DIR}/tinyxml2")
 add_subdirectory("${DEPS_DIR}/tinyxml2")
 
 # RapidJSON. Use a system package, if preferred.
@@ -65,32 +65,23 @@ endif()
 # Why all the weird options in the set() calls below?
 # See https://stackoverflow.com/questions/3766740/overriding-a-default-option-value-in-cmake-from-a-parent-cmakelists-txt
 
-if(BUILD_ASSIMP_SUPPORT)
-  # Assimp. Use a system package, if preferred.
-  if(NOT USE_SYSTEM_ASSIMP)
-    set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "ASSIMP_BUILD_ASSIMP_TOOLS" FORCE)
-    set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "ASSIMP_BUILD_TESTS" FORCE)
-    set(ASSIMP_NO_EXPORT ON CACHE BOOL "" FORCE)
-    set(BUILD_SHARED_LIBS OFF CACHE BOOL "BUILD_SHARED_LIBS" FORCE)
-    # The following is important to avoid Assimp appending `d` to all our
-    # binaries. Works only with Assimp >= 5.0.0, and after 5.0.1 this option is
-    # prefixed with ASSIMP_, so better set both variants to future-proof this.
-    set(INJECT_DEBUG_POSTFIX OFF CACHE BOOL "" FORCE)
-    set(ASSIMP_INJECT_DEBUG_POSTFIX OFF CACHE BOOL "" FORCE)
-    # Otherwise Assimp may attempt to find minizip on the filesystem using
-    # pkgconfig, but in a poor way that expects just yelling -lminizip at the
-    # linker without any link directories would work. It won't. (The variable
-    # is not an option() so no need to CACHE it.)
-    set(ASSIMP_BUILD_MINIZIP ON)
-    add_subdirectory("${DEPS_DIR}/assimp")
-
-    # Help FindAssimp locate everything
-    set(ASSIMP_INCLUDE_DIR "${DEPS_DIR}/assimp/include" CACHE STRING "" FORCE)
-    set(ASSIMP_LIBRARY_DEBUG assimp CACHE STRING "" FORCE)
-    set(ASSIMP_LIBRARY_RELEASE assimp CACHE STRING "" FORCE)
-    add_library(Assimp::Assimp ALIAS assimp)
-  endif()
-  find_package(Assimp REQUIRED)
+# Assimp. Use a system package, if preferred.
+if(BUILD_ASSIMP_SUPPORT AND NOT USE_SYSTEM_ASSIMP)
+  set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "ASSIMP_BUILD_ASSIMP_TOOLS" FORCE)
+  set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "ASSIMP_BUILD_TESTS" FORCE)
+  set(ASSIMP_NO_EXPORT ON CACHE BOOL "" FORCE)
+  set(BUILD_SHARED_LIBS OFF CACHE BOOL "BUILD_SHARED_LIBS" FORCE)
+  # The following is important to avoid Assimp appending `d` to all our
+  # binaries. Works only with Assimp >= 5.0.0, and after 5.0.1 this option is
+  # prefixed with ASSIMP_, so better set both variants to future-proof this.
+  set(INJECT_DEBUG_POSTFIX OFF CACHE BOOL "" FORCE)
+  set(ASSIMP_INJECT_DEBUG_POSTFIX OFF CACHE BOOL "" FORCE)
+  # Otherwise Assimp may attempt to find minizip on the filesystem using
+  # pkgconfig, but in a poor way that expects just yelling -lminizip at the
+  # linker without any link directories would work. It won't. (The variable
+  # is not an option() so no need to CACHE it.)
+  set(ASSIMP_BUILD_MINIZIP ON)
+  add_subdirectory("${DEPS_DIR}/assimp")
 endif()
 
 # audio

@@ -122,7 +122,6 @@ jobs:
         CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless \
           --bullet \
           --with-cuda \
-          --build-datatool \
           --run-tests \
           --no-lto \
           --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
@@ -438,5 +437,5 @@ jobs:
             conda config --set anaconda_upload yes
             cd conda-build
             export PYTHONIOENCODING="utf-8"
-            python matrix_builder.py ${{ env.NIGHTLY }}
+            python matrix_builder.py --conda_upload ${{ env.NIGHTLY }}
           fi

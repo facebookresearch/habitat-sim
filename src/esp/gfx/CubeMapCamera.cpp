@@ -3,8 +3,6 @@
 // LICENSE file in the root directory of this source tree
 
 #include "CubeMapCamera.h"
-#include <Magnum/EigenIntegration/Integration.h>
-
 namespace Mn = Magnum;
 namespace Cr = Corrade;
 
@@ -17,17 +15,7 @@ CubeMapCamera::CubeMapCamera(
     : RenderCamera(node, semanticDataIDX) {
   updateOriginalViewingMatrix();
 }
-CubeMapCamera::CubeMapCamera(
-    scene::SceneNode& node,
-    esp::scene::SceneNodeSemanticDataIDX semanticDataIDX,
-    const vec3f& eye,
-    const vec3f& target,
-    const vec3f& up)
-    : CubeMapCamera(node,
-                    semanticDataIDX,
-                    Mn::Vector3{eye},
-                    Mn::Vector3{target},
-                    Mn::Vector3{up}) {}
+
 CubeMapCamera::CubeMapCamera(
     scene::SceneNode& node,
     esp::scene::SceneNodeSemanticDataIDX semanticDataIDX,

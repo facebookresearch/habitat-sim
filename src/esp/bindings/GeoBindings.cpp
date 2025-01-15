@@ -7,8 +7,6 @@
 #include "esp/geo/Geo.h"
 #include "esp/geo/OBB.h"
 
-#include <Magnum/EigenIntegration/GeometryIntegration.h>
-
 namespace Mn = Magnum;
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -23,18 +21,17 @@ void initGeoBindings(py::module& m) {
   geo.attr("GRAVITY") = ESP_GRAVITY;
   geo.attr("FRONT") = ESP_FRONT;
   geo.attr("BACK") = ESP_BACK;
-  geo.attr("LEFT") = ESP_FRONT.cross(ESP_GRAVITY);
-  geo.attr("RIGHT") = ESP_FRONT.cross(ESP_UP);
+  geo.attr("LEFT") = Mn::Math::cross(ESP_FRONT, ESP_GRAVITY);
+  geo.attr("RIGHT") = Mn::Math::cross(ESP_FRONT, ESP_UP);
 
   // ==== OBB ====
   py::class_<OBB>(m, "OBB", R"(This is an OBB.)")
-      .def(py::init([](const vec3f& center, const vec3f& dimensions,
+      .def(py::init([](const Mn::Vector3& center, const Mn::Vector3& dimensions,
                        const Mn::Quaternion& rotation) {
-             return OBB(center, dimensions,
-                        Mn::EigenIntegration::cast<quatf>(rotation));
+             return OBB(center, dimensions, rotation);
            }),
            "center"_a, "dimensions"_a, "rotation"_a)
-      .def(py::init<box3f&>())
+      .def(py::init<Mn::Range3D&>())
       .def(
           "contains", &OBB::contains,
           R"(Returns whether world coordinate point p is contained in this OBB within threshold distance epsilon.)")
@@ -48,7 +45,7 @@ void initGeoBindings(py::module& m) {
       .def(
           "rotate",
           [](OBB& self, const Mn::Quaternion& rotation) {
-            return self.rotate(Mn::EigenIntegration::cast<quatf>(rotation));
+            return self.rotate(rotation);
           },
           R"(Rotate this OBB by the given rotation and return reference to self.)")
       .def_property_readonly("center", &OBB::center, R"(Centroid of this OBB.)")
@@ -59,15 +56,19 @@ void initGeoBindings(py::module& m) {
       .def_property_readonly("half_extents", &OBB::halfExtents,
                              R"(Half-extents of this OBB (dimensions).)")
       .def_property_readonly(
-          "rotation", [](const OBB& self) { return self.rotation().coeffs(); },
+          // Return as an array of format [x,y,z,w] to retain existing
+          // expectations
+          "rotation",
+          [](const OBB& self) {
+            const Mn::Quaternion q = self.rotation();
+            return Mn::Vector4(q.vector(), q.scalar());
+          },
           R"(Quaternion representing rotation of this OBB.)")
       .def_property_readonly(
-          "local_to_world",
-          [](const OBB& self) { return self.localToWorld().matrix(); },
+          "local_to_world", [](const OBB& self) { return self.localToWorld(); },
           R"(Transform from local [0,1]^3 coordinates to world coordinates.)")
       .def_property_readonly(
-          "world_to_local",
-          [](const OBB& self) { return self.worldToLocal().matrix(); },
+          "world_to_local", [](const OBB& self) { return self.worldToLocal(); },
           R"(Transform from world coordinates to local [0,1]^3 coordinates.)");
 
   geo.def(

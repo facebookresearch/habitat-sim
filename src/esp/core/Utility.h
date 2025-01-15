@@ -9,6 +9,8 @@
 
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Algorithms/GramSchmidt.h>
+#include <Magnum/Math/Constants.h>
+#include <Magnum/Math/Functions.h>
 #include <Magnum/Math/Matrix3.h>
 #include <Magnum/Math/Matrix4.h>
 #include <Magnum/Math/Quaternion.h>
@@ -36,6 +38,36 @@ inline Magnum::Quaternion randomRotation() {
 
   return Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2));
 }
+
+/**
+ * @brief Build a Magnum Quaternion as a rotation from two vectors
+ * @param rotFrom The vector to rotate.
+ * @param rotTo The vector to rotate to.
+ * @return normalized rotation quaternion to perform the rotation.
+ */
+template <typename T>
+Magnum::Math::Quaternion<T> quatRotFromTwoVectors(
+    const Magnum::Math::Vector3<T>& rotFrom,
+    const Magnum::Math::Vector3<T>& rotTo) {
+  const auto fromNorm = rotFrom.normalized();
+  const auto toNorm = rotTo.normalized();
+
+  if (fromNorm == -toNorm) {
+    // colinear opposite direction
+    // Find a vector not colinear with rotFrom
+    auto axisVec = Magnum::Math::Vector3<T>::xAxis();
+    if (Magnum::Math::abs(Magnum::Math::dot(fromNorm, axisVec)) == 1.0f) {
+      axisVec = Magnum::Math::Vector3<T>::yAxis();
+    }
+    // Find a normal vector ortho to a and b, treat as rotational axis
+    const auto rotAxisVec = Magnum::Math::cross(fromNorm, axisVec).normalized();
+    return Magnum::Math::Quaternion<T>(rotAxisVec, 0).normalized();
+  }
+  const auto halfVec = (fromNorm + toNorm).normalized();
+  return Magnum::Math::Quaternion<T>(Magnum::Math::cross(fromNorm, halfVec),
+                                     Magnum::Math::dot(fromNorm, halfVec))
+      .normalized();
+}  // quatRotFromTwoVectors
 
 template <typename T>
 Magnum::Math::Matrix4<T> orthonormalizeRotationShear(

@@ -5,14 +5,10 @@
 
 #include "esp/nav/GreedyFollower.h"
 
-#include <Magnum/EigenIntegration/GeometryIntegration.h>
-#include <Magnum/EigenIntegration/Integration.h>
-
 #include "esp/core/Esp.h"
 #include "esp/geo/Geo.h"
 
 namespace Mn = Magnum;
-using Mn::EigenIntegration::cast;
 
 namespace esp {
 namespace nav {
@@ -22,9 +18,9 @@ GreedyGeodesicFollowerImpl::GreedyGeodesicFollowerImpl(
     MoveFn& moveForward,
     MoveFn& turnLeft,
     MoveFn& turnRight,
-    double goalDist,
-    double forwardAmount,
-    double turnAmount,
+    float goalDist,
+    float forwardAmount,
+    float turnAmount,
     bool fixThrashing,
     int thrashingThreshold)
     : pathfinder_{pathfinder},
@@ -35,12 +31,12 @@ GreedyGeodesicFollowerImpl::GreedyGeodesicFollowerImpl(
       goalDist_{goalDist},
       turnAmount_{turnAmount},
       fixThrashing_{fixThrashing},
-      thrashingThreshold_{thrashingThreshold} {};
+      thrashingThreshold_{thrashingThreshold} {}
 
 float GreedyGeodesicFollowerImpl::geoDist(const Mn::Vector3& start,
                                           const Mn::Vector3& end) {
-  geoDistPath_.requestedStart = cast<vec3f>(start);
-  geoDistPath_.requestedEnd = cast<vec3f>(end);
+  geoDistPath_.requestedStart = start;
+  geoDistPath_.requestedEnd = end;
   pathfinder_->findPath(geoDistPath_);
   return geoDistPath_.geodesicDistance;
 }
@@ -56,7 +52,7 @@ GreedyGeodesicFollowerImpl::TryStepResult GreedyGeodesicFollowerImpl::tryStep(
 
   const float geoDistAfter = geoDist(newPose, end);
   const float distToObsAfter = pathfinder_->distanceToClosestObstacle(
-      cast<vec3f>(newPose), 1.1 * closeToObsThreshold_);
+      newPose, 1.1f * closeToObsThreshold_);
 
   return {geoDistAfter, distToObsAfter, didCollide};
 }
@@ -106,7 +102,7 @@ GreedyGeodesicFollowerImpl::nextBestPrimAlong(const core::RigidState& state,
 
   // Plan over all primitives of the form [LEFT] * n + [FORWARD]
   // or [RIGHT] * n + [FORWARD]
-  for (float angle = 0; angle < M_PI; angle += turnAmount_) {
+  for (float angle = 0; angle < Mn::Constants::pi(); angle += turnAmount_) {
     {
       const float reward = computeReward(leftDummyNode_, path, leftPrim.size());
       if (reward > bestReward) {
@@ -163,8 +159,8 @@ GreedyGeodesicFollowerImpl::CODES GreedyGeodesicFollowerImpl::nextActionAlong(
     const core::RigidState& start,
     const Mn::Vector3& end) {
   ShortestPath path;
-  path.requestedStart = cast<vec3f>(start.translation);
-  path.requestedEnd = cast<vec3f>(end);
+  path.requestedStart = start.translation;
+  path.requestedEnd = end;
   pathfinder_->findPath(path);
 
   CODES nextAction;
@@ -200,8 +196,8 @@ GreedyGeodesicFollowerImpl::findPath(const core::RigidState& start,
     core::RigidState state{findPathDummyNode_.rotation(),
                            findPathDummyNode_.MagnumObject::translation()};
     ShortestPath path;
-    path.requestedStart = cast<vec3f>(state.translation);
-    path.requestedEnd = cast<vec3f>(end);
+    path.requestedStart = state.translation;
+    path.requestedEnd = end;
     pathfinder_->findPath(path);
     const auto nextPrim = nextBestPrimAlong(state, path);
     if (nextPrim.empty()) {

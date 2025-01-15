@@ -115,16 +115,15 @@ def quat_from_two_vectors(v0: np.ndarray, v1: np.ndarray) -> qt.quaternion:
     return qt.quaternion(s * 0.5, *(axis / s))
 
 
-def angle_between_quats(q1: qt.quaternion, q2: qt.quaternion) -> float:
-    r"""Computes the angular distance between two quaternions
+def angle_between_quats(q1: mn.Quaternion, q2: mn.Quaternion) -> float:
+    r"""Computes the angular distance between two magnum quaternions
 
     :return: The angular distance between q1 and q2 in radians
     """
 
-    q1_inv = np.conjugate(q1)
-    dq = q1_inv * q2
+    dq = q1.inverted() * q2
 
-    return 2 * np.arctan2(np.linalg.norm(dq.imag), np.abs(dq.real))
+    return 2 * np.arctan2(dq.vector.length(), np.abs(dq.scalar))
 
 
 def quat_rotate_vector(q: qt.quaternion, v: np.ndarray) -> np.ndarray:

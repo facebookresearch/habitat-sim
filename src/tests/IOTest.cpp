@@ -408,12 +408,12 @@ void IOTest::testJsonEspTypes() {
 
   {
     // vec3f
-    _testJsonReadWrite(esp::vec3f{1, 2, 3}, "myvec3f", d);
+    _testJsonReadWrite(Mn::Vector3{1, 2, 3}, "myvec3f", d);
 
     // test reading the wrong type (wrong number of fields)
     std::vector<float> wrongNumFieldsVec{1, 3, 4, 4};
     esp::io::addMember(d, "mywrongNumFieldsVec", wrongNumFieldsVec, allocator);
-    esp::vec3f vec3;
+    Mn::Vector3 vec3;
     CORRADE_VERIFY(!esp::io::readMember(d, "mywrongNumFieldsVec", vec3));
 
     // test reading the wrong type (array elements aren't numbers)
@@ -442,9 +442,9 @@ void IOTest::testJsonEspTypes() {
     esp::assets::AssetInfo assetInfo{
         AssetType::Mp3dMesh,
         "test_filepath2",
-        esp::geo::CoordinateFrame(esp::vec3f(1.f, 0.f, 0.f),
-                                  esp::vec3f(0.f, 0.f, 1.f),
-                                  esp::vec3f(1.f, 2.f, 3.f)),
+        esp::geo::CoordinateFrame(Mn::Vector3(1.f, 0.f, 0.f),
+                                  Mn::Vector3(0.f, 0.f, 1.f),
+                                  Mn::Vector3(1.f, 2.f, 3.f)),
         4.f,
         true,
         false};
@@ -454,10 +454,9 @@ void IOTest::testJsonEspTypes() {
 
     CORRADE_VERIFY(assetInfo2.type == assetInfo.type);
     CORRADE_COMPARE(assetInfo2.filepath, assetInfo.filepath);
-    CORRADE_VERIFY(assetInfo2.frame.up().isApprox(assetInfo.frame.up()));
-    CORRADE_VERIFY(assetInfo2.frame.front().isApprox(assetInfo.frame.front()));
-    CORRADE_VERIFY(
-        assetInfo2.frame.origin().isApprox(assetInfo.frame.origin()));
+    CORRADE_COMPARE(assetInfo2.frame.up(), (assetInfo.frame.up()));
+    CORRADE_COMPARE(assetInfo2.frame.front(), (assetInfo.frame.front()));
+    CORRADE_COMPARE(assetInfo2.frame.origin(), (assetInfo.frame.origin()));
     CORRADE_COMPARE(assetInfo2.virtualUnitToMeters,
                     assetInfo.virtualUnitToMeters);
     CORRADE_COMPARE(assetInfo2.forceFlatShading, assetInfo.forceFlatShading);

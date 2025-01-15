@@ -23,8 +23,7 @@ namespace {
 // per-scene/per-stage configs.
 const std::string HM3DTestConfigLoc = Cr::Utility::Path::join(
     SCENE_DATASETS,
-    "habitat-test-scenes/hm3d_habitat_annotated_testdata/"
-    "hm3d_annotated_testdata.scene_dataset_config.json");
+    "hm3d/example/hm3d_annotated_example_basis.scene_dataset_config.json");
 
 // TODO : support all free/sample scenes once they have their annotations
 // complete.  Make sure above config references additional scenes, and then

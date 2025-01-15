@@ -31,7 +31,6 @@ set(TEST_ASSETS ${CMAKE_CURRENT_SOURCE_DIR}/../data/test_assets)
 # build options
 option(BUILD_ASSIMP_SUPPORT "Whether to build assimp import library support" ON)
 option(BUILD_PYTHON_BINDINGS "Whether to build python bindings" ON)
-option(BUILD_DATATOOL "Whether to build datatool utility binary" ON)
 option(BUILD_GUI_VIEWERS "Whether to build GUI viewer utility binary" OFF)
 option(BUILD_WITH_BULLET
        "Build Habitat-Sim with Bullet physics enabled -- Requires Bullet" OFF
@@ -152,10 +151,6 @@ endif()
 
 # Build the following with the build RPath
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-if(BUILD_DATATOOL)
-  message("Building datatool")
-  add_subdirectory(utils/datatool)
-endif()
 
 if(BUILD_BASIS_COMPRESSOR)
   add_subdirectory(utils/imageconverter)

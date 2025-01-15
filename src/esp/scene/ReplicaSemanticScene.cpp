@@ -5,23 +5,21 @@
 #include "ReplicaSemanticScene.h"
 #include "SemanticScene.h"
 
+#include <Magnum/Math/Matrix4.h>
+
 #include <map>
 #include <string>
 
 #include "esp/io/Json.h"
-
-#include <Magnum/EigenIntegration/GeometryIntegration.h>
-#include <Magnum/EigenIntegration/Integration.h>
 
 namespace esp {
 namespace scene {
 
 constexpr int kMaxIds = 10000; /* We shouldn't every need more than this. */
 
-bool SemanticScene::loadReplicaHouse(
-    const std::string& houseFilename,
-    SemanticScene& scene,
-    const quatf& worldRotation /* = quatf::Identity() */) {
+bool SemanticScene::loadReplicaHouse(const std::string& houseFilename,
+                                     SemanticScene& scene,
+                                     const Magnum::Quaternion& worldRotation) {
   if (!checkFileExists(houseFilename, "loadReplicaHouse")) {
     return false;
   }
@@ -44,7 +42,7 @@ bool SemanticScene::loadReplicaHouse(
 bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
                                       SemanticScene& scene,
                                       bool objectsExist,
-                                      const quatf& worldRotation) {
+                                      const Magnum::Quaternion& worldRotation) {
   scene.categories_.clear();
   scene.objects_.clear();
 
@@ -80,7 +78,8 @@ bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
   scene.elementCounts_["objects"] = objects.Size();
 
   // construct rotation matrix to be used to construct transform
-  const Eigen::Isometry3f worldRotationMat{worldRotation.normalized()};
+  const auto worldRotationMat =
+      Mn::Matrix4::from(worldRotation.normalized().toMatrix(), {});
   for (const auto& jsonObject : objects) {
     SemanticObject::ptr object = SemanticObject::create();
     int id = jsonObject["id"].GetInt();
@@ -102,25 +101,27 @@ bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
     }
 
     const auto& obb = jsonObject["oriented_bbox"];
-    const vec3f aabbCenter = io::jsonToVec3f(obb["abb"]["center"]);
-    const vec3f aabbSizes = io::jsonToVec3f(obb["abb"]["sizes"]);
+    Mn::Vector3 aabbCenter;
+    io::fromJsonValue(obb["abb"]["center"], aabbCenter);
+    Mn::Vector3 aabbSizes;
+    io::fromJsonValue(obb["abb"]["sizes"], aabbSizes);
+    Mn::Vector3 translationBoxToWorld;
+    io::fromJsonValue(obb["orientation"]["translation"], translationBoxToWorld);
+    // 4th element is scalar in json
+    Mn::Vector4 rotBoxToWorldCoeffs;
+    io::fromJsonValue(obb["orientation"]["rotation"], rotBoxToWorldCoeffs);
 
-    const vec3f translationBoxToWorld =
-        io::jsonToVec3f(obb["orientation"]["translation"]);
+    const Mn::Quaternion rotationBoxToWorld(rotBoxToWorldCoeffs.xyz(),
+                                            rotBoxToWorldCoeffs.w());
 
-    std::vector<float> rotationBoxToWorldCoeffs;
-    io::toFloatVector(obb["orientation"]["rotation"],
-                      &rotationBoxToWorldCoeffs);
-    const Eigen::Map<quatf> rotationBoxToWorld(rotationBoxToWorldCoeffs.data());
+    const Mn::Matrix4 transformBox = Mn::Matrix4::from(
+        rotationBoxToWorld.normalized().toMatrix(), translationBoxToWorld);
 
-    Eigen::Isometry3f transformBox{rotationBoxToWorld.normalized()};
-    transformBox *= Eigen::Translation3f(translationBoxToWorld);
+    const auto transformBoxToWorld{worldRotationMat * transformBox};
 
-    const Eigen::Isometry3f transformBoxToWorld{worldRotationMat *
-                                                transformBox};
-
-    object->obb_ = geo::OBB{transformBoxToWorld * aabbCenter, aabbSizes,
-                            quatf{transformBoxToWorld.linear()}.normalized()};
+    object->obb_ = geo::OBB{
+        transformBoxToWorld.transformVector(aabbCenter), aabbSizes,
+        Mn::Quaternion::fromMatrix(transformBoxToWorld.rotationNormalized())};
 
     scene.objects_[id] = std::move(object);
   }

@@ -40,7 +40,6 @@
 #include <Corrade/Utility/String.h>
 #include <Magnum/DebugTools/FrameProfiler.h>
 #include <Magnum/DebugTools/Screenshot.h>
-#include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/Shaders/VectorGL.h>
@@ -208,12 +207,11 @@ class Viewer : public Mn::Platform::Application {
  private:
   // Keys for moving/looking are recorded according to whether they are
   // currently being pressed
-  std::map<KeyEvent::Key, bool> keysPressed = {
-      {KeyEvent::Key::Left, false}, {KeyEvent::Key::Right, false},
-      {KeyEvent::Key::Up, false},   {KeyEvent::Key::Down, false},
-      {KeyEvent::Key::A, false},    {KeyEvent::Key::D, false},
-      {KeyEvent::Key::S, false},    {KeyEvent::Key::W, false},
-      {KeyEvent::Key::X, false},    {KeyEvent::Key::Z, false}};
+  std::map<Key, bool> keysPressed = {{Key::Left, false}, {Key::Right, false},
+                                     {Key::Up, false},   {Key::Down, false},
+                                     {Key::A, false},    {Key::D, false},
+                                     {Key::S, false},    {Key::W, false},
+                                     {Key::X, false},    {Key::Z, false}};
 
   MouseInteractionMode mouseInteractionMode = LOOK;
 
@@ -221,10 +219,10 @@ class Viewer : public Mn::Platform::Application {
 
   void drawEvent() override;
   void viewportEvent(ViewportEvent& event) override;
-  void mousePressEvent(MouseEvent& event) override;
-  void mouseReleaseEvent(MouseEvent& event) override;
-  void mouseMoveEvent(MouseMoveEvent& event) override;
-  void mouseScrollEvent(MouseScrollEvent& event) override;
+  void pointerPressEvent(PointerEvent& event) override;
+  void pointerReleaseEvent(PointerEvent& event) override;
+  void pointerMoveEvent(PointerMoveEvent& event) override;
+  void scrollEvent(ScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
   void keyReleaseEvent(KeyEvent& event) override;
   Mn::Vector3 moveFilterFunc(const Mn::Vector3& start,
@@ -241,7 +239,7 @@ class Viewer : public Mn::Platform::Application {
    * @return The screen-space location of the mouse event.
    */
 
-  Mn::Vector2i getMousePosition(Mn::Vector2i mouseEventPosition) {
+  Mn::Vector2i getMousePosition(const Mn::Vector2& mouseEventPosition) {
     // aquire the mouse position, and scale it based on ratio of actual
     // framebuffer and window size. The two can differ on HiDPI displays or
     // if a quarter-size rendering is active.
@@ -415,20 +413,21 @@ Key Commands:
 
   // single inline for logging agent state msgs, so can be easily modified
   inline void showAgentStateMsg(bool showPos, bool showOrient) {
-    std::stringstream strDat("");
+    std::string res("");
     if (showPos) {
-      strDat << "Agent position "
-             << Eigen::Map<esp::vec3f>(agentBodyNode_->translation().data())
-             << " ";
+      auto v = agentBodyNode_->translation();
+      Cr::Utility::formatInto(res, res.length(),
+                              "Agent position  : [{} {} {}] ", v.x(), v.y(),
+                              v.z());
     }
     if (showOrient) {
-      strDat << "Agent orientation "
-             << esp::quatf(agentBodyNode_->rotation()).coeffs().transpose();
+      Mn::Quaternion q = agentBodyNode_->rotation();
+      auto qv = q.vector();
+      Cr::Utility::formatInto(res, res.length(), ": w:{} [{} {} {}]",
+                              q.scalar(), qv.x(), qv.y(), qv.z());
     }
-
-    auto str = strDat.str();
-    if (str.size() > 0) {
-      ESP_DEBUG() << str;
+    if (res.size() > 0) {
+      ESP_DEBUG() << res;
     }
   }
 
@@ -609,7 +608,7 @@ Key Commands:
   /* Text rendering */
   Cr::PluginManager::Manager<Mn::Text::AbstractFont> fontManager_;
   Cr::Containers::Pointer<Mn::Text::AbstractFont> font_;
-  Cr::Containers::Optional<Mn::Text::GlyphCache> fontGlyphCache_;
+  Cr::Containers::Optional<Mn::Text::GlyphCacheGL> fontGlyphCache_;
   Mn::Shaders::VectorGL2D fontShader_;
   Cr::Containers::Optional<Mn::Text::Renderer2D> fontText_;
   bool showFPS_ = true;
@@ -1128,7 +1127,7 @@ void saveTransformToFile(const std::string& filename,
       file << t[i] << " ";
     }
     ESP_DEBUG() << "Transformation matrix saved to" << filename << ":"
-                << Eigen::Map<const esp::mat4f>(transform.data());
+                << transform;
   };
   save(agentTransform);
   save(sensorTransform);
@@ -1177,7 +1176,7 @@ bool loadTransformFromFile(const std::string& filename,
     }
     transform = temp;
     ESP_DEBUG() << "Transformation matrix loaded from" << filename << ":"
-                << Eigen::Map<esp::mat4f>(transform.data());
+                << transform;
     return true;
   };
   // NOTE: load Agent first!!
@@ -1723,29 +1722,29 @@ void Viewer::moveAndLook(int repetitions) {
   for (int i = 0; i < repetitions; ++i) {
     bool moved = false;
     auto initialAgentPosition = agentBodyNode_->translation();
-    if (keysPressed[KeyEvent::Key::A]) {
+    if (keysPressed[Key::A]) {
       agentBodyNode_->translateLocal(agentBodyNode_->transformation().right() *
                                      -moveSensitivity);
       moved = true;
     }
-    if (keysPressed[KeyEvent::Key::D]) {
+    if (keysPressed[Key::D]) {
       agentBodyNode_->translateLocal(agentBodyNode_->transformation().right() *
                                      moveSensitivity);
       moved = true;
     }
-    if (keysPressed[KeyEvent::Key::S]) {
+    if (keysPressed[Key::S]) {
       agentBodyNode_->translateLocal(
           agentBodyNode_->transformation().backward() * moveSensitivity);
       moved = true;
     }
-    if (keysPressed[KeyEvent::Key::W]) {
+    if (keysPressed[Key::W]) {
       agentBodyNode_->translateLocal(
           agentBodyNode_->transformation().backward() * -moveSensitivity);
       moved = true;
     }
-    if (keysPressed[KeyEvent::Key::X] || keysPressed[KeyEvent::Key::Z]) {
+    if (keysPressed[Key::X] || keysPressed[Key::Z]) {
       auto moveAmount = moveSensitivity;
-      if (keysPressed[KeyEvent::Key::Z]) {
+      if (keysPressed[Key::Z]) {
         moveAmount *= -1.0;
       }
       // apply the transformation to all sensors
@@ -1877,14 +1876,14 @@ void Viewer::buildSemanticPrims(int semanticID,
   semanticBBID_ = bbWfObj->getID();
 }  // Viewer::buildSemanticPrims
 
-void Viewer::mousePressEvent(MouseEvent& event) {
+void Viewer::pointerPressEvent(PointerEvent& event) {
   // get mouse position, appropriately scaled for Retina Displays
   auto viewportPoint = getMousePosition(event.position());
   if (mouseInteractionMode == MouseInteractionMode::LOOK) {
-    if (event.button() == MouseEvent::Button::Right) {
+    if (event.pointer() == Pointer::MouseRight) {
       // if shift pressed w/right click in look mode, get object ID and
       // create visualization
-      if (event.modifiers() & MouseEvent::Modifier::Shift) {
+      if (event.modifiers() & Modifier::Shift) {
         // cannot use the default framebuffer, so setup another framebuffer,
         // also, setup the color attachment for rendering, and remove the
         // visualizer for the previously picked object
@@ -1901,8 +1900,8 @@ void Viewer::mousePressEvent(MouseEvent& event) {
 
         // Read the object Id - takes unscaled mouse position, and scales it in
         // objectPicker
-        unsigned int pickedObject =
-            objectPickingHelper_->getObjectId(event.position(), windowSize());
+        unsigned int pickedObject = objectPickingHelper_->getObjectId(
+            Mn::Vector2i{event.position()}, windowSize());
 
         // if an object is selected, create a visualizer
         createPickedObjectVisualizer(pickedObject);
@@ -1932,9 +1931,9 @@ void Viewer::mousePressEvent(MouseEvent& event) {
         }
       }
       // end add primitive w/ right click
-    } else if (event.button() == MouseEvent::Button::Left) {
+    } else if (event.pointer() == Pointer::MouseLeft) {
       // if shift-click is pressed, display semantic ID and name if exists
-      if (event.modifiers() & MouseEvent::Modifier::Shift) {
+      if (event.modifiers() & Modifier::Shift) {
         semanticTag_ = "";
 
         // get semantic scene
@@ -2035,7 +2034,7 @@ void Viewer::mousePressEvent(MouseEvent& event) {
             constraintSettings.frameB = agentBodyNode_->rotation().toMatrix();
             constraintSettings.pivotB = hitInfo.point;
             // by default use a point 2 point constraint
-            if (event.button() == MouseEvent::Button::Right) {
+            if (event.pointer() == Pointer::MouseRight) {
               constraintSettings.constraintType =
                   esp::physics::RigidConstraintType::Fixed;
             }
@@ -2057,13 +2056,13 @@ void Viewer::mousePressEvent(MouseEvent& event) {
   redraw();
 }
 
-void Viewer::mouseReleaseEvent(MouseEvent& event) {
+void Viewer::pointerReleaseEvent(PointerEvent& event) {
   // release any existing mouse constraint
   mouseGrabber_ = nullptr;
   event.setAccepted();
 }
 
-void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
+void Viewer::scrollEvent(ScrollEvent& event) {
   // shift+scroll is forced into x direction on mac, seemingly at OS level,
   // so use both x and y offsets.
   float scrollModVal = abs(event.offset().y()) > abs(event.offset().x())
@@ -2073,9 +2072,9 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
     return;
   }
   // Use shift to scale action response
-  auto shiftPressed = event.modifiers() & MouseEvent::Modifier::Shift;
-  auto altPressed = event.modifiers() & MouseEvent::Modifier::Alt;
-  auto ctrlPressed = event.modifiers() & MouseEvent::Modifier::Ctrl;
+  auto shiftPressed = event.modifiers() & Modifier::Shift;
+  auto altPressed = event.modifiers() & Modifier::Alt;
+  auto ctrlPressed = event.modifiers() & Modifier::Ctrl;
   if (mouseInteractionMode == MouseInteractionMode::LOOK) {
     // Use shift for fine-grained zooming
     float modVal = shiftPressed ? 1.01 : 1.1;
@@ -2118,14 +2117,14 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   event.setAccepted();
 }  // Viewer::mouseScrollEvent
 
-void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
+void Viewer::pointerMoveEvent(PointerMoveEvent& event) {
   if ((mouseInteractionMode == MouseInteractionMode::LOOK) &&
-      (!(event.buttons() & MouseMoveEvent::Button::Left))) {
+      (!(event.pointers() & Pointer::MouseLeft))) {
     return;
   }
   auto viewportPoint = getMousePosition(event.position());
   if (mouseInteractionMode == MouseInteractionMode::LOOK) {
-    const Mn::Vector2i delta = event.relativePosition();
+    const Mn::Vector2 delta = event.relativePosition();
     // apply Y rotation to the "agent" node to turn it
     agentBodyNode_->rotateYLocal(Magnum::Deg(-delta.x()));
     agentBodyNode_->setRotation(agentBodyNode_->rotation().normalized());
@@ -2155,13 +2154,13 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
 void Viewer::keyPressEvent(KeyEvent& event) {
   const auto key = event.key();
   switch (key) {
-    case KeyEvent::Key::R: {
+    case Key::R: {
       const auto recorder = simulator_->getGfxReplayManager()->getRecorder();
       if (recorder) {
         recorder->writeSavedKeyframesToFile(gfxReplayRecordFilepath_);
       }
     } break;
-    case KeyEvent::Key::Esc:
+    case Key::Esc:
       /* Using Application::exit(), which exits at the next iteration of the
          event loop (same as the window close button would do). Using
          std::exit() would exit immediately, but without calling any scoped
@@ -2169,41 +2168,40 @@ void Viewer::keyPressEvent(KeyEvent& event) {
          crashes at exit. We don't want that. */
       exit(0);
       break;
-    case KeyEvent::Key::Tab:
-      if (event.modifiers() & MouseEvent::Modifier::Alt) {
+    case Key::Tab:
+      if (event.modifiers() & Modifier::Alt) {
         setSceneInstanceFromListAndShow(curSceneInstanceIDX_);
       } else {
         ESP_DEBUG() << "Cycling to"
-                    << ((event.modifiers() & MouseEvent::Modifier::Shift)
-                            ? "previous"
-                            : "next")
+                    << ((event.modifiers() & Modifier::Shift) ? "previous"
+                                                              : "next")
                     << "SceneInstance";
         setSceneInstanceFromListAndShow(getNextSceneInstanceIDX(
-            (event.modifiers() & MouseEvent::Modifier::Shift) ? -1 : 1));
+            (event.modifiers() & Modifier::Shift) ? -1 : 1));
       }
       break;
-    case KeyEvent::Key::Space:
+    case Key::Space:
       simulating_ = !simulating_;
       ESP_DEBUG() << "Physics Simulation cycling from" << !simulating_ << "to"
                   << simulating_;
       break;
-    case KeyEvent::Key::Period:
+    case Key::Period:
       // also `>` key
       simulateSingleStep_ = true;
       break;
-    case KeyEvent::Key::Comma:
+    case Key::Comma:
       debugBullet_ = !debugBullet_;
       break;
       // ==== Miscellaneous ====
-    case KeyEvent::Key::One:
+    case Key::One:
       // toggle agent location recording for trajectory
       setAgentLocationRecord(!agentLocRecordOn_);
       break;
-    case KeyEvent::Key::Two:
+    case Key::Two:
       // agent motion trajectory mesh synthesis with random color
       buildTrajectoryVis();
       break;
-    case KeyEvent::Key::Three:
+    case Key::Three:
       // toggle between single color and multi-color trajectories
       singleColorTrajectory_ = !singleColorTrajectory_;
       ESP_DEBUG() << (singleColorTrajectory_
@@ -2212,102 +2210,102 @@ void Viewer::keyPressEvent(KeyEvent& event) {
                           : "Building trajectory with single random color "
                             "changed to multiple random colors.");
       break;
-    case KeyEvent::Key::Four:
+    case Key::Four:
       // switch between camera types (Camera, Fisheye, Equirectangular)
       sensorMode_ = static_cast<VisualSensorMode>(
           (uint8_t(sensorMode_) + 1) %
           uint8_t(VisualSensorMode::VisualSensorModeCount));
       setSensorVisID();
       break;
-    case KeyEvent::Key::Five:
+    case Key::Five:
       // switch camera between ortho and perspective
       switchCameraType();
       break;
-    case KeyEvent::Key::Six:
+    case Key::Six:
       // reset camera zoom
       getAgentCamera().resetZoom();
       break;
-    case KeyEvent::Key::Seven:
+    case Key::Seven:
       visualizeMode_ = static_cast<VisualizeMode>(
           (uint8_t(visualizeMode_) + 1) %
           uint8_t(VisualizeMode::VisualizeModeCount));
       setSensorVisID();
       bindRenderTarget();
       break;
-    case KeyEvent::Key::Eight:
+    case Key::Eight:
       addPrimitiveObject();
       break;
-    case KeyEvent::Key::Nine:
+    case Key::Nine:
       if (simulator_->getPathFinder()->isLoaded()) {
-        const esp::vec3f position =
+        const Mn::Vector3 position =
             simulator_->getPathFinder()->getRandomNavigablePoint();
         agentBodyNode_->setTranslation(Mn::Vector3(position));
       }
       break;
-    case KeyEvent::Key::LeftBracket:
+    case Key::LeftBracket:
       saveAgentAndSensorTransformToFile();
       break;
-    case KeyEvent::Key::RightBracket:
+    case Key::RightBracket:
       loadAgentAndSensorTransformFromFile();
       break;
-    case KeyEvent::Key::Equal: {
+    case Key::Equal: {
       // increase trajectory tube diameter
       ESP_DEBUG() << "Bigger";
       modTrajRad(true);
       break;
     }
-    case KeyEvent::Key::Minus: {
+    case Key::Minus: {
       // decrease trajectory tube diameter
       ESP_DEBUG() << "Smaller";
       modTrajRad(false);
       break;
     }
-    case KeyEvent::Key::B: {
+    case Key::B: {
       // toggle bounding box on objects
       drawObjectBBs = !drawObjectBBs;
       // TODO: do this with debug drawing instead
     } break;
-    case KeyEvent::Key::C:
+    case Key::C:
       showFPS_ = !showFPS_;
       showFPS_ ? profiler_.enable() : profiler_.disable();
       break;
-    case KeyEvent::Key::E:
+    case Key::E:
       simulator_->setFrustumCullingEnabled(
           !simulator_->isFrustumCullingEnabled());
       break;
-    case KeyEvent::Key::H:
+    case Key::H:
       printHelpText();
       break;
-    case KeyEvent::Key::I:
+    case Key::I:
       screenshot();
       break;
-    case KeyEvent::Key::M: {
+    case Key::M: {
       // toggle the mouse interaction mode
       mouseInteractionMode = MouseInteractionMode(
           (int(mouseInteractionMode) + 1) % int(NUM_MODES));
     } break;
-    case KeyEvent::Key::N:
+    case Key::N:
       // toggle navmesh visualization
       simulator_->setNavMeshVisualization(
           !simulator_->isNavMeshVisualizationActive());
       break;
-    case KeyEvent::Key::O:
+    case Key::O:
       addTemplateObject();
       break;
-    case KeyEvent::Key::P:
+    case Key::P:
       // save current sim state
       simulator_->saveCurrentSceneInstance();
       break;
-    case KeyEvent::Key::Slash:
+    case Key::Slash:
       // display current scene's metadata information
       dispMetadataInfo();
       break;
-    case KeyEvent::Key::Q:
+    case Key::Q:
       // query the agent state
       showAgentStateMsg(true, true);
       break;
-    case KeyEvent::Key::J: {
-      if (event.modifiers() & MouseEvent::Modifier::Alt) {
+    case Key::J: {
+      if (event.modifiers() & Modifier::Alt) {
         generateAndSaveAllSemanticCCReports();
       } else {
         // generate and save semantic CC report
@@ -2315,8 +2313,8 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       }
       break;
     }
-    case KeyEvent::Key::Y: {
-      if (event.modifiers() & MouseEvent::Modifier::Alt) {
+    case Key::Y: {
+      if (event.modifiers() & Modifier::Alt) {
         generateAndSaveAllVertColorMapReports();
       } else {
         // generate and save semantic CC report
@@ -2324,14 +2322,13 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       }
       break;
     }
-    case KeyEvent::Key::T: {
+    case Key::T: {
       //+ALT for fixedBase
-      bool fixedBase = bool(event.modifiers() & MouseEvent::Modifier::Alt);
+      bool fixedBase = bool(event.modifiers() & Modifier::Alt);
 
       // add an ArticulatedObject from provided filepath
       std::string ArtObjConfigFilepath;
-      if (event.modifiers() & MouseEvent::Modifier::Shift &&
-          !cachedAOConfig_.empty()) {
+      if (event.modifiers() & Modifier::Shift && !cachedAOConfig_.empty()) {
         // quick-reload the most recently loaded URDF
         ESP_WARNING() << "Articulated Object config quick-reload: "
                       << cachedAOConfig_;
@@ -2391,7 +2388,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         }
       }
     } break;
-    case KeyEvent::Key::L: {
+    case Key::L: {
       // override the default light setup with the config in this directory
       auto& lightLayoutMgr = simulator_->getLightLayoutAttributesManager();
       auto loadedLayout = lightLayoutMgr->createObjectFromJSONFile(
@@ -2400,13 +2397,13 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       simulator_->setLightSetup(
           lightLayoutMgr->createLightSetupFromAttributes("default_override"));
     } break;
-    case KeyEvent::Key::U:
+    case Key::U:
       removeLastObject();
       break;
-    case KeyEvent::Key::V:
+    case Key::V:
       invertGravity();
       break;
-    case KeyEvent::Key::F: {
+    case Key::F: {
 #ifdef ESP_BUILD_WITH_AUDIO
       // Add an audio source
       addAudioSource();
@@ -2416,7 +2413,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
 #endif  // ESP_BUILD_WITH_AUDIO
       break;
     }
-    case KeyEvent::Key::Zero: {
+    case Key::Zero: {
 #ifdef ESP_BUILD_WITH_AUDIO
       // Run audio simulation
       runAudioSimulation();

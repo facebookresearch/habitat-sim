@@ -8,7 +8,7 @@ find_package(
   REQUIRED
   BasisImporter
   GltfImporter
-  PrimitiveImporter
+  KtxImporter
   StanfordImporter
   StbImageImporter
   StbImageConverter
