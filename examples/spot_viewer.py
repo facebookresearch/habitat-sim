@@ -683,8 +683,8 @@ class HabitatSimInteractiveViewer(Application):
                     for handle in restored_obj_handles:
                         obj_name = handle.split("/")[-1].split("_:")[0]
                         self.removed_clutter.pop(obj_name, None)
-
-                self.navmesh_config_and_recompute()
+                # select restored objects
+                self.obj_editor.sel_obj_list(restored_obj_handles)
             else:
                 removed_obj_handles = self.obj_editor.remove_sel_objects()
                 if key == pressed.Y:
@@ -692,7 +692,7 @@ class HabitatSimInteractiveViewer(Application):
                         # Mark removed clutter
                         obj_name = handle.split("/")[-1].split("_:")[0]
                         self.removed_clutter[obj_name] = ""
-                self.navmesh_config_and_recompute()
+            self.navmesh_config_and_recompute()
 
         elif key == pressed.B:
             # Cycle through available edit amount values
@@ -1037,7 +1037,6 @@ Welcome to the Habitat-sim Python Spot Viewer application!
 =====================================================
 Mouse Functions
 ----------------
-In LOOK mode (default):
     LEFT:
         Click and drag to rotate the view around Spot.
     RIGHT:
@@ -1054,10 +1053,9 @@ Key Commands:
     'h':        Display this help message.
     'p':        Toggle the display of on-screen data
 
-    Spot Controls:
+  Spot/Camera Controls:
     'wasd':     Move Spot's body forward/backward and rotate left/right.
     'qe':       Move Spot's body in strafe left/right.
-    'zx':       Move Spot's body up and down (PROTOTYPE)
 
     '0':        Reset the camera around Spot (after raising/lowering)
     '1' :       Disengage/re-engage the navmesh constraints (no-clip toggle). When toggling back on,
@@ -1065,25 +1063,29 @@ Key Commands:
                 for. If found, spot is snapped to it, but if not found, spot will stay in no-clip
                 mode and a message will display.
 
-    Scene Object Modification UI:
-    'g' : Change Edit mode to either Move or Rotate the selected object
+  Scene Object Modification UI:
+    'g' : Change Edit mode to either Move or Rotate the selected object(s)
     'b' (+ SHIFT) : Increment (Decrement) the current edit amounts.
-    - With an object selected:
-        When Move Object Edit mode is selected :
-        - LEFT/RIGHT arrow keys: move the object along global X axis.
-        - UP/DOWN arrow keys: move the object along global Z axis.
-            (+ALT): move the object up/down (global Y axis)
-        When Rotate Object Edit mode is selected :
-        - LEFT/RIGHT arrow keys: rotate the object around global Y axis.
-        - UP/DOWN arrow keys: rotate the object around global Z axis.
-            (+ALT): rotate the object around global X axis.
-      - BACKSPACE: delete the selected object
-      - 'y': delete the selected object and record it as clutter.
-    - Matching target selected object (rendered with yellow box) specified dimension :
-      - '2': all selected objects match selected 'target''s x value
-      - '3': all selected objects match selected 'target''s y value
-      - '4': all selected objects match selected 'target''s z value
-      - '5': all selected objects match selected 'target''s orientation
+    Editing :
+    - With 1 or more objects selected:
+      - When Move Object Edit mode is selected :
+        - LEFT/RIGHT arrow keys: move the selected object(s) along global X axis.
+        - UP/DOWN arrow keys: move the selected object(s) along global Z axis.
+            (+ALT): move the selected object(s) up/down (global Y axis)
+      - When Rotate Object Edit mode is selected :
+        - LEFT/RIGHT arrow keys: rotate the selected object(s) around global Y axis.
+        - UP/DOWN arrow keys: rotate the selected object(s) around global Z axis.
+            (+ALT): rotate the selected object(s) around global X axis.
+      - BACKSPACE: delete the selected object(s)
+            'y': delete the selected object and record it as clutter.
+      - Matching target selected object(s) (rendered with yellow box) specified dimension :
+        - '2': all selected objects match selected 'target''s x value
+        - '3': all selected objects match selected 'target''s y value
+        - '4': all selected objects match selected 'target''s z value
+        - '5': all selected objects match selected 'target''s orientation
+      'u': Undo Edit
+          - With an object selected: Undo a single modification step for the selected object(s)
+              (+SHIFT) : redo modification to the selected object(s)
 
     '6': Select all objects that match the type of the current target/highlit (yellow box) object
 
@@ -1098,10 +1100,13 @@ Key Commands:
 
     'l' : Toggle types of objects to display boxes around : None, AOs, Rigids, Both
 
-    'u': Undo a single modification step for all selected objects
-        (+SHIFT) : redo (TODO)
 
-    Utilities:
+    'v':
+     - With object(s) selected : Duplicate the selected object(s)
+     - With no object selected : Load an object by providing a uniquely identifying substring of the object's name
+
+
+  Utilities:
     'r':        Reset the simulator with the most recently loaded scene.
     ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep).
     'c':        Toggle the contact point debug render overlay on/off. If toggled to true,
@@ -1113,7 +1118,7 @@ Key Commands:
                 (+ALT) Re-sample Spot's position from the NavMesh.
 
 
-    Object Interactions:
+  Simulation:
     SPACE:      Toggle physics simulation on/off.
     '.':        Take a single simulation step if not simulating continuously.
 =====================================================
