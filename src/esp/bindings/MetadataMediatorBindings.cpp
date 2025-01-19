@@ -17,7 +17,7 @@ namespace metadata {
 void initMetadataMediatorBindings(py::module& m) {
   py::class_<MetadataMediator, MetadataMediator::ptr>(
       m, "MetadataMediator",
-      R"(Aggregates all AttributesManagers and provides an API for swapping the active SceneDataset. It can exist independant of a :ref:`Simulator` object for programmatic metadata management and can be passed into the constructor via the :ref:`SimulatorConfiguration`.)")
+      R"(Aggregates all AttributesManagers and provides an API for swapping the active SceneDataset. It can exist independently of a :ref:`Simulator` object for programmatic metadata management and can be passed into the constructor via the :ref:`SimulatorConfiguration`.)")
       .def(py::init(&MetadataMediator::create<>))
       .def(py::init<const sim::SimulatorConfiguration&>())
       .def_property(

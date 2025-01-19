@@ -100,10 +100,10 @@ void initShortestPathBindings(py::module& m) {
           R"(Region merge size in voxels. regionMergeSize = sqrt(regionMergeArea) Any 2-D regions with a smaller span (cell count) will, if possible, be merged with larger regions.)")
       .def_readwrite(
           "edge_max_len", &NavMeshSettings::edgeMaxLen,
-          R"(Edge max length in world units. The maximum allowed length for contour edges along the border of the mesh. Extra vertices will be inserted as needed to keep contour edges below this length. A value of zero effectively disables this feature. A good value for edgeMaxLen is something like agenRadius*8. Will be rounded to a multiple of cellSize.)")
+          R"(Edge max length in world units. The maximum allowed length for contour edges along the border of the mesh. Extra vertices will be inserted as needed to keep contour edges below this length. A value of zero effectively disables this feature. A good value for edgeMaxLen is something like agentRadius*8. Will be rounded to a multiple of cellSize.)")
       .def_readwrite(
           "edge_max_error", &NavMeshSettings::edgeMaxError,
-          R"(The maximum distance a simplfied contour's border edges should deviate the original raw contour. Good values are between 1.1-1.5 (1.3 usually yield good results). More results in jaggies, less cuts corners.)")
+          R"(The maximum distance a simplified contour's border edges should deviate the original raw contour. Good values are between 1.1-1.5 (1.3 usually yield good results). More results in jaggies, less cuts corners.)")
       .def_readwrite(
           "verts_per_poly", &NavMeshSettings::vertsPerPoly,
           R"(The maximum number of vertices allowed for polygons generated during the contour to polygon conversion process. [Limit: >= 3])")
@@ -116,14 +116,14 @@ void initShortestPathBindings(py::module& m) {
       .def_readwrite(
           "filter_low_hanging_obstacles",
           &NavMeshSettings::filterLowHangingObstacles,
-          R"(Marks navigable spans as non-navigable if the clearence above the span is less than the specified height. Default True.)")
+          R"(Marks navigable spans as non-navigable if the clearance above the span is less than the specified height. Default True.)")
       .def_readwrite(
           "filter_ledge_spans", &NavMeshSettings::filterLedgeSpans,
           R"(Marks spans that are ledges as non-navigable. This filter reduces the impact of the overestimation of conservative voxelization so the resulting mesh will not have regions hanging in the air over ledges. Default True.)")
       .def_readwrite(
           "filter_walkable_low_height_spans",
           &NavMeshSettings::filterWalkableLowHeightSpans,
-          R"(Marks navigable spans as non-navigable if the clearence above the span is less than the specified height. Allows the formation of navigable regions that will flow over low lying objects such as curbs, and up structures such as stairways. Default True.)")
+          R"(Marks navigable spans as non-navigable if the clearance above the span is less than the specified height. Allows the formation of navigable regions that will flow over low lying objects such as curbs, and up structures such as stairways. Default True.)")
       .def_readwrite(
           "include_static_objects", &NavMeshSettings::includeStaticObjects,
           R"(Whether or not to include STATIC RigidObjects as NavMesh constraints. Note: Used in Simulator recomputeNavMesh pre-process. Default False.)")
@@ -196,7 +196,7 @@ void initShortestPathBindings(py::module& m) {
             return self.islandRadius(pt);
           },
           "pt"_a,
-          R"(Given a point, snaps to an islan and gets a heuristic of island size: the radius of a circle containing all NavMesh polygons within the specified island.)")
+          R"(Given a point, snaps to an island and gets a heuristic of island size: the radius of a circle containing all NavMesh polygons within the specified island.)")
       .def(
           "island_radius",
           [](PathFinder& self, int islandIndex) {

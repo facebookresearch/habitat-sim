@@ -209,7 +209,7 @@ void initAttributesBindings(py::module& m) {
              "object for rendering.");
   //
   // ==== AssetType ====
-  // Describes the type of asset used for rendering, collsions, or semantics
+  // Describes the type of asset used for rendering, collisions, or semantics
   py::enum_<metadata::attributes::AssetType>(m, "AssetType")
       .value("UNKNOWN", metadata::attributes::AssetType::Unknown)
       .value("MP3D", metadata::attributes::AssetType::Mp3dMesh)
@@ -552,7 +552,7 @@ void initAttributesBindings(py::module& m) {
       .def_property(
           "inertia_source", &ArticulatedObjectAttributes::getInertiaSource,
           &ArticulatedObjectAttributes::setInertiaSource,
-          R"(Tthe source of the inertia tensors to use for this Articulated Object.
+          R"(The source of the inertia tensors to use for this Articulated Object.
           Possible values are "COMPUTED" and "URDF".)")
       .def_property(
           "link_order", &ArticulatedObjectAttributes::getLinkOrder,
@@ -581,7 +581,7 @@ void initAttributesBindings(py::module& m) {
           "collision_asset_size",
           &AbstractObjectAttributes::getCollisionAssetSize,
           &AbstractObjectAttributes::setCollisionAssetSize,
-          R"(Size of collsion assets for constructions built from this template in
+          R"(Size of collision assets for constructions built from this template in
           x,y,z.  Default is [1.0,1.0,1.0].  This is used to resize a collision asset
           to match a render asset if necessary, such as when using a primitive.)")
       .def_property(
@@ -642,7 +642,7 @@ void initAttributesBindings(py::module& m) {
           "collision_asset_handle",
           &AbstractObjectAttributes::getCollisionAssetHandle,
           &AbstractObjectAttributes::setCollisionAssetHandle,
-          R"(Handle of the asset used to calculate collsions for constructions
+          R"(Handle of the asset used to calculate collisions for constructions
           built from this template.)")
       .def_property_readonly(
           "render_asset_fullpath",
@@ -653,7 +653,7 @@ void initAttributesBindings(py::module& m) {
       .def_property_readonly(
           "collision_asset_fullpath",
           &AbstractObjectAttributes::getCollisionAssetFullPath,
-          R"(Fully qualified filepath of the asset used to calculate collsions for constructions
+          R"(Fully qualified filepath of the asset used to calculate collisions for constructions
           built from this template. This filepath will only be available/accurate
           after the owning attributes is registered)")
       .def_property(
@@ -709,7 +709,7 @@ void initAttributesBindings(py::module& m) {
       .def_property(
           "inertia", &ObjectAttributes::getInertia,
           &ObjectAttributes::setInertia,
-          R"(The diagonal of the Intertia matrix for objects constructed
+          R"(The diagonal of the inertia matrix for objects constructed
           from this template.)")
       .def_property(
           "linear_damping", &ObjectAttributes::getLinearDamping,
@@ -784,7 +784,7 @@ void initAttributesBindings(py::module& m) {
           [](LightInstanceAttributes& self, Mn::Radd rads) {
             self.setOuterConeAngle(static_cast<Mn::Rad>(rads));
           },
-          R"(The outter cone angle to use for the dispersion of spot lights.
+          R"(The outer cone angle to use for the dispersion of spot lights.
                     Ignored for other types of lights.)");
 
   // ==== LightLayoutAttributes ====
@@ -972,7 +972,7 @@ void initAttributesBindings(py::module& m) {
              PhysicsManagerAttributes::ptr>(
       m, "PhysicsManagerAttributes",
       R"(A metadata template for Simulation parameters (e.g. timestep, simulation backend,
-      default gravity direction) and defaults. Consumed to instace a Simulator object.
+      default gravity direction) and defaults. Consumed to instance a Simulator object.
       Is imported from .physics_config.json files.)")
       .def(py::init(&PhysicsManagerAttributes::create<>))
       .def(py::init(&PhysicsManagerAttributes::create<const std::string&>))

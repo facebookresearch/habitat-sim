@@ -56,13 +56,13 @@ void initSimConfigBindings(py::module& m) {
           R"(Whether or not the agent can slide on NavMesh collisions.)")
       .def_readwrite(
           "create_renderer", &SimulatorConfiguration::createRenderer,
-          R"(Optimisation for non-visual simulation. If false, no renderer will be created and no materials or textures loaded.)")
+          R"(Optimization for non-visual simulation. If false, no renderer will be created and no materials or textures loaded.)")
       .def_readwrite(
           "leave_context_with_background_renderer",
           &SimulatorConfiguration::leaveContextWithBackgroundRenderer,
           R"(See tutorials/async_rendering.py)")
       .def_readwrite("frustum_culling", &SimulatorConfiguration::frustumCulling,
-                     R"(Enable or disable the frustum culling optimisation.)")
+                     R"(Enable or disable the frustum culling optimization.)")
       .def_readwrite(
           "enable_physics", &SimulatorConfiguration::enablePhysics,
           R"(Specifies whether or not dynamics is supported by the simulation if a suitable library (i.e. Bullet) has been installed. Install with --bullet to enable.)")

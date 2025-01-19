@@ -338,8 +338,8 @@ void initAttributesManagersBindings(py::module& m) {
                                        ManagedObjectAccess::Copy>,
              AssetAttributesManager::ptr>(
       m, "AssetAttributesManager",
-      R"(Manages PrimtiveAttributes objects which define parameters for constructing primitive mesh shapes such as cubes, capsules, cylinders, and cones.)")
-      // AssetAttributesMangaer-specific bindings
+      R"(Manages PrimitiveAttributes objects which define parameters for constructing primitive mesh shapes such as cubes, capsules, cylinders, and cones.)")
+      // AssetAttributesManager-specific bindings
       // return appropriately cast capsule templates
       .def("get_default_capsule_template",
            &AssetAttributesManager::getDefaultCapsuleTemplate,
