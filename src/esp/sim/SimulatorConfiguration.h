@@ -30,7 +30,7 @@ struct SimulatorConfiguration {
   int gpuDeviceId = 0;
   //! The Simulator and Pathfinder random seed. Set during scene initialization.
   unsigned int randomSeed = 0;
-  //! Optimisation for non-visual simulation. If false, no renderer will be
+  //! Optimization for non-visual simulation. If false, no renderer will be
   //! created and no materials or textures loaded.
   bool createRenderer = true;
   //! Whether or not the agent can slide on NavMesh collisions.

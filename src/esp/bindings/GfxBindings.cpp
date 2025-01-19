@@ -266,7 +266,7 @@ void initGfxBindings(
           R"(Draw a set of coordinate axes at the given XYZ translation and with
           XYZ scaling in world-space or local-space (see pushTransform).
           These axes are color-mapped such that XYZ->RGB and each positive axis
-          as a connical 'arrow head' of given radius.)",
+          as a conical 'arrow head' of given radius.)",
           "translation"_a, "scale"_a = Magnum::Vector3{1.0, 1.0, 1.0},
           "radius"_a = 0.05)
       .def(
