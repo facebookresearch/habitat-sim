@@ -44,7 +44,6 @@ requirements:
     - tqdm
     - imageio
     - imageio-ffmpeg
-    - matplotlib
     - libglu                             # [linux]
     - libxcb                             # [linux]
     - xorg-libx11                        # [linux]
