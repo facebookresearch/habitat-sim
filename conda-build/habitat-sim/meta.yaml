@@ -28,7 +28,6 @@ requirements:
     - {{ cdt('libpng-devel') }} # [linux]
     - {{ cdt('xorg-x11-proto-devel') }}  # [linux]
     - {{ cdt('libxxf86vm-devel') }}      # [linux]
-    - pybind11-stubgen
 
   host:
     - python x.x
@@ -39,6 +38,7 @@ requirements:
     - numba
     - numpy>=1.13
     - gitpython
+    - pybind11-stubgen
     - quaternion
     - pillow
     - scipy>=1.3.0
