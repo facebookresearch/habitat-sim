@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -459,10 +461,9 @@ class HabitatSimInteractiveViewer(Application):
         if repetitions == 0:
             return
 
-        key = Application.Key
         agent = self.sim.agents[self.agent_id]
-        press: Dict[key.key, bool] = self.pressed
-        act: Dict[key.key, str] = self.key_to_action
+        press: Dict[Application.Key.key, bool] = self.pressed
+        act: Dict[Application.Key.key, str] = self.key_to_action
 
         action_queue: List[str] = [act[k] for k, v in press.items() if v]
 

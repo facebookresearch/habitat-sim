@@ -10,7 +10,7 @@ import os
 import string
 import sys
 import time
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
@@ -84,7 +84,7 @@ class HabitatSimInteractiveViewer(Application):
         self.cached_urdf = ""
 
         # set up our movement map
-        key = Application.KeyEvent.Key
+        key = Application.Key
         self.pressed = {
             key.UP: False,
             key.DOWN: False,
@@ -109,7 +109,9 @@ class HabitatSimInteractiveViewer(Application):
         )
 
         # Glyphs we need to render everything
-        self.glyph_cache = text.GlyphCache(mn.Vector2i(256))
+        self.glyph_cache = text.GlyphCacheGL(
+            mn.PixelFormat.R8_UNORM, mn.Vector2i(256), mn.Vector2i(1)
+        )
         self.display_font.fill_glyph_cache(
             self.glyph_cache,
             string.ascii_lowercase
@@ -139,6 +141,8 @@ class HabitatSimInteractiveViewer(Application):
             )
         )
         self.shader = shaders.VectorGL2D()
+        # whether to render window text or not
+        self.do_draw_text = True
 
         # make magnum text background transparent
         mn.gl.Renderer.enable(mn.gl.Renderer.Feature.BLENDING)
@@ -244,7 +248,7 @@ class HabitatSimInteractiveViewer(Application):
     def draw_contact_debug(self, debug_line_render: Any):
         """
         This method is called to render a debug line overlay displaying active contact points and normals.
-        Yellow lines show the contact distance along the normal and red lines show the contact normal at a fixed length.
+        Red lines show the contact distance along the normal and yellow lines show the contact normal at a fixed length.
         """
         yellow = mn.Color4.yellow()
         red = mn.Color4.red()
@@ -366,7 +370,8 @@ class HabitatSimInteractiveViewer(Application):
 
         # draw CPU/GPU usage data and other info to the app window
         mn.gl.default_framebuffer.bind()
-        self.draw_text(self.render_camera.specification())
+        if self.do_draw_text:
+            self.draw_text(self.render_camera.specification())
 
         self.swap_buffers()
         Timer.next_frame()
@@ -527,8 +532,8 @@ class HabitatSimInteractiveViewer(Application):
         if repetitions == 0:
             return
 
-        key = Application.KeyEvent.Key
-        press: Dict[Application.KeyEvent.Key.key, bool] = self.pressed
+        key = Application.Key
+        press: Dict[Application.Key.key, bool] = self.pressed
         # Set the spot up to move
         self.spot_agent.move_spot(
             move_fwd=press[key.W],
@@ -582,8 +587,8 @@ class HabitatSimInteractiveViewer(Application):
         key will be set to False for the next `self.move_and_look()` to update the current actions.
         """
         key = event.key
-        pressed = Application.KeyEvent.Key
-        mod = Application.InputEvent.Modifier
+        pressed = Application.Key
+        mod = Application.Modifier
 
         shift_pressed = bool(event.modifiers & mod.SHIFT)
         alt_pressed = bool(event.modifiers & mod.ALT)
@@ -627,6 +632,7 @@ class HabitatSimInteractiveViewer(Application):
             self.obj_editor.select_all_matching_objects(only_matches=not shift_pressed)
 
         elif key == pressed.H:
+            # Print help text to console
             self.print_help_text()
 
         elif key == pressed.SPACE:
@@ -677,8 +683,8 @@ class HabitatSimInteractiveViewer(Application):
                     for handle in restored_obj_handles:
                         obj_name = handle.split("/")[-1].split("_:")[0]
                         self.removed_clutter.pop(obj_name, None)
-
-                self.navmesh_config_and_recompute()
+                # select restored objects
+                self.obj_editor.sel_obj_list(restored_obj_handles)
             else:
                 removed_obj_handles = self.obj_editor.remove_sel_objects()
                 if key == pressed.Y:
@@ -686,7 +692,7 @@ class HabitatSimInteractiveViewer(Application):
                         # Mark removed clutter
                         obj_name = handle.split("/")[-1].split("_:")[0]
                         self.removed_clutter[obj_name] = ""
-                self.navmesh_config_and_recompute()
+            self.navmesh_config_and_recompute()
 
         elif key == pressed.B:
             # Cycle through available edit amount values
@@ -744,7 +750,10 @@ class HabitatSimInteractiveViewer(Application):
                     self.sim.navmesh_visualization = not self.sim.navmesh_visualization
                     logger.info("Command: toggle navmesh")
                 else:
-                    logger.warn("Warning: recompute navmesh first")
+                    logger.warning("Warning: recompute navmesh first")
+        elif key == pressed.P:
+            # Toggle whether showing performance data on screen or not
+            self.do_draw_text = not self.do_draw_text
 
         elif key == pressed.T:
             self.remove_outdoor_objects()
@@ -761,11 +770,17 @@ class HabitatSimInteractiveViewer(Application):
             # or inject a new object by queried handle substring in front of
             # the agent if no objects selected
 
+            # Use shift to play object at most recent hit location, if it exists
+            if shift_pressed and self.last_hit_details is not None:
+                build_loc = self.last_hit_details.point
+            else:
+                build_loc = self.spot_agent.get_point_in_front(
+                    disp_in_front=[1.5, 0.0, 0.0]
+                )
+
             new_obj_list, self.navmesh_dirty = self.obj_editor.build_objects(
                 self.navmesh_dirty,
-                build_loc=self.spot_agent.get_point_in_front(
-                    disp_in_front=[1.5, 0.0, 0.0]
-                ),
+                build_loc=build_loc,
             )
             if len(new_obj_list) == 0:
                 print("Failed to add any new objects.")
@@ -801,19 +816,43 @@ class HabitatSimInteractiveViewer(Application):
         )
         self.mouse_cast_results = mouse_cast_results
 
-    def mouse_move_event(self, event: Application.MouseMoveEvent) -> None:
+    def is_left_mse_btn(
+        self, event: Union[Application.PointerEvent, Application.PointerMoveEvent]
+    ) -> bool:
         """
-        Handles `Application.MouseMoveEvent`. When in LOOK mode, enables the left
+        Returns whether the left mouse button is pressed
+        """
+        if isinstance(event, Application.PointerEvent):
+            return event.pointer == Application.Pointer.MOUSE_LEFT
+        elif isinstance(event, Application.PointerMoveEvent):
+            return event.pointers & Application.Pointer.MOUSE_LEFT
+        else:
+            return False
+
+    def is_right_mse_btn(
+        self, event: Union[Application.PointerEvent, Application.PointerMoveEvent]
+    ) -> bool:
+        """
+        Returns whether the right mouse button is pressed
+        """
+        if isinstance(event, Application.PointerEvent):
+            return event.pointer == Application.Pointer.MOUSE_RIGHT
+        elif isinstance(event, Application.PointerMoveEvent):
+            return event.pointers & Application.Pointer.MOUSE_RIGHT
+        else:
+            return False
+
+    def pointer_move_event(self, event: Application.PointerMoveEvent) -> None:
+        """
+        Handles `Application.PointerMoveEvent`. When in LOOK mode, enables the left
         mouse button to steer the agent's facing direction. When in GRAB mode,
         continues to update the grabber's object position with our agents position.
         """
-        button = Application.MouseMoveEvent.Buttons
+
         # if interactive mode -> LOOK MODE
-        if event.buttons == button.LEFT:
-            shift_pressed = bool(
-                event.modifiers & Application.InputEvent.Modifier.SHIFT
-            )
-            alt_pressed = bool(event.modifiers & Application.InputEvent.Modifier.ALT)
+        if self.is_left_mse_btn(event):
+            shift_pressed = bool(event.modifiers & Application.Modifier.SHIFT)
+            alt_pressed = bool(event.modifiers & Application.Modifier.ALT)
             self.spot_agent.mod_spot_cam(
                 mse_rel_pos=event.relative_position,
                 shift_pressed=shift_pressed,
@@ -824,30 +863,31 @@ class HabitatSimInteractiveViewer(Application):
         self.redraw()
         event.accepted = True
 
-    def mouse_press_event(self, event: Application.MouseEvent) -> None:
+    def pointer_press_event(self, event: Application.PointerEvent) -> None:
         """
-        Handles `Application.MouseEvent`. When in GRAB mode, click on
+        Handles `Application.PointerEvent`. When in GRAB mode, click on
         objects to drag their position. (right-click for fixed constraints)
         """
-        button = Application.MouseEvent.Button
         physics_enabled = self.sim.get_physics_simulation_library()
-        mod = Application.InputEvent.Modifier
+        # is_left_mse_btn = self.is_left_mse_btn(event)
+        is_right_mse_btn = self.is_right_mse_btn(event)
+        mod = Application.Modifier
         shift_pressed = bool(event.modifiers & mod.SHIFT)
         # alt_pressed = bool(event.modifiers & mod.ALT)
         self.calc_mouse_cast_results(event.position)
 
         # select an object with RIGHT-click
         if physics_enabled and self.mouse_cast_has_hits:
-            mouse_cast_results = self.mouse_cast_results
-            if event.button == button.RIGHT:
+            mouse_cast_hit_results = self.mouse_cast_results.hits
+            if is_right_mse_btn:
                 # Find object being clicked
                 obj_found = False
                 obj = None
                 # find first non-stage object
                 hit_idx = 0
-                while hit_idx < len(mouse_cast_results.hits) and not obj_found:
-                    self.last_hit_details = mouse_cast_results.hits[hit_idx]
-                    hit_obj_id = mouse_cast_results.hits[hit_idx].object_id
+                while hit_idx < len(mouse_cast_hit_results) and not obj_found:
+                    self.last_hit_details = mouse_cast_hit_results[hit_idx]
+                    hit_obj_id = mouse_cast_hit_results[hit_idx].object_id
                     obj = hsim_physics.get_obj_from_id(self.sim, hit_obj_id)
                     if obj is None:
                         hit_idx += 1
@@ -871,9 +911,9 @@ class HabitatSimInteractiveViewer(Application):
         self.redraw()
         event.accepted = True
 
-    def mouse_scroll_event(self, event: Application.MouseScrollEvent) -> None:
+    def scroll_event(self, event: Application.ScrollEvent) -> None:
         """
-        Handles `Application.MouseScrollEvent`. When in LOOK mode, enables camera
+        Handles `Application.ScrollEvent`. When in LOOK mode, enables camera
         zooming (fine-grained zoom using shift) When in GRAB mode, adjusts the depth
         of the grabber's object. (larger depth change rate using shift)
         """
@@ -886,9 +926,10 @@ class HabitatSimInteractiveViewer(Application):
             return
 
         # use shift to scale action response
-        shift_pressed = bool(event.modifiers & Application.InputEvent.Modifier.SHIFT)
-        alt_pressed = bool(event.modifiers & Application.InputEvent.Modifier.ALT)
-        # ctrl_pressed = bool(event.modifiers & Application.InputEvent.Modifier.CTRL)
+        mod = Application.Modifier
+        shift_pressed = bool(event.modifiers & mod.SHIFT)
+        alt_pressed = bool(event.modifiers & mod.ALT)
+        # ctrl_pressed = bool(event.modifiers & mod.CTRL)
 
         # LOOK MODE
         # use shift for fine-grained zooming
@@ -901,7 +942,7 @@ class HabitatSimInteractiveViewer(Application):
         self.redraw()
         event.accepted = True
 
-    def mouse_release_event(self, event: Application.MouseEvent) -> None:
+    def pointer_release_event(self, event: Application.PointerEvent) -> None:
         """
         Release any existing constraints.
         """
@@ -996,7 +1037,6 @@ Welcome to the Habitat-sim Python Spot Viewer application!
 =====================================================
 Mouse Functions
 ----------------
-In LOOK mode (default):
     LEFT:
         Click and drag to rotate the view around Spot.
     RIGHT:
@@ -1011,11 +1051,11 @@ Key Commands:
 -------------
     esc:        Exit the application.
     'h':        Display this help message.
+    'p':        Toggle the display of on-screen data
 
-    Spot Controls:
+  Spot/Camera Controls:
     'wasd':     Move Spot's body forward/backward and rotate left/right.
     'qe':       Move Spot's body in strafe left/right.
-    'zx':       Move Spot's body up and down (PROTOTYPE)
 
     '0':        Reset the camera around Spot (after raising/lowering)
     '1' :       Disengage/re-engage the navmesh constraints (no-clip toggle). When toggling back on,
@@ -1023,25 +1063,29 @@ Key Commands:
                 for. If found, spot is snapped to it, but if not found, spot will stay in no-clip
                 mode and a message will display.
 
-    Scene Object Modification UI:
-    'g' : Change Edit mode to either Move or Rotate the selected object
+  Scene Object Modification UI:
+    'g' : Change Edit mode to either Move or Rotate the selected object(s)
     'b' (+ SHIFT) : Increment (Decrement) the current edit amounts.
-    - With an object selected:
-        When Move Object Edit mode is selected :
-        - LEFT/RIGHT arrow keys: move the object along global X axis.
-        - UP/DOWN arrow keys: move the object along global Z axis.
-            (+ALT): move the object up/down (global Y axis)
-        When Rotate Object Edit mode is selected :
-        - LEFT/RIGHT arrow keys: rotate the object around global Y axis.
-        - UP/DOWN arrow keys: rotate the object around global Z axis.
-            (+ALT): rotate the object around global X axis.
-      - BACKSPACE: delete the selected object
-      - 'y': delete the selected object and record it as clutter.
-    - Matching target selected object (rendered with yellow box) specified dimension :
-      - '2': all selected objects match selected 'target''s x value
-      - '3': all selected objects match selected 'target''s y value
-      - '4': all selected objects match selected 'target''s z value
-      - '5': all selected objects match selected 'target''s orientation
+    Editing :
+    - With 1 or more objects selected:
+      - When Move Object Edit mode is selected :
+        - LEFT/RIGHT arrow keys: move the selected object(s) along global X axis.
+        - UP/DOWN arrow keys: move the selected object(s) along global Z axis.
+            (+ALT): move the selected object(s) up/down (global Y axis)
+      - When Rotate Object Edit mode is selected :
+        - LEFT/RIGHT arrow keys: rotate the selected object(s) around global Y axis.
+        - UP/DOWN arrow keys: rotate the selected object(s) around global Z axis.
+            (+ALT): rotate the selected object(s) around global X axis.
+      - BACKSPACE: delete the selected object(s)
+            'y': delete the selected object and record it as clutter.
+      - Matching target selected object(s) (rendered with yellow box) specified dimension :
+        - '2': all selected objects match selected 'target''s x value
+        - '3': all selected objects match selected 'target''s y value
+        - '4': all selected objects match selected 'target''s z value
+        - '5': all selected objects match selected 'target''s orientation
+      'u': Undo Edit
+          - With an object selected: Undo a single modification step for the selected object(s)
+              (+SHIFT) : redo modification to the selected object(s)
 
     '6': Select all objects that match the type of the current target/highlit (yellow box) object
 
@@ -1056,10 +1100,13 @@ Key Commands:
 
     'l' : Toggle types of objects to display boxes around : None, AOs, Rigids, Both
 
-    'u': Undo a single modification step for all selected objects
-        (+SHIFT) : redo (TODO)
 
-    Utilities:
+    'v':
+     - With object(s) selected : Duplicate the selected object(s)
+     - With no object selected : Load an object by providing a uniquely identifying substring of the object's name
+
+
+  Utilities:
     'r':        Reset the simulator with the most recently loaded scene.
     ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep).
     'c':        Toggle the contact point debug render overlay on/off. If toggled to true,
@@ -1071,7 +1118,7 @@ Key Commands:
                 (+ALT) Re-sample Spot's position from the NavMesh.
 
 
-    Object Interactions:
+  Simulation:
     SPACE:      Toggle physics simulation on/off.
     '.':        Take a single simulation step if not simulating continuously.
 =====================================================
