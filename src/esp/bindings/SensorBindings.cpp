@@ -372,7 +372,7 @@ void initSensorBindings(py::module& m) {
           R"(bool | false | Turn on/off temporal smoothing of the impulse response. This uses the impulse response from the previous simulation time step as a starting point for the next time step. This reduces the number of rays required by about a factor of 10, resulting in faster simulations, but should not be used if the motion of sources/listeners is not continuous.)")
       .def_readwrite(
           "dumpWaveFiles", &RLRAudioPropagation::Configuration::dumpWaveFiles,
-          R"(bool | false | Write the wave files for different bands. Will be writted to the AudioSensorSpec's outputDirectory)")
+          R"(bool | false | Write the wave files for different bands. Will be written to the AudioSensorSpec's outputDirectory)")
       .def_readwrite("enableMaterials",
                      &RLRAudioPropagation::Configuration::enableMaterials,
                      R"(bool | true | Enable audio materials)")
