@@ -15,8 +15,6 @@ repos:
     -   id: check-docstring-first
     -   id: check-executables-have-shebangs
     -   id: check-json
-        # The JSONs below support comments (against spec)
-        exclude: ^(.eslintrc.json|tsconfig.json)
     -   id: check-merge-conflict
     -   id: check-toml
     -   id: check-xml
@@ -132,18 +130,6 @@ repos:
     -   id: cmake-format
         exclude: (^src/(cmake/Find|deps)|configure\.h\.cmake$)
 
--   repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v8.12.0
-    hooks:
-    -   id: eslint
-        args: [--fix, --ext .html,.js]
-        language_version: 14.21.3
-        additional_dependencies:
-        - eslint@6.4.0
-        - eslint-config-prettier@6.3.0
-        - eslint-plugin-prettier@3.1.0
-        - eslint-plugin-html@6.0.0
-        - prettier@1.18.2
 
 -   repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.8.0.4
