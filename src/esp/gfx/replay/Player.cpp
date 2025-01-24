@@ -248,8 +248,13 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
 
   for (const auto& pair : keyframe.metadata) {
     const auto& instanceKey = pair.first;
-    implementation_->setNodeMetadata(createdInstances_[instanceKey],
-                                     pair.second);
+    const auto& it = createdInstances_.find(instanceKey);
+    if (it == createdInstances_.end()) {
+      // Missing instance for this key due to a failed instance creation
+      continue;
+    }
+    auto* node = it->second;
+    implementation_->setNodeMetadata(node, pair.second);
     creationRecords_[instanceKey].metadata = pair.second;
   }
 
