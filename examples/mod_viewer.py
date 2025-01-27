@@ -332,6 +332,8 @@ class HabitatSimInteractiveViewer(Application):
             "data/objects/ycb/configs/"
         )
         self.initialize_clutter_object_set()
+        # maps a pair of handles to a translation for duplicate detection and debug drawing
+        self.duplicate_object_cache: Dict[Tuple[str, str], mn.Vector3] = {}
         # -----------------------------------------
 
         # compute NavMesh if not already loaded by the scene.
@@ -823,6 +825,16 @@ class HabitatSimInteractiveViewer(Application):
                 radius=0.005,
                 color=mn.Color4(mn.Vector3(1.0), 1.0),
                 normal=self.mouse_cast_results.hits[0].normal,
+            )
+
+        # debug draw duplicate object indicators if available
+        for _obj_handles, translation in self.duplicate_object_cache.items():
+            debug_line_render.draw_circle(
+                translation=translation,
+                radius=0.1,
+                color=mn.Color4.yellow(),
+                normal=self.render_camera.render_camera.node.absolute_translation
+                - translation,
             )
 
     def draw_event(
@@ -1369,9 +1381,50 @@ class HabitatSimInteractiveViewer(Application):
             logger.info(log_str)
 
         elif key == pressed.E:
-            # Cyle through semantics display
-            info_str = self.dbg_semantics.cycle_semantic_region_draw()
-            logger.info(info_str)
+            if shift_pressed:
+                # check for duplciate objects in the scene by looking for overlapping translations
+                obj_translations = {}
+                self.duplicate_object_cache = {}
+                for _obj_handle, obj in (
+                    self.sim.get_rigid_object_manager()
+                    .get_objects_by_handle_substring()
+                    .items()
+                ):
+                    obj_translations[_obj_handle] = obj.translation
+                for obj_handle1, translation1 in obj_translations.items():
+                    for obj_handle2, translation2 in obj_translations.items():
+                        if obj_handle1 == obj_handle2:
+                            continue
+                        if (translation1 - translation2).length() < 0.1:
+                            if (
+                                obj_handle1,
+                                obj_handle2,
+                            ) in self.duplicate_object_cache or (
+                                obj_handle2,
+                                obj_handle1,
+                            ) in self.duplicate_object_cache:
+                                continue
+                            print(
+                                f" - possible duplicate detected: {obj_handle1} and {obj_handle2}"
+                            )
+                            self.duplicate_object_cache[
+                                (obj_handle1, obj_handle2)
+                            ] = translation1
+                print(f"Duplicates detected: {len(self.duplicate_object_cache)}")
+            elif alt_pressed:
+                removed_list = []
+                # automatically remove one of each detected duplicate pair
+                for obj_handles in self.duplicate_object_cache:
+                    # remove the 2nd of each pair assuming it is most likely added 2nd and therefore the duplicate
+                    self.sim.get_rigid_object_manager().remove_object_by_handle(
+                        obj_handles[1]
+                    )
+                    removed_list.append(obj_handles[1])
+                print(f"Removed {len(removed_list)} duplicate objects: {removed_list}")
+            else:
+                # Cyle through semantics display
+                info_str = self.dbg_semantics.cycle_semantic_region_draw()
+                logger.info(info_str)
 
         elif key == pressed.F:
             # toggle, load(+ALT), or save(+SHIFT) filtering
