@@ -669,7 +669,50 @@ def flag_non_default_link_active_recs(
     return non_default_active_recs
 
 
-def try_find_faucets(sim) -> Tuple[bool, int, int, int, int]:
+def check_for_duplicate_objects(
+    sim: Simulator,
+    dist_threshold: float = 0.1,
+    handle_similarity_threshold: float = 0.7,
+) -> Dict[Tuple[str, str], mn.Vector3]:
+    """
+    Checks all object transformations looking for objects which are likely duplicates.
+    Uses translation match and string handle similarity check.
+    Returns a Dict keyed by pairs of handles mapping to the translation of the overlap.
+    """
+    from difflib import SequenceMatcher
+
+    # check for duplciate objects in the scene by looking for overlapping translations
+    obj_translations = {}
+    duplicate_object_cache: Dict[Tuple[str, str], mn.Vector3] = {}
+    for _obj_handle, obj in (
+        sim.get_rigid_object_manager().get_objects_by_handle_substring().items()
+    ):
+        obj_translations[_obj_handle] = obj.translation
+
+    for obj_handle1, translation1 in obj_translations.items():
+        for obj_handle2, translation2 in obj_translations.items():
+            if obj_handle1 == obj_handle2:
+                continue
+            handle_similarity = SequenceMatcher(None, obj_handle1, obj_handle2).ratio()
+            if (translation1 - translation2).length() < dist_threshold:
+                if (
+                    obj_handle1,
+                    obj_handle2,
+                ) in duplicate_object_cache or (
+                    obj_handle2,
+                    obj_handle1,
+                ) in duplicate_object_cache:
+                    continue
+                print(
+                    f" - possible duplicate detected: {obj_handle1} and {obj_handle2} with similarity {handle_similarity}"
+                )
+                if handle_similarity > handle_similarity_threshold:
+                    duplicate_object_cache[(obj_handle1, obj_handle2)] = translation1
+    print(f"Duplicates detected (with high similarity): {len(duplicate_object_cache)}")
+    return duplicate_object_cache
+
+
+def try_find_faucets(sim: Simulator) -> Tuple[bool, int, int, int, int]:
     """
     Try to get faucets on objects in the scene.
     :return: boolean whether or not there are faucet annotations, number of faucet objects, number of faucet objects with receptacles, number of faucet objects with active receptacles, number of navigable faucet objs
@@ -743,7 +786,9 @@ def try_find_faucets(sim) -> Tuple[bool, int, int, int, int]:
     )
 
 
-def try_nav_faucet_point(sim, faucet_obj_handle, largest_island_ix):
+def try_nav_faucet_point(
+    sim: Simulator, faucet_obj_handle: str, largest_island_ix: int
+) -> bool:
     """
     Use nav utils to try finding a placement for the spot robot which can access a faucet
     """
@@ -831,6 +876,7 @@ if __name__ == "__main__":
         "visualize_regions",
         "analyze_semantics",
         "splits",
+        "duplicates",
     ]
 
     target_check_actions = []
@@ -1017,6 +1063,14 @@ if __name__ == "__main__":
                 scene_test_results[sim.curr_scene_name]["split"] = scene_splits[
                     sim.curr_scene_name
                 ]
+
+            ##########################################
+            # check for any potentially duplicated and overlapping objects
+            if "duplicates" in target_check_actions:
+                potential_duplicates = check_for_duplicate_objects(sim)
+                scene_test_results[sim.curr_scene_name]["duplicates"] = len(
+                    potential_duplicates
+                )
 
             ##########################################
             # gather all Receptacle.unique_name in the scene

@@ -1335,7 +1335,6 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.ONE:
             # save scene instance
             self.obj_editor.save_current_scene()
-            print("Saved modified scene instance JSON to original location.")
         elif key == pressed.TWO:
             # Undo any edits
             self.obj_editor.undo_edit()
@@ -1391,10 +1390,15 @@ class HabitatSimInteractiveViewer(Application):
                     .items()
                 ):
                     obj_translations[_obj_handle] = obj.translation
+                from difflib import SequenceMatcher
+
                 for obj_handle1, translation1 in obj_translations.items():
                     for obj_handle2, translation2 in obj_translations.items():
                         if obj_handle1 == obj_handle2:
                             continue
+                        handle_similarity = SequenceMatcher(
+                            None, obj_handle1, obj_handle2
+                        ).ratio()
                         if (translation1 - translation2).length() < 0.1:
                             if (
                                 obj_handle1,
@@ -1405,12 +1409,15 @@ class HabitatSimInteractiveViewer(Application):
                             ) in self.duplicate_object_cache:
                                 continue
                             print(
-                                f" - possible duplicate detected: {obj_handle1} and {obj_handle2}"
+                                f" - possible duplicate detected: {obj_handle1} and {obj_handle2} with similarity {handle_similarity}"
                             )
-                            self.duplicate_object_cache[
-                                (obj_handle1, obj_handle2)
-                            ] = translation1
-                print(f"Duplicates detected: {len(self.duplicate_object_cache)}")
+                            if handle_similarity > 0.65:
+                                self.duplicate_object_cache[
+                                    (obj_handle1, obj_handle2)
+                                ] = translation1
+                print(
+                    f"Duplicates detected (with high similarity): {len(self.duplicate_object_cache)}"
+                )
             elif alt_pressed:
                 removed_list = []
                 # automatically remove one of each detected duplicate pair
@@ -1420,6 +1427,8 @@ class HabitatSimInteractiveViewer(Application):
                         obj_handles[1]
                     )
                     removed_list.append(obj_handles[1])
+                if len(removed_list) > 0:
+                    self.obj_editor.modified_scene = True
                 print(f"Removed {len(removed_list)} duplicate objects: {removed_list}")
             else:
                 # Cyle through semantics display
