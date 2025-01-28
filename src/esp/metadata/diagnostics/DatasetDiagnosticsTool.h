@@ -58,15 +58,16 @@ enum class DSDiagnosticType : uint32_t {
 
 /**
  * @brief Construct to record the results of a series of diagnostics against a
- * single attributes.
+ * single attributes/configuration. TODO: build this record for each diagnostic
+ * process to facilitate reporting.
  */
 template <class T>
 class DSDiagnosticRecord {
  public:
   static_assert(
       std::is_base_of<esp::metadata::attributes::AbstractAttributes, T>::value,
-      "AbstractManagedPhysicsObject :: Managed physics object type must be "
-      "derived from esp::physics::PhysicsObjectBase");
+      "DSDiagnosticRecord :: Diagnostic record type must be derived "
+      "from esp::metadata::attributes::AbstractAttributes");
 
   typedef std::weak_ptr<T> WeakObjRef;
 
