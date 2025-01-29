@@ -174,7 +174,7 @@ void initRenderInstanceHelperBindings(py::module& m) {
     py::class_<RenderInstanceHelper, RenderInstanceHelper::ptr>(m, "RenderInstanceHelper")
         .def(py::init<sim::Simulator&, const std::vector<float>&>(), 
             py::arg("sim"), py::arg("identity_rotation"), "todo")
-        .def("add_instance", &RenderInstanceHelper::AddInstance, py::arg("asset_filepath"),
+        .def("add_instance", &RenderInstanceHelper::AddInstance, py::arg("asset_filepath"), py::arg("semantic_id"),
                 "todo")
         .def("clear_all_instances", &RenderInstanceHelper::ClearAllInstances,
                 "todo")

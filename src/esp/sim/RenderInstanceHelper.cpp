@@ -19,7 +19,7 @@ RenderInstanceHelper::RenderInstanceHelper(Simulator& sim, const std::vector<flo
     isXYZW_ = identityRotation[3] == 1.f;
 }
 
-int RenderInstanceHelper::AddInstance(const std::string& assetFilepath) {
+int RenderInstanceHelper::AddInstance(const std::string& assetFilepath, int semanticId) {
 
     esp::assets::AssetInfo assetInfo;
     assetInfo.filepath = assetFilepath;
@@ -36,6 +36,8 @@ int RenderInstanceHelper::AddInstance(const std::string& assetFilepath) {
 
     auto* node = sim_->loadAndCreateRenderAssetInstance(assetInfo, creation);
     instances_.push_back(node);
+
+    setSemanticIdForSubtree(node, semanticId);
 
     return instances_.size() - 1;
 }
