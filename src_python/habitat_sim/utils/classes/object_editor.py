@@ -7,7 +7,7 @@
 
 from collections import defaultdict
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import magnum as mn
 from numpy import pi
@@ -89,6 +89,9 @@ class ObjectEditor:
         # Dictionary by object id of transformation when object was most recently saved
         self.obj_last_save_transform: Dict[int, mn.Matrix4] = {}
 
+        # maps a pair of handles to a translation for duplicate detection and debug drawing
+        self.duplicate_object_cache: Dict[Tuple[str, str], mn.Vector3] = {}
+
         # Complete list of undone transformation edits, for redo chaining,
         # keyed by object id, value is before and after transform.
         # Cleared when any future edits are performed.
@@ -150,6 +153,7 @@ class ObjectEditor:
 Edit Value: {edit_distance_mode_string}
 Scene Is Modified: {self.modified_scene}
 Num Sel Objs: {len(self.sel_objs)}{obj_str}{obj_type_disp_str}
+Num Potential Dupes : {len(self.duplicate_object_cache)}
           """
         return disp_str
 
@@ -910,6 +914,70 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}{obj_type_disp_str}
             % ObjectEditor.ObjectTypeToDraw.NUM_VALS.value
         )
 
+    def handle_duplicate_objects(
+        self, find_objs: bool, remove_dupes: bool, trans_eps: float = 0.1
+    ):
+        if find_objs:
+            # check for duplciate objects in the scene by looking for overlapping translations
+            obj_translations = {}
+            self.duplicate_object_cache = {}
+            for _obj_handle, obj in (
+                self.sim.get_rigid_object_manager()
+                .get_objects_by_handle_substring()
+                .items()
+            ):
+                obj_translations[_obj_handle] = obj.translation
+            from difflib import SequenceMatcher
+
+            for obj_handle1, translation1 in obj_translations.items():
+                for obj_handle2, translation2 in obj_translations.items():
+                    if obj_handle1 == obj_handle2:
+                        continue
+                    handle_similarity = SequenceMatcher(
+                        None, obj_handle1, obj_handle2
+                    ).ratio()
+                    if (translation1 - translation2).length() < trans_eps:
+                        if (
+                            obj_handle1,
+                            obj_handle2,
+                        ) in self.duplicate_object_cache or (
+                            obj_handle2,
+                            obj_handle1,
+                        ) in self.duplicate_object_cache:
+                            continue
+                        print(
+                            f" - possible duplicate detected: {obj_handle1} and {obj_handle2} with similarity {handle_similarity}"
+                        )
+                        if handle_similarity > 0.65:
+                            self.duplicate_object_cache[
+                                (obj_handle1, obj_handle2)
+                            ] = translation1
+            print(
+                f"Duplicates detected (with high similarity): {len(self.duplicate_object_cache)}"
+            )
+        elif remove_dupes:
+            removed_list = []
+            # automatically remove one of each detected duplicate pair
+            for obj_handles in self.duplicate_object_cache:
+                # remove the 2nd of each pair assuming it is most likely added 2nd and therefore the duplicate
+                self.sim.get_rigid_object_manager().remove_object_by_handle(
+                    obj_handles[1]
+                )
+                removed_list.append(obj_handles[1])
+            if len(removed_list) > 0:
+                self.modified_scene = True
+            print(f"Removed {len(removed_list)} duplicate objects: {removed_list}")
+
+    def draw_obj_vis(self, camera_trans: mn.Vector3, debug_line_render):
+        # draw selected object frames if any objects are selected and any toggled object settings
+        self.draw_selected_objects(debug_line_render=debug_line_render)
+        # draw a circle around objects that may be duplicates
+        self.draw_duplicate_objs(
+            camera_trans=camera_trans, debug_line_render=debug_line_render
+        )
+        # draw highlight box around specific objects
+        self.draw_box_around_objs(debug_line_render=debug_line_render)
+
     def _draw_selected_obj(self, obj, debug_line_render, box_color):
         """
         Draw a selection box around and axis frame at the origin of a single object
@@ -918,6 +986,18 @@ Num Sel Objs: {len(self.sel_objs)}{obj_str}{obj_type_disp_str}
         debug_line_render.push_transform(obj.transformation)
         debug_line_render.draw_box(aabb.min, aabb.max, box_color)
         debug_line_render.pop_transform()
+
+    def draw_duplicate_objs(self, camera_trans: mn.Vector3, debug_line_render):
+        if len(self.duplicate_object_cache) == 0:
+            return
+        # debug draw duplicate object indicators if available
+        for _obj_handles, translation in self.duplicate_object_cache.items():
+            debug_line_render.draw_circle(
+                translation=translation,
+                radius=0.1,
+                color=mn.Color4.yellow(),
+                normal=camera_trans - translation,
+            )
 
     def draw_selected_objects(self, debug_line_render):
         if len(self.sel_objs) == 0:

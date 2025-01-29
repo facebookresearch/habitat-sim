@@ -305,7 +305,6 @@ class HabitatSimInteractiveViewer(Application):
         # Semantics
         self.dbg_semantics = SemanticDisplay(self.sim)
 
-        # sys.exit(0)
         # load appropriate filter file for scene
         self.load_scene_filter_file()
 
@@ -332,8 +331,6 @@ class HabitatSimInteractiveViewer(Application):
             "data/objects/ycb/configs/"
         )
         self.initialize_clutter_object_set()
-        # maps a pair of handles to a translation for duplicate detection and debug drawing
-        self.duplicate_object_cache: Dict[Tuple[str, str], mn.Vector3] = {}
         # -----------------------------------------
 
         # compute NavMesh if not already loaded by the scene.
@@ -817,7 +814,11 @@ class HabitatSimInteractiveViewer(Application):
         if self.receptacles is not None and self.display_receptacles:
             self.draw_receptacles(debug_line_render)
 
-        self.obj_editor.draw_selected_objects(debug_line_render)
+        # draw object-related visualizations managed by obj_editor
+        self.obj_editor.draw_obj_vis(
+            camera_trans=render_cam.node.absolute_translation,
+            debug_line_render=debug_line_render,
+        )
         # mouse raycast circle
         if self.mouse_cast_has_hits:
             debug_line_render.draw_circle(
@@ -825,16 +826,6 @@ class HabitatSimInteractiveViewer(Application):
                 radius=0.005,
                 color=mn.Color4(mn.Vector3(1.0), 1.0),
                 normal=self.mouse_cast_results.hits[0].normal,
-            )
-
-        # debug draw duplicate object indicators if available
-        for _obj_handles, translation in self.duplicate_object_cache.items():
-            debug_line_render.draw_circle(
-                translation=translation,
-                radius=0.1,
-                color=mn.Color4.yellow(),
-                normal=self.render_camera.render_camera.node.absolute_translation
-                - translation,
             )
 
     def draw_event(
@@ -1380,56 +1371,11 @@ class HabitatSimInteractiveViewer(Application):
             logger.info(log_str)
 
         elif key == pressed.E:
-            if shift_pressed:
-                # check for duplciate objects in the scene by looking for overlapping translations
-                obj_translations = {}
-                self.duplicate_object_cache = {}
-                for _obj_handle, obj in (
-                    self.sim.get_rigid_object_manager()
-                    .get_objects_by_handle_substring()
-                    .items()
-                ):
-                    obj_translations[_obj_handle] = obj.translation
-                from difflib import SequenceMatcher
-
-                for obj_handle1, translation1 in obj_translations.items():
-                    for obj_handle2, translation2 in obj_translations.items():
-                        if obj_handle1 == obj_handle2:
-                            continue
-                        handle_similarity = SequenceMatcher(
-                            None, obj_handle1, obj_handle2
-                        ).ratio()
-                        if (translation1 - translation2).length() < 0.1:
-                            if (
-                                obj_handle1,
-                                obj_handle2,
-                            ) in self.duplicate_object_cache or (
-                                obj_handle2,
-                                obj_handle1,
-                            ) in self.duplicate_object_cache:
-                                continue
-                            print(
-                                f" - possible duplicate detected: {obj_handle1} and {obj_handle2} with similarity {handle_similarity}"
-                            )
-                            if handle_similarity > 0.65:
-                                self.duplicate_object_cache[
-                                    (obj_handle1, obj_handle2)
-                                ] = translation1
-                print(
-                    f"Duplicates detected (with high similarity): {len(self.duplicate_object_cache)}"
+            if shift_pressed or alt_pressed:
+                # Find and remove duplicates
+                self.obj_editor.handle_duplicate_objects(
+                    find_objs=shift_pressed, remove_dupes=alt_pressed, trans_eps=0.1
                 )
-            elif alt_pressed:
-                removed_list = []
-                # automatically remove one of each detected duplicate pair
-                for obj_handles in self.duplicate_object_cache:
-                    # remove the 2nd of each pair assuming it is most likely added 2nd and therefore the duplicate
-                    self.sim.get_rigid_object_manager().remove_object_by_handle(
-                        obj_handles[1]
-                    )
-                    removed_list.append(obj_handles[1])
-                if len(removed_list) > 0:
-                    self.obj_editor.modified_scene = True
-                print(f"Removed {len(removed_list)} duplicate objects: {removed_list}")
             else:
                 # Cyle through semantics display
                 info_str = self.dbg_semantics.cycle_semantic_region_draw()
@@ -2263,6 +2209,8 @@ Key Commands:
          (+ALT) : Modify Selected AOs
          (-ALT) : Modify All AOs
     'e'         Toggle Semantic visualization bounds (currently only Semantic Region annotations)
+         (+SHIFT) : Find and display potentially duplciate objects
+         (+ALT) : Remove objects found as potential duplicates
 
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
