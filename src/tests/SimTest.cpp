@@ -12,6 +12,8 @@
 #include <Magnum/ImageView.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/PixelFormat.h>
+#include <Magnum/Image.h>
+#include <Magnum/Math/Color.h>
 #include <string>
 #include <vector>
 
@@ -140,7 +142,14 @@ struct SimTest : Cr::TestSuite::Tester {
       Simulator& sim,
       const std::string& groundTruthImageFile,
       Magnum::Float maxThreshold,
-      Magnum::Float meanThreshold);
+      Magnum::Float meanThreshold,
+      int* numAgents);
+  void checkPinholeCameraSemanticObservation(
+      Simulator& simulator,
+      const std::string& groundTruthImageFile,
+      Magnum::Float maxThreshold,
+      Magnum::Float meanThreshold,
+      int* numAgents);
 
   void addObjectsAndMakeObservation(Simulator& sim,
                                     esp::sensor::CameraSensorSpec& cameraSpec,
@@ -270,11 +279,87 @@ void SimTest::reset() {
   CORRADE_COMPARE(pathfinder, simulator->getPathFinder());
 }
 
+Mn::Image2D convertR32uiToRgba8Unorm(const Mn::ImageView2D& inputImage) {
+    CORRADE_VERIFY(inputImage.format() == Mn::PixelFormat::R32UI);
+
+    Mn::Vector2i size = inputImage.size();
+    std::size_t pixelCount = size.product();
+    Corrade::Containers::Array<char> outputData{pixelCount * 4};
+
+    const auto* inputData = reinterpret_cast<const Mn::UnsignedInt*>(inputImage.data().data());
+    auto* outputDataPtr = reinterpret_cast<Mn::UnsignedByte*>(outputData.data());
+
+    for (std::size_t i = 0; i < pixelCount; ++i) {
+        Mn::UnsignedInt r = inputData[i + 0];
+        Mn::UnsignedInt g = r;
+        Mn::UnsignedInt b = r;
+
+        // Downcast to 8-bit normalized values
+        outputDataPtr[i * 4 + 0] = static_cast<Mn::UnsignedByte>(Mn::Math::clamp(r, 0u, 255u));
+        outputDataPtr[i * 4 + 1] = static_cast<Mn::UnsignedByte>(Mn::Math::clamp(g, 0u, 255u));
+        outputDataPtr[i * 4 + 2] = static_cast<Mn::UnsignedByte>(Mn::Math::clamp(b, 0u, 255u));
+        outputDataPtr[i * 4 + 3] = 255;  // Full opacity
+    }
+
+    return Mn::Image2D{Mn::PixelFormat::RGBA8Unorm, size, std::move(outputData)};
+}
+
+void SimTest::checkPinholeCameraSemanticObservation(
+    Simulator& simulator,
+    const std::string& groundTruthImageFile,
+    Magnum::Float maxThreshold,
+    Magnum::Float meanThreshold,
+    int* numAgents = nullptr) {
+  // do not rely on default SensorSpec default constructor to remain constant
+  auto pinholeCameraSpec = CameraSensorSpec::create();
+  pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
+  pinholeCameraSpec->sensorType = SensorType::Semantic;
+  pinholeCameraSpec->channels = 1;
+  pinholeCameraSpec->position = {1.0f, 1.5f, 1.0f};
+  pinholeCameraSpec->resolution = {128, 128};
+
+  AgentConfiguration agentConfig{};
+  agentConfig.sensorSpecifications = {pinholeCameraSpec};
+  Agent::ptr agent = simulator.addAgent(agentConfig);
+  int agentId = numAgents ? (*numAgents)++ : 0;
+  agent->setInitialState(AgentState{});
+
+  Observation observation;
+  ObservationSpace obsSpace;
+  CORRADE_VERIFY(
+      simulator.getAgentObservation(agentId, pinholeCameraSpec->uuid, observation));
+  CORRADE_VERIFY(
+      simulator.getAgentObservationSpace(agentId, pinholeCameraSpec->uuid, obsSpace));
+
+  std::vector<size_t> expectedShape{
+      {static_cast<size_t>(pinholeCameraSpec->resolution[0]),
+       static_cast<size_t>(pinholeCameraSpec->resolution[1]), 1}};
+
+  CORRADE_VERIFY(obsSpace.spaceType == ObservationSpaceType::Tensor);
+  // CORRADE_VERIFY(obsSpace.dataType == esp::core::DataType::DT_UINT8);
+  CORRADE_VERIFY(obsSpace.dataType == esp::core::DataType::DT_UINT32);
+  CORRADE_COMPARE(obsSpace.shape, expectedShape);
+  CORRADE_COMPARE(observation.buffer->shape, expectedShape);
+
+  Mn::Image2D convertedImage = convertR32uiToRgba8Unorm(Mn::ImageView2D{
+          //Mn::PixelFormat::RGBA8Unorm,
+          Mn::PixelFormat::R32UI,
+          {pinholeCameraSpec->resolution[0], pinholeCameraSpec->resolution[1]},
+          observation.buffer->data});
+
+  // Compare with previously rendered ground truth
+  CORRADE_COMPARE_WITH(
+      (convertedImage),
+      Cr::Utility::Path::join(screenshotDir, groundTruthImageFile),
+      (Mn::DebugTools::CompareImageToFile{maxThreshold, meanThreshold}));
+}
+
 void SimTest::checkPinholeCameraRGBAObservation(
     Simulator& simulator,
     const std::string& groundTruthImageFile,
     Magnum::Float maxThreshold,
-    Magnum::Float meanThreshold) {
+    Magnum::Float meanThreshold,
+    int* numAgents = nullptr) {
   // do not rely on default SensorSpec default constructor to remain constant
   auto pinholeCameraSpec = CameraSensorSpec::create();
   pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
@@ -285,14 +370,15 @@ void SimTest::checkPinholeCameraRGBAObservation(
   AgentConfiguration agentConfig{};
   agentConfig.sensorSpecifications = {pinholeCameraSpec};
   Agent::ptr agent = simulator.addAgent(agentConfig);
+  int agentId = numAgents ? (*numAgents)++ : 0;
   agent->setInitialState(AgentState{});
 
   Observation observation;
   ObservationSpace obsSpace;
   CORRADE_VERIFY(
-      simulator.getAgentObservation(0, pinholeCameraSpec->uuid, observation));
+      simulator.getAgentObservation(agentId, pinholeCameraSpec->uuid, observation));
   CORRADE_VERIFY(
-      simulator.getAgentObservationSpace(0, pinholeCameraSpec->uuid, obsSpace));
+      simulator.getAgentObservationSpace(agentId, pinholeCameraSpec->uuid, obsSpace));
 
   std::vector<size_t> expectedShape{
       {static_cast<size_t>(pinholeCameraSpec->resolution[0]),
@@ -1058,18 +1144,13 @@ void SimTest::testArticulatedObjectSkinned() {
 }  // SimTest::testArticulatedObjectSkinned
 
 
+
 // test recording and playback through the simulator interface
 void SimTest::testRenderInstanceHelper() {
-  const std::string boxFile =
-      Cr::Utility::Path::join(TEST_ASSETS, "objects/transform_box.glb");
-  const auto rigidObjTranslation = Mn::Vector3(1.f, 2.f, 3.f);
-  const auto rigidObjRotation = Mn::Quaternion::rotation(
-      Mn::Deg(45.f), Mn::Vector3(1.f, 1.f, 0.f).normalized());
-
   SimulatorConfiguration simConfig{};
   simConfig.activeSceneName = esp::EMPTY_SCENE;
-  simConfig.enableGfxReplaySave = true;
-  simConfig.createRenderer = false;
+  // simConfig.enableGfxReplaySave = true;
+  simConfig.createRenderer = true;
   simConfig.enablePhysics = false;
   auto sim = Simulator::create_unique(simConfig);
   CORRADE_VERIFY(sim);
@@ -1082,19 +1163,32 @@ void SimTest::testRenderInstanceHelper() {
   std::vector<float> identityRotation{0.f, 0.f, 0.f, 1.f};
   esp::sim::RenderInstanceHelper instanceHelper(*sim, identityRotation);
 
-  instanceHelper.AddInstance(boxFile);
+  std::vector<int> semanticIds = {64, 128};
+
+  const std::string boxFile =
+      Cr::Utility::Path::join(TEST_ASSETS, "objects/transform_box.glb");
+  instanceHelper.AddInstance(boxFile, semanticIds[0]);
   CORRADE_COMPARE(getNumberOfChildrenOfRoot(rootNode), baseNum + 1);
-  instanceHelper.AddInstance(boxFile);
+  instanceHelper.AddInstance(boxFile, semanticIds[1]);
   CORRADE_COMPARE(getNumberOfChildrenOfRoot(rootNode), baseNum + 2);
 
-  std::vector<float> positionsVec = {0.f, 1.f, 2.f, 3.f, 4.f, 5.f};
+  // std::vector<float> positionsVec = {1.0f, 0.5f, -0.5f, -3.f, 1.5f, 0.f};
+  std::vector<float> positionsVec = {3.0f, 1.3f, -3.f, -3.f, 1.7f, -3.f};
   std::vector<float> orientationsVec = {0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f};
 
   instanceHelper.SetWorldPoses(positionsVec.data(), positionsVec.size(), orientationsVec.data(), orientationsVec.size());
   CORRADE_COMPARE(instanceHelper.GetNumInstances(), 2);
+
+  int numAgents = 0;
+  checkPinholeCameraRGBAObservation(
+      *sim, "SimTest_testRenderInstanceHelper_0.png", maxThreshold, 0.75f, &numAgents);
+  checkPinholeCameraSemanticObservation(
+      *sim, "SimTest_testRenderInstanceHelper_1.png", maxThreshold, 0.75f, &numAgents);
+
   instanceHelper.ClearAllInstances();
   CORRADE_COMPARE(instanceHelper.GetNumInstances(), 0);
 
+  // todo: test RGB and semantic rendering
 }
 
 }  // namespace
