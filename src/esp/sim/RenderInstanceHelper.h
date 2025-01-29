@@ -26,7 +26,7 @@ class RenderInstanceHelper {
  public:
   RenderInstanceHelper(Simulator& sim, const std::vector<float>& identityRotation);
 
-  int AddInstance(const std::string& assetFilepath);
+  int AddInstance(const std::string& assetFilepath, int semanticId);
   void ClearAllInstances();
   int GetNumInstances();
   void SetWorldPoses(float* positions, size_t positionsSize, float* orientations, size_t orientationsSize);
