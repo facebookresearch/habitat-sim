@@ -712,7 +712,9 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.F:
             # find and remove duplicates
             self.obj_editor.handle_duplicate_objects(
-                find_objs=(not shift_pressed), remove_dupes=shift_pressed, trans_eps=0.1
+                find_objs=(not shift_pressed),
+                remove_dupes=shift_pressed,
+                trans_eps=0.01,
             )
         elif key == pressed.G:
             # cycle through edit modes
