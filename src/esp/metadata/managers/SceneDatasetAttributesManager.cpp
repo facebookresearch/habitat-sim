@@ -70,8 +70,10 @@ void SceneDatasetAttributesManager::setValsFromJSONDocInternal(
     attributes::SceneDatasetAttributes::ptr dsAttribs,
     const io::JsonGenericValue& jsonConfig) {
   // check for diagnostics requests
-  this->setDSDiagnostics(dsAttribs, jsonConfig);
-
+  bool dsSet = this->setDSDiagnostics(dsAttribs, jsonConfig);
+  ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+      << "Attempt to set dataset diagnostics was a "
+      << (dsSet ? "Success" : "Failure");
   // dataset root directory to build paths from
   std::string dsDir = dsAttribs->getFileDirectory();
   // process stages
