@@ -7,7 +7,7 @@
 
 from collections import defaultdict
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import magnum as mn
 from numpy import pi
@@ -90,7 +90,8 @@ class ObjectEditor:
         self.obj_last_save_transform: Dict[int, mn.Matrix4] = {}
 
         # maps a pair of handles to a translation for duplicate detection and debug drawing
-        self.duplicate_object_cache: Dict[Tuple[str, str], mn.Vector3] = {}
+        self.duplicate_rigid_object_cache: Dict[Tuple[str, str], mn.Vector3] = {}
+        self.duplicate_articulated_object_cache: Dict[Tuple[str, str], mn.Vector3] = {}
 
         # Complete list of undone transformation edits, for redo chaining,
         # keyed by object id, value is before and after transform.
@@ -149,11 +150,20 @@ class ObjectEditor:
             if self.obj_type_to_draw == ObjectEditor.ObjectTypeToDraw.NONE
             else f"\nObject Types Being Displayed :{ObjectEditor.OBJECT_TYPE_NAMES[self.obj_type_to_draw.value]}"
         )
+        dupe_str = (
+            ""
+            if len(self.duplicate_rigid_object_cache) == 0
+            else f"Num Potential Rigid Dupes : {len(self.duplicate_rigid_object_cache)}\n"
+        ) + (
+            ""
+            if len(self.duplicate_articulated_object_cache) == 0
+            else f"Num Potential Articulated Dupes : {len(self.duplicate_articulated_object_cache)}\n"
+        )
         disp_str = f"""Edit Mode: {edit_mode_string}
 Edit Value: {edit_distance_mode_string}
 Scene Is Modified: {self.modified_scene}
 Num Sel Objs: {len(self.sel_objs)}{obj_str}{obj_type_disp_str}
-Num Potential Dupes : {len(self.duplicate_object_cache)}
+{dupe_str}
           """
         return disp_str
 
@@ -918,55 +928,109 @@ Num Potential Dupes : {len(self.duplicate_object_cache)}
         self, find_objs: bool, remove_dupes: bool, trans_eps: float = 0.1
     ):
         if find_objs:
-            # check for duplciate objects in the scene by looking for overlapping translations
-            obj_translations = {}
-            self.duplicate_object_cache = {}
-            for _obj_handle, obj in (
-                self.sim.get_rigid_object_manager()
-                .get_objects_by_handle_substring()
-                .items()
-            ):
-                obj_translations[_obj_handle] = obj.translation
             from difflib import SequenceMatcher
 
-            for obj_handle1, translation1 in obj_translations.items():
-                for obj_handle2, translation2 in obj_translations.items():
-                    if obj_handle1 == obj_handle2:
-                        continue
-                    handle_similarity = SequenceMatcher(
-                        None, obj_handle1, obj_handle2
-                    ).ratio()
-                    if (translation1 - translation2).length() < trans_eps:
-                        if (
-                            obj_handle1,
-                            obj_handle2,
-                        ) in self.duplicate_object_cache or (
-                            obj_handle2,
-                            obj_handle1,
-                        ) in self.duplicate_object_cache:
+            def handle_dupe_objs_internal(
+                obj_dict: Dict[
+                    str,
+                    Union[
+                        HSim_Phys.ManagedRigidObject,
+                        HSim_Phys.ManagedArticulatedObject,
+                    ],
+                ],
+                dupe_type: str,
+                trans_eps: float,
+                handle_eps: float = 0.65,
+            ) -> Dict[Tuple[str, str], mn.Vector3]:
+                """
+                Check for duplicate objects in the scene by looking for overlapping translations among similarly-named objects
+                and return dict of candidates.
+                """
+                obj_translations: Dict[str, mn.Vector3] = {}
+                duplicate_object_cache: Dict[Tuple[str, str], mn.Vector3] = {}
+
+                # build translation dict
+                for _obj_handle, obj in obj_dict.items():
+                    obj_translations[_obj_handle] = obj.translation
+
+                for obj_handle1, translation1 in obj_translations.items():
+                    for obj_handle2, translation2 in obj_translations.items():
+                        if obj_handle1 == obj_handle2:
                             continue
-                        print(
-                            f" - possible duplicate detected: {obj_handle1} and {obj_handle2} with similarity {handle_similarity}"
-                        )
-                        if handle_similarity > 0.65:
-                            self.duplicate_object_cache[
-                                (obj_handle1, obj_handle2)
-                            ] = translation1
+                        trans_dist = (translation1 - translation2).length()
+                        if trans_dist < trans_eps:
+                            if (
+                                obj_handle1,
+                                obj_handle2,
+                            ) in duplicate_object_cache or (
+                                obj_handle2,
+                                obj_handle1,
+                            ) in duplicate_object_cache:
+                                continue
+                            # calculate handle similarity only if translations are close enough to warrant investigation
+                            handle_similarity = SequenceMatcher(
+                                None, obj_handle1, obj_handle2
+                            ).ratio()
+                            print(
+                                f" - Possible {dupe_type} object duplicate detected: {obj_handle1} and {obj_handle2} with similarity {handle_similarity}"
+                            )
+                            if handle_similarity > handle_eps:
+                                duplicate_object_cache[
+                                    (obj_handle1, obj_handle2)
+                                ] = translation1
+
+                return duplicate_object_cache
+
+            # look for duplicate rigids
+            self.duplicate_rigid_object_cache = handle_dupe_objs_internal(
+                obj_dict=self.sim.get_rigid_object_manager().get_objects_by_handle_substring(),
+                dupe_type="Rigid",
+                trans_eps=trans_eps,
+                handle_eps=0.65,
+            )
+            # look for duplicate aos
+            self.duplicate_articulated_object_cache = handle_dupe_objs_internal(
+                obj_dict=self.sim.get_articulated_object_manager().get_objects_by_handle_substring(),
+                dupe_type="Articulated",
+                trans_eps=trans_eps,
+                handle_eps=0.65,
+            )
             print(
-                f"Duplicates detected (with high similarity): {len(self.duplicate_object_cache)}"
+                f"Rigid object duplicates detected (with high similarity): {len(self.duplicate_rigid_object_cache)}\nArticulated object duplicates detected (with high similarity): {len(self.duplicate_articulated_object_cache)}"
             )
         elif remove_dupes:
-            removed_list = []
-            # automatically remove one of each detected duplicate pair
-            for obj_handles in self.duplicate_object_cache:
-                # remove the 2nd of each pair assuming it is most likely added 2nd and therefore the duplicate
-                self.sim.get_rigid_object_manager().remove_object_by_handle(
-                    obj_handles[1]
-                )
-                removed_list.append(obj_handles[1])
-            if len(removed_list) > 0:
-                self.modified_scene = True
-            print(f"Removed {len(removed_list)} duplicate objects: {removed_list}")
+
+            def remove_dupe_objs(
+                obj_cache: Dict[Tuple[str, str], mn.Vector3], obj_mgr
+            ) -> List[str]:
+                """
+                Automatically remove one of each detected duplicate pair and return the list of removed object handles.
+                NOTE: this does not just mark these objects for removal but actually removes them from the scene.
+                """
+                removed_list = []
+                # automatically remove one of each detected duplicate pair
+                for obj_handles in obj_cache:
+                    # remove the 2nd of each pair assuming it is most likely added 2nd and therefore the duplicate
+                    obj_mgr.remove_object_by_handle(obj_handles[1])
+                    removed_list.append(obj_handles[1])
+                return removed_list
+
+            # remove rigid duplicate proposals
+            rigid_removed_list = remove_dupe_objs(
+                obj_cache=self.duplicate_rigid_object_cache,
+                obj_mgr=self.sim.get_rigid_object_manager(),
+            )
+            articulated_removed_list = remove_dupe_objs(
+                obj_cache=self.duplicate_articulated_object_cache,
+                obj_mgr=self.sim.get_articulated_object_manager(),
+            )
+
+            print(
+                f"Removed {len(rigid_removed_list)} duplicate rigid objects: {rigid_removed_list}"
+            )
+            print(
+                f"Removed {len(articulated_removed_list)} duplicate articulated objects: {articulated_removed_list}"
+            )
 
     def draw_obj_vis(self, camera_trans: mn.Vector3, debug_line_render):
         # draw selected object frames if any objects are selected and any toggled object settings
@@ -988,16 +1052,37 @@ Num Potential Dupes : {len(self.duplicate_object_cache)}
         debug_line_render.pop_transform()
 
     def draw_duplicate_objs(self, camera_trans: mn.Vector3, debug_line_render):
-        if len(self.duplicate_object_cache) == 0:
-            return
-        # debug draw duplicate object indicators if available
-        for _obj_handles, translation in self.duplicate_object_cache.items():
-            debug_line_render.draw_circle(
-                translation=translation,
-                radius=0.1,
-                color=mn.Color4.yellow(),
-                normal=camera_trans - translation,
-            )
+        def draw_duplicate_objs_internal(
+            camera_trans: mn.Vector3,
+            dupe_obj_cache: Dict[Tuple[str, str], mn.Vector3],
+            dupe_color: mn.Color4,
+            debug_line_render,
+        ):
+            if len(dupe_obj_cache) == 0:
+                return
+            # debug draw duplicate object indicators if available
+            for _obj_handles, translation in dupe_obj_cache.items():
+                debug_line_render.draw_circle(
+                    translation=translation,
+                    radius=0.1,
+                    color=dupe_color,
+                    normal=camera_trans - translation,
+                )
+
+        # rigid dupes
+        draw_duplicate_objs_internal(
+            camera_trans=camera_trans,
+            dupe_obj_cache=self.duplicate_rigid_object_cache,
+            dupe_color=mn.Color4.yellow(),
+            debug_line_render=debug_line_render,
+        )
+        # articulated dupes
+        draw_duplicate_objs_internal(
+            camera_trans=camera_trans,
+            dupe_obj_cache=self.duplicate_articulated_object_cache,
+            dupe_color=mn.Color4.green(),
+            debug_line_render=debug_line_render,
+        )
 
     def draw_selected_objects(self, debug_line_render):
         if len(self.sel_objs) == 0:
@@ -1042,7 +1127,7 @@ Num Potential Dupes : {len(self.duplicate_object_cache)}
                     )
 
         if self.obj_type_to_draw.value > 1:
-            # draw rigis if 2 or 3
+            # draw rigids if 2 or 3
             attr_mgr = self.sim.get_rigid_object_manager()
             new_sel_objs_dict = attr_mgr.get_objects_by_handle_substring(search_str="")
             obj_clr = mn.Color4.cyan()
