@@ -284,8 +284,8 @@ class HabitatSimInteractiveViewer(Application):
         Additional draw commands to be called during draw_event.
         """
         debug_line_render = self.sim.get_debug_line_render()
+        render_cam = self.render_camera.render_camera
         if self.debug_bullet_draw:
-            render_cam = self.render_camera.render_camera
             proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
             self.sim.physics_debug_draw(proj_mat)
         if self.contact_debug_draw:
@@ -301,10 +301,11 @@ class HabitatSimInteractiveViewer(Application):
                 color=mn.Color4.yellow(),
                 num_segments=12,
             )
-        # draw selected object frames if any objects are selected and any toggled object settings
-        self.obj_editor.draw_selected_objects(debug_line_render=debug_line_render)
-        # draw highlight box around all objects
-        self.obj_editor.draw_box_around_objs(debug_line_render=debug_line_render)
+        # draw object-related visualizations
+        self.obj_editor.draw_obj_vis(
+            camera_trans=render_cam.node.absolute_translation,
+            debug_line_render=debug_line_render,
+        )
         # mouse raycast circle
         if self.mouse_cast_has_hits:
             debug_line_render.draw_circle(
@@ -708,7 +709,13 @@ class HabitatSimInteractiveViewer(Application):
                 log_str = f"{log_str}: performing discrete collision detection and visualize active contacts."
                 self.sim.perform_discrete_collision_detection()
             logger.info(log_str)
-
+        elif key == pressed.F:
+            # find and remove duplicates
+            self.obj_editor.handle_duplicate_objects(
+                find_objs=(not shift_pressed),
+                remove_dupes=shift_pressed,
+                trans_eps=0.01,
+            )
         elif key == pressed.G:
             # cycle through edit modes
             self.obj_editor.change_edit_mode(toggle=shift_pressed)
@@ -1112,6 +1119,9 @@ Key Commands:
     'c':        Toggle the contact point debug render overlay on/off. If toggled to true,
                 then run a discrete collision detection pass and render a debug wireframe overlay
                 showing active contact points and normals (yellow=fixed length normals, red=collision distances).
+    'f':        Manage potential duplicate objects
+         (+SHIFT) : Find and display potentially duplciate objects
+         (+ALT) : Remove objects found as potential duplicates
     'k'         Toggle Semantic visualization bounds (currently only Semantic Region annotations)
     'n':        Show/hide NavMesh wireframe.
                 (+SHIFT) Recompute NavMesh with Spot settings (already done).

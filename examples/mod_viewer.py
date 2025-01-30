@@ -305,7 +305,6 @@ class HabitatSimInteractiveViewer(Application):
         # Semantics
         self.dbg_semantics = SemanticDisplay(self.sim)
 
-        # sys.exit(0)
         # load appropriate filter file for scene
         self.load_scene_filter_file()
 
@@ -815,7 +814,11 @@ class HabitatSimInteractiveViewer(Application):
         if self.receptacles is not None and self.display_receptacles:
             self.draw_receptacles(debug_line_render)
 
-        self.obj_editor.draw_selected_objects(debug_line_render)
+        # draw object-related visualizations managed by obj_editor
+        self.obj_editor.draw_obj_vis(
+            camera_trans=render_cam.node.absolute_translation,
+            debug_line_render=debug_line_render,
+        )
         # mouse raycast circle
         if self.mouse_cast_has_hits:
             debug_line_render.draw_circle(
@@ -1369,9 +1372,15 @@ class HabitatSimInteractiveViewer(Application):
             logger.info(log_str)
 
         elif key == pressed.E:
-            # Cyle through semantics display
-            info_str = self.dbg_semantics.cycle_semantic_region_draw()
-            logger.info(info_str)
+            if shift_pressed or alt_pressed:
+                # Find and remove duplicates
+                self.obj_editor.handle_duplicate_objects(
+                    find_objs=shift_pressed, remove_dupes=alt_pressed, trans_eps=0.1
+                )
+            else:
+                # Cyle through semantics display
+                info_str = self.dbg_semantics.cycle_semantic_region_draw()
+                logger.info(info_str)
 
         elif key == pressed.F:
             # toggle, load(+ALT), or save(+SHIFT) filtering
@@ -2201,6 +2210,8 @@ Key Commands:
          (+ALT) : Modify Selected AOs
          (-ALT) : Modify All AOs
     'e'         Toggle Semantic visualization bounds (currently only Semantic Region annotations)
+         (+SHIFT) : Find and display potentially duplciate objects
+         (+ALT) : Remove objects found as potential duplicates
 
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
