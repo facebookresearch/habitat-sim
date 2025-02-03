@@ -46,7 +46,8 @@ bool DatasetDiagnosticsTool::setDiagnosticesFromJSON(
   ESP_ERROR(Mn::Debug::Flag::NoSpace)
       << msgStr
       << " configuration specifies `request_diagnostics` but specification "
-         "is unable to be parsed, so diagnostics request is ignored.";
+         "is unable to be parsed as either a string or an array, so "
+         "diagnostics request is ignored.";
   return false;
 }  // DatasetDiagnosticsTool::setDiagnosticesFromJSON
 

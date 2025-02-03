@@ -70,7 +70,7 @@ void SceneDatasetAttributesManager::setValsFromJSONDocInternal(
     attributes::SceneDatasetAttributes::ptr dsAttribs,
     const io::JsonGenericValue& jsonConfig) {
   // check for diagnostics requests
-  bool dsSet = this->setDSDiagnostics(dsAttribs, jsonConfig);
+  bool dsSet = this->setDSDiagnosticsFromJSON(dsAttribs, jsonConfig);
   ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
       << "Attempt to set dataset diagnostics was a "
       << (dsSet ? "Success" : "Failure");

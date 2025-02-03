@@ -208,21 +208,36 @@ class DatasetDiagnosticsTool {
   /**
    * @brief Set that a save is required. This is to bridge from reading the json
    * file into the attributes and registering the attributes to the
-   * post-registration code.
+   * post-registration code. True means we corrected dataset components due to
+   * diagnostic activities and we wish to save those corrected components.
    */
   void setSaveRequired(bool saveRequired) {
     _requiresCorrectedSave = saveRequired;
   }
 
   /**
-   * @brief Clear any flags set due to specific diagnostics
+   * @brief Reset the current state of the Diagnostics tool.
+   */
+  void reset() {
+    clearSaveRequired();
+    clearDiagnosticFlags();
+  }
+
+  /**
+   * @brief Clear save flag set due to specific diagnostic conditions
    */
   void clearSaveRequired() { _requiresCorrectedSave = false; }
 
   /**
+   * @brief Clear all existing diagnostic flag settings.
+   */
+  void clearDiagnosticFlags() { _diagnosticsFlags = 0u; }
+
+  /**
    * @brief Get whether a save is required. This is to bridge from reading the
    * json file into the attributes and registering the attributes to the
-   * post-registration code.
+   * post-registration code. True means we corrected dataset components due to
+   * diagnostic activities and we wish to save those corrected components.
    */
   bool saveRequired() const { return _requiresCorrectedSave; }
 

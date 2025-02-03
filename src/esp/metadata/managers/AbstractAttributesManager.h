@@ -192,7 +192,7 @@ class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
   void setValsFromJSONDoc(AttribsPtr attribs,
                           const io::JsonGenericValue& jsonConfig) {
     // Clear diagnostic flags from previous run
-    this->datasetDiagnostics_->clearSaveRequired();
+    this->datasetDiagnostics_->reset();
     this->setValsFromJSONDocInternal(attribs, jsonConfig);
     if (this->datasetDiagnostics_->saveRequired()) {
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
@@ -208,18 +208,19 @@ class AbstractAttributesManager : public ManagedFileBasedContainer<T, Access> {
    * @brief Configure @ref datasetDiagnostics_ tool based on if passsed jsonConfig
    * requests them.
    */
-  bool setDSDiagnostics(AttribsPtr attribs,
-                        const io::JsonGenericValue& jsonConfig) {
+  bool setDSDiagnosticsFromJSON(AttribsPtr attribs,
+                                const io::JsonGenericValue& jsonConfig) {
     io::JsonGenericValue::ConstMemberIterator jsonIter =
         jsonConfig.FindMember("request_diagnostics");
     if (jsonIter == jsonConfig.MemberEnd()) {
       return false;
     }
     return this->datasetDiagnostics_->setDiagnosticesFromJSON(
-        jsonIter->value, Cr::Utility::formatString(
-                             "(setDSDiagnostics) <{}> : {}", this->objectType_,
-                             attribs->getSimplifiedHandle()));
-  }  // setDSDiagnostics
+        jsonIter->value,
+        Cr::Utility::formatString("(setDSDiagnosticsFromJSON) <{}> : {}",
+                                  this->objectType_,
+                                  attribs->getSimplifiedHandle()));
+  }  // setDSDiagnosticsFromJSON
 
   /**
    * @brief Merge the passed DatasetDiagnosticsTool settings into
