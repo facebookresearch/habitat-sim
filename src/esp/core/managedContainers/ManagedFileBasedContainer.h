@@ -507,7 +507,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     std::string handleName = object->getHandle();
     auto loc = handleName.find_last_of('/');
     if (loc != std::string::npos) {
-      object->setFileDirectory(handleName.substr(0, loc));
+      object->setFileDirectory(handleName.substr(0, loc + 1));
     }
   }  // setFileDirectoryFromHandle
 
