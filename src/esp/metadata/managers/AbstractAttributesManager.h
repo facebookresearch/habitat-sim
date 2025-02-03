@@ -491,7 +491,7 @@ void AbstractAttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
     const std::string& configDir,
     const std::string& extType,
     const io::JsonGenericValue& filePaths) {
-  std::size_t cfgLastDirLoc = configDir.find_last_of('/');
+  // configDir must end with an os sep (i.e. '/')
   for (rapidjson::SizeType i = 0; i < filePaths.Size(); ++i) {
     if (!filePaths[i].IsString()) {
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
@@ -501,23 +501,16 @@ void AbstractAttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
       continue;
     }
     const char* fileString = filePaths[i].GetString();
-    // Only normalize paths for paths from config starting with ellipses.
-    // This is so that glob doesn't fail when the filepath from the config is
-    // trying to back-pedal across an OS link.
-    bool normalizePaths = (fileString[0] == '.') && (fileString[1] == '.') &&
-                          (fileString[2] == '/');
-
-    // TODO Eventually we should normalize all metadata paths in the system
-    std::string dsFilePath =
-        normalizePaths ? CrPath::join(configDir.substr(0, cfgLastDirLoc),
-                                      std::string(fileString).substr(3))
-                       : CrPath::join(configDir, fileString);
+    // The full filepath inferred by the given absolute config directory and the
+    // passed relative file paths
+    std::string dsFilePath = CrPath::join(configDir, fileString);
 
     ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
         << "<" << this->objectType_ << "> : Config dir : " << configDir
-        << " : filePaths[" << i << "] : " << filePaths[i].GetString()
+        << " : filePaths[" << i << "] : " << fileString
         << " | Constructed File Path : " << dsFilePath;
 
+    // Search in derived full filepath
     std::vector<std::string> globPaths = io::globDirs(dsFilePath);
     if (globPaths.size() > 0) {
       for (const auto& globPath : globPaths) {
