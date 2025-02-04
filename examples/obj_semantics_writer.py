@@ -19,6 +19,8 @@ from habitat_sim.metadata import MetadataMediator
 # this is the common index of un-identified objects
 UNKNOWN_INDEX = 0
 
+HSSD_DATASET_DIR = "data/scene_datasets/floorplanner_ss/"
+
 
 def load_object_metadata(obj_metadata_csv: str) -> Dict[str, List[str]]:
     """
@@ -64,7 +66,7 @@ def assign_indices_to_classes(
 
 def write_lexicon(
     semantic_classes_to_indices: Dict[str, int],
-    out_path: str = "hssd-hab_semantic_lexicon.json",
+    out_path: str = f"{HSSD_DATASET_DIR}semantics/hssd-hab_semantic_lexicon.json",
 ) -> None:
     """
     Writes a semantic lexicon JSON file compatible with Habitat SceneDataset format.
@@ -89,7 +91,7 @@ def write_lexicon(
 
     # write the lexicon to a file
     with open(out_path, "w") as f:
-        f.write(json.dumps(lexicon))
+        f.write(json.dumps(lexicon, sort_keys=True, indent=4))
 
 
 def set_attr_semantic_ids(
@@ -121,6 +123,12 @@ def set_attr_semantic_ids(
 
 
 def main(dataset: str, obj_metadata_csv: str):
+    # aggregate semantics from csv file
+    obj_semantics = load_object_metadata(obj_metadata_csv)
+    class_indices = assign_indices_to_classes(obj_semantics)
+    # write the lexicon file
+    write_lexicon(class_indices)
+
     mm = MetadataMediator()
     mm.active_dataset = dataset
     otm = mm.object_template_manager
@@ -128,12 +136,6 @@ def main(dataset: str, obj_metadata_csv: str):
     print(f" rigid object templates: {len(otm.get_file_template_handles())}")
     print(f" articulated object templates: {len(aotm.get_template_handles())}")
     print(f" urdf paths: {len(mm.urdf_paths)}")
-
-    # aggregate semantics from csv file
-    obj_semantics = load_object_metadata(obj_metadata_csv)
-    class_indices = assign_indices_to_classes(obj_semantics)
-    # write the lexicon file
-    write_lexicon(class_indices)
 
     # Handle the rigids
     set_attr_semantic_ids(
@@ -166,17 +168,17 @@ if __name__ == "__main__":
     # optional arguments
     parser.add_argument(
         "--dataset",
-        default="data/scene_datasets/hssd-hab/hssd-hab-partnr_savetest.scene_dataset_config.json",
+        default=f"{HSSD_DATASET_DIR}hssd-hab-siro-wip.scene_dataset_config.json",
         type=str,
-        help='scene dataset file to load (default: "data/scene_datasets/hssd-hab/hssd-hab-partnr_savetest.scene_dataset_config.json"',
+        help=f'scene dataset file to load (default: "{HSSD_DATASET_DIR}hssd-hab-siro-wip.scene_dataset_config.json"',
     )
 
     # required arguments
     parser.add_argument(
         "--semantic-csv",
-        default="data/scene_datasets/hssd-hab/hssd_obj_semantics_condensed.csv",
+        default=f"{HSSD_DATASET_DIR}hssd_obj_semantics_condensed.csv",
         type=str,
-        help='csv file containing the mapping from object handles to semantic classes (default : "data/scene_datasets/hssd-hab/hssd_obj_semantics_condensed.csv")',
+        help=f'csv file containing the mapping from object handles to semantic classes (default : "{HSSD_DATASET_DIR}hssd_obj_semantics_condensed.csv")',
     )
 
     args = parser.parse_args()
