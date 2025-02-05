@@ -496,6 +496,9 @@ bool ResourceManager::loadStage(
       renderInfo.filepath, Cr::Containers::NullOpt, flags, renderLightSetupKey);
   ESP_DEBUG() << "Start load render asset" << renderInfo.filepath << ".";
 
+  // Set the stage scale from the config
+  renderCreation.scale = stageAttributes->getScale();
+
   bool renderMeshSuccess = loadStageInternal(renderInfo,  // AssetInfo
                                              &renderCreation,
                                              &rootNode,    // parent scene node
