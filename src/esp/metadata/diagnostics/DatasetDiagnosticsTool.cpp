@@ -4,20 +4,12 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "DatasetDiagnosticsTool.h"
+#include "DatasetDiagnostics.h"
 #include "esp/core/Check.h"
 
 namespace esp {
 namespace metadata {
 namespace diagnostics {
-
-const std::map<std::string, DSDiagnosticType> DSDiagnosticTypeMap = {
-    {"savecorrected", DSDiagnosticType::SaveCorrected},
-    {"sceneinstanceduplicates", DSDiagnosticType::TestForDuplicateInstances},
-    {"semanticregionduplicates", DSDiagnosticType::TestForDuplicateRegions},
-    // Future diagnostics should be listed here, before "all"
-    {"all", DSDiagnosticType::AllDiagnostics},
-    {"allsavecorrected", DSDiagnosticType::AllDiagnosticsSaveCorrected},
-};
 
 bool DatasetDiagnosticsTool::setDiagnosticesFromJSON(
     const io::JsonGenericValue& jsonObj,
@@ -50,30 +42,6 @@ bool DatasetDiagnosticsTool::setDiagnosticesFromJSON(
          "diagnostics request is ignored.";
   return false;
 }  // DatasetDiagnosticsTool::setDiagnosticesFromJSON
-
-bool DatasetDiagnosticsTool::setNamedDiagnostic(const std::string& diagnostic,
-                                                bool val,
-                                                bool abortOnFail) {
-  const std::string diagnosticLC = Cr::Utility::String::lowercase(diagnostic);
-
-  auto mapIter = DSDiagnosticTypeMap.find(diagnosticLC);
-  if (abortOnFail) {
-    // If not found then abort.
-    ESP_CHECK(mapIter != DSDiagnosticTypeMap.end(),
-              "Unknown Diagnostic Test requested to be "
-                  << (val ? "Enabled" : "Disabled") << " :" << diagnostic
-                  << ". Aborting.");
-  } else {
-    if (mapIter == DSDiagnosticTypeMap.end()) {
-      ESP_ERROR() << "Unknown Diagnostic Test requested to be "
-                  << (val ? "Enabled" : "Disabled") << " :" << diagnostic
-                  << " so ignoring request.";
-      return false;
-    }
-  }
-  setFlags(mapIter->second, val);
-  return true;
-}  // DatasetDiagnosticsTool::setNamedDiagnostic
 
 }  // namespace diagnostics
 }  // namespace metadata

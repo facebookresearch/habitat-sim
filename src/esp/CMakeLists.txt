@@ -145,6 +145,8 @@ set(
   core/Check.h
   core/Configuration.cpp
   core/Configuration.h
+  core/diagnostics/DiagnosticsRecord.h
+  core/diagnostics/DiagnosticsTool.h
   core/Esp.cpp
   core/Esp.h
   core/Logging.cpp
@@ -313,6 +315,9 @@ set(
   metadata/attributes/StageAttributes.cpp
   metadata/diagnostics/DatasetDiagnosticsTool.h
   metadata/diagnostics/DatasetDiagnosticsTool.cpp
+  metadata/diagnostics/DatasetDiagnosticsRecord.h
+  metadata/diagnostics/DatasetDiagnostics.h
+  metadata/diagnostics/DatasetDiagnostics.cpp
   metadata/managers/AbstractAttributesManager.h
   metadata/managers/AbstractObjectAttributesManager.h
   metadata/managers/AOAttributesManager.h
