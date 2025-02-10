@@ -655,7 +655,7 @@ bool ManagedFileBasedContainer<T, Access>::saveManagedObjectToFile(
   } else {
     // directory found, strip it out and leave remainder (including potential
     // subdirs within directory)
-    fileNameRaw = objectHandle.substr(pos + fileDirectory.length() + 1);
+    fileNameRaw = objectHandle.substr(pos + fileDirectory.length());
   }
   std::string fileNameBase =
       FileUtil::splitExtension(FileUtil::splitExtension(fileNameRaw).first())
