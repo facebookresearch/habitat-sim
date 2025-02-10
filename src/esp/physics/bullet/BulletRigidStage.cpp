@@ -78,7 +78,10 @@ void BulletRigidStage::constructAndAddCollisionObjects() {
     const assets::MeshMetaData& metaData =
         resMgr_.getMeshMetaData(collisionAssetHandle);
 
-    constructBulletSceneFromMeshes(Magnum::Matrix4{}, meshGroup, metaData.root);
+    // set the configured scaling as the initial transform for collision mesh
+    // construction
+    auto initial_transform = Magnum::Matrix4::scaling(initAttr->getScale());
+    constructBulletSceneFromMeshes(initial_transform, meshGroup, metaData.root);
 
     for (auto& object : bStaticCollisionObjects_) {
       object->setFriction(initAttr->getFrictionCoefficient());
