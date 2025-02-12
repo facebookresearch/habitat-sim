@@ -1326,6 +1326,7 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.ONE:
             # save scene instance
             self.obj_editor.save_current_scene()
+            print("Saved modified scene instance JSON to original location.")
         elif key == pressed.TWO:
             # Undo any edits
             self.obj_editor.undo_edit()
