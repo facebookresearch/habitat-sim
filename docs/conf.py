@@ -21,8 +21,23 @@ habitat_sim.logging.HabitatSimFormatter.formatStack.__doc__ = ""
 # Monkey patch the registry to be the _Registry class instead of the singleton for docs
 habitat_sim.registry = type(habitat_sim.registry)
 # TODO: remove once utils/__init__.py is removed again
-habitat_sim.utils.__all__.remove("quat_from_angle_axis")
-habitat_sim.utils.__all__.remove("quat_rotate_vector")
+habitat_sim.utils.common.__all__ = [
+    x
+    for x in habitat_sim.utils.common.__all__
+    if x
+    not in [
+        "quat_from_coeffs",
+        "quat_to_coeffs",
+        "quat_from_magnum",
+        "quat_to_magnum",
+        "quat_from_angle_axis",
+        "quat_to_angle_axis",
+        "quat_rotate_vector",
+        "quat_from_two_vectors",
+    ]
+]
+# habitat_sim.utils.__all__.remove("quat_from_angle_axis")
+# habitat_sim.utils.__all__.remove("quat_rotate_vector")
 
 PROJECT_TITLE = "Habitat"
 PROJECT_SUBTITLE = "Sim Docs"

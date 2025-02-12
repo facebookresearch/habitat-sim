@@ -9,14 +9,9 @@
 # TODO @maksymets: remove after habitat-lab/examples/new_actions.py will be
 # fixed
 
-
-from habitat_sim.utils import common, manager_utils, settings, validators, viz_utils
-from habitat_sim.utils.common import quat_from_angle_axis, quat_rotate_vector
+from habitat_sim.utils import manager_utils, settings, validators, viz_utils
 
 __all__ = [
-    "quat_from_angle_axis",
-    "quat_rotate_vector",
-    "common",
     "viz_utils",
     "validators",
     "settings",
