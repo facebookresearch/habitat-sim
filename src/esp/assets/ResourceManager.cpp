@@ -1419,10 +1419,12 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceVertSemantic(
     const RenderAssetInstanceCreationInfo& creation,
     scene::SceneNode* parent,
     DrawableGroup* drawables) {
-  CORRADE_INTERNAL_ASSERT(!creation.scale);  // IMesh doesn't support scale
-  CORRADE_INTERNAL_ASSERT(creation.lightSetupKey ==
-                          NO_LIGHT_KEY);  // IMesh doesn't support
-                                          // lighting
+  // IMesh doesn't support scale
+  if (creation.scale && creation.scale != Mn::Vector3(1.0f, 1.0f, 1.0f)) {
+    ESP_ERROR() << "The mesh used for Vertex-Semantics does not support "
+                   "non-unit scale. Specified scale multiplier of "
+                << creation.scale << " ignored.";
+  }
 
   const bool computeAbsoluteAABBs = creation.isStatic();
 
@@ -1437,7 +1439,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceVertSemantic(
   instanceRoot->MagnumObject::setTransformation(
       meshMetaData.root.transformFromLocalToParent);
   gfx::DrawableConfiguration drawableConfig{
-      creation.lightSetupKey,             // lightSetup Key
+      NO_LIGHT_KEY,                       // lightSetup Key
       PER_VERTEX_OBJECT_ID_MATERIAL_KEY,  // material key
       ObjectInstanceShaderType::Phong,    // shader type to use
       drawables,                          // drawable group
