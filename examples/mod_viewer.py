@@ -816,7 +816,7 @@ class HabitatSimInteractiveViewer(Application):
 
         # draw object-related visualizations managed by obj_editor
         self.obj_editor.draw_obj_vis(
-            camera_trans=render_cam.node.absolute_translation,
+            camera_trans=self.render_camera.render_camera.node.absolute_translation,
             debug_line_render=debug_line_render,
         )
         # mouse raycast circle
