@@ -535,6 +535,29 @@ JointType BulletArticulatedObject::getLinkJointType(int linkId) const {
   return JointType(int(btMultiBody_->getLink(linkId).m_jointType));
 }
 
+std::pair<Mn::Vector3, Mn::Vector3> BulletArticulatedObject::getLinkJointAxes(
+    int linkId) const {
+  // Notes from btMultiBodyLink:
+  //  "axis" = spatial joint axis (Mirtich Defn 9 p104). (expressed in local
+  //  frame.) constant. for prismatic: m_axesTop[0] = zero;
+  //                 m_axesBottom[0] = unit vector along the joint axis.
+  //  for revolute: m_axesTop[0] = unit vector along the rotation axis (u);
+  //                m_axesBottom[0] = u cross m_dVector (i.e. COM linear motion
+  //                due to the rotation at the joint)
+  // NOTE: this implementation will not return the additional components for
+  // multi-dof joints
+  auto axt = btMultiBody_->getLink(linkId).m_axes->m_topVec;
+  auto axb = btMultiBody_->getLink(linkId).m_axes->m_bottomVec;
+  return std::pair<Mn::Vector3, Mn::Vector3>(Mn::Vector3{axt},
+                                             Mn::Vector3{axb});
+}
+
+Mn::Vector3 BulletArticulatedObject::getLinkJointToCoM(int linkId) const {
+  // gets a local vector pointing from the parent joint to the CoM of the link
+  // use this to solve for the joint position from the link
+  return Mn::Vector3{btMultiBody_->getLink(linkId).m_dVector};
+}
+
 int BulletArticulatedObject::getLinkDoFOffset(int linkId) const {
   CORRADE_INTERNAL_ASSERT(getNumLinks() > linkId && linkId >= 0);
   return btMultiBody_->getLink(linkId).m_dofOffset;
