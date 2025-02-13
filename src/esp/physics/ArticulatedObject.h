@@ -743,6 +743,28 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   }
 
   /**
+   * @brief Get the top and bottom axis vectors for the link's parent joint.
+   *
+   * @param linkId The link's index.
+   * @return The link's parent joint's type.
+   */
+  virtual std::pair<Mn::Vector3, Mn::Vector3> getLinkJointAxes(
+      CORRADE_UNUSED int linkId) const {
+    return std::pair<Mn::Vector3, Mn::Vector3>();
+  }
+
+  /**
+   * @brief gets a local vector pointing from the parent joint to the CoM of the
+   * link.
+   *
+   * @param linkId The link's index.
+   * @return The a local vector from joint to link CoM.
+   */
+  virtual Mn::Vector3 getLinkJointToCoM(CORRADE_UNUSED int linkId) const {
+    return Mn::Vector3();
+  }
+
+  /**
    * @brief Get the name of the link's parent joint.
    *
    * @param linkId The link's index.
