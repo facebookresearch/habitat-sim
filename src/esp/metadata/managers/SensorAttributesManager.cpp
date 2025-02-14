@@ -218,7 +218,8 @@ AbstractSensorAttributes::ptr SensorAttributesManager::initNewObjectInternal(
   }
   // these attributes ignore any default settings.
   auto newAttributes = (*this.*sensorTypeCtorIter->second)();
-
+  // set the attributes source filedirectory, from the attributes name
+  this->setFileDirectoryFromHandle(newAttributes);
   if (builtFromConfig) {
     ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
         << "New " << sensorAttrClassName
