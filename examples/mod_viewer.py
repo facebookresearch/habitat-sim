@@ -40,7 +40,7 @@ from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
 # add tools directory so I can import things to try them in the viewer
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../tools"))
-print(sys.path)
+# print(sys.path)
 
 # from tools import collision_shape_automation as csa
 
@@ -793,9 +793,11 @@ class HabitatSimInteractiveViewer(Application):
         """
         Additional draw commands to be called during draw_event.
         """
+        render_camera = self.render_camera.render_camera
         if self.debug_bullet_draw:
-            render_cam = self.render_camera.render_camera
-            proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
+            proj_mat = render_camera.projection_matrix.__matmul__(
+                render_camera.camera_matrix
+            )
             self.sim.physics_debug_draw(proj_mat)
 
         debug_line_render: DebugLineRender = self.sim.get_debug_line_render()
@@ -809,14 +811,14 @@ class HabitatSimInteractiveViewer(Application):
         if self.markersets_util.marker_sets_per_obj is not None:
             self.markersets_util.draw_marker_sets_debug(
                 debug_line_render,
-                self.render_camera.render_camera.node.absolute_translation,
+                render_camera.node.absolute_translation,
             )
         if self.receptacles is not None and self.display_receptacles:
             self.draw_receptacles(debug_line_render)
 
         # draw object-related visualizations managed by obj_editor
         self.obj_editor.draw_obj_vis(
-            camera_trans=self.render_camera.render_camera.node.absolute_translation,
+            camera_trans=render_camera.node.absolute_translation,
             debug_line_render=debug_line_render,
         )
         # mouse raycast circle

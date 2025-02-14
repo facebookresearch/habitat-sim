@@ -566,13 +566,19 @@ auto AbstractAttributesManager<T, Access>::createFromJsonOrDefaultInternal(
     bool fileExists = CrPath::exists(filename);
     // if filename passed is name of some kind of asset, or if it was not
     // found
-    if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
+    if (fileExists) {
+      // Built from non-json filename (i.e. glb file)
+      attrs->setActualFilename(filename);
+      this->setFileDirectoryFromFilePath(attrs);
       // only populate msg if appropriate logging level is enabled
-      if (fileExists) {
+      if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
         msg = "File `" + filename +
               "` exists but is not a recognized config filename extension, so "
               "new default";
-      } else {
+      }
+    } else {
+      // only populate msg if appropriate logging level is enabled
+      if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::Debug)) {
         msg = "File `" + filename + "` not found, so new default";
       }
     }
