@@ -81,6 +81,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     const io::JsonGenericValue config = docConfig->GetObject();
     ManagedFileIOPtr attr = this->buildManagedObjectFromDoc(filename, config);
     attr->setActualFilename(filename);
+    this->setFileDirectoryFromFilePath(attr);
     // Set attributes' status to saved (i.e. it matches the version on disk)
     // since it was just loaded.
     attr->setAttrIsSaved();
@@ -511,6 +512,20 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     }
   }  // setFileDirectoryFromHandle
 
+  /**
+   * @brief Get directory component of managed object's specified handle and call @ref
+   * esp::core::managedContainers::AbstractFileBasedManagedObject::setFileDirectory
+   * if a legitimate directory exists in handle.
+   *
+   * @param object pointer to managed object to set
+   */
+  void setFileDirectoryFromFilePath(ManagedFileIOPtr object) {
+    std::string fileName = object->getActualFilename();
+    auto loc = fileName.find_last_of('/');
+    if (loc != std::string::npos) {
+      object->setFileDirectory(fileName.substr(0, loc + 1));
+    }
+  }  // setFileDirectoryFromHandle
   // ======== Instance Variables ========
   /**
    * @brief The string extension for the JSON configuration file backing this
