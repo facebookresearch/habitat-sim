@@ -36,7 +36,7 @@ ArticulatedObjectAttributes::ArticulatedObjectAttributes(
   initTranslated("shader_type",
                  getShaderTypeName(ObjectInstanceShaderType::Material));
 
-  init("uniform_scale", 1.0f);
+  init("scale", Mn::Vector3{1.0, 1.0, 1.0});
   init("mass_scale", 1.0);
 
   // Initialize these so they exist in the configuration
@@ -56,8 +56,8 @@ void ArticulatedObjectAttributes::writeValuesToJson(
   writeValueToJson("urdf_filepath", jsonObj, allocator);
   writeValueToJson("render_asset", jsonObj, allocator);
   writeValueToJson("semantic_id", jsonObj, allocator);
-  if (getUniformScale() != 1.0f) {
-    writeValueToJson("uniform_scale", jsonObj, allocator);
+  if (getScale() != Mn::Vector3(1.0, 1.0, 1.0)) {
+    writeValueToJson("scale", jsonObj, allocator);
   }
   if (getMassScale() != 1.0) {
     writeValueToJson("mass_scale", jsonObj, allocator);
@@ -70,14 +70,14 @@ void ArticulatedObjectAttributes::writeValuesToJson(
 }  // ArticulatedObjectAttributes::writeValuesToJson
 
 std::string ArticulatedObjectAttributes::getObjectInfoHeaderInternal() const {
-  return "URDF Filepath,Render Asset,Semantic ID,Uniform Scale,Mass Scale,Base "
+  return "URDF Filepath,Render Asset,Semantic ID,Scale,Mass Scale,Base "
          "Type,Inertia Source,Link Order,Render Mode,Current Shader Type,";
 }  // ArticulatedObjectAttributes::getObjectInfoHeaderInternal
 
 std::string ArticulatedObjectAttributes::getObjectInfoInternal() const {
   return Cr::Utility::formatString(
       "{},{},{},{},{},{},{},{},{},{}", getURDFPath(), getRenderAssetHandle(),
-      getAsString("semantic_id"), getAsString("uniform_scale"),
+      getAsString("semantic_id"), getAsString("scale"),
       getAsString("mass_scale"), getAOBaseTypeName(getBaseType()),
       getAOInertiaSourceName(getInertiaSource()),
       getAOLinkOrderName(getLinkOrder()), getAORenderModeName(getRenderMode()),

@@ -166,7 +166,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @brief Get the uniform global scaling applied to this object during import.
    * @return The global scaling applied to the object.
    */
-  float getGlobalScale() const { return globalScale_; }
+  Mn::Vector3 getGlobalScale() const { return globalScale_; }
 
   /**
    * @brief Get a const reference to an ArticulatedLink SceneNode for
@@ -982,7 +982,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   bool autoClampJointLimits_ = false;
 
   //! Cache the global scaling from the source model. Set during import.
-  float globalScale_ = 1.0;
+  Mn::Vector3 globalScale_ = Mn::Vector3(1.0);
 
   //! Cache the cumulative bounding box of the AO heirarchy in root local space.
   //! This is necessary because the child links are not children of the root
