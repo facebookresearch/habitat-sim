@@ -599,7 +599,7 @@ def restore_camera_track_config(sim, init_state):
     visual_sensor._spec.position = init_state["position"]
     visual_sensor._spec.orientation = init_state["orientation"]
     visual_sensor._sensor_object.set_transformation_from_spec()
-    # restore the agent's state to what was savedd in init_camera_track_config
+    # restore the agent's state to what was saved in init_camera_track_config
     sim.get_agent(agent_ID).set_state(init_state["agent_state"])
 
 
@@ -1016,7 +1016,7 @@ sim_settings["semantic_sensor_1st_person"] = True
 make_simulator_from_settings(sim_settings)
 
 # fmt: off
-# @markdown In this example, we load a box asset with each face as a separate component with its own SceneNode. We demonstrate the result of modiyfing the associated semantic ids via object templates, the Simulator API, and the SceneNode property.
+# @markdown In this example, we load a box asset with each face as a separate component with its own SceneNode. We demonstrate the result of modifying the associated semantic ids via object templates, the Simulator API, and the SceneNode property.
 # fmt: on
 
 rigid_obj_mgr.remove_all_objects()
@@ -1262,7 +1262,7 @@ new_template.restitution_coefficient = restitution_coefficient
 force_flat_shading = True  # @param {type:"boolean"}
 new_template.force_flat_shading = force_flat_shading
 
-# @markdown The x,y,z components of the intertia matrix diagonal
+# @markdown The x,y,z components of the inertia matrix diagonal
 
 inertia_X = 1.0  # @param {type:"slider", min:0.1, max:10, step:0.1}
 inertia_Y = 1  # @param {type:"slider", min:0.1, max:10, step:0.1}
@@ -1398,7 +1398,7 @@ make_clear_all_objects_button()
 # @markdown Note 4 : There often are different modifiable properties available for solid and wireframe versions of the same primitive.
 
 # @markdown ###Primitive Asset Template Properties
-# @markdown The flollowing examples will illustrate all the modifiable properties for each of the different types of primitives, and allow for their synthesis.
+# @markdown The following examples will illustrate all the modifiable properties for each of the different types of primitives, and allow for their synthesis.
 
 
 # Primitive Asset Attributes Manager, provides access to AssetAttributesTemplates
