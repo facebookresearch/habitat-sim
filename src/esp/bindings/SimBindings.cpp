@@ -20,11 +20,43 @@
 #include "esp/sim/AbstractReplayRenderer.h"
 #include "esp/sim/BatchReplayRenderer.h"
 #include "esp/sim/ClassicReplayRenderer.h"
+#include "esp/sim/RenderInstanceHelper.h"
 #include "esp/sim/Simulator.h"
 #include "esp/sim/SimulatorConfiguration.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
+
+namespace {
+
+#if PYBIND11_VERSION_MAJOR > 2 || \
+    (PYBIND11_VERSION_MAJOR == 2 && PYBIND11_VERSION_MINOR >= 12)
+// Use is_contiguous() for pybind11 >= 2.12.0
+bool is_contiguous(const py::array_t<float>& array) {
+  return array.is_contiguous();
+}
+#else
+// Manual stride check for pybind11 < 2.12.0
+bool is_contiguous(const py::array_t<float>& array) {
+  py::buffer_info info = array.request();
+  const auto& shape = info.shape;
+  const auto& strides = info.strides;
+
+  // Check if array is C-contiguous
+  size_t ndim = shape.size();
+  size_t expected_stride = sizeof(float);
+
+  for (size_t i = ndim; i > 0; --i) {
+    if (strides[i - 1] != expected_stride) {
+      return false;
+    }
+    expected_stride *= shape[i - 1];
+  }
+  return true;
+}
+#endif
+
+}  // namespace
 
 namespace esp {
 namespace sim {
@@ -136,6 +168,54 @@ void initSimConfigBindings(py::module& m) {
           "leave_context_with_background_renderer",
           &ReplayRendererConfiguration::leaveContextWithBackgroundRenderer,
           R"(See See tutorials/async_rendering.py.)");
+}
+
+void initRenderInstanceHelperBindings(py::module& m) {
+  py::class_<RenderInstanceHelper, RenderInstanceHelper::ptr>(
+      m, "RenderInstanceHelper")
+      .def(py::init<sim::Simulator&, bool>(), py::arg("sim"),
+           py::arg("use_xyzw_orientations"), "todo")
+      .def("add_instance", &RenderInstanceHelper::AddInstance,
+           py::arg("asset_filepath"), py::arg("semantic_id"), "todo")
+      .def("clear_all_instances", &RenderInstanceHelper::ClearAllInstances,
+           "todo")
+      .def("get_num_instances", &RenderInstanceHelper::GetNumInstances, "todo")
+      .def(
+          "set_world_poses",
+          [](RenderInstanceHelper& self, py::array_t<float> positions,
+             py::array_t<float> orientations) {
+            // Get the number of instances from the helper
+            size_t num_instances = self.GetNumInstances();
+
+            // Validate the shape of positions
+            if (positions.ndim() != 2 || positions.shape(0) != num_instances ||
+                positions.shape(1) != 3) {
+              throw std::runtime_error(
+                  "positions must be a 2D array of shape (num_instances, 3).");
+            }
+
+            // Validate the shape of orientations
+            if (orientations.ndim() != 2 ||
+                orientations.shape(0) != num_instances ||
+                orientations.shape(1) != 4) {
+              throw std::runtime_error(
+                  "orientations must be a 2D array of shape (num_instances, "
+                  "4).");
+            }
+
+            if (!is_contiguous(positions) || !is_contiguous(orientations)) {
+              throw std::runtime_error(
+                  "positions and orientations must be contiguous. See "
+                  "np.ascontiguousarray.");
+            }
+
+            // Pass raw pointers to the C++ function
+            self.SetWorldPoses(static_cast<float*>(positions.request().ptr),
+                               positions.size(),
+                               static_cast<float*>(orientations.request().ptr),
+                               orientations.size());
+          },
+          py::arg("positions"), py::arg("orientations"), "todo");
 }
 
 void initSimBindings(py::module& m) {
