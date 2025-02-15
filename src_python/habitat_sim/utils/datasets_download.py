@@ -619,7 +619,15 @@ def clone_repo_source(
 
         # prune the repo to reduce wasted memory consumption
         prune_command = "git lfs prune -f --recent"
-        subprocess.check_call(shlex.split(prune_command), cwd=version_dir)
+        try:
+            subprocess.check_call(shlex.split(prune_command), cwd=version_dir)
+        except subprocess.CalledProcessError as e:
+            # a response of status code 127 suggests a git-lfs version
+            # that does not support the -f flag
+            if "status 127" in str(e):
+                subprocess.check_call(
+                    shlex.split("git lfs prune --recent"), cwd=version_dir
+                )
 
 
 def checkout_repo_tag(repo: Repo, version_dir: str, tag: str):
