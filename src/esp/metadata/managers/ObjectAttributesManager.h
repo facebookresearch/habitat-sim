@@ -50,15 +50,6 @@ class ObjectAttributesManager
       const std::string& primAttrTemplateHandle,
       bool registerTemplate = true) override;
 
-  /**
-   * @brief Method to take an existing attributes and set its values from passed
-   * json config file.
-   * @param attribs (out) an existing attributes to be modified.
-   * @param jsonConfig json document to parse
-   */
-  void setValsFromJSONDoc(attributes::ObjectAttributes::ptr attribs,
-                          const io::JsonGenericValue& jsonConfig) override;
-
   // ======== File-based and primitive-based partition functions ========
 
   /**
@@ -158,6 +149,16 @@ class ObjectAttributesManager
   // ======== End File-based and primitive-based partition functions ========
 
  protected:
+  /**
+   * @brief Internally accessed from AbstractAttributesManager. Method to take
+   * an existing attributes and set its values from passed json config file.
+   * @param attribs (out) an existing attributes to be modified.
+   * @param jsonConfig json document to parse
+   */
+  void setValsFromJSONDocInternal(
+      attributes::ObjectAttributes::ptr attribs,
+      const io::JsonGenericValue& jsonConfig) override;
+
   /**
    * @brief Create and save default primitive asset-based object templates,
    * saving their handles as non-deletable default handles.
