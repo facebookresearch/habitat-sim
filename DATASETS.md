@@ -121,18 +121,39 @@ habitat-viewer --dataset '<PATH TO HM3D>/hm3d_annotated_basis.scene_dataset_conf
 
 To load semantic annotations in habitat-lab:
 
-* Add the semantic sensor to the list of agent sensors:
+* Update your config by adding the semantic sensor to the list of agent sensors:
 
-    ```
-    SIMULATOR.AGENT_0.SENSORS = ["RGB_SENSOR", "SEMANTIC_SENSOR"]
-    ```
-* Set the `SIMULATOR.SCENE_DATASET` configuration variable:
+    ```yaml
+    # @package _global_
 
+    defaults:
+      - /habitat: habitat_config_base
+      - /habitat/simulator/agents@habitat.simulator.agents.<your_agent_name>: agent_base
+      # add semantic sensor:
+      - /habitat/simulator/sim_sensors@habitat.simulator.agents.<your_agent_name>.sim_sensors.semantic_sensor: semantic_sensor
+      - /habitat/task/rearrange: <your_task>
+      - /habitat/dataset/rearrangement: <your_dataset>
+      - _self_
+
+    habitat:
+      simulator:
+        agents:
+          <your_agent_name>:
+            sim_sensors:
+              # configure semantic sensor:
+              semantic_sensor:
+                height: 256
+                width: 256
     ```
-    SIMULATOR.SCENE_DATASET = "<PATH TO HM3D>/hm3d_annotated_basis.scene_dataset_config.json"
+* Set the `habitat.simulator.scene_dataset` configuration value:
+
+    ```yaml
+    habitat:
+      simulator:
+        scene_dataset: "<PATH TO HM3D>/hm3d_annotated_basis.scene_dataset_config.json"
     ```
 
-Note that if you are using the RL environment from habitat-lab, `SIMULATOR.SCENE_DATASET` is overridden by the episode dataset (see [here](https://github.com/facebookresearch/habitat-lab/blob/e934b15c35233457cc3cb9c90ba0e207610dbd19/habitat/core/env.py#L94-L96)). Each episode in the episode dataset must point to the annotation config file (as done in the HM3D ObjectNav dataset [here](https://github.com/facebookresearch/habitat-lab)).
+Note that if you are using the RL environment from habitat-lab, `habitat.simulator.scene_dataset` is overridden by the episode dataset (see [here](https://github.com/facebookresearch/habitat-lab/blob/b1f2d4791a0065d0791001b72a6c96748a5f9ae0/habitat-lab/habitat/core/env.py#L104-L108)). Each episode in the episode dataset must point to the annotation config file (as done in the HM3D ObjectNav dataset [here](https://github.com/facebookresearch/habitat-lab/blob/b1f2d4791a0065d0791001b72a6c96748a5f9ae0/DATASETS.md)).
 
 ___
 
