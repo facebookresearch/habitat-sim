@@ -78,19 +78,28 @@ LightSetup getLightsAtBoxCorners(const Magnum::Range3D& box,
 }
 
 LightSetup getDefaultLights() {
+  // Eric U hack: custom lights to improve brightness and white balance in HSSD
+  // scenes
+
+  // light intensity; a larger value makes the scene more bright, but a
+  // too-large value will give an unrealistic "blown out" appearance.
+  constexpr float intensity = 1.5f;
+  // a bluish-white hue to counteract a yellow tint currently seen in most
+  // scenes
+  Magnum::Color3 rgb_hue = {0.7, 0.7, 0.92};
+  Magnum::Color3 color = rgb_hue * intensity;
+
   return LightSetup{
-      {{0.0, -0.5, -0.5, 0.0},
-       {0.5, 0.5, 0.5},
-       LightPositionModel::Global},  // -z
-      {{0.0, -0.5, 0.5, 0.0},
-       {0.5, 0.5, 0.5},
-       LightPositionModel::Global},  // +z
-      {{-0.5, -0.5, 0.0, 0.0},
-       {0.5, 0.5, 0.5},
-       LightPositionModel::Global},  // -x
-      {{0.5, -0.5, 0.0, 0.0},
-       {0.5, 0.5, 0.5},
-       LightPositionModel::Global},  // +x
+      // four lights pointing in different directions, but all pointing somewhat
+      // down (light from above)
+      {{0.0, -0.5, -0.4, 0.0}, color, LightPositionModel::Global},  // -z
+      {{0.0, -0.5, 0.6, 0.0}, color, LightPositionModel::Global},   // +z
+      {{-0.4, -0.5, 0.0, 0.0}, color, LightPositionModel::Global},  // -x
+      {{0.6, -0.5, 0.0, 0.0}, color, LightPositionModel::Global},   // +x
+      // additional light from below, so that the undersides of objects aren't
+      // too dark
+      {{0.0, 1.0, 0.0, 0.0}, color, LightPositionModel::Global},
+      // feel free to add additional lights here
   };
 }
 
