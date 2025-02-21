@@ -174,12 +174,20 @@ void initRenderInstanceHelperBindings(py::module& m) {
   py::class_<RenderInstanceHelper, RenderInstanceHelper::ptr>(
       m, "RenderInstanceHelper")
       .def(py::init<sim::Simulator&, bool>(), py::arg("sim"),
-           py::arg("use_xyzw_orientations"), "todo")
+           py::arg("use_xyzw_orientations"),
+           "R(Construct RenderInstanceHelper. This class helps you populate a "
+           "Habitat-sim visual scene. Use use_xyzw_orientations to specify the "
+           "format of the quaternions you'll pass to set_world_poses later. If "
+           "use_xyzw_orientations=False, we assume wxyz.)")
       .def("add_instance", &RenderInstanceHelper::AddInstance,
-           py::arg("asset_filepath"), py::arg("semantic_id"), "todo")
+           py::arg("asset_filepath"), py::arg("semantic_id"),
+           "R(Add an instance of a render asset to the scene. The asset can be "
+           "for example a .glb or .obj 3D model file. The instance gets an "
+           "identity pose; change it later using set_world_poses.)")
       .def("clear_all_instances", &RenderInstanceHelper::ClearAllInstances,
-           "todo")
-      .def("get_num_instances", &RenderInstanceHelper::GetNumInstances, "todo")
+           "R(Remove all instances from the scene.)")
+      .def("get_num_instances", &RenderInstanceHelper::GetNumInstances,
+           "R(Get the number of instances you've added.)")
       .def(
           "set_world_poses",
           [](RenderInstanceHelper& self, py::array_t<float> positions,
@@ -215,7 +223,10 @@ void initRenderInstanceHelperBindings(py::module& m) {
                                static_cast<float*>(orientations.request().ptr),
                                orientations.size());
           },
-          py::arg("positions"), py::arg("orientations"), "todo");
+          py::arg("positions"), py::arg("orientations"),
+          "R(Set the world poses of all your instances. See the index returned "
+          "by AddInstance. See also use_xyzw_orientations in the "
+          "RenderAssetInstance constructor.)");
 }
 
 void initSimBindings(py::module& m) {

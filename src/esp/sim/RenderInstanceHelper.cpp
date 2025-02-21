@@ -54,9 +54,9 @@ void RenderInstanceHelper::ClearAllInstances() {
 }
 
 void RenderInstanceHelper::SetWorldPoses(float* positions,
-                                         size_t positionsSize,
+                                         int positionsSize,
                                          float* orientations,
-                                         size_t orientationsSize) {
+                                         int orientationsSize) {
   CORRADE_INTERNAL_ASSERT(positionsSize == GetNumInstances() * 3);
   CORRADE_INTERNAL_ASSERT(orientationsSize == GetNumInstances() * 4);
   float* p = positions;
