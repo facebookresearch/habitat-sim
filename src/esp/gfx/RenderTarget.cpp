@@ -129,6 +129,14 @@ struct RenderTarget::Impl {
               .setSize(size)
               .setUseSpecialBlur(true)
               .setUseLayeredGeometryShader(true)
+              // Eric U hack: adjust intensity of HBAO shadow effect. HBAO adds
+              // soft shadows to corners and crevices. intensity=0.732 is the
+              // default. A smaller value makes shadows less intense and
+              // brightens the scene.
+              .setIntensity(0.732 * 2)
+              .setRadius(0.25)
+              //.setSamples(8)
+              .setBias(0.001)
           // TODO other options here?
       };
 #else
