@@ -38,7 +38,8 @@ def _render_scene(sim, scene, sensor_type, gpu2gpu):
         state.rotation = quat_from_coeffs(render_state["rot"])
 
     sim.initialize_agent(0, state)
-    obs = sim.step("move_forward")
+    sim.step("move_forward")
+    obs = sim.get_sensor_observations()
 
     if gpu2gpu:
         torch = pytest.importorskip("torch")
@@ -212,7 +213,8 @@ def test_sensors(
 
     with habitat_sim.Simulator(cfg) as sim:
         if add_sensor_lazy:
-            obs: Dict[str, Any] = sim.reset()
+            sim.reset()
+            obs: Dict[str, Any] = sim.get_sensor_observations()
             assert len(obs) == 1, "Other sensors were not removed"
             for sensor_spec in additional_sensors:
                 sim.add_sensor(sensor_spec)
@@ -279,6 +281,8 @@ def test_smoke_no_sensors(make_cfg_settings):
         make_cfg_settings["semantic_sensor"] = False
         make_cfg_settings["scene"] = scene
         make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
+        # must disable the renderer manually if you don't want to suport it
+        make_cfg_settings["no_renderer"] = True
         cfg = make_cfg(make_cfg_settings)
         cfg.agents[0].sensor_specifications = []
         sims.append(habitat_sim.Simulator(cfg))
