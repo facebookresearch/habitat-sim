@@ -432,7 +432,7 @@ int PhysicsManager::addArticulatedObjectFromURDF(
     const std::string& filepath,
     DrawableGroup* drawables,
     bool fixedBase,
-    float globalScale,
+    const Mn::Vector3& globalScale,
     float massScale,
     bool forceReload,
     bool maintainLinkOrder,
@@ -453,7 +453,7 @@ int PhysicsManager::addArticulatedObjectFromURDF(
                                                                     true);
 
   // Set pertinent values
-  artObjAttributes->setUniformScale(globalScale);
+  artObjAttributes->setScale(globalScale);
   artObjAttributes->setMassScale(static_cast<double>(massScale));
 
   artObjAttributes->setBaseType(metadata::attributes::getAOBaseTypeName(
@@ -532,16 +532,21 @@ int PhysicsManager::addArticulatedObjectInstance(
     artObjAttributes->setShaderType(getShaderTypeName(artObjShaderType));
   }
 
-  // set uniform scale
-  artObjAttributes->setUniformScale(artObjAttributes->getUniformScale() *
-                                    aObjInstAttributes->getUniformScale());
+  // set scaling values for this instance of articulated object attributes -
+  // first uniform scaling
+  artObjAttributes->setScale(artObjAttributes->getScale() *
+                             aObjInstAttributes->getUniformScale());
+  // set scaling values for this instance of object attributes - next
+  // non-uniform scaling
+  artObjAttributes->setScale(artObjAttributes->getScale() *
+                             aObjInstAttributes->getNonUniformScale());
 
   // If boolean specifies to do so, apply geometric scaling to mass (product of
   // scale values)
   if (aObjInstAttributes->getApplyScaleToMass()) {
     artObjAttributes->setMassScale(
         artObjAttributes->getMassScale() *
-        static_cast<double>(artObjAttributes->getUniformScale()));
+        static_cast<double>(artObjAttributes->getScale().product()));
   }
 
   // set scaled mass
