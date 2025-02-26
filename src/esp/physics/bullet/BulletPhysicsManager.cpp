@@ -371,7 +371,6 @@ bool BulletPhysicsManager::attachLinkGeometry(
         // cache the visual component for later query
         linkObject->visualAttachments_.emplace_back(
             &visualGeomComponent, visual.m_geometry.m_meshFileName);
-        // return true;
       } else {
         return false;
       }
