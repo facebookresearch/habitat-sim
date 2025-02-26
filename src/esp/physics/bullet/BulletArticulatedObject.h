@@ -239,6 +239,25 @@ class BulletArticulatedObject : public ArticulatedObject {
   JointType getLinkJointType(CORRADE_UNUSED int linkId) const override;
 
   /**
+   * @brief Get the top and bottom axis vectors for the link's parent joint. See
+   * btMultiBody for details.
+   *
+   * @param linkId The link's index.
+   * @return The link's parent joint's axes.
+   */
+  std::pair<Mn::Vector3, Mn::Vector3> getLinkJointAxes(
+      CORRADE_UNUSED int linkId) const override;
+
+  /**
+   * @brief gets a local vector pointing from the parent joint to the CoM of the
+   * link.
+   *
+   * @param linkId The link's index.
+   * @return The a local vector from joint to link CoM.
+   */
+  Mn::Vector3 getLinkJointToCoM(CORRADE_UNUSED int linkId) const override;
+
+  /**
    * @brief Get the starting position for this link's parent joint in the global
    * DoFs array.
    *

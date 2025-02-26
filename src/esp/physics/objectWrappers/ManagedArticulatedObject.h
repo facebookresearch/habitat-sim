@@ -219,6 +219,20 @@ class ManagedArticulatedObject
     return JointType::Invalid;
   }
 
+  std::pair<Mn::Vector3, Mn::Vector3> getLinkJointAxes(int linkId) const {
+    if (auto sp = getObjectReference()) {
+      return sp->getLinkJointAxes(linkId);
+    }
+    return std::pair<Mn::Vector3, Mn::Vector3>();
+  }
+
+  Mn::Vector3 getLinkJointToCoM(CORRADE_UNUSED int linkId) const {
+    if (auto sp = getObjectReference()) {
+      return sp->getLinkJointToCoM(linkId);
+    }
+    return Mn::Vector3();
+  }
+
   std::string getLinkJointName(int linkId) const {
     if (auto sp = getObjectReference()) {
       return sp->getLinkJointName(linkId);

@@ -371,12 +371,15 @@ bool BulletPhysicsManager::attachLinkGeometry(
         // cache the visual component for later query
         linkObject->visualAttachments_.emplace_back(
             &visualGeomComponent, visual.m_geometry.m_meshFileName);
-        return true;
+      } else {
+        return false;
       }
+    } else {
+      return false;
     }
   }
 
-  return false;
+  return true;
 }
 
 void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {
