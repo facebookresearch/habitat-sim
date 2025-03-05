@@ -45,14 +45,10 @@ Magnum::GL::Mesh* GenericMeshData::getMagnumGLMesh() {
 }
 
 void GenericMeshData::setMeshData(Magnum::Trade::MeshData&& meshData) {
-  /* Interleave the mesh, if not already. This makes the GPU happier (better
-     cache locality for vertex fetching) and is a no-op if the source data is
-     already interleaved, so doesn't hurt to have it there always. */
-
   /* TODO: Address that non-triangle meshes will have their collisionMeshData_
    * incorrectly calculated */
 
-  meshData_ = Mn::MeshTools::interleave(std::move(meshData));
+  meshData_ = std::move(meshData);
 
   collisionMeshData_.primitive = meshData_->primitive();
 

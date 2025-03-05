@@ -171,7 +171,7 @@ void DebugLineRender::flushLines(const Magnum::Matrix4& projCamMatrix,
   Mn::GL::Renderer::setDepthFunction(Mn::GL::Renderer::DepthFunction::Less);
 
   // Clear _verts to receive new data
-  arrayResize(_verts, 0);
+  arrayClear(_verts);
 
   // restore blending state if necessary
   if (doToggleBlend) {

@@ -309,7 +309,7 @@ std::vector<std::string> ResourceManager::buildVertexColorMapReport(
   }
 
   return infoSemanticMeshData_->getVertColorSSDReport(
-      Cr::Utility::Path::split(filename).second(), semanticColorMapBeingUsed_,
+      Cr::Utility::Path::filename(filename), semanticColorMapBeingUsed_,
       semanticScene_);
 }  // ResourceManager::buildVertexColorMapReport
 
@@ -1342,7 +1342,7 @@ ResourceManager::flattenImportedMeshAndBuildSemantic(Importer& fileImporter,
 
   GenericSemanticMeshData::uptr semanticMeshData =
       GenericSemanticMeshData::buildSemanticMeshData(
-          *meshData, Cr::Utility::Path::split(filename).second(),
+          *meshData, Cr::Utility::Path::filename(filename),
           semanticColorMapBeingUsed_,
           (filename.find(".ply") == std::string::npos), semanticScene_);
 
@@ -2276,7 +2276,7 @@ void ResourceManager::loadMaterials(Importer& importer,
 
   // name of asset, for debugging purposes
   const std::string assetName =
-      Cr::Utility::Path::split(loadedAssetData.assetInfo.filepath).second();
+      Cr::Utility::Path::filename(loadedAssetData.assetInfo.filepath);
   int numMaterials = importer.materialCount();
   ESP_DEBUG(Mn::Debug::Flag::NoSpace)
       << "Building " << numMaterials << " materials for asset named '"
@@ -2600,7 +2600,7 @@ ObjectInstanceShaderType ResourceManager::getMaterialShaderType(
   // material or other settings.
   if (info.forceFlatShading) {
     ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
-        << "Asset `" << Cr::Utility::Path::split(info.filepath).second()
+        << "Asset `" << Cr::Utility::Path::filename(info.filepath)
         << "` is being forced to use Flat shader by configuration.";
     return ObjectInstanceShaderType::Flat;
   }
@@ -2611,7 +2611,7 @@ ObjectInstanceShaderType ResourceManager::getMaterialShaderType(
     infoSpecShaderType = ObjectInstanceShaderType::Material;
   }
   ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
-      << "Asset `" << Cr::Utility::Path::split(info.filepath).second()
+      << "Asset `" << Cr::Utility::Path::filename(info.filepath)
       << "` is using shadertype `"
       << metadata::attributes::getShaderTypeName(infoSpecShaderType) << "`.";
   return infoSpecShaderType;
