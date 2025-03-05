@@ -1021,20 +1021,19 @@ void Renderer::clear(const Mn::UnsignedInt sceneId) {
                                             << "scenes", );
 
   Scene& scene = state_->scenes[sceneId];
-  // TODO have arrayClear()!!!
-  /* Resizing instead of `= {}` to not discard the memory */
-  arrayResize(scene.parents, 0);
-  arrayResize(scene.transformations, 0);
-  arrayResize(scene.lights, 0);
-  arrayResize(scene.drawBatchIds, 0);
-  arrayResize(scene.transformationIds, 0);
-  arrayResize(scene.drawBatches, Cr::NoInit, 0);
-  arrayResize(scene.draws, 0);
-  arrayResize(scene.textureTransformations, 0);
-  arrayResize(scene.drawCommands, 0);
-  arrayResize(scene.drawsSorted, 0);
-  arrayResize(scene.transformationIdsSorted, 0);
-  arrayResize(scene.drawCommandsSorted, 0);
+  /* Clearing instead of `= {}` to not discard the memory */
+  arrayClear(scene.parents);
+  arrayClear(scene.transformations);
+  arrayClear(scene.lights);
+  arrayClear(scene.drawBatchIds);
+  arrayClear(scene.transformationIds);
+  arrayClear(scene.drawBatches);
+  arrayClear(scene.draws);
+  arrayClear(scene.textureTransformations);
+  arrayClear(scene.drawCommands);
+  arrayClear(scene.drawsSorted);
+  arrayClear(scene.transformationIdsSorted);
+  arrayClear(scene.drawCommandsSorted);
 
   /* There's nothing in the scene, so there's no dirty state to process */
   scene.dirty = false;
@@ -1047,9 +1046,8 @@ void Renderer::clearLights(const Mn::UnsignedInt sceneId) {
                                             << "scenes", );
 
   Scene& scene = state_->scenes[sceneId];
-  // TODO have arrayClear()!!!
-  /* Resizing instead of `= {}` to not discard the memory */
-  arrayResize(scene.lights, 0);
+  /* Clearing instead of `= {}` to not discard the memory */
+  arrayClear(scene.lights);
 
   /* Not marking the dirty bit as lights are processed with updated
      transformations every frame anyway */
@@ -1153,7 +1151,7 @@ void Renderer::draw(Mn::GL::AbstractFramebuffer& framebuffer) {
       /* Draw batch offsets with two implicit 0s at the begin. Reset all values
          to 0 in case the array wasn't empty before. */
       // TODO Utility::fill() instead
-      arrayResize(scene.drawBatchOffsets, Cr::NoInit, 0);
+      arrayClear(scene.drawBatchOffsets);
       arrayResize(scene.drawBatchOffsets, Cr::ValueInit,
                   scene.drawBatches.size() + 2);
 
