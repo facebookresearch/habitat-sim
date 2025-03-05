@@ -410,13 +410,13 @@ AbstractAttributesManager<T, Access>::loadAllFileBasedTemplates(
     bool saveAsDefaults) {
   std::vector<int> templateIndices(paths.size(), ID_UNDEFINED);
   if (paths.size() > 0) {
-    std::string dir = CrPath::split(paths[0]).first();
+    std::string dir = CrPath::path(paths[0]);
     ESP_DEBUG() << "Loading" << paths.size() << "" << this->objectType_
                 << "templates found in" << dir;
     for (uint32_t i = 0; i < paths.size(); ++i) {
       auto attributesFilename = paths[i];
       ESP_VERY_VERBOSE() << "Load" << this->objectType_ << "template:"
-                         << CrPath::split(attributesFilename).second();
+                         << CrPath::filename(attributesFilename);
       auto tmplt = this->createObject(attributesFilename, true);
       // If failed to load, do not attempt to modify further
       if (tmplt == nullptr) {
