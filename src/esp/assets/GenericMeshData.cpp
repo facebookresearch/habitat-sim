@@ -68,8 +68,10 @@ void GenericMeshData::setMeshData(Magnum::Trade::MeshData&& meshData) {
      TODO why is a mutable view needed at all?! If not, make the views const
      and remove the indexDataFlags() check below. */
   if (!meshData_->isIndexed()) {
-    collisionMeshData_.indices = indexData_ = Mn::MeshTools::generateTrivialIndices(meshData_->vertexCount());
-  } else if (meshData_->indexType() == Mn::MeshIndexType::UnsignedInt && meshData_->indexDataFlags() & Mn::Trade::DataFlag::Mutable) {
+    collisionMeshData_.indices = indexData_ =
+        Mn::MeshTools::generateTrivialIndices(meshData_->vertexCount());
+  } else if (meshData_->indexType() == Mn::MeshIndexType::UnsignedInt &&
+             meshData_->indexDataFlags() & Mn::Trade::DataFlag::Mutable) {
     collisionMeshData_.indices =
         meshData_->mutableIndices<Mn::UnsignedInt>().asContiguous();
   } else {

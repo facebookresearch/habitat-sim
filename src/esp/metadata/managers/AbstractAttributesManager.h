@@ -415,8 +415,8 @@ AbstractAttributesManager<T, Access>::loadAllFileBasedTemplates(
                 << "templates found in" << dir;
     for (uint32_t i = 0; i < paths.size(); ++i) {
       auto attributesFilename = paths[i];
-      ESP_VERY_VERBOSE() << "Load" << this->objectType_ << "template:"
-                         << CrPath::filename(attributesFilename);
+      ESP_VERY_VERBOSE() << "Load" << this->objectType_
+                         << "template:" << CrPath::filename(attributesFilename);
       auto tmplt = this->createObject(attributesFilename, true);
       // If failed to load, do not attempt to modify further
       if (tmplt == nullptr) {
