@@ -8,7 +8,9 @@
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Utility/DebugStl.h>
 #include <Magnum/MeshTools/Compile.h>
+#include <Magnum/MeshTools/GenerateIndices.h>
 #include <Magnum/MeshTools/Interleave.h>
+
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
@@ -66,11 +68,7 @@ void GenericMeshData::setMeshData(Magnum::Trade::MeshData&& meshData) {
      TODO why is a mutable view needed at all?! If not, make the views const
      and remove the indexDataFlags() check below. */
   if (!meshData_->isIndexed()) {
-    collisionMeshData_.indices = indexData_ =
-        Cr::Containers::Array<Mn::UnsignedInt>{Cr::NoInit,
-                                               meshData_->vertexCount()};
-    for (Mn::UnsignedInt i = 0; i != indexData_.size(); ++i)
-      indexData_[i] = i;
+    collisionMeshData_.indices = indexData_ = Mn::MeshTools::generateTrivialIndices(meshData_->vertexCount());
   } else if (meshData_->indexType() == Mn::MeshIndexType::UnsignedInt && meshData_->indexDataFlags() & Mn::Trade::DataFlag::Mutable) {
     collisionMeshData_.indices =
         meshData_->mutableIndices<Mn::UnsignedInt>().asContiguous();
