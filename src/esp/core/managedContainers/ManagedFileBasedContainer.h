@@ -256,7 +256,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
                                const std::string& filename,
                                bool createDir) const {
     // get file directory from passed desired filename, if present
-    std::string fileDirectory = Cr::Utility::Path::split(filename).first();
+    std::string fileDirectory = Cr::Utility::Path::path(filename);
     // if no directory given then use object's local directory
     if (fileDirectory.empty()) {
       fileDirectory = managedObject->getFileDirectory();

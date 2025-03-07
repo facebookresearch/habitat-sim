@@ -142,7 +142,7 @@ Cr::Containers::String buildMessagePrefix(Subsystem subsystem,
                                           const std::string& filename,
                                           const std::string& function,
                                           int line) {
-  auto baseFileName = Cr::Utility::Path::split(filename).second();
+  auto baseFileName = Cr::Utility::Path::filename(filename);
 
   const auto timePassed =
       std::chrono::high_resolution_clock::now().time_since_epoch();

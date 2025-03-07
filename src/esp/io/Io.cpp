@@ -50,7 +50,7 @@ std::string getPathRelativeToAbsPath(const std::string& toRelPath,
                                      const std::string& absPathArg) {
   // Check if absPath is a path or filename - only use the path if it is a
   // filenaame
-  const std::string absPath = Cr::Utility::Path::split(absPathArg).first();
+  const std::string absPath = Cr::Utility::Path::path(absPathArg);
 
   std::string result = "";
   const char* delim = "/";

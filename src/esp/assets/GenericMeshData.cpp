@@ -8,7 +8,9 @@
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Utility/DebugStl.h>
 #include <Magnum/MeshTools/Compile.h>
+#include <Magnum/MeshTools/GenerateIndices.h>
 #include <Magnum/MeshTools/Interleave.h>
+
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
@@ -45,14 +47,10 @@ Magnum::GL::Mesh* GenericMeshData::getMagnumGLMesh() {
 }
 
 void GenericMeshData::setMeshData(Magnum::Trade::MeshData&& meshData) {
-  /* Interleave the mesh, if not already. This makes the GPU happier (better
-     cache locality for vertex fetching) and is a no-op if the source data is
-     already interleaved, so doesn't hurt to have it there always. */
-
   /* TODO: Address that non-triangle meshes will have their collisionMeshData_
    * incorrectly calculated */
 
-  meshData_ = Mn::MeshTools::interleave(std::move(meshData));
+  meshData_ = std::move(meshData);
 
   collisionMeshData_.primitive = meshData_->primitive();
 
@@ -63,16 +61,17 @@ void GenericMeshData::setMeshData(Magnum::Trade::MeshData&& meshData) {
       meshData_->positions3DAsArray();
 
   /* For collision data we need indices as UnsignedInt. If the mesh already has
-     those, just make the collision data reference them. If not, unpack them
-     and store them here. And if there is no index buffer at all, generate a
-     trivial one (0, 1, 2, 3...). */
+     those, and we can get a mutable view on them, just make the collision data
+     reference them. If not, unpack them and store them here. And if there is
+     no index buffer at all, generate a trivial one (0, 1, 2, 3...).
+
+     TODO why is a mutable view needed at all?! If not, make the views const
+     and remove the indexDataFlags() check below. */
   if (!meshData_->isIndexed()) {
     collisionMeshData_.indices = indexData_ =
-        Cr::Containers::Array<Mn::UnsignedInt>{Cr::NoInit,
-                                               meshData_->vertexCount()};
-    for (Mn::UnsignedInt i = 0; i != indexData_.size(); ++i)
-      indexData_[i] = i;
-  } else if (meshData_->indexType() == Mn::MeshIndexType::UnsignedInt) {
+        Mn::MeshTools::generateTrivialIndices(meshData_->vertexCount());
+  } else if (meshData_->indexType() == Mn::MeshIndexType::UnsignedInt &&
+             meshData_->indexDataFlags() & Mn::Trade::DataFlag::Mutable) {
     collisionMeshData_.indices =
         meshData_->mutableIndices<Mn::UnsignedInt>().asContiguous();
   } else {
