@@ -2145,7 +2145,8 @@ Mn::Trade::MaterialData ResourceManager::setMaterialDefaultUserAttributes(
     ObjectInstanceShaderType shaderTypeToUse,
     bool hasVertObjID,
     bool hasTxtrObjID,
-    int txtrIdx) const {
+    int txtrIdx,
+    bool isFallback) const {
   // New material's attributes
   Cr::Containers::Array<Mn::Trade::MaterialAttributeData> newAttributes;
   arrayAppend(newAttributes, Cr::InPlaceInit, "hasPerVertexObjectId",
@@ -2156,6 +2157,8 @@ Mn::Trade::MaterialData ResourceManager::setMaterialDefaultUserAttributes(
   }
   arrayAppend(newAttributes, Cr::InPlaceInit, "shaderTypeToUse",
               static_cast<int>(shaderTypeToUse));
+
+  arrayAppend(newAttributes, Cr::InPlaceInit, "isFallbackMaterial", isFallback);
 
   Cr::Containers::Optional<Mn::Trade::MaterialData> finalMaterial =
       Mn::MaterialTools::merge(
@@ -2257,9 +2260,20 @@ void ResourceManager::initDefaultMaterials() {
 
   // Build default material for fallback material
   Mn::Trade::MaterialData fallbackMaterial = buildDefaultMaterial();
-  // Set expected user-defined attributes
+  // Make fallback magenta so visibly obvious
+  fallbackMaterial.mutableAttribute<Mn::Color4>(
+      Mn::Trade::MaterialAttribute::AmbientColor) =
+      Mn::Color4{1.0f, 0.0f, 1.0f, 1.0f};
+  fallbackMaterial.mutableAttribute<Mn::Color4>(
+      Mn::Trade::MaterialAttribute::DiffuseColor) =
+      Mn::Color4{1.0f, 0.0f, 1.0f, 1.0f};
+  fallbackMaterial.mutableAttribute<Mn::Color4>(
+      Mn::Trade::MaterialAttribute::SpecularColor) =
+      Mn::Color4{1.0f, 0.0f, 1.0f, 1.0f};
+  // Set expected user-defined attributes - specify Flat shader to use since
+  // this indicates that the asset did not load a material for some reason.
   fallbackMaterial = setMaterialDefaultUserAttributes(
-      fallbackMaterial, ObjectInstanceShaderType::Flat);
+      fallbackMaterial, ObjectInstanceShaderType::Flat, false, false, -1, true);
   // Add to shaderManager as fallback material
   shaderManager_.setFallback<Mn::Trade::MaterialData>(
       std::move(fallbackMaterial));
