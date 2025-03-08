@@ -41,11 +41,11 @@ class ManagedArticulatedObject
     return nullptr;
   }  // getInitializationAttributes()
 
-  float getGlobalScale() const {
+  Mn::Vector3 getGlobalScale() const {
     if (auto sp = getObjectReference()) {
       return sp->getGlobalScale();
     }
-    return 1.0;
+    return Mn::Vector3(1.0);
   }
 
   scene::SceneNode* getLinkSceneNode(int linkId = BASELINK_ID) const {
