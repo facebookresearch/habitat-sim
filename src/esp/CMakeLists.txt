@@ -295,6 +295,8 @@ set(
   metadata/attributes/LightLayoutAttributes.h
   metadata/attributes/LightLayoutAttributes.cpp
   metadata/attributes/MarkerSets.h
+  metadata/attributes/MaterialAttributes.h
+  metadata/attributes/MaterialAttributes.cpp
   metadata/attributes/ObjectAttributes.h
   metadata/attributes/ObjectAttributes.cpp
   metadata/attributes/PhysicsManagerAttributes.h
@@ -319,6 +321,8 @@ set(
   metadata/managers/AssetAttributesManager.cpp
   metadata/managers/LightLayoutAttributesManager.h
   metadata/managers/LightLayoutAttributesManager.cpp
+  metadata/managers/MaterialAttributesManager.h
+  metadata/managers/MaterialAttributesManager.cpp
   metadata/managers/ObjectAttributesManager.h
   metadata/managers/ObjectAttributesManager.cpp
   metadata/managers/PbrShaderAttributesManager.h
