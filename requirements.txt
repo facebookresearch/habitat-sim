@@ -2,7 +2,6 @@ attrs>=19.1.0
 gitpython
 imageio
 imageio-ffmpeg
-matplotlib
 numba
 numpy==1.26.4
 numpy-quaternion

@@ -8,7 +8,7 @@ import os
 
 import magnum as mn
 import numpy as np
-from matplotlib import pyplot as plt
+from PIL import Image
 
 import habitat_sim
 from habitat_sim.gfx import LightInfo, LightPositionModel
@@ -22,20 +22,17 @@ save_index = 0
 
 
 def show_img(data, save):
-    plt.figure(figsize=(12, 12))
-    plt.imshow(data, interpolation="nearest")
-    plt.axis("off")
-    plt.show(block=False)
+    # Convert the data to a PIL Image
+    img = Image.fromarray((data).astype(np.uint8))
+    # Convert to RGB if the image has an alpha channel
+    if img.mode == "RGBA":
+        img = img.convert("RGB")
+    # Display the image
+    img.show()
     if save:
         global save_index
-        plt.savefig(
-            output_path + str(save_index) + ".jpg",
-            bbox_inches="tight",
-            pad_inches=0,
-            quality=50,
-        )
+        img.save(output_path + str(save_index) + ".jpg", quality=50)
         save_index += 1
-    plt.pause(1)
 
 
 def get_obs(sim, show, save):

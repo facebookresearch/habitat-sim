@@ -8,7 +8,7 @@ import os
 
 import magnum as mn
 import numpy as np
-from matplotlib import pyplot as plt
+from PIL import Image
 
 import habitat_sim
 from habitat_sim.utils.common import quat_from_angle_axis
@@ -20,27 +20,44 @@ output_path = os.path.join(dir_path, "semantic_object_tutorial_output/")
 save_index = 0
 
 
+def apply_colormap(image):
+    # Normalize the uint32 image to the range [0, 255]
+    normalized = (image - image.min()) / (image.max() - image.min()) * 255
+    normalized = normalized.astype(np.uint8)
+
+    # Create a color map
+    colormap = np.zeros((256, 3), dtype=np.uint8)
+    for i in range(256):
+        colormap[i] = [i, 255 - i, (i // 2) % 256]
+
+    # Apply the colormap
+    colorized = colormap[normalized]
+    return Image.fromarray(colorized)
+
+
 def show_img(data, save):
-    # display rgb and semantic images side-by-side
-    fig = plt.figure(figsize=(12, 12))
-    ax1 = fig.add_subplot(1, 2, 1)
-    ax1.axis("off")
-    ax1.imshow(data[0], interpolation="nearest")
-    ax2 = fig.add_subplot(1, 2, 2)
-    ax2.axis("off")
-    ax2.imshow(data[1], interpolation="nearest")
-    plt.axis("off")
-    plt.show(block=False)
+    # Convert numpy arrays to PIL Images
+    img1 = Image.fromarray(data[0])
+
+    # Color-code the semantic map (uint32) to visualize the semantic IDs
+    img2 = apply_colormap(data[1])
+
+    # Create a new image with twice the width to place images side-by-side
+    total_width = img1.width + img2.width
+    max_height = max(img1.height, img2.height)
+    new_img = Image.new("RGB", (total_width, max_height))
+
+    # Paste the images side-by-side
+    new_img.paste(img1, (0, 0))
+    new_img.paste(img2, (img1.width, 0))
+
+    # Display the combined image
+    new_img.show()
+
     if save:
         global save_index
-        plt.savefig(
-            output_path + str(save_index) + ".jpg",
-            bbox_inches="tight",
-            pad_inches=0,
-            quality=50,
-        )
+        new_img.save(output_path + str(save_index) + ".jpg", quality=50)
         save_index += 1
-    plt.pause(1)
 
 
 def get_obs(sim, show, save):
