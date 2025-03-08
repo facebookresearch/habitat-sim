@@ -8,7 +8,6 @@
 
 #include <utility>
 
-namespace Mn = Magnum;
 namespace esp {
 namespace sensor {
 
@@ -44,7 +43,7 @@ void SensorSpec::sanityCheck() const {
 }
 
 Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
-    : Magnum::SceneGraph::AbstractFeature3D{node}, spec_(std::move(spec)) {
+    : Mn::SceneGraph::AbstractFeature3D{node}, spec_(std::move(spec)) {
   CORRADE_ASSERT(node.children().first() == nullptr,
                  "Sensor::Sensor(): Cannot attach a sensor to a non-LEAF node. "
                  "The number of children of this node is not zero.", );
@@ -71,11 +70,11 @@ Sensor::~Sensor() {
 
 scene::SceneNode& Sensor::object() {
   return static_cast<scene::SceneNode&>(
-      Magnum::SceneGraph::AbstractFeature3D::object());
+      Mn::SceneGraph::AbstractFeature3D::object());
 }
 const scene::SceneNode& Sensor::object() const {
   return static_cast<const scene::SceneNode&>(
-      Magnum::SceneGraph::AbstractFeature3D::object());
+      Mn::SceneGraph::AbstractFeature3D::object());
 }
 
 void Sensor::setTransformationFromSpec() {
@@ -86,21 +85,21 @@ void Sensor::setTransformationFromSpec() {
   node().resetTransformation();
 
   node().translate(spec_->position);
-  node().rotateX(Magnum::Rad(spec_->orientation[0]));
-  node().rotateY(Magnum::Rad(spec_->orientation[1]));
-  node().rotateZ(Magnum::Rad(spec_->orientation[2]));
+  node().rotateX(Mn::Rad(spec_->orientation[0]));
+  node().rotateY(Mn::Rad(spec_->orientation[1]));
+  node().rotateZ(Mn::Rad(spec_->orientation[2]));
 }
 
 SensorSuite::SensorSuite(scene::SceneNode& node)
-    : Magnum::SceneGraph::AbstractFeature3D{node} {}
+    : Mn::SceneGraph::AbstractFeature3D{node} {}
 
 scene::SceneNode& SensorSuite::object() {
   return static_cast<scene::SceneNode&>(
-      Magnum::SceneGraph::AbstractFeature3D::object());
+      Mn::SceneGraph::AbstractFeature3D::object());
 }
 const scene::SceneNode& SensorSuite::object() const {
   return static_cast<const scene::SceneNode&>(
-      Magnum::SceneGraph::AbstractFeature3D::object());
+      Mn::SceneGraph::AbstractFeature3D::object());
 }
 
 void SensorSuite::add(sensor::Sensor& sensor) {
