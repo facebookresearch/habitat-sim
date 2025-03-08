@@ -46,6 +46,10 @@ default_sim_settings: Dict[str, Any] = {
     "equirect_rgba_sensor": False,
     "equirect_depth_sensor": False,
     "equirect_semantic_sensor": False,
+    # Optionally specify that no renderer should be created. Mutually exclusive with above sensor options.
+    "no_renderer": False,
+    # Optionally specify that no RGB textures should be loaded with the renderer. Mutually exclusive with Color sensors above.
+    "no_textures": False,
     # random seed
     "seed": 1,
     # path to .physics_config.json file
@@ -108,70 +112,7 @@ def make_cfg(settings: Dict[str, Any]):
             setattr(camera_sensor_spec, k, kw_args[k])
         return camera_sensor_spec
 
-    if settings["color_sensor"]:
-        color_sensor_spec = create_camera_spec(
-            uuid="color_sensor",
-            hfov=settings["hfov"],
-            far=settings["zfar"],
-            sensor_type=habitat_sim.SensorType.COLOR,
-            sensor_subtype=habitat_sim.SensorSubType.PINHOLE,
-            clear_color=settings["clear_color"],
-        )
-        sensor_specs.append(color_sensor_spec)
-
-    if settings["depth_sensor"]:
-        depth_sensor_spec = create_camera_spec(
-            uuid="depth_sensor",
-            hfov=settings["hfov"],
-            far=settings["zfar"],
-            sensor_type=habitat_sim.SensorType.DEPTH,
-            channels=1,
-            sensor_subtype=habitat_sim.SensorSubType.PINHOLE,
-        )
-        sensor_specs.append(depth_sensor_spec)
-
-    if settings["semantic_sensor"]:
-        semantic_sensor_spec = create_camera_spec(
-            uuid="semantic_sensor",
-            hfov=settings["hfov"],
-            far=settings["zfar"],
-            sensor_type=habitat_sim.SensorType.SEMANTIC,
-            channels=1,
-            sensor_subtype=habitat_sim.SensorSubType.PINHOLE,
-        )
-        sensor_specs.append(semantic_sensor_spec)
-
-    if settings["ortho_rgba_sensor"]:
-        ortho_rgba_sensor_spec = create_camera_spec(
-            uuid="ortho_rgba_sensor",
-            far=settings["zfar"],
-            sensor_type=habitat_sim.SensorType.COLOR,
-            sensor_subtype=habitat_sim.SensorSubType.ORTHOGRAPHIC,
-            clear_color=settings["clear_color"],
-        )
-        sensor_specs.append(ortho_rgba_sensor_spec)
-
-    if settings["ortho_depth_sensor"]:
-        ortho_depth_sensor_spec = create_camera_spec(
-            uuid="ortho_depth_sensor",
-            far=settings["zfar"],
-            sensor_type=habitat_sim.SensorType.DEPTH,
-            channels=1,
-            sensor_subtype=habitat_sim.SensorSubType.ORTHOGRAPHIC,
-        )
-        sensor_specs.append(ortho_depth_sensor_spec)
-
-    if settings["ortho_semantic_sensor"]:
-        ortho_semantic_sensor_spec = create_camera_spec(
-            uuid="ortho_semantic_sensor",
-            far=settings["zfar"],
-            sensor_type=habitat_sim.SensorType.SEMANTIC,
-            channels=1,
-            sensor_subtype=habitat_sim.SensorSubType.ORTHOGRAPHIC,
-        )
-        sensor_specs.append(ortho_semantic_sensor_spec)
-
-    # TODO Figure out how to implement copying of specs
+    # TODO This will go once SensorAttributes are implemented and maanged
     def create_fisheye_spec(**kw_args):
         fisheye_sensor_spec = habitat_sim.FisheyeSensorDoubleSphereSpec()
         fisheye_sensor_spec.uuid = "fisheye_sensor"
@@ -199,25 +140,6 @@ def make_cfg(settings: Dict[str, Any]):
             setattr(fisheye_sensor_spec, k, kw_args[k])
         return fisheye_sensor_spec
 
-    if settings["fisheye_rgba_sensor"]:
-        fisheye_rgba_sensor_spec = create_fisheye_spec(uuid="fisheye_rgba_sensor")
-        fisheye_rgba_sensor_spec.clear_color = settings["clear_color"]
-        sensor_specs.append(fisheye_rgba_sensor_spec)
-    if settings["fisheye_depth_sensor"]:
-        fisheye_depth_sensor_spec = create_fisheye_spec(
-            uuid="fisheye_depth_sensor",
-            sensor_type=habitat_sim.SensorType.DEPTH,
-            channels=1,
-        )
-        sensor_specs.append(fisheye_depth_sensor_spec)
-    if settings["fisheye_semantic_sensor"]:
-        fisheye_semantic_sensor_spec = create_fisheye_spec(
-            uuid="fisheye_semantic_sensor",
-            sensor_type=habitat_sim.SensorType.SEMANTIC,
-            channels=1,
-        )
-        sensor_specs.append(fisheye_semantic_sensor_spec)
-
     def create_equirect_spec(**kw_args):
         equirect_sensor_spec = habitat_sim.EquirectangularSensorSpec()
         equirect_sensor_spec.uuid = "equirect_rgba_sensor"
@@ -230,26 +152,115 @@ def make_cfg(settings: Dict[str, Any]):
             setattr(equirect_sensor_spec, k, kw_args[k])
         return equirect_sensor_spec
 
-    if settings["equirect_rgba_sensor"]:
-        equirect_rgba_sensor_spec = create_equirect_spec(uuid="equirect_rgba_sensor")
-        equirect_rgba_sensor_spec.clear_color = settings["clear_color"]
-        sensor_specs.append(equirect_rgba_sensor_spec)
+    if settings["no_textures"]:
+        sim_cfg.requires_textures = False
+    if settings["no_renderer"]:
+        sim_cfg.create_renderer = False
+    else:
+        if not settings["no_textures"] and settings["color_sensor"]:
+            color_sensor_spec = create_camera_spec(
+                uuid="color_sensor",
+                hfov=settings["hfov"],
+                far=settings["zfar"],
+                sensor_type=habitat_sim.SensorType.COLOR,
+                sensor_subtype=habitat_sim.SensorSubType.PINHOLE,
+                clear_color=settings["clear_color"],
+            )
+            sensor_specs.append(color_sensor_spec)
 
-    if settings["equirect_depth_sensor"]:
-        equirect_depth_sensor_spec = create_equirect_spec(
-            uuid="equirect_depth_sensor",
-            sensor_type=habitat_sim.SensorType.DEPTH,
-            channels=1,
-        )
-        sensor_specs.append(equirect_depth_sensor_spec)
+        if settings["depth_sensor"]:
+            depth_sensor_spec = create_camera_spec(
+                uuid="depth_sensor",
+                hfov=settings["hfov"],
+                far=settings["zfar"],
+                sensor_type=habitat_sim.SensorType.DEPTH,
+                channels=1,
+                sensor_subtype=habitat_sim.SensorSubType.PINHOLE,
+            )
+            sensor_specs.append(depth_sensor_spec)
 
-    if settings["equirect_semantic_sensor"]:
-        equirect_semantic_sensor_spec = create_equirect_spec(
-            uuid="equirect_semantic_sensor",
-            sensor_type=habitat_sim.SensorType.SEMANTIC,
-            channels=1,
-        )
-        sensor_specs.append(equirect_semantic_sensor_spec)
+        if settings["semantic_sensor"]:
+            semantic_sensor_spec = create_camera_spec(
+                uuid="semantic_sensor",
+                hfov=settings["hfov"],
+                far=settings["zfar"],
+                sensor_type=habitat_sim.SensorType.SEMANTIC,
+                channels=1,
+                sensor_subtype=habitat_sim.SensorSubType.PINHOLE,
+            )
+            sensor_specs.append(semantic_sensor_spec)
+
+        if not settings["no_textures"] and settings["ortho_rgba_sensor"]:
+            ortho_rgba_sensor_spec = create_camera_spec(
+                uuid="ortho_rgba_sensor",
+                far=settings["zfar"],
+                sensor_type=habitat_sim.SensorType.COLOR,
+                sensor_subtype=habitat_sim.SensorSubType.ORTHOGRAPHIC,
+                clear_color=settings["clear_color"],
+            )
+            sensor_specs.append(ortho_rgba_sensor_spec)
+
+        if settings["ortho_depth_sensor"]:
+            ortho_depth_sensor_spec = create_camera_spec(
+                uuid="ortho_depth_sensor",
+                far=settings["zfar"],
+                sensor_type=habitat_sim.SensorType.DEPTH,
+                channels=1,
+                sensor_subtype=habitat_sim.SensorSubType.ORTHOGRAPHIC,
+            )
+            sensor_specs.append(ortho_depth_sensor_spec)
+
+        if settings["ortho_semantic_sensor"]:
+            ortho_semantic_sensor_spec = create_camera_spec(
+                uuid="ortho_semantic_sensor",
+                far=settings["zfar"],
+                sensor_type=habitat_sim.SensorType.SEMANTIC,
+                channels=1,
+                sensor_subtype=habitat_sim.SensorSubType.ORTHOGRAPHIC,
+            )
+            sensor_specs.append(ortho_semantic_sensor_spec)
+
+        if not settings["no_textures"] and settings["fisheye_rgba_sensor"]:
+            fisheye_rgba_sensor_spec = create_fisheye_spec(uuid="fisheye_rgba_sensor")
+            fisheye_rgba_sensor_spec.clear_color = settings["clear_color"]
+            sensor_specs.append(fisheye_rgba_sensor_spec)
+        if settings["fisheye_depth_sensor"]:
+            fisheye_depth_sensor_spec = create_fisheye_spec(
+                uuid="fisheye_depth_sensor",
+                sensor_type=habitat_sim.SensorType.DEPTH,
+                channels=1,
+            )
+            sensor_specs.append(fisheye_depth_sensor_spec)
+        if settings["fisheye_semantic_sensor"]:
+            fisheye_semantic_sensor_spec = create_fisheye_spec(
+                uuid="fisheye_semantic_sensor",
+                sensor_type=habitat_sim.SensorType.SEMANTIC,
+                channels=1,
+            )
+            sensor_specs.append(fisheye_semantic_sensor_spec)
+
+        if not settings["no_textures"] and settings["equirect_rgba_sensor"]:
+            equirect_rgba_sensor_spec = create_equirect_spec(
+                uuid="equirect_rgba_sensor"
+            )
+            equirect_rgba_sensor_spec.clear_color = settings["clear_color"]
+            sensor_specs.append(equirect_rgba_sensor_spec)
+
+        if settings["equirect_depth_sensor"]:
+            equirect_depth_sensor_spec = create_equirect_spec(
+                uuid="equirect_depth_sensor",
+                sensor_type=habitat_sim.SensorType.DEPTH,
+                channels=1,
+            )
+            sensor_specs.append(equirect_depth_sensor_spec)
+
+        if settings["equirect_semantic_sensor"]:
+            equirect_semantic_sensor_spec = create_equirect_spec(
+                uuid="equirect_semantic_sensor",
+                sensor_type=habitat_sim.SensorType.SEMANTIC,
+                channels=1,
+            )
+            sensor_specs.append(equirect_semantic_sensor_spec)
 
     # create agent specifications
     agent_cfg = habitat_sim.agent.AgentConfiguration()
