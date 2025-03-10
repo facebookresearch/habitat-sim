@@ -498,6 +498,8 @@ set(
   sim/Simulator.h
   sim/SimulatorConfiguration.cpp
   sim/SimulatorConfiguration.h
+  sim/RenderInstanceHelper.cpp
+  sim/RenderInstanceHelper.h
 )
 
 #################

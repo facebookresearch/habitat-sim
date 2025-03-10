@@ -74,7 +74,7 @@ class AbstractFileBasedManagedObject : public AbstractManagedObject {
     // first parse for file name, and then get rid of extension(s).
     return Corrade::Utility::Path::splitExtension(
                Corrade::Utility::Path::splitExtension(
-                   Corrade::Utility::Path::split(getHandle()).second())
+                   Corrade::Utility::Path::filename(getHandle()))
                    .first())
         .first();
   }

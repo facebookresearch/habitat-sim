@@ -565,6 +565,19 @@ void declareArticulatedObjectWrapper(py::module& m,
             "'s link specified by the given link_id.")
                .c_str(),
            "link_id"_a)
+      .def("get_link_joint_axes", &ManagedArticulatedObject::getLinkJointAxes,
+           ("Get the axes (see btMultiBody top and bottom axis) of the parent "
+            "joint for this " +
+            objType + "'s link specified by the given link_id.")
+               .c_str(),
+           "link_id"_a)
+      .def("get_link_joint_to_com",
+           &ManagedArticulatedObject::getLinkJointToCoM,
+           ("Get the local vector pointing from " + objType +
+            "'s link' the parent joint to the CoM of the link specified by the "
+            "given link_id.")
+               .c_str(),
+           "link_id"_a)
       .def("get_link_joint_name", &ManagedArticulatedObject::getLinkJointName,
            ("Get the name of the parent joint for this " + objType +
             "'s link specified by the given link_id.")
@@ -622,7 +635,8 @@ void declareArticulatedObjectWrapper(py::module& m,
       .def("create_all_motors",
            &ManagedArticulatedObject::createMotorsForAllDofs,
            ("Make motors for all of this " + objType +
-            "'s links which support motors (Revolute, Prismatic, Spherical).")
+            "'s links which support motors (Revolute, Prismatic, Spherical). "
+            "Returns a dict mapping new motor ids to link ids.")
                .c_str(),
            "settings"_a)
       .def("update_all_motor_targets",
@@ -638,7 +652,8 @@ void declareArticulatedObjectWrapper(py::module& m,
            "state_targets"_a, "velocities"_a = false)
       .def("create_joint_motor", &ManagedArticulatedObject::createJointMotor,
            ("Create a joint motor for the specified DOF on this " + objType +
-            " using the provided JointMotorSettings")
+            " using the provided JointMotorSettings. Returns the newly created "
+            "motor's id.")
                .c_str(),
            "link"_a, "settings"_a)
       .def(
