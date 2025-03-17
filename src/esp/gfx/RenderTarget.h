@@ -64,7 +64,7 @@ class RenderTarget {
      * @ref Flag::DepthTextureAttachment and
      * @ref Flag::HorizonBasedAmbientOcclusion.
      */
-    Multisample = RgbaAttachment|(1 << 4)
+    Multisample = RgbaAttachment | (1 << 4)
   };
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;

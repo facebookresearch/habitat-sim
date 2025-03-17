@@ -426,7 +426,8 @@ void SimTest::getSceneWithLightingRGBAObservation() {
   setTestCaseName(CORRADE_FUNCTION);
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, vangogh, true, false, "custom_lighting_1");
+  auto simulator =
+      data.creator(*this, vangogh, true, false, "custom_lighting_1");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedSceneWithLighting.png", maxThreshold, 0.75f);
 }
@@ -535,7 +536,8 @@ void SimTest::multipleLightingSetupsRGBAObservation() {
   ESP_DEBUG() << "Starting Test : multipleLightingSetupsRGBAObservation";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, planeStage, true, false, esp::NO_LIGHT_KEY);
+  auto simulator =
+      data.creator(*this, planeStage, true, false, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
   auto rigidObjMgr = simulator->getRigidObjectManager();
@@ -571,7 +573,8 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
   ESP_DEBUG() << "Starting Test : recomputeNavmeshWithStaticObjects";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, skokloster, true, false, esp::NO_LIGHT_KEY);
+  auto simulator =
+      data.creator(*this, skokloster, true, false, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
   auto rigidObjMgr = simulator->getRigidObjectManager();
@@ -638,7 +641,8 @@ void SimTest::loadingObjectTemplates() {
   ESP_DEBUG() << "Starting Test : loadingObjectTemplates";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, planeStage, true, false, esp::NO_LIGHT_KEY);
+  auto simulator =
+      data.creator(*this, planeStage, true, false, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
 
@@ -703,7 +707,8 @@ void SimTest::buildingPrimAssetObjectTemplates() {
   ESP_DEBUG() << "Starting Test : buildingPrimAssetObjectTemplates";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, planeStage, true, false, esp::NO_LIGHT_KEY);
+  auto simulator =
+      data.creator(*this, planeStage, true, false, esp::NO_LIGHT_KEY);
 
   // test that the correct number of default primitive assets are available as
   // render/collision targets
@@ -758,7 +763,8 @@ void SimTest::addObjectByHandle() {
   ESP_DEBUG() << "Starting Test : addObject";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, planeStage, true, false, esp::NO_LIGHT_KEY);
+  auto simulator =
+      data.creator(*this, planeStage, true, false, esp::NO_LIGHT_KEY);
   auto rigidObjMgr = simulator->getRigidObjectManager();
 
   auto obj = rigidObjMgr->addObjectByHandle("invalid_handle");
@@ -798,7 +804,8 @@ void SimTest::addObjectInvertedScale() {
   ESP_DEBUG() << "Starting Test : addObjectInvertedScale";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, planeStage, true, false, esp::NO_LIGHT_KEY);
+  auto simulator =
+      data.creator(*this, planeStage, true, false, esp::NO_LIGHT_KEY);
   auto rigidObjMgr = simulator->getRigidObjectManager();
   auto objAttrMgr = simulator->getObjectAttributesManager();
   // Add agent to take image
@@ -995,7 +1002,8 @@ void SimTest::createMagnumRenderingOff() {
 
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, vangogh, false, false, "custom_lighting_1");
+  auto simulator =
+      data.creator(*this, vangogh, false, false, "custom_lighting_1");
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
 
   auto rigidObjMgr = simulator->getRigidObjectManager();
@@ -1088,7 +1096,8 @@ void SimTest::createMagnumRenderingOff() {
 void SimTest::getRuntimePerfStats() {
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
-  auto simulator = data.creator(*this, vangogh, true, false, "custom_lighting_1");
+  auto simulator =
+      data.creator(*this, vangogh, true, false, "custom_lighting_1");
 
   auto statNames = simulator->getRuntimePerfStatNames();
 

@@ -68,16 +68,22 @@ struct RenderTarget::Impl {
           gfx_batch::DepthShader::Flag::UnprojectExistingDepth);
     }
 
-    ESP_CHECK(!(flags_ >= Flag::Multisample) || !(flags_ & (Flag::DepthTextureAttachment|Flag::ObjectIdAttachment|Flag::HorizonBasedAmbientOcclusion)),
-      "RenderTarget: multisampling cannot be enabled together with depth, object ID or HBAO");
+    ESP_CHECK(!(flags_ >= Flag::Multisample) ||
+                  !(flags_ &
+                    (Flag::DepthTextureAttachment | Flag::ObjectIdAttachment |
+                     Flag::HorizonBasedAmbientOcclusion)),
+              "RenderTarget: multisampling cannot be enabled together with "
+              "depth, object ID or HBAO");
 
     if (flags_ & Flag::RgbaAttachment) {
-      if(flags_ >= Flag::Multisample) {
+      if (flags_ >= Flag::Multisample) {
         // TODO some option for sample count? use extra flag bits for that?
-        colorBuffer_.setStorageMultisample(8, Mn::GL::RenderbufferFormat::RGBA8, size);
+        colorBuffer_.setStorageMultisample(8, Mn::GL::RenderbufferFormat::RGBA8,
+                                           size);
 
         resolvedColorBuffer_ = Mn::GL::Renderbuffer{};
-        resolvedColorBuffer_.setStorage(Mn::GL::RenderbufferFormat::RGBA8, size);
+        resolvedColorBuffer_.setStorage(Mn::GL::RenderbufferFormat::RGBA8,
+                                        size);
       } else {
         colorBuffer_.setStorage(Mn::GL::RenderbufferFormat::RGBA8, size);
       }
@@ -97,22 +103,23 @@ struct RenderTarget::Impl {
     } else {
       // we use the unprojectedDepth_ as the depth buffer
       unprojectedDepth_ = Mn::GL::Renderbuffer{};
-      if(flags_ >= Flag::Multisample)
+      if (flags_ >= Flag::Multisample)
         // TODO some option for sample count? use extra flag bits for that?
-        unprojectedDepth_.setStorageMultisample(8, Mn::GL::RenderbufferFormat::DepthComponent24,
-                                     size);
+        unprojectedDepth_.setStorageMultisample(
+            8, Mn::GL::RenderbufferFormat::DepthComponent24, size);
       else
-        unprojectedDepth_.setStorage(Mn::GL::RenderbufferFormat::DepthComponent24,
-                                     size);
+        unprojectedDepth_.setStorage(
+            Mn::GL::RenderbufferFormat::DepthComponent24, size);
     }
 
     framebuffer_ = Mn::GL::Framebuffer{{{}, size}};
     if (flags_ & Flag::RgbaAttachment) {
       framebuffer_.attachRenderbuffer(RgbaBufferAttachment, colorBuffer_);
 
-      if(flags_ >= Flag::Multisample) {
+      if (flags_ >= Flag::Multisample) {
         resolvedFramebuffer_ = Mn::GL::Framebuffer{{{}, size}};
-        resolvedFramebuffer_.attachRenderbuffer(Mn::GL::Framebuffer::ColorAttachment{0}, resolvedColorBuffer_);
+        resolvedFramebuffer_.attachRenderbuffer(
+            Mn::GL::Framebuffer::ColorAttachment{0}, resolvedColorBuffer_);
       }
     }
     if (flags_ & Flag::ObjectIdAttachment) {
@@ -233,9 +240,9 @@ struct RenderTarget::Impl {
   void resolveMultisample() {
     CORRADE_INTERNAL_ASSERT(flags_ >= Flag::Multisample);
 
-    Mn::GL::AbstractFramebuffer::blit(
-        framebuffer_, resolvedFramebuffer_, framebuffer_.viewport(),
-        Mn::GL::FramebufferBlit::Color);
+    Mn::GL::AbstractFramebuffer::blit(framebuffer_, resolvedFramebuffer_,
+                                      framebuffer_.viewport(),
+                                      Mn::GL::FramebufferBlit::Color);
   }
 
   void blitRgbaTo(Mn::GL::AbstractFramebuffer& target,
@@ -260,10 +267,10 @@ struct RenderTarget::Impl {
                    "RenderTarget::Impl::readFrameRgba(): this render target "
                    "was not created with rgba render buffer enabled.", );
 
-    if(flags_ >= Flag::Multisample) {
+    if (flags_ >= Flag::Multisample) {
       resolveMultisample();
       resolvedFramebuffer_.mapForRead(Mn::GL::Framebuffer::ColorAttachment{0})
-        .read(resolvedFramebuffer_.viewport(), view);
+          .read(resolvedFramebuffer_.viewport(), view);
     } else {
       framebuffer_.mapForRead(RgbaBufferAttachment)
           .read(framebuffer_.viewport(), view);
@@ -325,13 +332,14 @@ struct RenderTarget::Impl {
                    "RenderTarget::Impl::readFrameRgbaGPU(): this render target "
                    "was not created with rgba render buffer enabled.", );
 
-    if(flags_ >= Flag::Multisample)
+    if (flags_ >= Flag::Multisample)
       resolveMultisample();
 
     if (colorBufferCugl_ == nullptr)
       checkCudaErrors(cudaGraphicsGLRegisterImage(
           &colorBufferCugl_,
-          (flags_ >= Flag::Multisample ? resolvedColorBuffer_ : colorBuffer_).id(),
+          (flags_ >= Flag::Multisample ? resolvedColorBuffer_ : colorBuffer_)
+              .id(),
           GL_RENDERBUFFER, cudaGraphicsRegisterFlagsReadOnly));
 
     checkCudaErrors(cudaGraphicsMapResources(1, &colorBufferCugl_, 0));
