@@ -34,29 +34,37 @@ class RenderTarget {
  public:
   enum class Flag {
     /**
-     * create a color attachment for the rgba render buffer
-     * No need to set it for depth sensor, semantic sensor etc. as it makes
-     * the rendering slower
+     * Create a color attachment for the rgba render buffer. No need to set it
+     * for depth sensor, semantic sensor etc. as it makes the rendering slower.
      */
     RgbaAttachment = 1 << 0,
     /**
-     * create a color attachment for the objectId texture
-     * No need to set it for color sensor, depth sensor etc. as it makes the
-     * rendering slower
+     * Create a color attachment for the objectId texture. No need to set it
+     * for color sensor, depth sensor etc. as it makes the rendering slower.
+     * Mutually exclusive with @ref Flag::Multisample.
      */
     ObjectIdAttachment = 1 << 1,
     /**
-     * @brief create a depth attachment for the depth texture, it MUST be set
-     * for the depth sensor.
-     * No need to set it for color sensor, objectId sensor etc. as it makes the
-     * rendering slower (default depth buffer will be used in this case.)
+     * Create a depth attachment for the depth texture. Has to be set for the
+     * depth sensor. No need to set it for color sensor, objectId sensor etc.
+     * as it makes the rendering slower (default depth buffer will be used in
+     * this case). Mutually exclusive with @ref Flag::Multisample.
      */
     DepthTextureAttachment = 1 << 2,
 
     /**
-     * Enable HBAO visual effect that adds soft shadows to corners and crevices.
+     * Enable HBAO visual effect that adds soft shadows to corners and
+     * crevices. Mutually exclusive with @ref Flag::Multisample.
      */
     HorizonBasedAmbientOcclusion = 1 << 3,
+
+    /**
+     * Enable color multisampling. Implies @ref Flag::Multisample, mutually
+     * exclusive with @ref Flag::ObjectIdAttachment,
+     * @ref Flag::DepthTextureAttachment and
+     * @ref Flag::HorizonBasedAmbientOcclusion.
+     */
+    Multisample = RgbaAttachment|(1 << 4)
   };
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;

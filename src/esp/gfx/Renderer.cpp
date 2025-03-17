@@ -64,6 +64,9 @@ struct Renderer::Impl {
       backgroundRenderer_ = std::make_unique<BackgroundRenderer>(context_);
     }
 #endif
+
+    ESP_CHECK(!(flags_ >= Flag::Multisample) || !(flags_ & (Flag::HorizonBasedAmbientOcclusion)),
+      "Renderere: multisampling cannot be enabled together with HBAO");
   }
 
   ~Impl() {
@@ -345,6 +348,13 @@ struct Renderer::Impl {
           renderTargetFlags |= RenderTarget::Flag::DepthTextureAttachment;
           renderTargetFlags |= RenderTarget::Flag::HorizonBasedAmbientOcclusion;
         }
+
+        // TODO um wait, does it mean that to render color + depth + sematic,
+        //  three separate sensors and thus three separate render targets get
+        //  made?!
+        if(flags_ >= Renderer::Flag::Multisample)
+          renderTargetFlags |= RenderTarget::Flag::Multisample;
+
         break;
 
       case sensor::SensorType::Depth:
