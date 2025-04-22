@@ -7,7 +7,7 @@ runs:
       echo "Install dependencies"
       sudo apt-get update || true
       sudo apt-get install -y --no-install-recommends \
-        cmake \
+        cmake>=3.5 \
         build-essential \
         git \
         git-lfs \
