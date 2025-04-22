@@ -19,7 +19,8 @@ RenderInstanceHelper::RenderInstanceHelper(Simulator& sim,
 }
 
 int RenderInstanceHelper::AddInstance(const std::string& assetFilepath,
-                                      int semanticId) {
+                                      int semanticId,
+                                      Magnum::Vector3 scale) {
   esp::assets::AssetInfo assetInfo;
   assetInfo.filepath = assetFilepath;
   assetInfo.forceFlatShading = false;
@@ -28,8 +29,6 @@ int RenderInstanceHelper::AddInstance(const std::string& assetFilepath,
   // flags |= RenderAssetInstanceCreationInfo::Flag::IsStatic;
   flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
   flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
-  const Corrade::Containers::Optional<Magnum::Vector3> scale =
-      Cr::Containers::NullOpt;
 
   assets::RenderAssetInstanceCreationInfo creation(assetFilepath, scale, flags,
                                                    DEFAULT_LIGHTING_KEY);
