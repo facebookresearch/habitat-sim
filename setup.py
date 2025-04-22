@@ -431,7 +431,7 @@ class CMakeBuild(build_ext):
 if __name__ == "__main__":
     assert StrictVersion(
         "{}.{}".format(sys.version_info[0], sys.version_info[1])
-    ) >= StrictVersion("3.9"), "Must use python 3.9 or newer"
+    ) >= StrictVersion("3.10"), "Must use python 3.10 or newer"
     with open("./requirements.txt", "r") as f:
         requirements = [l.strip() for l in f.readlines() if len(l.strip()) > 0]
 
@@ -448,7 +448,7 @@ if __name__ == "__main__":
         package_dir={"": "src_python"},
         install_requires=requirements,
         tests_require=["hypothesis", "pytest-benchmark", "pytest"],
-        python_requires=">=3.9",
+        python_requires=">=3.10",
         # add extension module
         ext_modules=[CMakeExtension("habitat_sim._ext.habitat_sim_bindings", "src")],
         # add custom build_ext command

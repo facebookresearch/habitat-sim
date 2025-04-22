@@ -120,7 +120,7 @@ if(BUILD_PYTHON_BINDINGS)
 
   # Let the Find module do proper version checks on what we found (it uses the
   # same PYTHON_EXECUTABLE variable, will pick it up from the cache)
-  find_package(PythonInterp 3.9 REQUIRED)
+  find_package(PythonInterp 3.10 REQUIRED)
 
   message(STATUS "Bindings being generated for python at ${PYTHON_EXECUTABLE}")
 
