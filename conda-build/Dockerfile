@@ -12,7 +12,7 @@ RUN sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo
 RUN yum -y --nogpgcheck update --nobest
 
 RUN yum install -y yum-utils
-RUN yum install -y wget curl perl cmake util-linux xz bzip2 git patch which unzip python3
+RUN yum install -y wget curl perl cmake-3.5.17 util-linux xz bzip2 git patch which unzip python3
 RUN yum install -y autoconf automake make
 RUN yum install -y mesa-libEGL-devel mesa-libGL-devel
 
