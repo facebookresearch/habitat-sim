@@ -5,6 +5,7 @@
 #ifndef ESP_SIM_RENDERINSTANCEHELPER_H_
 #define ESP_SIM_RENDERINSTANCEHELPER_H_
 
+#include <Magnum/Math/Vector3.h>
 #include <string>
 #include <vector>
 
@@ -17,19 +18,32 @@ class SceneNode;
 namespace sim {
 class Simulator;
 }
-}
+}  // namespace esp
 
 namespace esp {
 namespace sim {
 
 class RenderInstanceHelper {
  public:
-  RenderInstanceHelper(Simulator& sim, const std::vector<float>& identityRotation);
+  RenderInstanceHelper(Simulator& sim,
+                       const std::vector<float>& identityRotation);
 
-  int AddInstance(const std::string& assetFilepath, int semanticId);
+  int AddInstance(const std::string& assetFilepath,
+                  int semanticId,
+                  const Magnum::Vector3& scale = Magnum::Vector3(1.0,
+                                                                 1.0,
+                                                                 1.0));
+
+  /**
+   * @brief Remove all instances from the scene.
+   */
   void ClearAllInstances();
   int GetNumInstances();
-  void SetWorldPoses(float* positions, size_t positionsSize, float* orientations, size_t orientationsSize);
+  void SetWorldPoses(float* positions,
+                     size_t positionsSize,
+                     float* orientations,
+                     size_t orientationsSize);
+
  private:
   Simulator* sim_ = nullptr;
   std::vector<scene::SceneNode*> instances_;
@@ -37,7 +51,6 @@ class RenderInstanceHelper {
 
   ESP_SMART_POINTERS(RenderInstanceHelper)
 };
-
 
 }  // namespace sim
 }  // namespace esp
