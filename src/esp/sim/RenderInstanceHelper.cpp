@@ -20,7 +20,7 @@ RenderInstanceHelper::RenderInstanceHelper(Simulator& sim,
 
 int RenderInstanceHelper::AddInstance(const std::string& assetFilepath,
                                       int semanticId,
-                                      Magnum::Vector3 scale) {
+                                      const Magnum::Vector3& scale) {
   esp::assets::AssetInfo assetInfo;
   assetInfo.filepath = assetFilepath;
   assetInfo.forceFlatShading = false;

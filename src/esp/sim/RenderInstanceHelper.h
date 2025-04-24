@@ -53,7 +53,9 @@ class RenderInstanceHelper {
    */
   int AddInstance(const std::string& assetFilepath,
                   int semanticId,
-                  Magnum::Vector3 scale = Magnum::Vector3(1.0, 1.0, 1.0));
+                  const Magnum::Vector3& scale = Magnum::Vector3(1.0,
+                                                                 1.0,
+                                                                 1.0));
 
   /**
    * @brief Remove all instances from the scene.
