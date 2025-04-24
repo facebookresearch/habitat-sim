@@ -5,6 +5,7 @@
 #ifndef ESP_SIM_RENDERINSTANCEHELPER_H_
 #define ESP_SIM_RENDERINSTANCEHELPER_H_
 
+#include <Magnum/Math/Vector3.h>
 #include <string>
 #include <vector>
 
@@ -50,7 +51,11 @@ class RenderInstanceHelper {
    * @param assetFilepath can be for example a .glb or .obj 3D model file
    * @param semanticId used for semantic rendering
    */
-  int AddInstance(const std::string& assetFilepath, int semanticId);
+  int AddInstance(const std::string& assetFilepath,
+                  int semanticId,
+                  const Magnum::Vector3& scale = Magnum::Vector3(1.0,
+                                                                 1.0,
+                                                                 1.0));
 
   /**
    * @brief Remove all instances from the scene.
