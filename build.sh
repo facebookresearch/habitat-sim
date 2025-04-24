@@ -25,16 +25,6 @@ case $key in
 esac
 done
 
-
-# devfair/learnfair custom stuff: EGL path, and module loads
-my_hostname=$(hostname)
-if [[ $my_hostname =~ "fair" ]]; then
-  module purge
-  module load cuda/10.0
-  module load cudnn/v7.4-cuda.10.0
-  module load cmake/3.15.3/gcc.7.3.0
-fi
-
 python setup.py build_ext --inplace "${builder_args[@]}"
 
 here=$(pwd)
