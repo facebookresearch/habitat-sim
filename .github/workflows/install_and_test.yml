@@ -418,7 +418,7 @@ jobs:
           export PATH=$HOME/miniconda/bin:$PATH
           conda init
           conda activate habitat
-          conda install -y anaconda-client ccache cmake=3.5.17 git ninja conda-build pip
+          conda install -y anaconda-client ccache cmake=3.31.2 git ninja conda-build pip
           echo $(which -a python)
           pip install gitpython
           cd habitat-sim
