@@ -53,10 +53,18 @@ class Renderer {
     LeaveContextWithBackgroundRenderer = 1 << 3,
 
     /**
-     * Enable HBAO visual effect that adds soft shadows to corners and crevices.
+     * Enable HBAO visual effect that adds soft shadows to corners and
+     * crevices. Mutually exclusinve with @ref Flag::Multisample.
      */
     HorizonBasedAmbientOcclusion = 1 << 4,
 
+    /**
+     * Enable multisampling for color-only buffers. Results in
+     * @ref RenderTarget::Flag::Multisample being set for sensors that have
+     * only color enabled. Mutually exclusive with
+     * @ref Flag::HorizonBasedAmbientOcclusion.
+     */
+    Multisample = 1 << 5,
   };
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;

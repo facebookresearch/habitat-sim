@@ -109,6 +109,16 @@ struct SimulatorConfiguration {
    */
   bool enableHBAO = false;
 
+  /**
+   * @brief Enable multisampling for color-only sensors
+   *
+   * Results in @ref Renderer::Flag::Multisample being enabled on the renderer
+   * and @ref RenderTarget::Flag::Multisample enabled for all color-only
+   * sensors. Can be only enabled if @ref createRenderer is enabled, mutually
+   * exclusive with @ref enableHBAO.
+   */
+  bool multisample = false;
+
   ESP_SMART_POINTERS(SimulatorConfiguration)
 };
 

@@ -134,6 +134,9 @@ void initSimConfigBindings(py::module& m) {
       .def_readwrite(
           "enable_hbao", &SimulatorConfiguration::enableHBAO,
           R"(Whether or not to enable horizon-based ambient occlusion, which provides soft shadows in corners and crevices.)")
+      .def_readwrite(
+          "multisample", &SimulatorConfiguration::multisample,
+          R"(Enable multisampling for color-only sensors. Can be only set if create_renderer is set, mutually exclusive with enable_hbao.)")
       .def(py::self == py::self)
       .def(py::self != py::self);
 
