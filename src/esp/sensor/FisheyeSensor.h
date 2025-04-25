@@ -24,7 +24,7 @@ class Simulator;
 
 namespace sensor {
 
-enum class FisheyeSensorModelType : Magnum::UnsignedInt {
+enum class FisheyeSensorModelType : Mn::UnsignedInt {
 
   // Vladyslav Usenko, Nikolaus Demmel and Daniel Cremers: The Double Sphere
   // Camera Model, The International Conference on 3D Vision (3DV), 2018
@@ -46,13 +46,13 @@ struct FisheyeSensorSpec : public CubeMapSensorBaseSpec {
    * In practice, fx and fy can differ for a number of reasons. See
    * details here: http://ksimek.github.io/2013/08/13/intrinsic/
    */
-  Magnum::Vector2 focalLength;
+  Mn::Vector2 focalLength;
   /**
    * @brief Principal Point Offset in pixel, cx, cy, location of the principal
    * point relative to the image plane's origin. None will place it in the
    * middle of the image (height/2, width/2).
    */
-  Corrade::Containers::Optional<Magnum::Vector2> principalPointOffset;
+  Cr::Containers::Optional<Mn::Vector2> principalPointOffset;
 
   /**
    * @brief Constructor
@@ -127,7 +127,7 @@ class FisheyeSensor : public CubeMapSensorBase {
  protected:
   FisheyeSensorSpec::ptr fisheyeSensorSpec_ =
       std::dynamic_pointer_cast<FisheyeSensorSpec>(spec_);
-  Magnum::ResourceKey getShaderKey() override;
+  Mn::ResourceKey getShaderKey() override;
 
   ESP_SMART_POINTERS(FisheyeSensor)
 };
