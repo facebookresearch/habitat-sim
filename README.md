@@ -4,7 +4,7 @@
 [![Conda Platforms support Badge](https://img.shields.io/conda/pn/aihabitat/habitat-sim?color=orange&label=platforms)](https://anaconda.org/aihabitat/habitat-sim)
 [![Documentation](https://img.shields.io/badge/docs-automated-green.svg)](https://aihabitat.org/docs/habitat-sim/)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
-[![Python 3.9](https://img.shields.io/badge/python-3.9.svg)](https://www.python.org/downloads/release/)
+[![Python 3.10](https://img.shields.io/badge/python-3.10.svg)](https://www.python.org/downloads/release/)
 [![Supports Bullet](https://img.shields.io/static/v1?label=supports&message=Bullet%20Physics&color=informational&link=https://opensource.google/projects/bullet3)](https://opensource.google/projects/bullet3)
 [![Twitter Follow](https://img.shields.io/twitter/follow/ai_habitat?style=social)](https://twitter.com/ai_habitat)
 
