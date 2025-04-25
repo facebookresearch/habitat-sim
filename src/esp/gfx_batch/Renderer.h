@@ -8,6 +8,7 @@
 #include <Corrade/Containers/Pointer.h>
 #include <Magnum/GL/GL.h>
 #include <Magnum/Magnum.h>
+#include <Magnum/Math/Vector2.h>
 #include <cstddef>
 
 namespace esp {
@@ -39,6 +40,41 @@ typedef Corrade::Containers::EnumSet<RendererFlag> RendererFlags;
 
 CORRADE_ENUMSET_OPERATORS(RendererFlags)
 
+/**
+@brief Output rendered by a particular batch camera
+
+@see @ref RendererBatchCameraOutputs, @ref RendererBatchCamera,
+  @ref RendererConfiguration::setBatchCameras()
+*/
+enum class RendererBatchCameraOutput {
+  Color = 1 << 0,   /**< Color buffer */
+  Depth = 1 << 1,   /**< Depth buffer */
+  Semantic = 1 << 2 /**< Semantic buffer */
+};
+
+/**
+@brief Buffers rendered by a particular batch camera
+
+@see @ref RendererBatchCamera, @ref RendererConfiguration::setBatchCameras()
+*/
+typedef Corrade::Containers::EnumSet<RendererBatchCameraOutput> RendererBatchCameraOutputs;
+
+CORRADE_ENUMSET_OPERATORS(RendererBatchCameraOutputs)
+
+/**
+@brief Batch camera setup
+
+@see @ref RendererConfiguration::setBatchCameras()
+*/
+struct RendererBatchCamera {
+  /** @brief Outputs rendered by the batch camera */
+  RendererBatchCameraOutputs outputs;
+  /** @brief Tile size, in pixels */
+  Magnum::Vector2i tileSize;
+  /** @brief Tile count */
+  Magnum::Vector2i tileCount;
+};
+
 class Renderer;
 
 /**
@@ -61,25 +97,48 @@ struct RendererConfiguration {
   RendererConfiguration& setFlags(RendererFlags flags);
 
   /**
-   * @brief Set tile size and count
+   * @brief Set batch camera properties
    *
-   * By default there's a single @cpp {128, 128} @ce tile, corresponding to a
-   * single rendered scene. Tiles are organized in the framebuffer in a grid
-   * and @p tileCount implies an upper bound on number of scenes rendered. To
-   * avoid hitting GPU limits with large tile counts and/or sizes, it's best to
-   * aim for the total framebuffer size given by @cpp tileSize*tileCount @ce to
-   * be a power-of-two square. On the other hand, having tiles organized in a
-   * single column may make it easier for external libraries to consume the
-   * data tile-by-tile, as there's no row stride to account for.
+   * For each batch camera there's one framebuffer with tiles organized in a
+   * grid and @ref RendererBatchCamera::tileCount implies an upper bound on
+   * number of scenes rendered by that particular camera. To avoid hitting GPU
+   * limits with large tile counts and/or sizes, it's best to aim for the total
+   * framebuffer size given by @cpp tileSize*tileCount @ce to be a power-of-two
+   * square. On the other hand, having tiles organized in a single column may
+   * make it easier for external libraries to consume the data tile-by-tile, as
+   * there's no row stride to account for.
    *
-   * Scenes that are empty are not rendered at all, so it's fine to have unused
-   * tiles, they only occupy space in the output framebuffer. For example, if
-   * you want 13 scenes, set @p tileCount to @cpp {4, 4} @ce and ignore the
-   * last 3.
-   * @see @ref Renderer::tileSize(), @ref Renderer::tileCount()
+   * Assigning of scenes to particular cameras is done in
+   * @ref setSceneBatchCameras(). Tiles that are empty are not rendered at all,
+   * so it's fine to have unused tiles, they only occupy space in given
+   * camera's framebuffer. For example, if you need a particular camera to
+   * render 13 scenes, set its @ref RendererBatchCamera::tileCount to
+   * @cpp {4, 4} @ce and ignore the last 3.
+   *
+   * By default there's a single color + depth batch camera with a single
+   * @cpp {128, 128} @ce tile, corresponding to a single rendered scene.
+   * @see @ref Renderer::batchCameraCount(), @ref Renderer::tileSize(),
+   *    @ref Renderer::tileCount()
    */
-  RendererConfiguration& setTileSizeCount(const Magnum::Vector2i& tileSize,
-                                          const Magnum::Vector2i& tileCount);
+  RendererConfiguration& setBatchCameras(Corrade::Containers::ArrayView<const RendererBatchCamera> cameras);
+  /** @overload */
+  RendererConfiguration& setBatchCameras(std::initializer_list<RendererBatchCamera> cameras);
+
+  /**
+   * @brief Set scene count and scene to batch camera assignment
+   *
+   * Size of the first dimension is the total scene count, which will become
+   * @ref Renderer::sceneCount(). The second dimension then becomes
+   * @ref Renderer::sceneBatchCameras(), is expected to be contiguous and have
+   * the same size as camera count passed to @ref setBatchCameras(). A bit set
+   * at position @cpp [i, j] @ce means scene `i` will be shown in camera `j`.
+   * The total count of bits set for a particular camera is expected to not
+   * exceed the total tile count set for that camera in @ref setBatchCameras().
+   *
+   * By default, each scene gets assigned to all cameras, i.e. as if this
+   * function was called with @p assignment being all ones.
+   */
+  RendererConfiguration& setSceneBatchCameras(const Corrade::Containers::StridedBitArrayView2D& cameras);
 
   /**
    * @brief Set max light count per draw
@@ -190,6 +249,31 @@ provided framebuffer, making it suitable for use in GUI applications. For
 standalone operation use the @ref RendererStandalone subclass instead, which
 manages the OpenGL context and a framebuffer on its own. Apart from the context
 and framebuffer, the high-level usage is same for both.
+
+@section gfx_batch-Renderer-terms Terms used
+
+- **Model file** is a regular glTF, OBJ, PLY, ... model, with no restrictions
+  on its contents. The whole file is treated as a single *node heirarchy*.
+- **Composite file** is a set of regular *model files* brought together into a
+  single file with various optimizations applied. Often it's a single
+  *composite mesh* together with a single *composite texture*. The original
+  model files form *node hierarchies* in the composite file and are referenced
+  using string identifiers.
+- **Node hierarchy** is a hierarchy of nodes with meshes, materials or lights
+  attached. It's referenced using a string identifier in a *composite file*,
+  using a filename in a  model and using a numeric ID when added to a *scene*.
+- **Scene** is a set of *node hierarchies* added either from *model files* or
+  *composite files*. A single scene can appear in multiple *batch cameras*,
+  rendered by multiple *cameras*.
+- **Batch camera** has a framebuffer with various *batch camera outputs*
+  attached and renders a grid of *scenes* assigned to it. All tiles in the grid
+  have the same size and each is a single *camera*.
+- **Batch camera output** is a color, depth or semantic buffer to which a
+  *batch camera* renders.
+- **Camera** is what a *batch camera* uses to render a particular *scene*. Its
+  output size is given by the *batch camera* tile size, contains a projection
+  and a transformation matrix and a mask of *node hierarchies* that it should
+  render from given *scene*.
 
 @section gfx_batch-Renderer-usage Usage
 
@@ -458,29 +542,73 @@ class Renderer {
   RendererFlags flags() const;
 
   /**
+   * @brief Total batch camera count
+   *
+   * See @ref sceneBatchCameras() for an information about what scenes is given
+   * batch camera rendering. By default there's a single batch camera.
+   */
+  Magnum::UnsignedInt batchCameraCount() const;
+
+  /**
+   * @brief Outputs enabled for given batch camera
+   * @param batchCameraId   Batch camera ID, expected to be less than
+   *    @ref batchCameraCount()
+   */
+  RendererBatchCameraOutputs batchCameraOutputs(Magnum::UnsignedInt batchCameraId) const;
+
+  /**
    * @brief Tile size
+   * @param batchCameraId   Batch camera ID, expected to be less than
+   *    @ref batchCameraCount()
    *
    * The default tile size is @cpp {128, 128} @ce.
    * @see @ref RendererConfiguration::setTileSizeCount()
    */
-  Magnum::Vector2i tileSize() const;
+  Magnum::Vector2i tileSize(Magnum::UnsignedInt batchCameraId) const;
 
   /**
    * @brief Tile count
+   * @param batchCameraId   Batch camera ID, expected to be less than
+   *    @ref batchCameraCount()
    *
    * By default there's a single tile.
    * @see @ref RendererConfiguration::setTileSizeCount()
    */
-  Magnum::Vector2i tileCount() const;
+  Magnum::Vector2i tileCount(Magnum::UnsignedInt batchCameraId) const;
 
   /**
-   * @brief Scene count
+   * @brief Total scene count
    *
-   * Same as the @ref Magnum::Math::Vector::product() "product()" of
-   * @ref tileCount(). Empty scenes are not rendered, they only occupy space in
-   * the output framebuffer.
+   * See @ref sceneBatchCameras() for an information about what batch cameras
+   * is given scene included in and @ref sceneBatchCameraIndex() for the tile
+   * index in given batch camera. By default there's a single scene.
    */
-  std::size_t sceneCount() const;
+  Magnum::UnsignedInt sceneCount() const;
+
+  /**
+   * @brief Batch cameras which render given scene
+   * @param sceneId         Scene ID, expected to be less than
+   *    @ref sceneCount()
+   *
+   * The returned view has a size equal to @ref batchCameraCount(), with bits
+   * set for each batch camera that includes @p sceneId. By default there's a
+   * single scene rendered by a single camera, so this function returns a
+   * single bit that's set.
+   */
+  Corrade::Containers::BitArrayView sceneBatchCameras(Magnum::UnsignedInt sceneId) const;
+
+  /**
+   * @brief Tile index at which given scene is rendered in given batch camera
+   * @param sceneId         Scene ID, expected to be less than
+   *    @ref sceneCount()
+   * @param batchCameraId   Batch camera ID, expected to be less than
+   *    @ref batchCameraCount()
+   *
+   * The @ref sceneBatchCameras() for given @p sceneId is expected to include
+   * @p batchCameraId. By default there's a single scene rendered by a single
+   * camera, so this function returns @cpp {0, 0} @ce.
+   */
+  Magnum::Vector2i sceneBatchCameraIndex(Magnum::UnsignedInt sceneId, Magnum::UnsignedInt batchCameraId);
 
   /**
    * @brief Max light count
@@ -568,10 +696,15 @@ class Renderer {
    * @brief Add a mesh hierarchy
    * @param sceneId         Scene ID, expected to be less than
    *    @ref sceneCount()
+   * @param cameras         Camears to include the hierarchy in
    * @param name            *Node hierarchy template* name, added with
    *    @ref addFile() earlier
    * @param bakeTransformation Transformation to bake into the hierarchy
    * @return ID of the newly added node
+   *
+   * Size of the @p cameras view is expected to be the same as
+   * @ref batchCameraCount(), bits that are zero in @ref sceneBatchCameras()
+   * for given @p sceneId are expected to be zero in @p cameras as well.
    *
    * The returned ID can be subsequently used to update transformations via
    * @ref transformations(). The returned IDs are *not* contiguous, the gaps
@@ -585,17 +718,31 @@ class Renderer {
    */
   std::size_t addNodeHierarchy(Magnum::UnsignedInt sceneId,
                                Corrade::Containers::StringView name,
+                               Corrade::Containers::BitArrayView cameras,
                                const Magnum::Matrix4& bakeTransformation = {});
 #else
   /* To avoid having to include Matrix4 in the header */
   std::size_t addNodeHierarchy(Magnum::UnsignedInt sceneId,
                                Corrade::Containers::StringView name,
+                               Corrade::Containers::BitArrayView cameras,
                                const Magnum::Matrix4& bakeTransformation);
   std::size_t addNodeHierarchy(Magnum::UnsignedInt sceneId,
-                               Corrade::Containers::StringView name);
+                               Corrade::Containers::StringView name,
+                               Corrade::Containers::BitArrayView cameras);
 #endif
 
-  std::size_t addEmptyNode(Magnum::UnsignedInt sceneId);
+  /**
+   * @brief Add an empty node
+   * @param sceneId         Scene ID, expected to be less than
+   *    @ref sceneCount()
+   * @param cameras         Camears to include the node in
+   *
+   * Size of the @p cameras view is expected to be the same as
+   * @ref batchCameraCount(), bits that are zero in @ref sceneBatchCameras()
+   * for given @p sceneId are expected to be zero in @p cameras as well.
+   */
+  std::size_t addEmptyNode(Magnum::UnsignedInt sceneId,
+                           Corrade::Containers::BitArrayView cameras);
 
   /**
    * @brief Add a light
@@ -606,8 +753,8 @@ class Renderer {
    * @param type            Light type. Can't be changed after adding the
    *    light.
    *
-   * Expects that @ref maxLightCount() isn't @cpp 0 @ce. If @p type is
-   * @ref RendererLightType::Directional, a negative
+   * The light is used for all cameras that the @p nodeId is included in. If
+   * @p type is @ref RendererLightType::Directional, a negative
    * @ref Magnum::Matrix4::backwards() is taken from @p nodeId transformation
    * as the direction, if @p type is @ref RendererLightType::Point,
    * @ref Magnum::Matrix4::translation() is taken from @p nodeId transformation
@@ -641,28 +788,45 @@ class Renderer {
 
   /**
    * @brief Get the combined projection and view matrices of a camera
-   * (read-only)
-   * @param sceneId Scene ID, expected to be less than @ref sceneCount()
+   * @param sceneId         Scene ID, expected to be less than
+   *    @ref sceneCount()
+   * @param batchCameraId   Batch camera ID, expected to be less than
+   *    @ref batchCameraCount()
+   *
+   * The @ref sceneBatchCameras() for given @p sceneId is expected to include
+   * @p batchCameraId.
    */
-  Magnum::Matrix4 camera(Magnum::UnsignedInt sceneId) const;
+  Magnum::Matrix4 camera(Magnum::UnsignedInt sceneId,
+                         Magnum::UnsignedInt batchCameraId) const;
 
   /**
-   * @brief Get the depth unprojection parameters of a camera (read-only)
-   * @param sceneId Scene ID, expected to be less than @ref sceneCount()
+   * @brief Get the depth unprojection parameters of a camera
+   * @param sceneId         Scene ID, expected to be less than
+   *    @ref sceneCount()
+   * @param batchCameraId   Batch camera ID, expected to be less than
+   *    @ref batchCameraCount()
+   *
+   * The @ref sceneBatchCameras() for given @p sceneId is expected to include
+   * @p batchCameraId.
    */
-  Magnum::Vector2 cameraDepthUnprojection(Magnum::UnsignedInt sceneId) const;
+  Magnum::Vector2 cameraDepthUnprojection(Magnum::UnsignedInt sceneId,
+                                          Magnum::UnsignedInt batchCameraId) const;
 
   /**
    * @brief Set the camera projection and view matrices
-   * @param sceneId     Scene ID, expected to be less than @ref sceneCount()
-   * @param view        View matrix of the camera (inverse transform)
-   * @param projection  Projection matrix of the camera
+   * @param sceneId         Scene ID, expected to be less than
+   *    @ref sceneCount()
+   * @param batchCameraId   Batch camera ID, expected to be less than
+   *    @ref batchCameraCount()
+   * @param view            View matrix of the camera (inverse transform)
+   * @param projection      Projection matrix of the camera
    *
-   * Also computes the camera unprojection.
-   * Modifications to the transformation are taken into account in the next
-   * @ref draw().
+   * The @ref sceneBatchCameras() for given @p sceneId is expected to include
+   * @p batchCameraId. Also computes the camera unprojection. Modifications to
+   * the transformation are taken into account in the next @ref draw().
    */
   void updateCamera(Magnum::UnsignedInt sceneId,
+                    Magnum::UnsignedInt batchCameraId,
                     const Magnum::Matrix4& projection,
                     const Magnum::Matrix4& view);
 
@@ -714,12 +878,17 @@ class Renderer {
       Magnum::UnsignedInt sceneId);
 
   /**
-   * @brief Draw all scenes into provided framebuffer
+   * @brief Draw all scenes associated with given batch camera into provided framebuffer
+   * @param batchCameraId   Batch camera ID, expected to be less than
+   *    @ref batchCameraCount()
    *
    * The @p framebuffer is expected to have a size at least as larger as the
-   * product of @ref tileSize() and @ref tileCount().
+   * product of @ref tileSize() and @ref tileCount() and contain attachments
+   * for all @ref batchCameraOutputs() for given @p batchCameraId. You can use
+   * @ref sceneBatchCameraIndex() to query tile index for a particular scene in
+   * the output.
    */
-  void draw(Magnum::GL::AbstractFramebuffer& framebuffer);
+  void draw(Magnum::UnsignedInt batchCameraId, Magnum::GL::AbstractFramebuffer& framebuffer);
 
   /**
    * @brief Scene stats
