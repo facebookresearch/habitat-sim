@@ -43,8 +43,9 @@
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/Shaders/VectorGL.h>
 #include <Magnum/Text/AbstractFont.h>
+#include <Magnum/Text/AbstractShaper.h>
 #include <Magnum/Text/GlyphCache.h>
-#include <Magnum/Text/Renderer.h>
+#include <Magnum/Text/RendererGL.h>
 #include "esp/core/Esp.h"
 #include "esp/core/Utility.h"
 #include "esp/gfx/Drawable.h"
@@ -607,9 +608,10 @@ Key Commands:
   /* Text rendering */
   Cr::PluginManager::Manager<Mn::Text::AbstractFont> fontManager_;
   Cr::Containers::Pointer<Mn::Text::AbstractFont> font_;
-  Cr::Containers::Optional<Mn::Text::GlyphCacheGL> fontGlyphCache_;
+  Mn::Text::GlyphCacheGL fontGlyphCache_{Mn::PixelFormat::R8Unorm,
+                                         Mn::Vector2i{256}};
+  Mn::Text::RendererGL fontText_{fontGlyphCache_};
   Mn::Shaders::VectorGL2D fontShader_;
-  Cr::Containers::Optional<Mn::Text::Renderer2D> fontText_;
   bool showFPS_ = true;
 
   // NOTE: Mouse + shift is to select object on the screen!!
@@ -881,21 +883,14 @@ Viewer::Viewer(const Arguments& arguments)
     if (!font_ || !font_->openData(rs.getRaw("ProggyClean.ttf"), fontSize))
       Mn::Fatal{} << "Cannot open font file";
 
-    fontGlyphCache_.emplace(Mn::Vector2i{256}, Mn::Vector2i{1});
     /* Don't destroy the bitmap font with smooth scaling */
-    fontGlyphCache_->texture().setMagnificationFilter(
+    fontGlyphCache_.texture().setMagnificationFilter(
         Mn::SamplerFilter::Nearest);
-    font_->fillGlyphCache(*fontGlyphCache_,
+    font_->fillGlyphCache(fontGlyphCache_,
                           "abcdefghijklmnopqrstuvwxyz"
                           "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                           "0123456789:-_+,.! %µ");
-
-    /* But as the text projection uses virtual window pixels, use just the
-       unscaled size for the actual text */
-    fontText_.emplace(*font_, *fontGlyphCache_, fontSize,
-                      Mn::Text::Alignment::TopLeft);
-    fontText_->reserve(1024, Mn::GL::BufferUsage::DynamicDraw,
-                       Mn::GL::BufferUsage::StaticDraw);
+    fontText_.setAlignment(Mn::Text::Alignment::TopLeft);
   }
 
   // Setup renderer and shader defaults
@@ -1666,7 +1661,9 @@ void Viewer::drawEvent() {
       Cr::Utility::formatInto(text, text.size(), "Semantic {}\n", semanticTag_);
     }
 
-    fontText_->render(text);
+    fontText_
+        .clear() /* replace all previous text */
+        .render(*font_->createShaper(), font_->size(), text);
 
     /* Set up renderer state for text rendering, and then reset that back again
       after */
@@ -1685,8 +1682,8 @@ void Viewer::drawEvent() {
             Mn::Matrix3::translation(Mn::Vector2{windowSize()} *
                                          Mn::Vector2{-0.5f, 0.5f} +
                                      Mn::Vector2{32, -32}))
-        .bindVectorTexture(fontGlyphCache_->texture())
-        .draw(fontText_->mesh());
+        .bindVectorTexture(fontGlyphCache_.texture())
+        .draw(fontText_.mesh());
 
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);

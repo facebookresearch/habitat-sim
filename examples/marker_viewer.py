@@ -40,11 +40,6 @@ NOLINK_URDF_FILES = os.path.join(
 
 
 class HabitatSimInteractiveViewer(Application):
-    # the maximum number of chars displayable in the app window
-    # using the magnum text module. These chars are used to
-    # display the CPU/GPU usage data
-    MAX_DISPLAY_TEXT_CHARS = 512
-
     # how much to displace window text relative to the center of the
     # app window (e.g if you want the display text in the top left of
     # the app window, you will displace the text
@@ -127,13 +122,11 @@ class HabitatSimInteractiveViewer(Application):
         relative_path_to_font = "../data/fonts/ProggyClean.ttf"
         self.display_font.open_file(
             os.path.join(os.path.dirname(__file__), relative_path_to_font),
-            13,
+            HabitatSimInteractiveViewer.DISPLAY_FONT_SIZE,
         )
 
         # Glyphs we need to render everything
-        self.glyph_cache = text.GlyphCacheGL(
-            mn.PixelFormat.R8_UNORM, mn.Vector2i(256), mn.Vector2i(1)
-        )
+        self.glyph_cache = text.GlyphCacheGL(mn.PixelFormat.R8_UNORM, mn.Vector2i(256))
         self.display_font.fill_glyph_cache(
             self.glyph_cache,
             string.ascii_lowercase
@@ -143,13 +136,8 @@ class HabitatSimInteractiveViewer(Application):
         )
 
         # magnum text object that displays CPU/GPU usage data in the app window
-        self.window_text = text.Renderer2D(
-            self.display_font,
-            self.glyph_cache,
-            HabitatSimInteractiveViewer.DISPLAY_FONT_SIZE,
-            text.Alignment.TOP_LEFT,
-        )
-        self.window_text.reserve(HabitatSimInteractiveViewer.MAX_DISPLAY_TEXT_CHARS)
+        self.window_text = text.RendererGL(self.glyph_cache)
+        self.window_text.alignment = text.Alignment.TOP_LEFT
 
         # text object transform in window space is Projection matrix times Translation Matrix
         # put text in top left of window
@@ -1090,7 +1078,10 @@ class HabitatSimInteractiveViewer(Application):
         elif self.mouse_interaction == MouseMode.MARKER:
             mouse_mode_string = "MARKER"
         edit_string = self.obj_editor.edit_disp_str()
+        self.window_text.clear()  # replace all previous text
         self.window_text.render(
+            self.display_font.create_shaper(),
+            self.display_font.size(),
             f"""
 {self.fps} FPS
 Sensor Type: {sensor_type_string}
@@ -1099,7 +1090,7 @@ Sensor Subtype: {sensor_subtype_string}
 Selected MarkerSets TaskSet name : {self.markersets_util.get_current_taskname()}
 Mouse Interaction Mode: {mouse_mode_string}
 FORCE SAVE URDF HASH IN NOTES FILE : {self.force_urdf_notes_save}
-            """
+            """,
         )
         self.shader.draw(self.window_text.mesh)
 
