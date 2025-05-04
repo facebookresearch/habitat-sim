@@ -5,11 +5,14 @@
 #include "Mp3dSemanticScene.h"
 #include "SemanticScene.h"
 
+#include <Corrade/Containers/Array.h>
 #include <algorithm>
 #include <fstream>
 #include <map>
 #include <sstream>
 #include <string>
+
+namespace Cr = Corrade;
 
 namespace esp {
 namespace scene {
@@ -106,8 +109,9 @@ bool SemanticScene::buildMp3dHouse(std::ifstream& ifs,
   const bool hasWorldRotation =
       rotation != Mn::Quaternion(Mn::Math::IdentityInit);
 
-  auto getVector3 = [&](const std::vector<std::string>& tokens, int offset,
-                        bool applyRotation = true) -> Mn::Vector3 {
+  auto getVector3 =
+      [&](Cr::Containers::ArrayView<const Cr::Containers::StringView> tokens,
+          int offset, bool applyRotation = true) -> Mn::Vector3 {
     const float x = std::stof(tokens[offset]);
     const float y = std::stof(tokens[offset + 1]);
     const float z = std::stof(tokens[offset + 2]);
@@ -118,8 +122,9 @@ bool SemanticScene::buildMp3dHouse(std::ifstream& ifs,
     return p;
   };
 
-  auto getBBox = [&](const std::vector<std::string>& tokens,
-                     int offset) -> Mn::Range3D {
+  auto getBBox =
+      [&](Cr::Containers::ArrayView<const Cr::Containers::StringView> tokens,
+          int offset) -> Mn::Range3D {
     // Get the bounding box without rotating as rotating min/max is odd
     Mn::Range3D sceneBox{
         getVector3(tokens, offset, /*applyRotation=*/false),
@@ -138,23 +143,25 @@ bool SemanticScene::buildMp3dHouse(std::ifstream& ifs,
                        (worldCenter + worldHalfSizes)};
   };
 
-  auto getOBB = [&](const std::vector<std::string>& tokens, int offset) {
-    const Mn::Vector3 center = getVector3(tokens, offset);
+  auto getOBB =
+      [&](Cr::Containers::ArrayView<const Cr::Containers::StringView> tokens,
+          int offset) {
+        const Mn::Vector3 center = getVector3(tokens, offset);
 
-    // Don't need to apply rotation here, it'll already be added in by
-    // getVector3
-    Mn::Matrix3 boxRotation;
-    boxRotation[0] = getVector3(tokens, offset + 3);
-    boxRotation[1] = getVector3(tokens, offset + 6);
-    boxRotation[2] = Mn::Math::cross(boxRotation[0], boxRotation[1]);
+        // Don't need to apply rotation here, it'll already be added in by
+        // getVector3
+        Mn::Matrix3 boxRotation;
+        boxRotation[0] = getVector3(tokens, offset + 3);
+        boxRotation[1] = getVector3(tokens, offset + 6);
+        boxRotation[2] = Mn::Math::cross(boxRotation[0], boxRotation[1]);
 
-    // Don't apply the world rotation here, that'll get added by boxRotation
-    const Mn::Vector3 radius =
-        getVector3(tokens, offset + 9, /*applyRotation=*/false);
+        // Don't apply the world rotation here, that'll get added by boxRotation
+        const Mn::Vector3 radius =
+            getVector3(tokens, offset + 9, /*applyRotation=*/false);
 
-    return geo::OBB(center, 2 * radius,
-                    Mn::Quaternion::fromMatrix(boxRotation));
-  };
+        return geo::OBB(center, 2 * radius,
+                        Mn::Quaternion::fromMatrix(boxRotation));
+      };
 
   scene.categories_.clear();
   scene.levels_.clear();
@@ -166,8 +173,8 @@ bool SemanticScene::buildMp3dHouse(std::ifstream& ifs,
     if (line.empty()) {
       continue;
     }
-    const std::vector<std::string> tokens =
-        Cr::Utility::String::splitWithoutEmptyParts(line, ' ');
+    const Cr::Containers::Array<Cr::Containers::StringView> tokens =
+        Cr::Containers::StringView{line}.splitWithoutEmptyParts(' ');
     switch (line[0]) {
       case 'H': {  // house
         // H name label #images #panoramas #vertices #surfaces #segments

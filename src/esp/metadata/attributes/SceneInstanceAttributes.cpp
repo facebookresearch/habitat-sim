@@ -98,7 +98,8 @@ std::string SceneObjectInstanceAttributes::getObjectInfoInternal() const {
 void SceneObjectInstanceAttributes::setMotionType(
     const std::string& motionType) {
   // force to lowercase before setting
-  const std::string motionTypeLC = Cr::Utility::String::lowercase(motionType);
+  const std::string motionTypeLC =
+      Cr::Utility::String::lowercase(Cr::Containers::StringView{motionType});
   auto mapIter = MotionTypeNamesMap.find(motionTypeLC);
 
   ESP_CHECK(
@@ -115,8 +116,8 @@ void SceneObjectInstanceAttributes::setMotionType(
  * @brief Get the motion type for the object.  Ignored for stage instances.
  */
 esp::physics::MotionType SceneObjectInstanceAttributes::getMotionType() const {
-  const std::string val =
-      Cr::Utility::String::lowercase(get<std::string>("motion_type"));
+  const std::string val = Cr::Utility::String::lowercase(
+      Cr::Containers::StringView{get<std::string>("motion_type")});
   auto mapIter = MotionTypeNamesMap.find(val);
   if (mapIter != MotionTypeNamesMap.end()) {
     return mapIter->second;

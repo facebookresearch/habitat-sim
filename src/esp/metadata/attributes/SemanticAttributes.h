@@ -7,6 +7,8 @@
 
 #include "AbstractAttributes.h"
 
+#include <Corrade/Utility/String.h>
+
 namespace esp {
 namespace metadata {
 namespace attributes {
@@ -260,8 +262,8 @@ class SemanticAttributes : public AbstractAttributes {
    * accurate and thorough mechanisms have been implemented in its place.
    */
   void setSemanticAssetType(const std::string& semanticAssetType) {
-    const std::string sAssetTypeLC =
-        Cr::Utility::String::lowercase(semanticAssetType);
+    const std::string sAssetTypeLC = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{semanticAssetType});
 
     auto mapIter = AssetTypeNamesMap.find(sAssetTypeLC);
     ESP_CHECK(mapIter != AssetTypeNamesMap.end(),
@@ -281,8 +283,8 @@ class SemanticAttributes : public AbstractAttributes {
    * accurate and thorough mechanisms have been implemented in its place.
    */
   void initSemanticAssetType(const std::string& semanticAssetType) {
-    const std::string sAssetTypeLC =
-        Cr::Utility::String::lowercase(semanticAssetType);
+    const std::string sAssetTypeLC = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{semanticAssetType});
 
     auto mapIter = AssetTypeNamesMap.find(sAssetTypeLC);
     ESP_CHECK(mapIter != AssetTypeNamesMap.end(),
@@ -345,8 +347,8 @@ class SemanticAttributes : public AbstractAttributes {
    * accurate and thorough mechanisms have been implemented in its place.
    */
   AssetType getSemanticAssetType() const {
-    const std::string val =
-        Cr::Utility::String::lowercase(get<std::string>("semantic_asset_type"));
+    const std::string val = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{get<std::string>("semantic_asset_type")});
     auto mapIter = AssetTypeNamesMap.find(val);
     if (mapIter != AssetTypeNamesMap.end()) {
       return mapIter->second;

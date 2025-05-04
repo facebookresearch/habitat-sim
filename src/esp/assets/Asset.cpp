@@ -4,19 +4,17 @@
 
 #include "Asset.h"
 
-#include <Corrade/Utility/String.h>
 #include "esp/geo/CoordinateFrame.h"
 
 namespace esp {
 namespace assets {
 
 AssetInfo AssetInfo::fromPath(const std::string& path) {
-  using Corrade::Utility::String::endsWith;
   AssetInfo info{metadata::attributes::AssetType::Unknown, path};
 
-  if (endsWith(path, "_semantic.ply")) {
+  if (Cr::Containers::StringView{path}.hasSuffix("_semantic.ply")) {
     info.type = metadata::attributes::AssetType::InstanceMesh;
-  } else if (endsWith(path, ".glb")) {
+  } else if (Cr::Containers::StringView{path}.hasSuffix(".glb")) {
     // assumes MP3D glb with gravity = -Z
     info.type = metadata::attributes::AssetType::Mp3dMesh;
     // Create a coordinate for the mesh by rotating the default ESP

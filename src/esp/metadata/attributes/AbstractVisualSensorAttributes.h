@@ -7,6 +7,8 @@
 
 #include "AbstractSensorAttributes.h"
 
+#include <Corrade/Utility/String.h>
+
 namespace esp {
 namespace metadata {
 namespace attributes {
@@ -116,8 +118,8 @@ class AbstractVisualSensorAttributes : public AbstractSensorAttributes {
    */
   void setSemanticSensorTarget(const std::string& semantic_target) {
     // force to lowercase before setting
-    const std::string semanticTargetLC =
-        Cr::Utility::String::lowercase(semantic_target);
+    const std::string semanticTargetLC = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{semantic_target});
     auto mapIter = SemanticSensorTargetMap.find(semanticTargetLC);
     ESP_CHECK(mapIter != SemanticSensorTargetMap.end(),
               "Illegal semantic sensor target value"
@@ -152,7 +154,7 @@ class AbstractVisualSensorAttributes : public AbstractSensorAttributes {
    */
   sensor::SemanticSensorTarget getSemanticSensorTarget() const {
     const std::string val = Cr::Utility::String::lowercase(
-        get<std::string>("semantic_sensor_target"));
+        Cr::Containers::StringView{get<std::string>("semantic_sensor_target")});
     auto mapIter = SemanticSensorTargetMap.find(val);
     if (mapIter != SemanticSensorTargetMap.end()) {
       return mapIter->second;

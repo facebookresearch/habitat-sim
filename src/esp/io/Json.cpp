@@ -6,7 +6,6 @@
 #include <Corrade/Containers/Containers.h>
 #include <Corrade/Containers/Pair.h>
 #include <Corrade/Containers/StringView.h>
-#include <Corrade/Utility/String.h>
 #include <rapidjson/filereadstream.h>
 #include <rapidjson/filewritestream.h>
 #include <rapidjson/prettywriter.h>
@@ -27,7 +26,7 @@ bool writeJsonToFile(const JsonDocument& document,
                      int maxDecimalPlaces) {
   assert(!filepath.empty());
   std::string outFilePath = filepath;
-  if (!Cr::Utility::String::endsWith(outFilePath, ".json")) {
+  if (!Cr::Containers::StringView{outFilePath}.hasSuffix(".json")) {
     outFilePath += ".json";
   }
 

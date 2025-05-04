@@ -37,7 +37,6 @@
 #include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Path.h>
 #include <Corrade/Utility/Resource.h>
-#include <Corrade/Utility/String.h>
 #include <Magnum/DebugTools/FrameProfiler.h>
 #include <Magnum/DebugTools/Screenshot.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
@@ -2345,10 +2344,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         ESP_WARNING() << "... input file not found. Aborting.";
       } else {
         // file exists
-        const auto compStr =
-            Cr::Utility::String::lowercase(ArtObjConfigFilepath);
-        if (!(Cr::Utility::String::endsWith(compStr, ".urdf")) &&
-            !(Cr::Utility::String::endsWith(compStr, ".ao_config.json"))) {
+        const Cr::Containers::String compStr = Cr::Utility::String::lowercase(
+            Cr::Containers::StringView{ArtObjConfigFilepath});
+        if (!compStr.hasSuffix(".urdf") &&
+            !compStr.hasSuffix(".ao_config.json")) {
           // Not understood format
           ESP_WARNING() << "... input is not a supported articulated object "
                            "configuration file. Aborting.";
@@ -2361,7 +2360,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
           std::shared_ptr<esp::physics::ManagedArticulatedObject> ao;
           // Use appropriate method based on whether being called with urdf file
           // or ao_config.json
-          if (Cr::Utility::String::endsWith(compStr, ".urdf")) {
+          if (compStr.hasSuffix(".urdf")) {
             ao = aom->addArticulatedObjectFromURDF(
                 ArtObjConfigFilepath, fixedBase, 1.0, 1.0, true, false, false,
                 simConfig_.sceneLightSetupKey);

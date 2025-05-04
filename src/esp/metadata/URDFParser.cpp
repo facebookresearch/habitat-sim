@@ -4,10 +4,11 @@
 
 // Code adapted from Bullet3/examples/Importers/ImportURDFDemo ...
 
+#include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/Pair.h>
+#include <Corrade/Containers/StringStl.h>
 #include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Path.h>
-#include <Corrade/Utility/String.h>
 #include <Magnum/Math/Quaternion.h>
 #include <iostream>
 
@@ -235,13 +236,13 @@ bool Parser::parseURDF(const std::string& filename,
 
 static bool parseColor4(Mn::Color4& color4, const std::string& vector_str) {
   color4 = Mn::Color4();  // 0 init
-  std::vector<std::string> pieces =
-      Corrade::Utility::String::splitWithoutEmptyParts(vector_str);
+  Cr::Containers::Array<Cr::Containers::StringView> pieces =
+      Cr::Containers::StringView{vector_str}
+          .splitOnWhitespaceWithoutEmptyParts();
   std::vector<double> vec_parts;
   for (size_t i = 0; i < pieces.size(); ++i) {
-    if (!pieces[i].empty()) {
-      vec_parts.push_back(std::stod(pieces[i]));
-    }
+    /* The pieces are guaranteed to be non-empty */
+    vec_parts.push_back(std::stod(pieces[i]));
   }
   if (vec_parts.size() != 4) {
     return false;
@@ -254,13 +255,13 @@ static bool parseVector3(Mn::Vector3& vec3,
                          const std::string& vector_str,
                          bool lastThree = false) {
   vec3 = Mn::Vector3();  // 0 init
-  std::vector<std::string> pieces =
-      Corrade::Utility::String::splitWithoutEmptyParts(vector_str);
+  Cr::Containers::Array<Cr::Containers::StringView> pieces =
+      Cr::Containers::StringView{vector_str}
+          .splitOnWhitespaceWithoutEmptyParts();
   std::vector<double> vec_parts;
   for (size_t i = 0; i < pieces.size(); ++i) {
-    if (!pieces[i].empty()) {
-      vec_parts.push_back(std::stod(pieces[i]));
-    }
+    /* The pieces are guaranteed to be non-empty */
+    vec_parts.push_back(std::stod(pieces[i]));
   }
   if (vec_parts.size() < 3) {
     return false;

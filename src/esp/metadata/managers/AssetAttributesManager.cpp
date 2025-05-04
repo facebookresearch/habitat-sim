@@ -3,7 +3,6 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <Corrade/Containers/StaticArray.h>
-#include <Corrade/Utility/String.h>
 
 #include <utility>
 
@@ -223,7 +222,7 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::buildObjectFromJSONDoc(
           .first();
 
   std::string primClassName =
-      Cr::Utility::String::partition(primAttrHandle, '_')[0];
+      Cr::Containers::StringView{primAttrHandle}.partition('_')[0];
   // if not legal primitive asset attributes file name, have message and
   // return default sphere attributes.
   if (defaultPrimAttributeHandles_.count(primClassName) == 0) {

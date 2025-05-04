@@ -3,11 +3,11 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "Io.h"
+#include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/Pair.h>
 #include <Corrade/Containers/StringStl.h>
 #include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Path.h>
-#include <Corrade/Utility/String.h>
 #include <glob.h>
 
 namespace Cr = Corrade;
@@ -55,12 +55,11 @@ std::string getPathRelativeToAbsPath(const std::string& toRelPath,
   std::string result = "";
   const char* delim = "/";
 
-  std::vector<std::string> absDirs =
-                               Cr::Utility::String::splitWithoutEmptyParts(
-                                   absPath, delim[0]),
-                           relDirs =
-                               Cr::Utility::String::splitWithoutEmptyParts(
-                                   toRelPath, delim[0]);
+  Cr::Containers::Array<Cr::Containers::StringView>
+      absDirs =
+          Cr::Containers::StringView{absPath}.splitWithoutEmptyParts(delim[0]),
+      relDirs = Cr::Containers::StringView{toRelPath}.splitWithoutEmptyParts(
+          delim[0]);
   auto absIter = absDirs.cbegin();
   auto relIter = relDirs.cbegin();
 
@@ -81,9 +80,9 @@ std::string getPathRelativeToAbsPath(const std::string& toRelPath,
   // Relative tail of path
   std::string relTail = "";
   while (relIter != relDirs.cend()) {
-    if (*relIter == *relDirs.crbegin()) {
+    if (*relIter == relDirs.back()) {
       Cr::Utility::formatInto(result, result.size(), "{}{}", relTail,
-                              *relDirs.crbegin());
+                              relDirs.back());
     } else {
       Cr::Utility::formatInto(relTail, relTail.size(), "{}{}", *relIter, delim);
     }
