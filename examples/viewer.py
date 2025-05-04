@@ -81,23 +81,8 @@ class HabitatSimInteractiveViewer(Application):
         # cache most recently loaded URDF file for quick-reload
         self.cached_urdf = ""
 
-        # set up our movement map
-
-        key = Application.Key
-        self.pressed = {
-            key.UP: False,
-            key.DOWN: False,
-            key.LEFT: False,
-            key.RIGHT: False,
-            key.A: False,
-            key.D: False,
-            key.S: False,
-            key.W: False,
-            key.X: False,
-            key.Z: False,
-        }
-
         # set up our movement key bindings map
+        key = Application.Key
         self.key_to_action = {
             key.UP: "look_up",
             key.DOWN: "look_down",
@@ -452,10 +437,9 @@ class HabitatSimInteractiveViewer(Application):
             return
 
         agent = self.sim.agents[self.agent_id]
-        press: Dict[Application.Key.key, bool] = self.pressed
-        act: Dict[Application.Key.key, str] = self.key_to_action
+        act: Dict[Application.Key, str] = self.key_to_action
 
-        action_queue: List[str] = [act[k] for k, v in press.items() if v]
+        action_queue: List[str] = [v for k, v in act.items() if self.is_key_pressed(k)]
 
         for _ in range(int(repetitions)):
             [agent.act(x) for x in action_queue]
@@ -647,9 +631,6 @@ class HabitatSimInteractiveViewer(Application):
                 else:
                     logger.warn("Warning: recompute navmesh first")
 
-        # update map of moving/looking keys which are currently pressed
-        if key in self.pressed:
-            self.pressed[key] = True
         event.accepted = True
         self.redraw()
 
@@ -659,11 +640,7 @@ class HabitatSimInteractiveViewer(Application):
         is part of the movement keys map `Dict[KeyEvent.key, Bool]`, then the key will
         be set to False for the next `self.move_and_look()` to update the current actions.
         """
-        key = event.key
 
-        # update map of moving/looking keys which are currently pressed
-        if key in self.pressed:
-            self.pressed[key] = False
         event.accepted = True
         self.redraw()
 

@@ -205,14 +205,6 @@ class Viewer : public Mn::Platform::Application {
   explicit Viewer(const Arguments& arguments);
 
  private:
-  // Keys for moving/looking are recorded according to whether they are
-  // currently being pressed
-  std::map<Key, bool> keysPressed = {{Key::Left, false}, {Key::Right, false},
-                                     {Key::Up, false},   {Key::Down, false},
-                                     {Key::A, false},    {Key::D, false},
-                                     {Key::S, false},    {Key::W, false},
-                                     {Key::X, false},    {Key::Z, false}};
-
   MouseInteractionMode mouseInteractionMode = LOOK;
 
   Mn::Vector2i previousMousePoint{};
@@ -224,7 +216,6 @@ class Viewer : public Mn::Platform::Application {
   void pointerMoveEvent(PointerMoveEvent& event) override;
   void scrollEvent(ScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
-  void keyReleaseEvent(KeyEvent& event) override;
   Mn::Vector3 moveFilterFunc(const Mn::Vector3& start,
                              const Mn::Vector3& end,
                              bool allowSliding = true);
@@ -1718,29 +1709,29 @@ void Viewer::moveAndLook(int repetitions) {
   for (int i = 0; i < repetitions; ++i) {
     bool moved = false;
     auto initialAgentPosition = agentBodyNode_->translation();
-    if (keysPressed[Key::A]) {
+    if (isKeyPressed(Key::A)) {
       agentBodyNode_->translateLocal(agentBodyNode_->transformation().right() *
                                      -moveSensitivity);
       moved = true;
     }
-    if (keysPressed[Key::D]) {
+    if (isKeyPressed(Key::D)) {
       agentBodyNode_->translateLocal(agentBodyNode_->transformation().right() *
                                      moveSensitivity);
       moved = true;
     }
-    if (keysPressed[Key::S]) {
+    if (isKeyPressed(Key::S)) {
       agentBodyNode_->translateLocal(
           agentBodyNode_->transformation().backward() * moveSensitivity);
       moved = true;
     }
-    if (keysPressed[Key::W]) {
+    if (isKeyPressed(Key::W)) {
       agentBodyNode_->translateLocal(
           agentBodyNode_->transformation().backward() * -moveSensitivity);
       moved = true;
     }
-    if (keysPressed[Key::X] || keysPressed[Key::Z]) {
+    if (isKeyPressed(Key::X) || isKeyPressed(Key::Z)) {
       auto moveAmount = moveSensitivity;
-      if (keysPressed[Key::Z]) {
+      if (isKeyPressed(Key::Z)) {
         moveAmount *= -1.0;
       }
       // apply the transformation to all sensors
@@ -2421,21 +2412,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     }
   }
 
-  // Update map of moving/looking keys which are currently pressed
-  auto keyPressedIter = keysPressed.find(key);
-  if (keyPressedIter != keysPressed.end()) {
-    keyPressedIter->second = true;
-  }
-  redraw();
-}
-
-void Viewer::keyReleaseEvent(KeyEvent& event) {
-  // Update map of moving/looking keys which are currently pressed
-  const auto key = event.key();
-  auto keyPressedIter = keysPressed.find(key);
-  if (keyPressedIter != keysPressed.end()) {
-    keyPressedIter->second = false;
-  }
   redraw();
 }
 

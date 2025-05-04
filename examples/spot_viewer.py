@@ -80,23 +80,6 @@ class HabitatSimInteractiveViewer(Application):
         # cache most recently loaded URDF file for quick-reload
         self.cached_urdf = ""
 
-        # set up our movement map
-        key = Application.Key
-        self.pressed = {
-            key.UP: False,
-            key.DOWN: False,
-            key.LEFT: False,
-            key.RIGHT: False,
-            key.A: False,
-            key.D: False,
-            key.S: False,
-            key.W: False,
-            key.X: False,
-            key.Z: False,
-            key.Q: False,
-            key.E: False,
-        }
-
         # Load a TrueTypeFont plugin and open the font file
         self.display_font = text.FontManager().load_and_instantiate("TrueTypeFont")
         relative_path_to_font = "../data/fonts/ProggyClean.ttf"
@@ -524,17 +507,16 @@ class HabitatSimInteractiveViewer(Application):
             return
 
         key = Application.Key
-        press: Dict[Application.Key.key, bool] = self.pressed
         # Set the spot up to move
         self.spot_agent.move_spot(
-            move_fwd=press[key.W],
-            move_back=press[key.S],
-            move_up=press[key.Z],
-            move_down=press[key.X],
-            slide_left=press[key.Q],
-            slide_right=press[key.E],
-            turn_left=press[key.A],
-            turn_right=press[key.D],
+            move_fwd=self.is_key_pressed(key.W),
+            move_back=self.is_key_pressed(key.S),
+            move_up=self.is_key_pressed(key.Z),
+            move_down=self.is_key_pressed(key.X),
+            slide_left=self.is_key_pressed(key.Q),
+            slide_right=self.is_key_pressed(key.E),
+            turn_left=self.is_key_pressed(key.A),
+            turn_right=self.is_key_pressed(key.D),
         )
 
     def save_scene(self, event: Application.KeyEvent, exit_scene: bool):
@@ -784,9 +766,6 @@ class HabitatSimInteractiveViewer(Application):
             else:
                 print(f"Finished adding {len(new_obj_list)} object(s).")
 
-        # update map of moving/looking keys which are currently pressed
-        if key in self.pressed:
-            self.pressed[key] = True
         event.accepted = True
         self.redraw()
 
@@ -796,11 +775,7 @@ class HabitatSimInteractiveViewer(Application):
         is part of the movement keys map `Dict[KeyEvent.key, Bool]`, then the key will
         be set to False for the next `self.move_and_look()` to update the current actions.
         """
-        key = event.key
 
-        # update map of moving/looking keys which are currently pressed
-        if key in self.pressed:
-            self.pressed[key] = False
         event.accepted = True
         self.redraw()
 
