@@ -55,10 +55,12 @@ class HabitatSimInteractiveViewer(Application):
             self.sim_settings["window_height"],
         )
 
-        configuration = self.Configuration()
-        configuration.title = "Habitat Sim Interactive Viewer"
-        configuration.size = window_size
-        Application.__init__(self, configuration)
+        Application.__init__(
+            self,
+            self.Configuration(
+                title="Habitat Sim Interactive Viewer", size=window_size
+            ),
+        )
         self.fps: float = 60.0
 
         # Compute environment camera resolution based on the number of environments to render in the window.
