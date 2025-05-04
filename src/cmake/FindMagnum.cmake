@@ -158,10 +158,8 @@
 # Additionally these variables are defined for internal usage:
 #
 #  MAGNUM_INCLUDE_DIR           - Root include dir (w/o dependencies)
-#  MAGNUM_LIBRARY               - Magnum library (w/o dependencies)
 #  MAGNUM_LIBRARY_DEBUG         - Debug version of Magnum library, if found
 #  MAGNUM_LIBRARY_RELEASE       - Release version of Magnum library, if found
-#  MAGNUM_*_LIBRARY             - Component libraries (w/o dependencies)
 #  MAGNUM_*_LIBRARY_DEBUG       - Debug version of given library, if found
 #  MAGNUM_*_LIBRARY_RELEASE     - Release version of given library, if found
 #  MAGNUM_PLATFORM_JS           - Path to MagnumPlatform.js file
@@ -357,28 +355,14 @@ if(NOT TARGET Magnum::Magnum)
     mark_as_advanced(MAGNUM_LIBRARY_DEBUG
         MAGNUM_LIBRARY_RELEASE)
 
-    # Set the MAGNUM_LIBRARY variable based on what was found, use that
-    # information to guess also build type of dynamic plugins
+    # Set the _MAGNUM_LIBRARY variable based on what was found to use it in a
+    # FPHSA call below
     if(MAGNUM_LIBRARY_DEBUG AND MAGNUM_LIBRARY_RELEASE)
-        set(MAGNUM_LIBRARY ${MAGNUM_LIBRARY_RELEASE})
-        get_filename_component(_MAGNUM_PLUGINS_DIR_PREFIX ${MAGNUM_LIBRARY_DEBUG} PATH)
-        if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-            set(_MAGNUM_PLUGINS_DIR_SUFFIX "-d")
-        endif()
+        set(_MAGNUM_LIBRARY MAGNUM_LIBRARY_RELEASE)
     elseif(MAGNUM_LIBRARY_DEBUG)
-        set(MAGNUM_LIBRARY ${MAGNUM_LIBRARY_DEBUG})
-        get_filename_component(_MAGNUM_PLUGINS_DIR_PREFIX ${MAGNUM_LIBRARY_DEBUG} PATH)
-        set(_MAGNUM_PLUGINS_DIR_SUFFIX "-d")
+        set(_MAGNUM_LIBRARY MAGNUM_LIBRARY_DEBUG)
     elseif(MAGNUM_LIBRARY_RELEASE)
-        set(MAGNUM_LIBRARY ${MAGNUM_LIBRARY_RELEASE})
-        get_filename_component(_MAGNUM_PLUGINS_DIR_PREFIX ${MAGNUM_LIBRARY_RELEASE} PATH)
-    endif()
-
-    # On DLL platforms the plugins are stored in bin/ instead of lib/, modify
-    # _MAGNUM_PLUGINS_DIR_PREFIX accordingly
-    if(CORRADE_TARGET_WINDOWS)
-        get_filename_component(_MAGNUM_PLUGINS_DIR_PREFIX ${_MAGNUM_PLUGINS_DIR_PREFIX} PATH)
-        set(_MAGNUM_PLUGINS_DIR_PREFIX ${_MAGNUM_PLUGINS_DIR_PREFIX}/bin)
+        set(_MAGNUM_LIBRARY MAGNUM_LIBRARY_RELEASE)
     endif()
 
     if(MAGNUM_LIBRARY_RELEASE)
@@ -507,7 +491,10 @@ endif()
 
 set(_MAGNUM_SceneGraph_DEPENDENCIES )
 set(_MAGNUM_SceneTools_DEPENDENCIES Trade)
-set(_MAGNUM_Shaders_DEPENDENCIES GL)
+set(_MAGNUM_Shaders_DEPENDENCIES )
+if(MAGNUM_TARGET_GL)
+    list(APPEND _MAGNUM_Shaders_DEPENDENCIES GL)
+endif()
 
 set(_MAGNUM_Text_DEPENDENCIES TextureTools)
 if(MAGNUM_TARGET_GL)
@@ -1224,7 +1211,7 @@ endif()
 # Complete the check with also all components
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Magnum
-    REQUIRED_VARS MAGNUM_INCLUDE_DIR MAGNUM_LIBRARY ${MAGNUM_EXTRAS_NEEDED}
+    REQUIRED_VARS MAGNUM_INCLUDE_DIR ${_MAGNUM_LIBRARY} ${MAGNUM_EXTRAS_NEEDED}
     HANDLE_COMPONENTS
     ${_MAGNUM_REASON_FAILURE_MESSAGE})
 
