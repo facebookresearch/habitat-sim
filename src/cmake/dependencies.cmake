@@ -81,6 +81,11 @@ if(BUILD_ASSIMP_SUPPORT AND NOT USE_SYSTEM_ASSIMP)
   # linker without any link directories would work. It won't. (The variable
   # is not an option() so no need to CACHE it.)
   set(ASSIMP_BUILD_MINIZIP ON)
+  # Otherwise it may link to system-wide zlib that doesn't have -fPIC enabled
+  set(ASSIMP_BUILD_ZLIB ON CACHE BOOL "" FORCE)
+  # Unconditionally setting -Werror is just playing with fire with every new OS
+  # or compiler release. Don't.
+  set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE BOOL "" FORCE)
   add_subdirectory("${DEPS_DIR}/assimp")
 endif()
 
@@ -178,7 +183,13 @@ if(BUILD_WITH_BULLET AND NOT USE_SYSTEM_BULLET)
   # that causes rigid objects to never come to rest.
   # This needs to be further examined on bullet side
   add_definitions(-DBT_DISABLE_CONVEX_CONCAVE_EARLY_OUT=1)
+  # Bullet has minimum CMake version set to 2.4, which makes it not work with
+  # CMake 4.0 that removed support for CMake <= 3.5. Bypass that by setting the
+  # minimum policy lower.
+  set(_PREV_CMAKE_POLICY_VERSION_MINIMUM ${CMAKE_POLICY_VERSION_MINIMUM})
+  set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
   add_subdirectory(${DEPS_DIR}/bullet3 EXCLUDE_FROM_ALL)
+  set(CMAKE_POLICY_VERSION_MINIMUM ${_PREV_CMAKE_POLICY_VERSION_MINIMUM})
   set(CMAKE_CXX_FLAGS ${_PREV_CMAKE_CXX_FLAGS})
 endif()
 

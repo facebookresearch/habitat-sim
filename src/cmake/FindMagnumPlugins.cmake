@@ -34,12 +34,15 @@
 #  JpegImporter                 - JPEG importer
 #  KtxImageConverter            - KTX image converter
 #  KtxImporter                  - KTX importer
+#  LunaSvgImporter              - SVG importer using LunaSVG
 #  MeshOptimizerSceneConverter  - MeshOptimizer scene converter
 #  MiniExrImageConverter        - OpenEXR image converter using miniexr
 #  OpenGexImporter              - OpenGEX importer
+#  PlutoSvgImporter             - SVG importer using PlutoSVG
 #  PngImageConverter            - PNG image converter
 #  PngImporter                  - PNG importer
 #  PrimitiveImporter            - Primitive importer
+#  ResvgImporter                - SVG importer using resvg
 #  SpirvToolsShaderConverter    - SPIR-V Tools shader converter
 #  SpngImporter                 - PNG importer using libspng
 #  StanfordImporter             - Stanford PLY importer
@@ -178,8 +181,8 @@ find_path(_MAGNUMPLUGINS_DEPENDENCY_MODULE_DIR
     NAMES
         FindAssimp.cmake FindBasisUniversal.cmake FindDevIL.cmake
         FindFAAD2.cmake FindGlslang.cmake FindHarfBuzz.cmake
-        FindOpenEXR.cmake FindSpirvTools.cmake FindSpng.cmake FindWebP.cmake
-        FindZstd.cmake
+        FindOpenEXR.cmake FindResvg.cmake FindSpirvTools.cmake FindSpng.cmake
+        FindWebP.cmake FindZstd.cmake
     PATH_SUFFIXES share/cmake/MagnumPlugins/dependencies)
 mark_as_advanced(_MAGNUMPLUGINS_DEPENDENCY_MODULE_DIR)
 
@@ -204,12 +207,12 @@ set(_MAGNUMPLUGINS_PLUGIN_COMPONENTS
     DrMp3AudioImporter DrWavAudioImporter EtcDecImageConverter
     Faad2AudioImporter FreeTypeFont GlslangShaderConverter GltfImporter
     GltfSceneConverter HarfBuzzFont IcoImporter JpegImageConverter JpegImporter
-    KtxImageConverter KtxImporter MeshOptimizerSceneConverter
+    KtxImageConverter KtxImporter LunaSvgImporter MeshOptimizerSceneConverter
     MiniExrImageConverter OpenExrImageConverter OpenExrImporter
-    OpenGexImporter PngImageConverter PngImporter PrimitiveImporter
-    SpirvToolsShaderConverter SpngImporter StanfordImporter
-    StanfordSceneConverter StbDxtImageConverter StbImageConverter
-    StbImageImporter StbResizeImageConverter StbTrueTypeFont
+    OpenGexImporter PlutoSvgImporter PngImageConverter PngImporter
+    PrimitiveImporter ResvgImporter SpirvToolsShaderConverter SpngImporter
+    StanfordImporter StanfordSceneConverter StbDxtImageConverter
+    StbImageConverter StbImageImporter StbResizeImageConverter StbTrueTypeFont
     StbVorbisAudioImporter StlImporter UfbxImporter WebPImageConverter
     WebPImporter)
 # Nothing is enabled by default right now
@@ -570,6 +573,12 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
         # KtxImageConverter has no dependencies
         # KtxImporter has no dependencies
 
+        # LunaSvgImporter plugin dependencies
+        elseif(_component STREQUAL LunaSvgImporter)
+            find_package(lunasvg CONFIG REQUIRED)
+            set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
+                INTERFACE_LINK_LIBRARIES lunasvg::lunasvg)
+
         # MeshOptimizerSceneConverter plugin dependencies
         elseif(_component STREQUAL MeshOptimizerSceneConverter)
             if(NOT TARGET meshoptimizer)
@@ -604,6 +613,12 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
         # No special setup for the OpenDdl library
         # OpenGexImporter has no dependencies
 
+        # PlutoSvgImporter plugin dependencies
+        elseif(_component STREQUAL PlutoSvgImporter)
+            find_package(plutosvg CONFIG REQUIRED)
+            set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
+                INTERFACE_LINK_LIBRARIES plutosvg::plutosvg)
+
         # PngImageConverter / PngImporter plugin dependencies
         elseif(_component STREQUAL PngImageConverter OR _component STREQUAL PngImporter)
             find_package(PNG)
@@ -623,6 +638,12 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
             endif()
 
         # PrimitiveImporter has no dependencies
+
+        # ResvgImporter plugin dependencies
+        elseif(_component STREQUAL ResvgImporter)
+            find_package(Resvg REQUIRED)
+            set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
+                INTERFACE_LINK_LIBRARIES Resvg::Resvg)
 
         # SpirvToolsShaderConverter plugin dependencies
         elseif(_component STREQUAL SpirvToolsShaderConverter)

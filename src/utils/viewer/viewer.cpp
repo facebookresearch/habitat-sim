@@ -37,15 +37,15 @@
 #include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Path.h>
 #include <Corrade/Utility/Resource.h>
-#include <Corrade/Utility/String.h>
 #include <Magnum/DebugTools/FrameProfiler.h>
 #include <Magnum/DebugTools/Screenshot.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/Shaders/VectorGL.h>
 #include <Magnum/Text/AbstractFont.h>
+#include <Magnum/Text/AbstractShaper.h>
 #include <Magnum/Text/GlyphCache.h>
-#include <Magnum/Text/Renderer.h>
+#include <Magnum/Text/RendererGL.h>
 #include "esp/core/Esp.h"
 #include "esp/core/Utility.h"
 #include "esp/gfx/Drawable.h"
@@ -205,14 +205,6 @@ class Viewer : public Mn::Platform::Application {
   explicit Viewer(const Arguments& arguments);
 
  private:
-  // Keys for moving/looking are recorded according to whether they are
-  // currently being pressed
-  std::map<Key, bool> keysPressed = {{Key::Left, false}, {Key::Right, false},
-                                     {Key::Up, false},   {Key::Down, false},
-                                     {Key::A, false},    {Key::D, false},
-                                     {Key::S, false},    {Key::W, false},
-                                     {Key::X, false},    {Key::Z, false}};
-
   MouseInteractionMode mouseInteractionMode = LOOK;
 
   Mn::Vector2i previousMousePoint{};
@@ -224,7 +216,6 @@ class Viewer : public Mn::Platform::Application {
   void pointerMoveEvent(PointerMoveEvent& event) override;
   void scrollEvent(ScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
-  void keyReleaseEvent(KeyEvent& event) override;
   Mn::Vector3 moveFilterFunc(const Mn::Vector3& start,
                              const Mn::Vector3& end,
                              bool allowSliding = true);
@@ -608,9 +599,10 @@ Key Commands:
   /* Text rendering */
   Cr::PluginManager::Manager<Mn::Text::AbstractFont> fontManager_;
   Cr::Containers::Pointer<Mn::Text::AbstractFont> font_;
-  Cr::Containers::Optional<Mn::Text::GlyphCacheGL> fontGlyphCache_;
+  Mn::Text::GlyphCacheGL fontGlyphCache_{Mn::PixelFormat::R8Unorm,
+                                         Mn::Vector2i{256}};
+  Mn::Text::RendererGL fontText_{fontGlyphCache_};
   Mn::Shaders::VectorGL2D fontShader_;
-  Cr::Containers::Optional<Mn::Text::Renderer2D> fontText_;
   bool showFPS_ = true;
 
   // NOTE: Mouse + shift is to select object on the screen!!
@@ -882,21 +874,14 @@ Viewer::Viewer(const Arguments& arguments)
     if (!font_ || !font_->openData(rs.getRaw("ProggyClean.ttf"), fontSize))
       Mn::Fatal{} << "Cannot open font file";
 
-    fontGlyphCache_.emplace(Mn::Vector2i{256}, Mn::Vector2i{1});
     /* Don't destroy the bitmap font with smooth scaling */
-    fontGlyphCache_->texture().setMagnificationFilter(
+    fontGlyphCache_.texture().setMagnificationFilter(
         Mn::SamplerFilter::Nearest);
-    font_->fillGlyphCache(*fontGlyphCache_,
+    font_->fillGlyphCache(fontGlyphCache_,
                           "abcdefghijklmnopqrstuvwxyz"
                           "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                           "0123456789:-_+,.! %µ");
-
-    /* But as the text projection uses virtual window pixels, use just the
-       unscaled size for the actual text */
-    fontText_.emplace(*font_, *fontGlyphCache_, fontSize,
-                      Mn::Text::Alignment::TopLeft);
-    fontText_->reserve(1024, Mn::GL::BufferUsage::DynamicDraw,
-                       Mn::GL::BufferUsage::StaticDraw);
+    fontText_.setAlignment(Mn::Text::Alignment::TopLeft);
   }
 
   // Setup renderer and shader defaults
@@ -1667,7 +1652,9 @@ void Viewer::drawEvent() {
       Cr::Utility::formatInto(text, text.size(), "Semantic {}\n", semanticTag_);
     }
 
-    fontText_->render(text);
+    fontText_
+        .clear() /* replace all previous text */
+        .render(*font_->createShaper(), font_->size(), text);
 
     /* Set up renderer state for text rendering, and then reset that back again
       after */
@@ -1686,8 +1673,8 @@ void Viewer::drawEvent() {
             Mn::Matrix3::translation(Mn::Vector2{windowSize()} *
                                          Mn::Vector2{-0.5f, 0.5f} +
                                      Mn::Vector2{32, -32}))
-        .bindVectorTexture(fontGlyphCache_->texture())
-        .draw(fontText_->mesh());
+        .bindVectorTexture(fontGlyphCache_.texture())
+        .draw(fontText_.mesh());
 
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
@@ -1722,29 +1709,29 @@ void Viewer::moveAndLook(int repetitions) {
   for (int i = 0; i < repetitions; ++i) {
     bool moved = false;
     auto initialAgentPosition = agentBodyNode_->translation();
-    if (keysPressed[Key::A]) {
+    if (isKeyPressed(Key::A)) {
       agentBodyNode_->translateLocal(agentBodyNode_->transformation().right() *
                                      -moveSensitivity);
       moved = true;
     }
-    if (keysPressed[Key::D]) {
+    if (isKeyPressed(Key::D)) {
       agentBodyNode_->translateLocal(agentBodyNode_->transformation().right() *
                                      moveSensitivity);
       moved = true;
     }
-    if (keysPressed[Key::S]) {
+    if (isKeyPressed(Key::S)) {
       agentBodyNode_->translateLocal(
           agentBodyNode_->transformation().backward() * moveSensitivity);
       moved = true;
     }
-    if (keysPressed[Key::W]) {
+    if (isKeyPressed(Key::W)) {
       agentBodyNode_->translateLocal(
           agentBodyNode_->transformation().backward() * -moveSensitivity);
       moved = true;
     }
-    if (keysPressed[Key::X] || keysPressed[Key::Z]) {
+    if (isKeyPressed(Key::X) || isKeyPressed(Key::Z)) {
       auto moveAmount = moveSensitivity;
-      if (keysPressed[Key::Z]) {
+      if (isKeyPressed(Key::Z)) {
         moveAmount *= -1.0;
       }
       // apply the transformation to all sensors
@@ -2345,10 +2332,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         ESP_WARNING() << "... input file not found. Aborting.";
       } else {
         // file exists
-        const auto compStr =
-            Cr::Utility::String::lowercase(ArtObjConfigFilepath);
-        if (!(Cr::Utility::String::endsWith(compStr, ".urdf")) &&
-            !(Cr::Utility::String::endsWith(compStr, ".ao_config.json"))) {
+        const Cr::Containers::String compStr = Cr::Utility::String::lowercase(
+            Cr::Containers::StringView{ArtObjConfigFilepath});
+        if (!compStr.hasSuffix(".urdf") &&
+            !compStr.hasSuffix(".ao_config.json")) {
           // Not understood format
           ESP_WARNING() << "... input is not a supported articulated object "
                            "configuration file. Aborting.";
@@ -2361,7 +2348,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
           std::shared_ptr<esp::physics::ManagedArticulatedObject> ao;
           // Use appropriate method based on whether being called with urdf file
           // or ao_config.json
-          if (Cr::Utility::String::endsWith(compStr, ".urdf")) {
+          if (compStr.hasSuffix(".urdf")) {
             ao = aom->addArticulatedObjectFromURDF(
                 ArtObjConfigFilepath, fixedBase, 1.0, 1.0, true, false, false,
                 simConfig_.sceneLightSetupKey);
@@ -2425,21 +2412,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     }
   }
 
-  // Update map of moving/looking keys which are currently pressed
-  auto keyPressedIter = keysPressed.find(key);
-  if (keyPressedIter != keysPressed.end()) {
-    keyPressedIter->second = true;
-  }
-  redraw();
-}
-
-void Viewer::keyReleaseEvent(KeyEvent& event) {
-  // Update map of moving/looking keys which are currently pressed
-  const auto key = event.key();
-  auto keyPressedIter = keysPressed.find(key);
-  if (keyPressedIter != keysPressed.end()) {
-    keyPressedIter->second = false;
-  }
   redraw();
 }
 

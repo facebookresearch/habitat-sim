@@ -2,8 +2,6 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include <Corrade/Utility/String.h>
-
 #include <utility>
 
 #include "AbstractObjectAttributesManager.h"
@@ -247,7 +245,6 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
     const std::string& fileName,
     const std::function<void(AssetType)>& assetTypeSetter) {
   // TODO : support future mesh-name specific type setting?
-  using Corrade::Utility::String::endsWith;
 
   Magnum::Vector3 up, up1{0.0, 1.0, 0.0}, up2{0.0, 0.0, 1.0};
   Magnum::Vector3 fwd, fwd1{0.0, 0.0, -1.0}, fwd2{0.0, 1.0, 0.0};
@@ -256,9 +253,9 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
   // from AssetInfo::fromPath
   up = up1;
   fwd = fwd1;
-  if (endsWith(fileName, "_semantic.ply")) {
+  if (Cr::Containers::StringView{fileName}.hasSuffix("_semantic.ply")) {
     assetTypeSetter(AssetType::InstanceMesh);
-  } else if (endsWith(fileName, ".glb")) {
+  } else if (Cr::Containers::StringView{fileName}.hasSuffix(".glb")) {
     // assumes MP3D glb with gravity = -Z
     assetTypeSetter(AssetType::Mp3dMesh);
     // Create a coordinate for the mesh by rotating the default ESP

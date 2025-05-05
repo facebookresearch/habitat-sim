@@ -5,6 +5,7 @@
 #include "HM3DSemanticScene.h"
 #include "SemanticScene.h"
 
+#include <Corrade/Containers/Array.h>
 #include <Corrade/Utility/FormatStl.h>
 #include <fstream>
 #include <map>
@@ -115,16 +116,15 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
     // idx 0 will be "<ID>,<color>,"
     // idx 1 will be "<category with possible commas>"
     // idx 2 will be ",<region ID>"
-    const std::vector<std::string> tokens =
-        Cr::Utility::String::splitWithoutEmptyParts(line, '"');
+    const Cr::Containers::Array<Cr::Containers::StringView> tokens =
+        Cr::Containers::StringView{line}.splitWithoutEmptyParts('"');
     // sub tokens are ID and color
-    const std::vector<std::string> subtokens =
-        Cr::Utility::String::splitWithoutEmptyParts(tokens[0], ',');
+    const Cr::Containers::Array<Cr::Containers::StringView> subtokens =
+        Cr::Containers::StringView{tokens[0]}.splitWithoutEmptyParts(',');
     // ID is integer
-    int instanceID = std::stoi(Cr::Utility::String::trim(subtokens[0]));
+    int instanceID = std::stoi(subtokens[0].trimmed());
     // semantic color is 2nd token, as hex string
-    const unsigned colorInt =
-        std::stoul(Cr::Utility::String::trim(subtokens[1]), nullptr, 16);
+    const unsigned colorInt = std::stoul(subtokens[1].trimmed(), nullptr, 16);
     // convert a hex string containing 3 bytes to a vector3ub (represents a
     // color)
     Mn::Vector3ub colorVec = {uint8_t((colorInt >> 16) & 0xff),
@@ -133,8 +133,7 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
     // object category will possibly have commas
     const std::string& objCategoryName = tokens[1];
     // room/region is always last token - get rid of first comma
-    int regionID =
-        std::stoi(Cr::Utility::String::trim(tokens[tokens.size() - 1], " ,"));
+    int regionID = std::stoi(tokens[tokens.size() - 1].trimmed(" ,"));
 
     buildInstanceRegionCategory(instanceID, colorInt, objCategoryName, regionID,
                                 objInstance, regions, categories);

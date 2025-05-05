@@ -153,7 +153,7 @@ void ResourceManagerTest::loadAndCreateRenderAssetInstance() {
 void buildMaterialIDs(const esp::assets::MeshTransformNode& root,
                       std::set<std::string>& matIDs,
                       const std::string margin = "") {
-  if (!Cr::Utility::String::trim(root.materialID).empty()) {
+  if (Cr::Containers::StringView(root.materialID).trimmed()) {
     matIDs.emplace(root.materialID);
   }
   ESP_DEBUG() << margin << "MMD material ID : " << root.materialID

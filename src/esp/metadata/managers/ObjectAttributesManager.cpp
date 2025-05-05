@@ -5,8 +5,6 @@
 #include "ObjectAttributesManager.h"
 #include "AbstractObjectAttributesManager.h"
 
-#include <Corrade/Utility/String.h>
-
 #include <utility>
 
 #include "esp/assets/Asset.h"

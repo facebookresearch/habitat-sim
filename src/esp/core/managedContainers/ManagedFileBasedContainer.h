@@ -587,11 +587,12 @@ template <class T, ManagedObjectAccess Access>
 std::string ManagedFileBasedContainer<T, Access>::convertFilenameToPassedExt(
     const std::string& filename,
     const std::string& fileTypeExt) {
-  std::string strHandle = Cr::Utility::String::lowercase(filename);
+  std::string strHandle =
+      Cr::Utility::String::lowercase(Cr::Containers::StringView{filename});
   std::string resHandle(filename);
   // If filename does not already have extension of interest
-  if (strHandle.find(Cr::Utility::String::lowercase(fileTypeExt)) ==
-      std::string::npos) {
+  if (strHandle.find(Cr::Utility::String::lowercase(
+          Cr::Containers::StringView{fileTypeExt})) == std::string::npos) {
     resHandle =
         Cr::Utility::Path::splitExtension(
             Cr::Utility::Path::splitExtension(filename).first())

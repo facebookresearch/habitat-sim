@@ -19,7 +19,6 @@
 #include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Path.h>
 #include <Corrade/Utility/Resource.h>
-#include <Corrade/Utility/String.h>
 #include <Magnum/GL/Context.h>
 #include <Magnum/GL/Extensions.h>
 #include <Magnum/GL/TextureFormat.h>

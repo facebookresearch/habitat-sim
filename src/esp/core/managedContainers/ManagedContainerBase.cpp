@@ -3,7 +3,10 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "ManagedContainerBase.h"
+#include <Corrade/Containers/StaticArray.h>
+#include <Corrade/Containers/StringStl.h>
 #include <Corrade/Utility/FormatStl.h>
+#include <Corrade/Utility/String.h>
 #include <algorithm>
 
 namespace Cr = Corrade;
@@ -86,7 +89,8 @@ std::vector<std::string> getHandlesBySubStringPerTypeInternal(
     }
   } else {
     // build search criteria for reverse map
-    std::string strToLookFor = Cr::Utility::String::lowercase(subStr);
+    std::string strToLookFor =
+        Cr::Utility::String::lowercase(Cr::Containers::StringView{subStr});
     std::size_t strSize = strToLookFor.length();
     for (typename std::unordered_map<T, U>::const_iterator iter =
              mapOfHandles.begin();
@@ -97,7 +101,8 @@ std::vector<std::string> getHandlesBySubStringPerTypeInternal(
       if (rawKey.length() < strSize) {
         continue;
       }
-      std::string key = Cr::Utility::String::lowercase(rawKey);
+      std::string key =
+          Cr::Utility::String::lowercase(Cr::Containers::StringView{rawKey});
 
       bool found = (std::string::npos != key.find(strToLookFor));
       if (found == contains) {
@@ -217,13 +222,12 @@ std::string ManagedContainerBase::getUniqueHandleFromCandidatePerType(
       if (objName.find(pivotChar) == std::string::npos) {
         continue;
       }
-      // split string on underscore, last value will be string of highest incr
-      // value existing.
-      std::vector<std::string> vals =
-          Cr::Utility::String::split(objName, pivotChar);
-      // if any exist, check that the last element in split list is a string rep
-      // of a valid integer count (count is always positive)
-      const std::string digitStr = vals.back();
+      // partition string on last underscore, last value will be string of
+      // highest incr value existing.
+      std::string digitStr =
+          Cr::Containers::StringView{objName}.partitionLast(pivotChar)[2];
+      // if any exist, check that the last element is a string rep of a valid
+      // integer count (count is always positive)
       if (digitStr.empty() ||
           (std::find_if(digitStr.begin(), digitStr.end(), [](unsigned char c) {
              return std::isdigit(c) == 0;

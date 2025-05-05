@@ -34,20 +34,16 @@ viewport_size: mn.Vector2i = mn.gl.default_framebuffer.viewport.size()
 # app window
 TEXT_DELTA_FROM_CENTER = 0.5
 
-# the maximum number of chars displayable in the app window
-# using the magnum text module.
-MAX_DISPLAY_TEXT_CHARS = 256
-
 # Load a TrueTypeFont plugin and open the font file
 display_font = text.FontManager().load_and_instantiate("TrueTypeFont")
 relative_path_to_font = "../data/fonts/ProggyClean.ttf"
 display_font.open_file(
     os.path.join(os.path.dirname(__file__), relative_path_to_font),
-    13,
+    DISPLAY_FONT_SIZE
 )
 
 # Glyphs we need to render everything
-glyph_cache = text.GlyphCache(mn.Vector2i(256))
+glyph_cache = text.GlyphCacheGL(mn.Vector2i(256))
 display_font.fill_glyph_cache(
     glyph_cache,
     string.ascii_lowercase
@@ -57,13 +53,8 @@ display_font.fill_glyph_cache(
 )
 
 # magnum text object that displays CPU/GPU usage data in the app window
-window_text = text.Renderer2D(
-    display_font,
-    glyph_cache,
-    DISPLAY_FONT_SIZE,
-    text.Alignment.TOP_LEFT,
-)
-window_text.reserve(MAX_DISPLAY_TEXT_CHARS)
+window_text = text.RendererGL(glyph_cache)
+window_text.alignment = text.Alignment.TOP_LEFT
 
 # text object transform in window space is Projection matrix times Translation Matrix
 window_text_transform = mn.Matrix3.projection(
@@ -92,7 +83,10 @@ mn.gl.Renderer.set_blend_equation(
 shader.bind_vector_texture(glyph_cache.texture)
 shader.transformation_projection_matrix = window_text_transform
 shader.color = [1.0, 1.0, 1.0]
+window_text.clear() # clear previous contents
 window_text.render(
+    display_font.create_shaper(),
+    display_font.size(),
     f"""
 Hello World
     """

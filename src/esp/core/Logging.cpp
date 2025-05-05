@@ -17,6 +17,7 @@
 #include <Corrade/Utility/Format.h>
 #include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Path.h>
+#include <Corrade/Utility/String.h>
 
 namespace Cr = Corrade;
 using Cr::Containers::Literals::operator""_s;

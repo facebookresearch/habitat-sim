@@ -393,7 +393,8 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
   if (io::readMember<std::string>(jsonDoc, jsonMeshTypeTag, tmpVal)) {
     AssetType typeVal = AssetType::Unknown;
     // tag was found, perform check
-    std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
+    std::string strToLookFor =
+        Cr::Utility::String::lowercase(Cr::Containers::StringView{tmpVal});
 
     auto found = attributes::AssetTypeNamesMap.find(strToLookFor);
     if (found != attributes::AssetTypeNamesMap.end()) {

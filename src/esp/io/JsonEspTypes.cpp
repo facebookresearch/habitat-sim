@@ -4,6 +4,8 @@
 
 #include "JsonAllTypes.h"
 
+#include <Corrade/Utility/String.h>
+
 namespace esp {
 namespace io {
 
@@ -241,8 +243,8 @@ bool fromJsonValue(const JsonGenericValue& obj,
   bool shaderTypeSuccess = fromJsonValue(obj, shaderTypeToUseString);
   // convert to enum
   if (shaderTypeSuccess) {
-    const std::string shaderTypeLC =
-        Cr::Utility::String::lowercase(shaderTypeToUseString);
+    const std::string shaderTypeLC = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{shaderTypeToUseString});
     auto mapIter = metadata::attributes::ShaderTypeNamesMap.find(shaderTypeLC);
     ESP_CHECK(mapIter != metadata::attributes::ShaderTypeNamesMap.end(),
               "Illegal shader_type value '"
@@ -268,8 +270,8 @@ bool fromJsonValue(const JsonGenericValue& obj,
   bool success = fromJsonValue(obj, lightPositionModelString);
   // convert to enum
   if (success) {
-    const std::string lightPositionModelLC =
-        Cr::Utility::String::lowercase(lightPositionModelString);
+    const std::string lightPositionModelLC = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{lightPositionModelString});
     auto mapIter =
         metadata::attributes::LightPositionNamesMap.find(lightPositionModelLC);
     ESP_CHECK(mapIter != metadata::attributes::LightPositionNamesMap.end(),

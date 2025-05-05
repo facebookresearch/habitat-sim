@@ -456,7 +456,7 @@ AbstractAttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
         << "` for `" << extType << "` files";
     for (auto& file : *Dir::list(path, Dir::ListFlag::SortAscending)) {
       std::string absoluteSubfilePath = Dir::join(path, file);
-      if (Cr::Utility::String::endsWith(absoluteSubfilePath, extType)) {
+      if (Cr::Containers::StringView{absoluteSubfilePath}.hasSuffix(extType)) {
         paths.push_back(absoluteSubfilePath);
       }
     }
@@ -541,7 +541,7 @@ auto AbstractAttributesManager<T, Access>::createFromJsonOrDefaultInternal(
   // Modify the passed filename to have the format of a legitimate
   // configuration file for this Attributes by changing the extension
   std::string jsonAttrFileName =
-      (Cr::Utility::String::endsWith(filename, this->JSONTypeExt_)
+      (Cr::Containers::StringView{filename}.hasSuffix(this->JSONTypeExt_)
            ? filename
            : this->getFormattedJSONFileName(filename));
   // Check if this configuration file exists and if so use it to build
@@ -808,7 +808,8 @@ void AbstractAttributesManager<T, Access>::setEnumStringFromJsonDoc(
     const std::function<void(const std::string&)>& valueSetter) {
   std::string tmpStrVal = "";
   if (io::readMember<std::string>(jsonConfig, jsonTag, tmpStrVal)) {
-    std::string strToLookFor = Cr::Utility::String::lowercase(tmpStrVal);
+    std::string strToLookFor =
+        Cr::Utility::String::lowercase(Cr::Containers::StringView{tmpStrVal});
     // If unspecified, do not set config value unless from instance attributes
     if (strToLookFor != "unspecified") {
       auto found = mapToUse.find(strToLookFor);

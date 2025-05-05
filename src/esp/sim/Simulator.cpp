@@ -10,7 +10,6 @@
 
 #include <Corrade/Containers/Pair.h>
 #include <Corrade/Utility/Path.h>
-#include <Corrade/Utility/String.h>
 #include <Magnum/GL/Context.h>
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/Math/Matrix4.h>
@@ -213,7 +212,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
   // Handle the NavMesh configuration
   if (config_.navMeshSettings != nullptr &&
-      Cr::Utility::String::lowercase(config_.activeSceneName) != "none") {
+      Cr::Utility::String::lowercase(
+          Cr::Containers::StringView{config_.activeSceneName}) != "none") {
     // If the NavMesh is unloaded or does not match the requested configuration
     // then recompute it.
     if (!pathfinder_->isLoaded() ||

@@ -8,6 +8,8 @@
 #include "AbstractAttributes.h"
 #include "esp/gfx/LightSetup.h"
 
+#include <Corrade/Utility/String.h>
+
 namespace esp {
 namespace metadata {
 namespace attributes {
@@ -56,7 +58,8 @@ class LightInstanceAttributes : public AbstractAttributes {
   /** @brief Set the type of the light */
   void setType(const std::string& type) {
     // force to lowercase before setting
-    const std::string lightType = Cr::Utility::String::lowercase(type);
+    const std::string lightType =
+        Cr::Utility::String::lowercase(Cr::Containers::StringView{type});
     auto mapIter = LightTypeNamesMap.find(lightType);
     ESP_CHECK(mapIter != LightTypeNamesMap.end(),
               "Illegal type value"
@@ -68,8 +71,8 @@ class LightInstanceAttributes : public AbstractAttributes {
 
   /** @brief Get the type of the light */
   gfx::LightType getType() const {
-    const std::string val =
-        Cr::Utility::String::lowercase(get<std::string>("type"));
+    const std::string val = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{get<std::string>("type")});
     auto mapIter = LightTypeNamesMap.find(val);
     if (mapIter != LightTypeNamesMap.end()) {
       return mapIter->second;
@@ -86,8 +89,8 @@ class LightInstanceAttributes : public AbstractAttributes {
    */
   void setPositionModel(const std::string& position_model) {
     // force to lowercase before setting
-    const std::string posModelLC =
-        Cr::Utility::String::lowercase(position_model);
+    const std::string posModelLC = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{position_model});
     auto mapIter = LightPositionNamesMap.find(posModelLC);
     ESP_CHECK(mapIter != LightPositionNamesMap.end(),
               "Illegal position_model value"
@@ -103,8 +106,8 @@ class LightInstanceAttributes : public AbstractAttributes {
    * the global scene origin, or some object.
    */
   gfx::LightPositionModel getPositionModel() const {
-    const std::string val =
-        Cr::Utility::String::lowercase(get<std::string>("position_model"));
+    const std::string val = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{get<std::string>("position_model")});
     auto mapIter = LightPositionNamesMap.find(val);
     if (mapIter != LightPositionNamesMap.end()) {
       return mapIter->second;

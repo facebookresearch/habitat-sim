@@ -7,6 +7,8 @@
 
 #include "AbstractAttributes.h"
 
+#include <Corrade/Utility/String.h>
+
 namespace esp {
 namespace metadata {
 namespace attributes {
@@ -59,7 +61,8 @@ class AbstractSensorAttributes : public AbstractAttributes {
    */
   void setSensorType(const std::string& sensorType) {
     // force to lowercase to check if present
-    const std::string sensorTypeLC = Cr::Utility::String::lowercase(sensorType);
+    const std::string sensorTypeLC =
+        Cr::Utility::String::lowercase(Cr::Containers::StringView{sensorType});
     auto mapIter = SensorTypeNamesMap.find(sensorTypeLC);
     if (mapIter == SensorTypeNamesMap.end()) {
       ESP_ERROR(Mn::Debug::Flag::NoSpace)
@@ -93,8 +96,8 @@ class AbstractSensorAttributes : public AbstractAttributes {
    * @brief Get the sensor type for this sensor.
    */
   sensor::SensorType getSensorType() const {
-    const std::string val =
-        Cr::Utility::String::lowercase(get<std::string>("sensor_type"));
+    const std::string val = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{get<std::string>("sensor_type")});
     auto mapIter = SensorTypeNamesMap.find(val);
     if (mapIter != SensorTypeNamesMap.end()) {
       return mapIter->second;
@@ -109,8 +112,8 @@ class AbstractSensorAttributes : public AbstractAttributes {
    */
   void setSensorSubType(const std::string& sensorSubType) {
     // force to lowercase to check if present
-    const std::string sensorTypeLC =
-        Cr::Utility::String::lowercase(sensorSubType);
+    const std::string sensorTypeLC = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{sensorSubType});
     auto mapIter = SensorSubTypeNamesMap.find(sensorTypeLC);
     if (mapIter == SensorSubTypeNamesMap.end()) {
       ESP_ERROR(Mn::Debug::Flag::NoSpace)
@@ -144,8 +147,8 @@ class AbstractSensorAttributes : public AbstractAttributes {
    * @brief Get the sensor subtype for this sensor.
    */
   sensor::SensorSubType getSensorSubType() const {
-    const std::string val =
-        Cr::Utility::String::lowercase(get<std::string>("sensor_subtype"));
+    const std::string val = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{get<std::string>("sensor_subtype")});
     auto mapIter = SensorSubTypeNamesMap.find(val);
     if (mapIter != SensorSubTypeNamesMap.end()) {
       return mapIter->second;
