@@ -178,7 +178,13 @@ if(BUILD_WITH_BULLET AND NOT USE_SYSTEM_BULLET)
   # that causes rigid objects to never come to rest.
   # This needs to be further examined on bullet side
   add_definitions(-DBT_DISABLE_CONVEX_CONCAVE_EARLY_OUT=1)
+  # Bullet has minimum CMake version set to 2.4, which makes it not work with
+  # CMake 4.0 that removed support for CMake <= 3.5. Bypass that by setting the
+  # minimum policy lower.
+  set(_PREV_CMAKE_POLICY_VERSION_MINIMUM ${CMAKE_POLICY_VERSION_MINIMUM})
+  set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
   add_subdirectory(${DEPS_DIR}/bullet3 EXCLUDE_FROM_ALL)
+  set(CMAKE_POLICY_VERSION_MINIMUM ${_PREV_CMAKE_POLICY_VERSION_MINIMUM})
   set(CMAKE_CXX_FLAGS ${_PREV_CMAKE_CXX_FLAGS})
 endif()
 
