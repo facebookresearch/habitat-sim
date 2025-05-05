@@ -81,6 +81,8 @@ if(BUILD_ASSIMP_SUPPORT AND NOT USE_SYSTEM_ASSIMP)
   # linker without any link directories would work. It won't. (The variable
   # is not an option() so no need to CACHE it.)
   set(ASSIMP_BUILD_MINIZIP ON)
+  # Otherwise it may link to system-wide zlib that doesn't have -fPIC enabled
+  set(ASSIMP_BUILD_ZLIB ON CACHE BOOL "" FORCE)
   # Unconditionally setting -Werror is just playing with fire with every new OS
   # or compiler release. Don't.
   set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE BOOL "" FORCE)
