@@ -1656,15 +1656,6 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
   auto& visNodeCache = userVisNodeCache ? *userVisNodeCache : dummyVisNodeCache;
 
   scene::SceneNode& newNode = parent->createChild();
-  if (creation.scale) {
-    // need a new node for scaling because motion state will override scale
-    // set at the physical node
-    // perf todo: avoid this if unit scale
-    newNode.setScaling(*creation.scale);
-
-    // legacy quirky behavior: only add this node to viscache if using scaling
-    visNodeCache.push_back(&newNode);
-  }
 
   std::vector<StaticDrawableInfo> staticDrawableInfo;
 
@@ -1698,8 +1689,29 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
     }
   }
 
+  scene::SceneNode* attachTo = &newNode;
+  if (creation.scale || creation.translation || creation.rotation) {
+    scene::SceneNode& tform_node = newNode.createChild();
+    attachTo = &tform_node;
+    if (creation.scale) {
+      // need a new node for scaling because motion state will override scale
+      // set at the physical node
+      // perf todo: avoid this if unit scale
+      tform_node.MagnumObject::setScaling(*creation.scale);
+    }
+    // the following represent fixed offsets from the rigid parent frame for
+    // this visual subtree
+    if (creation.translation) {
+      tform_node.MagnumObject::setTranslation(*creation.translation);
+    }
+    if (creation.rotation) {
+      tform_node.MagnumObject::setRotation(*creation.rotation);
+    }
+    visNodeCache.push_back(&tform_node);
+    // legacy quirky behavior: only add this node to viscache if using scaling
+  }
   addComponent(meshMetaData,            // mesh metadata
-               newNode,                 // parent scene node
+               *attachTo,               // parent scene node
                creation.lightSetupKey,  // lightSetup key
                drawables,               // drawable group
                meshMetaData.root,       // mesh transform node

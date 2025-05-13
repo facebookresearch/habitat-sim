@@ -8,6 +8,7 @@
 #include <Corrade/Containers/EnumSet.h>
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/Magnum.h>
+#include <Magnum/Math/Quaternion.h>
 #include <Magnum/Math/Vector3.h>
 
 #include <memory>
@@ -46,6 +47,10 @@ struct RenderAssetInstanceCreationInfo {
 
   std::string filepath;  // see also AssetInfo::filepath
   Corrade::Containers::Optional<Magnum::Vector3> scale;
+  // NOTE: the following allows for a predefined offset transformation for a
+  // visual shape from its parent frame.
+  Corrade::Containers::Optional<Magnum::Vector3> translation;
+  Corrade::Containers::Optional<Magnum::Quaternion> rotation;
   Flags flags;
   std::string lightSetupKey;
   int rigId = ID_UNDEFINED;

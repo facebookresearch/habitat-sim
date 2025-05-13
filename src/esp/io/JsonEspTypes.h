@@ -100,6 +100,8 @@ inline JsonGenericValue toJsonValue(
   JsonGenericValue obj(rapidjson::kObjectType);
   addMember(obj, "filepath", x.filepath, allocator);
   addMember(obj, "scale", x.scale, allocator);
+  addMember(obj, "rotation", x.rotation, allocator);
+  addMember(obj, "translation", x.translation, allocator);
   addMember(obj, "isStatic", x.isStatic(), allocator);
   addMember(obj, "isRGBD", x.isRGBD(), allocator);
   addMember(obj, "isSemantic", x.isSemantic(), allocator);
@@ -113,6 +115,8 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
                           esp::assets::RenderAssetInstanceCreationInfo& x) {
   readMember(obj, "filepath", x.filepath);
   readMember(obj, "scale", x.scale);
+  readMember(obj, "rotation", x.rotation);
+  readMember(obj, "translation", x.translation);
   bool isStatic = false;
   readMember(obj, "isStatic", isStatic);
   bool isRGBD = false;

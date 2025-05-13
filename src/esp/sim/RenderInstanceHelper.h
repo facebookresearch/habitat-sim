@@ -5,6 +5,7 @@
 #ifndef ESP_SIM_RENDERINSTANCEHELPER_H_
 #define ESP_SIM_RENDERINSTANCEHELPER_H_
 
+#include <Magnum/Math/Quaternion.h>
 #include <Magnum/Math/Vector3.h>
 #include <string>
 #include <vector>
@@ -28,11 +29,24 @@ class RenderInstanceHelper {
   RenderInstanceHelper(Simulator& sim,
                        const std::vector<float>& identityRotation);
 
+  /**
+   * @brief Add an instance of a render asset to the scene. The instance gets an
+   * identity pose; change it later using set_world_poses.
+   *
+   * @param assetFilepath can be for example a .glb or .obj 3D model file
+   * @param semanticId used for semantic rendering
+   * @param scale An optional local scaling vector applied to this render
+   * instance.
+   * @param translation An optional local translation vector offset applied to
+   * this render instance.
+   * @param rotation An optional local rotation vector offset applied to this
+   * render instance.
+   */
   int AddInstance(const std::string& assetFilepath,
                   int semanticId,
-                  const Magnum::Vector3& scale = Magnum::Vector3(1.0,
-                                                                 1.0,
-                                                                 1.0));
+                  const Magnum::Vector3& scale = Magnum::Vector3(1.0, 1.0, 1.0),
+                  const Magnum::Vector3& translation = Magnum::Vector3(0),
+                  const Magnum::Quaternion& rotation = Magnum::Quaternion());
 
   /**
    * @brief Remove all instances from the scene.
