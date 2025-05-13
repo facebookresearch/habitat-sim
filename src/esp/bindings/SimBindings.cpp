@@ -182,6 +182,8 @@ void initRenderInstanceHelperBindings(py::module& m) {
       .def("add_instance", &RenderInstanceHelper::AddInstance,
            py::arg("asset_filepath"), py::arg("semantic_id"),
            py::arg("scale") = Mn::Vector3(1.0, 1.0, 1.0),
+           py::arg("translation") = Mn::Vector3(0.0, 0.0, 0.0),
+           py::arg("rotation") = Mn::Quaternion(),
            "R(Add an instance of a render asset to the scene. The asset can be "
            "for example a .glb or .obj 3D model file. The instance gets an "
            "identity pose; change it later using set_world_poses.)")
