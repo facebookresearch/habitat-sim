@@ -258,6 +258,9 @@ void initSimBindings(py::module& m) {
           R"(Use gfx_replay_manager for replay recording and playback.)")
       .def("seed", &Simulator::seed, "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, "configuration"_a)
+      .def("load_semantic_scene_descriptor",
+           &Simulator::loadSemanticSceneDescriptor,
+           "semantic_scene_descriptor_file"_a)
       .def("reset", [](Simulator& self) { self.reset(false); })
       .def(
           "close", &Simulator::close, "destroy"_a = true,

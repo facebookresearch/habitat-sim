@@ -917,10 +917,24 @@ class HabitatSimInteractiveViewer(Application):
         self.navmesh_settings.agent_height = self.cfg.agents[self.agent_id].height
         self.navmesh_settings.agent_radius = self.cfg.agents[self.agent_id].radius
         self.navmesh_settings.include_static_objects = True
+        self.navmesh_settings.cell_height = 0.01
+
+        cached_motion_types = {}
+        aom = self.sim.get_articulated_object_manager()
+        for ao in aom.get_objects_by_handle_substring().values():
+            cached_motion_types[ao.handle] = ao.motion_type
+            ao.motion_type = habitat_sim.physics.MotionType.STATIC
+
         self.sim.recompute_navmesh(
             self.sim.pathfinder,
             self.navmesh_settings,
         )
+        navmesh_path = self.sim_settings["scene"] + ".navmesh"
+        self.sim.pathfinder.save_nav_mesh(navmesh_path)
+        print(f"Saved navmesh to {navmesh_path}")
+
+        for ao in aom.get_objects_by_handle_substring().values():
+            ao.motion_type = cached_motion_types[ao.handle]
 
     def exit_event(self, event: Application.ExitEvent):
         """
