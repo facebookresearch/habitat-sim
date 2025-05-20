@@ -225,6 +225,23 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
 }  // Simulator::reconfigure
 
+void Simulator::loadSemanticSceneDescriptor(
+    const std::string& semSceneFilename) {
+  // first check if the semantic attributes is already loaded
+  std::shared_ptr<esp::metadata::attributes::SemanticAttributes> semanticAttr =
+      (semSceneFilename != "")
+          ? metadataMediator_->getSemanticAttributesManager()
+                ->getFirstMatchingObjectCopyByHandle(semSceneFilename)
+          : nullptr;
+
+  if (semanticAttr == nullptr) {
+    semanticAttr = metadataMediator_->getSemanticAttributesManager()
+                       ->createObjectFromJSONFile(semSceneFilename, true);
+  }
+
+  resourceManager_->loadSemanticScene(semanticAttr, semSceneFilename);
+}
+
 bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   getRenderGLContext();
 
