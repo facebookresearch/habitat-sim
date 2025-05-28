@@ -5,7 +5,7 @@
 import argparse
 import csv
 import os
-from typing import Callable, Dict, List
+from typing import Any, Callable, Dict, List
 
 
 def file_endswith(filepath: str, end_str: str) -> bool:
@@ -84,6 +84,39 @@ def load_model_list_from_csv(
     return ids
 
 
+# Print iterations progress
+# NOTE: copied from https://stackoverflow.com/questions/3173320/text-progress-bar-in-terminal-with-block-characters
+def printProgressBar(
+    iteration,
+    total,
+    prefix="",
+    suffix="",
+    decimals=1,
+    length=100,
+    fill="█",
+    printEnd="\r",
+):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + "-" * (length - filledLength)
+    print(f"\r{prefix} |{bar}| {percent}% {suffix}", end=printEnd)
+    # Print New Line on Complete
+    if iteration == total:
+        print()
+
+
 # -----------------------------------------
 # Generates a report checking the success of blend to urdf parsing batches.
 # e.g. python tools/generate_blend_to_urdf_parser_report.py --root-dir <urdf_outputs_root_directory> --report-model-list <path-to>/all_scenes_artic_models-M1.csv
@@ -110,6 +143,17 @@ def main():
         default=None,
         help="Path to a csv file with a single column of model hashes. If provided, the generated report will follow the same model sequence. E.g. for export into a spreadsheet. By default, expects each sub-directory from root-dir to correspond to a converted model.",
     )
+    parser.add_argument(
+        "--do-simulator-load-test",
+        action="store_true",
+        help="If set, try to load the models in a Simulator to validate them. This is significantly slower than checking asset metadata.",
+    )
+    parser.add_argument(
+        "--reconfigure-period",
+        type=int,
+        default=10,
+        help="Only used with 'do-simulator-load-test'. Sets the number of AOs to load in each batch before reconfiguring the simulator to release asset memory.",
+    )
 
     args = parser.parse_args()
     root_dir = args.root_dir
@@ -124,6 +168,7 @@ def main():
         "config",
         "receptacles",
         "render_meshes",
+        "load_test",
     ]
     # collect global sums of each error type
     global_count: Dict[str, int] = {}
@@ -145,8 +190,38 @@ def main():
     if args.report_model_list is not None:
         model_ids = load_model_list_from_csv(filepath=args.report_model_list)
 
+    sim = None
+    aom = None
+    aoam = None
+    sim_cfg = None
+    if args.do_simulator_load_test:
+        # create a Simulator
+        from habitat_sim import Simulator
+        from habitat_sim.utils.settings import default_sim_settings, make_cfg
+
+        sim_settings: Dict[str, Any] = default_sim_settings
+        sim_cfg = make_cfg(sim_settings)
+        sim = Simulator(sim_cfg)
+        aom = sim.get_articulated_object_manager()
+        aoam = sim.metadata_mediator.ao_template_manager
+        assert sim
+
+    # start the progress bar in terminal
+    num_models = len(model_ids)
+    printProgressBar(0, num_models, prefix="Progress:", suffix="Complete", length=50)
+
     # for each model ids, check for existance of each expected output
-    for model_id in model_ids:
+    for mix, model_id in enumerate(model_ids):
+        if mix % args.reconfigure_period == 0 and sim is not None:
+            # reconfigure the simulator at a set frequency to release asset memory
+            sim.close()
+            sim = Simulator(sim_cfg)
+            aom = sim.get_articulated_object_manager()
+            aoam = sim.metadata_mediator.ao_template_manager
+
+        printProgressBar(
+            mix, num_models, prefix="Progress:", suffix="Complete", length=50
+        )
         folder_path = os.path.join(root_dir, model_id)
         folder_exists = False
         if model_id in exported_folder_names:
@@ -161,11 +236,11 @@ def main():
                 exported_folder_names.index(folder_path.split("/")[-1])
             ] = True
 
-            urdf_exists = len(find_files(folder_path, file_endswith, ".urdf")) > 0
+            urdf_matches = find_files(folder_path, file_endswith, ".urdf")
+            urdf_exists = len(urdf_matches) > 0
 
-            config_exists = (
-                len(find_files(folder_path, file_endswith, ".ao_config.json")) > 0
-            )
+            config_matches = find_files(folder_path, file_endswith, ".ao_config.json")
+            config_exists = len(config_matches) > 0
 
             # NOTE: there could be missing assets here, but without parsing the blend file again, we wouldn't know. Heuristic is to expect at least one.
             num_rec_meshes = len(
@@ -177,6 +252,37 @@ def main():
                 len(find_files(folder_path, file_endswith, ".glb")) - num_rec_meshes
             ) > 0
 
+            load_test = False
+            if sim is not None and urdf_exists and one_render_mesh_exists:
+                # minimum requirements to try loading an asset
+                if config_exists:
+                    # load from config
+                    try:
+                        # try to load the config
+                        new_template_ids = aoam.load_configs(config_matches[0])
+                        # try to load the asset from config
+                        ao = aom.add_articulated_object_by_template_id(
+                            new_template_ids[0]
+                        )
+                        load_test = True
+                        aom.remove_object_by_id(ao.object_id)
+                    except Exception as e:
+                        print(
+                            f"Failed to load asset from config {config_matches[0]}. '{repr(e)}'"
+                        )
+                        repr(e)
+                else:
+                    # load from URDF
+                    try:
+                        ao = aom.add_articulated_object_from_urdf(urdf_matches[0])
+                        load_test = True
+                        aom.remove_object_by_id(ao.object_id)
+                    except Exception as e:
+                        print(
+                            f"Failed to load asset from urdf {urdf_matches[0]}. '{repr(e)}'"
+                        )
+                        repr(e)
+
             parse_results_report[model_id] = [
                 model_id,
                 folder_exists,
@@ -184,12 +290,15 @@ def main():
                 config_exists,
                 one_receptacle_exists,
                 one_render_mesh_exists,
+                load_test,
             ]
             global_count["folder"] += int(not folder_exists)
             global_count["config"] += int(not config_exists)
             global_count["receptacles"] += int(not one_receptacle_exists)
             global_count["urdf"] += int(not urdf_exists)
             global_count["render_meshes"] += int(not one_render_mesh_exists)
+            global_count["load_test"] += int(not load_test)
+
         else:
             parse_results_report[model_id] = [False for i in range(len(cat_columns))]
             parse_results_report[model_id][0] = model_id
@@ -209,10 +318,15 @@ def main():
     print("-----------------------------------------------")
     print(f"Wrote report to {report_filepath}.\n")
 
-    print("The following folders were unclaimed. Likely the root node is misnamed:")
-    for folder_index, claimed in enumerate(exported_folder_claimed):
-        if not claimed:
-            print(f" {exported_folder_names[folder_index]}")
+    unclaimed_folders = [
+        exported_folder_names[folder_index]
+        for folder_index, claimed in enumerate(exported_folder_claimed)
+        if not claimed
+    ]
+    if len(unclaimed_folders) > 0:
+        print(
+            f"The following folders were unclaimed. Likely the root node is misnamed: {unclaimed_folders}"
+        )
     print("-----------------------------------------------")
 
     print(f"global_counts = {global_count}")
