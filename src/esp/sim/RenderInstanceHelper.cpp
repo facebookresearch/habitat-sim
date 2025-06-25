@@ -12,14 +12,12 @@
 namespace esp {
 namespace sim {
 
-RenderInstanceHelper::RenderInstanceHelper(
-    Simulator& sim,
-    const std::vector<float>& identityRotation) {
+RenderInstanceHelper::RenderInstanceHelper(Simulator& sim,
+    bool useXYZWOrientations) {
   sim_ = &sim;
-  CORRADE_INTERNAL_ASSERT(identityRotation[0] == 1.f ||
-                          identityRotation[3] == 1.f);
-  isXYZW_ = identityRotation[3] == 1.f;
+  isXYZW_ = useXYZWOrientations;
 }
+
 
 int RenderInstanceHelper::AddInstance(const std::string& assetFilepath,
                                       int semanticId,

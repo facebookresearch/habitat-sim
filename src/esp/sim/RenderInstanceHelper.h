@@ -26,8 +26,16 @@ namespace sim {
 
 class RenderInstanceHelper {
  public:
-  RenderInstanceHelper(Simulator& sim,
-                       const std::vector<float>& identityRotation);
+  /**
+   * @brief RenderInstanceHelper constructor
+   *
+   * @param sim the Habitat-sim instance where you'll render, e.g.
+   * Simulator::drawObservation
+   * @param useXYZWOrientations specify the format of the quaternions you'll
+   * pass to set_world_poses later; If use_xyzw_orientations=False, we assume
+   * wxyz
+   */
+  RenderInstanceHelper(Simulator& sim, bool useXYZWOrientations = true);
 
   /**
    * @brief Add an instance of a render asset to the scene. The instance gets an
