@@ -4,8 +4,19 @@ from habitat_sim.utils.settings import default_sim_settings, make_cfg
 from habitat_sim.metadata import MetadataMediator
 import magnum as mn
 
-dataset = "data/fp-models/fp-models.scene_dataset_config.json" # modified hssd-hab config to point at fp-models paths
-# scene = "grid" # from-scratch scene I made with scale marks
+dataset_paths = ["/home/jseagull/dev/habitat-sim/data/fp-models/fp-models.scene_dataset_config.json", #0 full path
+                "data/fp-models/fp-models.scene_dataset_config.json", #1 relative path
+                "../fp-models/fp-models.scene_dataset_config.json", #2 relative path without symlink
+                "fp-models/fp-models.scene_dataset_config.json", #3 path within /data
+                "./data/fp-models/fp-models.scene_dataset_config.json", #4 absolute path from current directory
+                "data/fp-models/", #5 location without leaf
+                "./data/fp-models/", #6 location without leaf, absolute path
+                "data/fp-models/fp-models", #7 leaf without extension ### THIS ENABLES OBJECT TO LOAD, but active dataset is default and stage cannot load
+                "fp-models", #8 leaf without extension, relative path
+                "data/fp-models" # 9 no trailing slash
+                ]
+dataset = dataset_paths[7]
+scene = "grid" # from-scratch scene I made with scale marks
 image_size = 1024
 
 sim_settings = default_sim_settings.copy()
@@ -28,6 +39,10 @@ glb_leaf = "00a2b0f3886ccb5ffddac704f8eeec324a5e14c6_dedup.glb"
 json_leaf = "data/fp-models/objects/decomposed/0a3e0a10ec97c41a36939e89b0591d2cfe5e41e1"
 
 print("\n########################################################\n")
+print(f"active dataset: {mm.active_dataset}")
+print(f"Dataset exists? {mm.dataset_exists(dataset)}")
+# print(f"Dataset Report: {mm.dataset_report(dataset)}")
+# print(f"Scene handles: {mm.get_scene_handles(mm_oam)}")
 my_template = mm_oam.create_new_template(handle=glb_path)
 print(f"Render_asset value: {my_template.has_value('render_asset')}")
 print(f"file directory: {my_template.file_directory}")
