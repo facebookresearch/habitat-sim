@@ -31,8 +31,8 @@ def swap_axes(data: Dict[str, Any]) -> Dict[str, Any]:
         transform["position"] = [position[0], -position[2], position[1]]
     if "quaternion" in data:
         quaternion = data["quaternion"]
-        #json encodes as XYZW, blender wants WXYZ
-        transform["quaternion"] = [quaternion[3], quaternion[0], quaternion[1], quaternion[2]] 
+        # blender wants WXYZ in Z-up, Habitat JSON is Y-up as XYZW, so we swap a bunch of axes here  
+        transform["quaternion"] = [quaternion[3], quaternion[0], quaternion[2], quaternion[1]] 
     if "scale" in data:
         scale = data["scale"]
         transform["scale"] = [scale[0], scale[2], scale[1]]
@@ -68,8 +68,9 @@ def relink_object_to_collection(
             bpy.context.scene.collection.objects.unlink(o)
         collection.objects.link(o)  # Link to the new collection
 
-def make_decomp_from_json(json_path: Path) -> None:
+def make_decomp_from_json(uuid: str) -> None:
     """Create a Blender scene from a decomposed JSON file."""
+    json_path = Path(f"/home/jseagull/dev/fp-models/objects/decomposed/{uuid}/{uuid}.parts.metadata.json")
     data = open_json(json_path)
     part_root = json_path.parents[0] 
     file_prefix = json_path.name.split('.')[0]
@@ -124,5 +125,5 @@ def make_decomp_from_json(json_path: Path) -> None:
     
 if __name__ == "__main__":
     purge_unused_data() #otherwise names get appended when testing
-    json_path = '/home/jseagull/dev/fp-models/objects/decomposed/1d8c555b5635a8fc89ac59b47cb40988d3e91243/1d8c555b5635a8fc89ac59b47cb40988d3e91243.parts.metadata.json'
-    make_decomp_from_json(Path(json_path))
+    uuid = "077b4aad95f9bcb3954d0ce719605f6a08cd253f"
+    make_decomp_from_json(uuid)
