@@ -227,9 +227,23 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     CORRADE_INTERNAL_ASSERT(assetInfos_.count(adjustedFilepath));
     auto adjustedCreation = creation;
     adjustedCreation.filepath = adjustedFilepath;
-    auto* node = implementation_->loadAndCreateRenderAssetInstance(
-        assetInfos_[adjustedFilepath], adjustedCreation);
-    if (!node) {
+
+    bool didFailLoad = false;
+    // we want to fail gracefully if the file is missing. Beware that 
+    // loadAndCreateRenderAssetInstance currently ESP_CHECKs on file validity (fatal
+    // error).
+    NodeHandle node = nullptr;
+    if (!Corrade::Utility::Path::exists(adjustedCreation.filepath)) {
+      didFailLoad = true;
+    } else {
+      node = implementation_->loadAndCreateRenderAssetInstance(
+          assetInfos_[adjustedFilepath], adjustedCreation);
+      if (!node) {
+        didFailLoad = true;
+      }
+    }
+
+    if (didFailLoad) {
       if (failedFilepaths_.count(adjustedFilepath) == 0u) {
         ESP_WARNING(Mn::Debug::Flag::NoSpace)
             << "Load failed for asset [" << adjustedFilepath << "]";
@@ -248,7 +262,15 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
 
   for (const auto& pair : keyframe.metadata) {
     const auto& instanceKey = pair.first;
-    implementation_->setNodeMetadata(createdInstances_[instanceKey],
+
+    const auto& it = createdInstances_.find(pair.first);
+    if (it == createdInstances_.end()) {
+      // Missing instance for this key due to a failed instance creation
+      continue;
+    }
+    auto* node = it->second;
+
+    implementation_->setNodeMetadata(node,
                                      pair.second);
     creationRecords_[instanceKey].metadata = pair.second;
   }
