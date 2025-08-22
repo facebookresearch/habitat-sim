@@ -2,8 +2,9 @@
 
 import glob
 import json
+
 import numpy as np
-import magnum as mn
+
 
 def round_to_identity(q, threshold=1e-6) -> bool:
     """
@@ -27,30 +28,31 @@ def round_to_identity(q, threshold=1e-6) -> bool:
     else:
         return False
 
+
 dirty_files = 0
 
 pattern = "/home/jseagull/dev/fp-models/objects/decomposed/**/*.parts.metadata.json"
-all_objects = glob.glob (pattern,recursive=True)
+all_objects = glob.glob(pattern, recursive=True)
 
-#each file
+# each file
 for decomp in all_objects:
     file_has_rotations = False
     with open(decomp, "r") as file:
         group_data = json.load(file)
-    uuid = group_data.get("id","")    
-    #each object
+    uuid = group_data.get("id", "")
+    # each object
     for obj_data in group_data.get("parts", {}):
-        obj_quat = obj_data.get("transform",{}).get("quaternion",None)
-        obj_quat = np.array([obj_quat[3],obj_quat[0],obj_quat[1],obj_quat[2]])
-        if not round_to_identity(obj_quat, .1):
+        obj_quat = obj_data.get("transform", {}).get("quaternion", None)
+        obj_quat = np.array([obj_quat[3], obj_quat[0], obj_quat[1], obj_quat[2]])
+        if not round_to_identity(obj_quat, 0.1):
             if not file_has_rotations:
                 print(f"\n{uuid}:")
-                file_has_rotations = True  
+                file_has_rotations = True
             part_Id = obj_data.get("partId", "")
-            pretty_quat = np.around(obj_quat,3)
+            pretty_quat = np.around(obj_quat, 3)
             print(f"Object {part_Id} : {pretty_quat}")
     if file_has_rotations:
         dirty_files += 1
-    #else:
-        #print(f"{uuid} OK")
+    # else:
+    # print(f"{uuid} OK")
 print(f"{dirty_files} out of {len(all_objects)} have rotated parts.")

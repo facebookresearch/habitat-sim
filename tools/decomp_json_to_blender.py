@@ -125,5 +125,5 @@ def make_decomp_from_json(uuid: str) -> None:
     
 if __name__ == "__main__":
     purge_unused_data() #otherwise names get appended when testing
-    uuid = "077b4aad95f9bcb3954d0ce719605f6a08cd253f"
+    uuid = 'xxxxbc6e2459xae45x49d0x86c4xe27c2b0767a7'
     make_decomp_from_json(uuid)
