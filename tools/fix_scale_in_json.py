@@ -99,18 +99,18 @@ if __name__ == "__main__":
     part_transform["matrix"] = json_matrix
 
     # sanity check
-    print("------------------------------------\nOriginal JSON Matrix:")
-    print(json.dumps(old_matrix))
+    # print("------------------------------------\nOriginal JSON Matrix:")
+    # print(json.dumps(old_matrix))
     print(f"Original matrix determinant: {prs_matrix_old.determinant()}")
     # print("------------------------------------\nOriginal Matrix from JSON PRS:")
     # old_matrix_rowmajor = np.array(prs_matrix_old)
     # old_matrix_colmajor = (old_matrix_rowmajor.T).flatten()
     # print(json.dumps(old_matrix_colmajor.tolist()))
     print(f"New matrix determinant: {prs_matrix_new.determinant()}")
-    print('------------------------------------\nNew Matrix:')
-    print(json_matrix)
-    print(f"Full transform Dict:\n{part_transform}")
-
+    # print('------------------------------------\nNew Matrix:')
+    # print(json_matrix)
+    # print(f"Full transform Dict:\n{part_transform}")
+    
     # write new cvalues to JSON
 
     # for idx, obj_data in enumerate(json_data["parts"]):
@@ -128,3 +128,4 @@ if __name__ == "__main__":
 
     with open(parts_metadata_path, "w") as file:
         json.dump(json_data, file)
+    print(f"Updated part {part} in {uuid}.")
