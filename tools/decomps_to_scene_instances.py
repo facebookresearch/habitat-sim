@@ -3,13 +3,18 @@ uses a CSV of decomp associations to replace monolithic objects
 in HSSD scenes with the decomposed parts
 """
 
-import argparse
 import os
 import json
 import csv
 from typing import Tuple
 from copy import deepcopy
 import magnum as mn
+
+DECOMP_DATA_PATH = "/home/jseagull/dev/fphab/objects/decomposed/decomp_replacements.csv"
+COM_CORRECTION_PATH = "/home/jseagull/dev/fphab/objects/com_correction.csv"
+DECOMP_METADATA_PATH = "/home/jseagull/dev/fp-models/objects/decomposed/"
+MAX_FILES_TO_PROCESS = 9999
+SCENE_DIR = "/home/jseagull/dev/fphab/scenes-uncluttered"
 
 
 def collect_scenes(dir: str) -> list:
@@ -33,6 +38,15 @@ def load_decomp_data(csv_filepath: str) -> Tuple[list, set]:
     for row in data:
         ...
     return data, replaceable_uuids
+
+
+def load_com_correction_data() -> list:
+    data = []
+    with open(COM_CORRECTION_PATH, mode="r", encoding="utf-8") as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            data.append(row)
+    return data
 
 
 def scan_scene_for_objects(scene: str) -> Tuple[list, dict]:
@@ -69,7 +83,7 @@ def scan_scene_for_objects(scene: str) -> Tuple[list, dict]:
 
 def replace_scene_object(original_template: dict, scene: dict) -> dict:
     """
-    Append decomposed parts to the scene instance, matched to the corrected transform matrix of the original 
+    Append decomposed parts to the scene instance, matched to the corrected transform matrix of the original
     """
     global DECOMP_METADATA_PATH
 
@@ -94,7 +108,9 @@ def replace_scene_object(original_template: dict, scene: dict) -> dict:
 
         try:
             rot = template["rotation"]
-            rot_quat = mn.Quaternion((float(rot[0]), float(rot[1]), float(rot[2])), float(rot[3]))
+            rot_quat = mn.Quaternion(
+                (float(rot[0]), float(rot[1]), float(rot[2])), float(rot[3])
+            )
             rot_matrix = mn.Matrix4.from_(
                 (rot_quat.to_matrix()), mn.Vector3(0.0, 0.0, 0.0)
             )
@@ -135,9 +151,12 @@ def replace_scene_object(original_template: dict, scene: dict) -> dict:
             else:
                 scaling[i] = 0.0
                 # If scale is zero, use a default identity basis vector
-                if i == 0: rotation_matrix_normalized[i] = mn.Vector3.x_axis()
-                elif i == 1: rotation_matrix_normalized[i] = mn.Vector3.y_axis()
-                else: rotation_matrix_normalized[i] = mn.Vector3.z_axis()
+                if i == 0:
+                    rotation_matrix_normalized[i] = mn.Vector3.x_axis()
+                elif i == 1:
+                    rotation_matrix_normalized[i] = mn.Vector3.y_axis()
+                else:
+                    rotation_matrix_normalized[i] = mn.Vector3.z_axis()
 
         if determinant < 0:
             # A negative determinant means an odd number of axes were negatively scaled.
@@ -147,21 +166,34 @@ def replace_scene_object(original_template: dict, scene: dict) -> dict:
             rotation_matrix_normalized[0] = -rotation_matrix_normalized[0]
 
         rotation = mn.Quaternion.from_matrix(rotation_matrix_normalized)
-        rotation_vector4 = rotation.wxyz # Quat to vector4
+        rotation_vector4 = rotation.wxyz  # Quat to vector4
 
         # make dict entries
-        new_template["translation"] = [translation_vector[0], translation_vector[1], translation_vector[2]]
-        new_template["rotation"] = [rotation_vector4[0], rotation_vector4[1], rotation_vector4[2], rotation_vector4[3]]
+        new_template["translation"] = [
+            translation_vector[0],
+            translation_vector[1],
+            translation_vector[2],
+        ]
+        new_template["rotation"] = [
+            rotation_vector4[0],
+            rotation_vector4[1],
+            rotation_vector4[2],
+            rotation_vector4[3],
+        ]
         if abs((scaling.length()) - 1.0) < 0.001:
             new_template["non_uniform_scale"] = [1.0, 1.0, 1.0]
         else:
             new_template["non_uniform_scale"] = [scaling[0], scaling[1], scaling[2]]
         return new_template
 
-    def get_com_correction() -> mn.Matrix4:
-        """Get the COM correction to use for this object. Best way is probably to make a CSV from a live load of every object"""
-        # TODO
-        return mn.Matrix4.identity_init()
+    def get_com_correction(uuid: str) -> mn.Matrix4:
+        """Get the COM correction to use for this object."""
+        com_dict = [entry for entry in com_correction_data if entry["uuid"] == uuid][0]
+        assert com_dict is not None
+        com_vector = mn.Vector3(
+            float(com_dict["x"]), float(com_dict["y"]), float(com_dict["z"])
+        )
+        return mn.Matrix4.translation(com_vector)
 
     def make_intermediate_object(
         part_metadata: dict, is_instance: bool = False
@@ -200,7 +232,7 @@ def replace_scene_object(original_template: dict, scene: dict) -> dict:
                 is not None
             ):
                 # object is a base object found in the non-pickable decomp list
-                print('FOUND original')
+                print("FOUND original")
                 parts_list.append(make_intermediate_object(part))
 
             elif part.get("isRef", "") is False:
@@ -211,41 +243,43 @@ def replace_scene_object(original_template: dict, scene: dict) -> dict:
                     is not None
                 ):
                     # instanced object's base object is in the non-pickable decomp list
-                    print('FOUND instance')
+                    print("FOUND instance")
                     parts_list.append(make_intermediate_object(part, is_instance=True))
                 else:
-                    print('skipping pickable (instance)')
+                    print("skipping pickable (instance)")
                     ...
             else:
-                print('skipping pickable (original)')
+                print("skipping pickable (original)")
                 ...
         # print(f"parts list: {parts_list}")
         return parts_list
 
     base_uuid = original_template["template_name"]
     decomp_metadata = get_metadata()
-    original_transform = get_object_tm(original_template)
-    
-    keys = ['translation','rotation','non_uniform_scale']
+    scene_instance_transform = get_object_tm(original_template)
+
+    keys = ["translation", "rotation", "non_uniform_scale"]
     printable_source_dict = {}
-    for key , value in original_template.items():
+    for key, value in original_template.items():
         if key in keys:
             print(f"found {key}!")
-            printable_source_dict[key] = value 
+            printable_source_dict[key] = value
 
-    com_correction = get_com_correction()
-    com_uncorrection = com_correction.inverted()
     objects_to_add = filter_parts()
 
     for new_part in objects_to_add:
         print(f"Adding {new_part['template_name']}...")
         part_transform = get_object_tm(new_part)
+        part_com_correction = get_com_correction(new_part["template_name"])
         # print(f"original part transform: {part_transform}")
-        part_transform = (
-            com_uncorrection @ original_transform @ com_correction @ part_transform
+        final_decomp_transform = (
+            part_com_correction.inverted()
+            @ scene_instance_transform
+            @ part_transform
+            @ part_com_correction
         )
-        #print(f"Adjusted part transform: {part_transform}")
-        part_transform_dict = get_prs_from_tm(part_transform)
+        # print(f"Adjusted part transform: {part_transform}")
+        part_transform_dict = get_prs_from_tm(final_decomp_transform)
         print(f"Original Transform: {printable_source_dict}")
         print(f"Part Transform: {part_transform_dict}")
 
@@ -257,11 +291,6 @@ def replace_scene_object(original_template: dict, scene: dict) -> dict:
 
     return scene
 
-# declarations
-DECOMP_DATA_PATH = "/home/jseagull/dev/fphab/objects/decomposed/decomp_replacements.csv"
-DECOMP_METADATA_PATH = "/home/jseagull/dev/fp-models/objects/decomposed/"
-MAX_FILES_TO_PROCESS = 10
-SCENE_DIR = "/home/jseagull/dev/fphab/scenes-articulated"
 
 # main
 total_objects = 0  # these are declared global in scan_scene_for_objects
@@ -271,13 +300,16 @@ scene_list = collect_scenes(SCENE_DIR)
 
 # load CSV data and enrich with parts metadata instances/transforms
 decomp_list, replaceable_uuids = load_decomp_data(DECOMP_DATA_PATH)
+com_correction_data = load_com_correction_data()
 for scene in scene_list:
     objects_to_replace, new_scene = scan_scene_for_objects(scene)
     for obj in objects_to_replace:
         print(f"replacing {obj['template_name']}...")
         new_scene = replace_scene_object(obj, new_scene)
-        #TODO
-        #write new scene instance to target dir
+    # write new scene instance to target dir
+    out_path = os.path.join((SCENE_DIR + "_v2"),os.path.basename(scene))
+    with open(out_path, "w") as json_file:
+        json.dump(new_scene, json_file, indent=4)
 
 print(
     f"\nReplaced {total_replacements} out of {total_objects} objects across {len(scene_list)} scenes."
