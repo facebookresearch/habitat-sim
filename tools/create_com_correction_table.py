@@ -1,18 +1,9 @@
 import argparse
-import json
 import glob
 import os.path
 import csv
 import gc
-import cv2
 import magnum as mn
-import numpy as np
-from habitat.sims.habitat_simulator.debug_visualizer import (
-    DebugObservation,
-    DebugVisualizer,
-)
-from PIL import Image, ImageChops, ImageDraw, ImageFont
-from PIL.Image import Image as ImageClass
 
 from habitat_sim import Simulator
 from habitat_sim.metadata import MetadataMediator
@@ -40,8 +31,6 @@ def get_com_correction(obj_handle:str)-> mn.Vector3:
     """
     Loads object and returns its com correction
     """
-    # dbug
-    dbug = False
     obj = rom.add_object_by_template_handle(object_lib_handle=obj_handle)
     cc = obj.com_correction
     rom.remove_object_by_handle(handle=obj.handle)
@@ -50,7 +39,7 @@ def get_com_correction(obj_handle:str)-> mn.Vector3:
 # Declarations
 
 START_ITEM = 0
-CHUNK_SIZE = 25
+CHUNK_SIZE = 100
 
 object_data = {}
 
@@ -94,7 +83,7 @@ if __name__ == "__main__":
     full_glb_iter = glob.iglob(
         "/home/jseagull/dev/fphab/objects/**/*.glb", recursive=True
     )
-    exclude_patterns = [".collider.glb", ".filteredSupportSurface.glb"]
+    exclude_patterns = [".collider.glb", ".filteredSupportSurface.glb", "openings"]
     # truncate glb list at max_items
     full_glb_list = [
         f
@@ -128,10 +117,10 @@ if __name__ == "__main__":
     # chunk the handle list for memory management
     chunked_handle_list = []
     for i in range(START_ITEM, len(handle_list), CHUNK_SIZE):
-        chunked_handle_list.append(full_glb_list[i : i + CHUNK_SIZE])
+        chunked_handle_list.append(handle_list[i : i + CHUNK_SIZE])
 
     print("\n######## Starting Simulator... #########################\n")
-
+    icount = 0
     for uuid_sublist in chunked_handle_list:
         with Simulator(cfg) as sim:
             print("")
@@ -141,11 +130,10 @@ if __name__ == "__main__":
                 obj_cc = get_com_correction(obj)
                 row = [obj, obj_cc.x, obj_cc.y, obj_cc.z]
                 chunk_rows.append(row)
-                print(row)
-            with open(output_path, "w", newline="", encoding="utf-8") as f:
+            with open(output_path, "a", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f)
                 writer.writerows(chunk_rows)
             sim.close()
+            icount += 1
+            print(f"wrote chunk {icount} of {len(chunked_handle_list)}")
             gc.collect()
-
-    # write log
