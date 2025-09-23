@@ -4,7 +4,6 @@ import glob
 import os.path
 import csv
 import gc
-import cv2
 import magnum as mn
 import numpy as np
 from habitat.sims.habitat_simulator.debug_visualizer import (
@@ -13,6 +12,7 @@ from habitat.sims.habitat_simulator.debug_visualizer import (
 )
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 from PIL.Image import Image as ImageClass
+import cv2
 
 from habitat_sim import Simulator, SimulatorConfiguration
 from habitat_sim.metadata import MetadataMediator
@@ -31,7 +31,9 @@ COLOR_RESET = "\033[0m"
 DECOMP_DATA_PATH = "/home/jseagull/dev/fphab/decomp_replacements.csv"
 SCENE_PATH_ROOT = "/home/jseagull/dev/fphab/scenes"
 IMAGE_OUTPUT_PATH_ROOT = "/home/jseagull/dev/fphab/diag/"
+FAIL_THRESHOLD = 1
 cfg = SimulatorConfiguration()
+
 
 def initialize_habitat() -> tuple[MetadataMediator, SimulatorConfiguration, list]:
     """Register all GLBs as templates, configure simulator, and init the metadata mediator"""
@@ -50,8 +52,12 @@ def initialize_habitat() -> tuple[MetadataMediator, SimulatorConfiguration, list
         return library_handle
 
     # configure simulator
-
+    sim_settings = default_sim_settings.copy()
     sim_settings["width"] = sim_settings["height"] = IMAGE_SIZE
+    #debugObservation only does RGB, skipping for now
+    #sim_settings["depth_sensor"] = True
+    #sim_settings["color_sensor"] = False
+    #sim_settings["requires_textures"] = True
     sim_settings["enable_hbao"] = True  # Ambient Occlusion
     sim_settings["default_agent_navmesh"] = False
     sim_settings["scene_dataset_config_file"] = dataset_old
@@ -119,10 +125,11 @@ def scan_scene_for_objects(scene_id: str) -> list:
         print(objects_to_replace)
     return list(objects_to_replace)
 
-def switch_datasets(target:str) -> bool:
-    if target is "new":
+
+def switch_datasets(target: str) -> bool:
+    if target == "new":
         target_dataset = dataset_new
-    elif target is "old":
+    elif target == "old":
         target_dataset = dataset_old
     else:
         return False
@@ -130,6 +137,7 @@ def switch_datasets(target:str) -> bool:
     mm.active_dataset = target_dataset
     cfg = make_cfg(sim_settings)
     return cfg
+
 
 def observe_reference_object(
     obj: ManagedBulletRigidObject,
@@ -144,44 +152,25 @@ def observe_reference_object(
     return observation, obj_bb, obj_transform
 
 
-def observe_new_object(poi_bb, poi_transform) -> DebugObservation:
+def observe_new_object(
+    poi_bb: mn.Range3D, poi_transform: mn.Matrix4
+) -> DebugObservation:
     """
     Takes a peek at a particular point in a scene, as logged from observe_reference_object()
     """
     observation = dbv.peek(poi_bb, peek_all_axis=True, subject_transform=poi_transform)
     return observation
 
+def make_friendly_image_name(observation:dict) -> str:
+    '''Make a human-friendly output basename retaining meaningful info:
+    [scene id]_[first 6 of UUID]_[2-digit scene instance]
+    '''
+    short_uuid = observation["handle"].split(":")[0][0:6]
+    instance = observation["handle"].split(":")[1][-2:]
+    name_str = f"{observation['scene_id']}_{short_uuid}_{instance}"
+    return name_str
 
-def compare_decomposed(object_uuid) -> None:
-    this_object = object_data.get(object_uuid, {})
-    print(f"{object_uuid}...", end="")
-    dedup_obs, poi_bb, poi_transform = observe_dedup_object(object_uuid)
-    parts_obs = observe_composed_object(poi_bb, poi_transform, this_object)
-    results = analyze_observations(dedup_obs, parts_obs, "")
-    # log to logfile
-    with open(log_path, "a", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow([object_uuid, results[1]])
-    # log to console
-    if results[1] < 0.25:
-        print(f"OK")
-        destination_subfolder = "pass"
-    else:
-        print(f"{COLOR_WARNING}CHECK ({results[1]}% variance){COLOR_RESET}")
-        destination_subfolder = "fail"
-
-    if not args.batch:
-        results[0].show()
-
-    try:
-        destination = f"{args.folder}/{destination_subfolder}/{object_uuid}.png"
-        results[0].save(destination)
-    except IOError:
-        print(f"{COLOR_WARNING}Can't save image for{COLOR_RESET} {object_uuid}!")
-
-
-def analyze_observations(
-    dedup_obs: DebugObservation, parts_obs: DebugObservation, destination_folder: str
+def analyze_observations(observation:dict
 ) -> tuple[ImageClass, float]:
     """Returns a composite image of the reference mesh image, the composed parts image, and an image showing the difference between the two. Also returns a score of how different they are."""
 
@@ -198,28 +187,28 @@ def analyze_observations(
         return Image.fromarray(input_arr)
 
     # prepare PIL and OpenCV versions of the observations for analysis
-    dedup_img_PIL = dedup_obs.get_image().convert("RGB")
-    dedup_img_cv2 = PIL_to_cv2(dedup_img_PIL)
-    parts_img_PIL = parts_obs.get_image().convert("RGB")
-    parts_img_cv2 = PIL_to_cv2(parts_img_PIL)
+    ref_img = observation["ref_img"]
+    ref_img_cv2 = PIL_to_cv2(ref_img)
+    decomp_img = observation["decomp_img"]
+    decomp_img_cv2 = PIL_to_cv2(decomp_img)
 
     ### Image analysis ###
 
     # Absolute difference score
-    res = cv2.absdiff(dedup_img_cv2, parts_img_cv2)
+    res = cv2.absdiff(ref_img_cv2, decomp_img_cv2)
     res = res.astype(np.uint8)
     res_nz = np.count_nonzero(res)
     nz_pct = round((res_nz * 100) / res.size, 2)
 
     # Make difference image
     diff_img_PIL = ImageChops.invert(
-        ImageChops.difference(dedup_img_PIL, parts_img_PIL).convert("RGB")
+        ImageChops.difference(ref_img, decomp_img).convert("RGB")
     )
 
     # Build diagnostic image array
-    img_list = [dedup_img_PIL, parts_img_PIL, diff_img_PIL]
-    diag_w = parts_img_PIL.size[0]
-    diag_h = parts_img_PIL.size[1]
+    img_list = [ref_img, decomp_img, diff_img_PIL]
+    diag_w = decomp_img.size[0]
+    diag_h = decomp_img.size[1]
     diag_img = Image.new("RGB", (diag_w, diag_h * 3))
     paste_row = 0
     for i in range(3):
@@ -227,19 +216,23 @@ def analyze_observations(
         paste_row += diag_h
 
     # write the UUID and variance on the image
+    caption = f"{make_friendly_image_name(observation)}\n{nz_pct}%"
+    if nz_pct < FAIL_THRESHOLD:
+        fill_color = (0,0,0)
+    else:
+        fill_color = (128,0,0)
     draw_context = ImageDraw.Draw(diag_img)
-    draw_font = ImageFont.truetype("data/fonts/ProggyClean.ttf", 128)
+    draw_font = ImageFont.truetype("data/fonts/ProggyClean.ttf", 36)
     draw_context.text(
         (64, (2 * diag_h + 64)),
-        f"{object_uuid} - {nz_pct}%",
+        caption,
         font=draw_font,
-        fill=(0, 0, 0),
+        fill=fill_color,
     )
 
     return (diag_img, nz_pct)
 
 
-object_data = {}
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
@@ -270,7 +263,7 @@ if __name__ == "__main__":
         "-o",
         "--output_path",
         type=str,
-        default="/home/jseagull/dev/fp-models/diagnostics",
+        default="/home/jseagull/dev/fphab/diag",
         help="output folder for images and CSV",
         action="store",
     )
@@ -280,21 +273,20 @@ if __name__ == "__main__":
 
     # start logging
     os.environ["MAGNUM_LOG"] = "quiet"
-    # os.environ['HABITAT_SIM_LOG']='quiet'
+    os.environ['HABITAT_SIM_LOG']='quiet'
 
     assert os.path.exists(args.output_path)
     log_data = []
     log_path = f"{args.output_path}/decomp_scene_check.csv"
     with open(log_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(["scene", "base_uuid", "variance_pct"])
+        writer.writerow(["scene", "base_uuid", "instance","variance"])
 
     if not args.batch:
         scene_list = [args.scene]
-        chunked_scene_list = [scene_list]
     else:
-        full_scene_list = [
-            os.path.splitext(os.path.basename(scene))[0]
+        scene_list = [
+            (os.path.basename(scene)).split(".")[0]
             for scene in glob.glob(
                 "/home/jseagull/dev/fphab/scenes/*.scene_instance.json"
             )
@@ -312,11 +304,10 @@ if __name__ == "__main__":
         if len(replaced_uuids) == 0:
             print(f"no replaced objects in {scene_id} - skipping")
             continue
+        # snap 'before' images
         cfg = switch_datasets("old")
-        decomp_poi_list = []
-        # snap before images
+        observation_list = []
         with Simulator(cfg) as sim:
-            print("")
             dbv = DebugVisualizer(sim, resolution=(IMAGE_SIZE, IMAGE_SIZE))
             rom = sim.get_rigid_object_manager()
             handles = []
@@ -325,51 +316,62 @@ if __name__ == "__main__":
             for handle in handles:
                 ref_object = rom.get_object_by_handle(handle)
                 if ref_object is not None:
-                    ref_img, poi_bb, poi_transform = observe_reference_object(
+                    ref_obs, poi_bb, poi_transform = observe_reference_object(
                         ref_object
                     )
-                    decomp_poi_list.append((poi_bb,poi_transform))
-                    before_file = scene_id + "-" + handle + "_ref.png"
-                    out_path = os.path.join(IMAGE_OUTPUT_PATH_ROOT, before_file)
-                    ref_img.save(out_path)
+                    ref_img = ref_obs.get_image().convert("RGB")
+                    observation_list.append(
+                        {
+                            "scene_id" : scene_id,
+                            "poi_bb": poi_bb,
+                            "poi_transform": poi_transform,
+                            "handle": handle,
+                            "ref_img": ref_img,
+                        }
+                    )
+                    # out_path = make_friendly_image_name(scene_id,handle,"old")
+                    # ref_img.save(out_path)
                     # dbug
-                    ref_img.show()
+                    # print(f"output path: {out_path}")
+                    # ref_img.show()
                 else:
                     print(f"ERROR - couldn't get object for handle {handle}")
             sim.close()
             gc.collect()
-
+        #now snap the updated scene
         cfg = switch_datasets("new")
         with Simulator(cfg) as sim:
-            print("")
             dbv = DebugVisualizer(sim, resolution=(IMAGE_SIZE, IMAGE_SIZE))
             rom = sim.get_rigid_object_manager()
-            for decomp in decomp_poi_list:
-                decomp_img = dbv.peek(decomp[0], peek_all_axis=True, subject_transform=decomp[1])
-                after_file = scene_id + "-" + handle + "_new.png"
-                out_path = os.path.join(IMAGE_OUTPUT_PATH_ROOT, after_file)
-                ref_img.save(out_path)
+            for decomp in observation_list:
+                decomp_obs = dbv.peek(
+                    decomp["poi_bb"], peek_all_axis=True, subject_transform=decomp["poi_transform"]
+                )
+                decomp_img = decomp_obs.get_image().convert("RGB")
+                decomp["decomp_img"] = decomp_img
+                #out_path = make_friendly_image_name(scene_id,decomp["handle"],"")
+                #decomp_img.save(out_path)
                 # dbug
-                ref_img.show()
+                #ref_img.show()
             sim.close()
             gc.collect()
-
-    # write log
-"""
-Init metadata mediator
-set up sim
-Get scene list
-    for each scene:
-    Get list of replaceable objects in original scene
-    Load old scene # heres the miracle
-    peek at each object in list w RGB/depth and log location
-    Load new scene
-    peek each logged location w RGB/Depth
-    Do image processing:
-        subtract old depth from new depth image
-        count nonblack pixels
-        composite before/after/depth to output image
-        write text on image
-        save image
-    log results
-"""
+        #now we do image processing on the list of dicts and log results to CSV
+        for observation in observation_list:
+            composite_image, diff_pct = analyze_observations(observation)
+            with open(log_path, "a", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                log_handle = observation["handle"].split("_")[0]
+                log_instance = observation["handle"].split(":")[1]
+                writer.writerow([observation["scene_id"], log_handle, log_instance, diff_pct])
+            if diff_pct < FAIL_THRESHOLD:
+                print(f"OK")
+                destination_subfolder = "pass"
+            else:
+                print(f"{COLOR_WARNING}CHECK ({diff_pct}% variance){COLOR_RESET}")
+                destination_subfolder = "fail"
+            try:
+                destination_file = make_friendly_image_name(observation)
+                destination_path = os.path.join(IMAGE_OUTPUT_PATH_ROOT, destination_subfolder,(destination_file + ".png"))
+                composite_image.save(destination_path)
+            except IOError:
+                print(f"{COLOR_WARNING}Can't save image for{COLOR_RESET} {object_uuid}!")
