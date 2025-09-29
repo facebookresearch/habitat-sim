@@ -313,15 +313,17 @@ class HabitatSimInteractiveViewer(Application):
         # -----------------------------------------
         # Clutter Generation Integration:
         self.clutter_object_set = [
-            "002_master_chef_can",
+            # "002_master_chef_can",
             "003_cracker_box",
             "004_sugar_box",
             "005_tomato_soup_can",
             "007_tuna_fish_can",
-            "008_pudding_box",
-            "009_gelatin_box",
-            "010_potted_meat_can",
+            # "008_pudding_box",
+            # "009_gelatin_box",
+            # "010_potted_meat_can",
             "024_bowl",
+            "025_mug",
+            "029_plate",
         ]
         self.clutter_object_handles = []
         self.clutter_object_instances = []
@@ -1348,8 +1350,10 @@ class HabitatSimInteractiveViewer(Application):
             self._framebuffer_video.record_video_frame()
             self._framebuffer_video.show_frame(0)
             multi_observations = self.sim.get_sensor_observations(0)
+            rgb_obs = multi_observations["color_sensor"]
+            observation_to_image(rgb_obs, "color").save("rgb.png")
             depth_obs = multi_observations["depth_sensor"]
-            observation_to_image(depth_obs, "depth").show()
+            observation_to_image(depth_obs, "depth").save("depth.png")
 
         elif key == pressed.SPACE:
             if not self.sim.config.sim_cfg.enable_physics:
@@ -1363,10 +1367,31 @@ class HabitatSimInteractiveViewer(Application):
                 # Save agent pose to JSON
                 agent_transform = self.default_agent.scene_node.transformation
                 camera_transform = self.render_camera.node.transformation
+
+                # NOTE: for reference, the following converts a 3D screen point to a 2D point on the screen
+                # projected_point_3d = render_camera.projection_matrix.transform_point(render_camera.camera_matrix.transform_point(point))
+                # point_2d = mn.Vector2(projected_point_3d[0], -projected_point_3d[1])
+                # point_2d = point_2d / render_camera.projection_size()[0]
+                # point_2d += mn.Vector2(0.5)
+                # point_2d *= render_camera.viewport
+
                 json_state = {
                     "agent_transform": np.array(agent_transform).tolist(),
                     "camera_transform": np.array(camera_transform).tolist(),
+                    "camera_absolute_transformation": np.array(
+                        self.render_camera.node.absolute_transformation()
+                    ).tolist(),
+                    "project_matrix": np.array(
+                        self.render_camera.render_camera.projection_matrix
+                    ).tolist(),
+                    "camera_matrix": np.array(
+                        self.render_camera.render_camera.camera_matrix
+                    ).tolist(),
+                    "viewport": np.array(
+                        self.render_camera.render_camera.viewport
+                    ).tolist(),
                 }
+
                 json_state["objects"] = []
                 for obj in self.clutter_object_instances:
                     obj_state = {
