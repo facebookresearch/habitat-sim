@@ -28,6 +28,7 @@ from habitat.datasets.rearrange.samplers.object_sampler import ObjectSampler
 from habitat.sims.habitat_simulator.debug_visualizer import DebugVisualizer
 from magnum import shaders, text
 from magnum.platform.glfw import Application
+from video_recorder import VideoRecorder, VideoSourceFramebuffer
 
 import habitat_sim
 from habitat_sim import ReplayRenderer, ReplayRendererConfiguration, physics
@@ -37,6 +38,7 @@ from habitat_sim.utils.classes import MarkerSetsEditor, ObjectEditor, SemanticDi
 from habitat_sim.utils.common import quat_from_angle_axis
 from habitat_sim.utils.namespace import hsim_physics
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
+from habitat_sim.utils.viz_utils import observation_to_image
 
 # add tools directory so I can import things to try them in the viewer
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../tools"))
@@ -822,7 +824,7 @@ class HabitatSimInteractiveViewer(Application):
             debug_line_render=debug_line_render,
         )
         # mouse raycast circle
-        if self.mouse_cast_has_hits:
+        if False:
             debug_line_render.draw_circle(
                 translation=self.mouse_cast_results.hits[0].point,
                 radius=0.005,
@@ -895,7 +897,7 @@ class HabitatSimInteractiveViewer(Application):
 
         # draw CPU/GPU usage data and other info to the app window
         mn.gl.default_framebuffer.bind()
-        self.draw_text(self.render_camera.specification())
+        # self.draw_text(self.render_camera.specification())
 
         self.swap_buffers()
         Timer.next_frame()
@@ -1339,7 +1341,15 @@ class HabitatSimInteractiveViewer(Application):
 
         elif key == pressed.TAB:
             # Cycle through scenes
-            self.cycleScene(True, shift_pressed=shift_pressed)
+            # self.cycleScene(True, shift_pressed=shift_pressed)
+            self._framebuffer_video = VideoRecorder(
+                VideoSourceFramebuffer(),
+            )
+            self._framebuffer_video.record_video_frame()
+            self._framebuffer_video.show_frame(0)
+            multi_observations = self.sim.get_sensor_observations(0)
+            depth_obs = multi_observations["depth_sensor"]
+            observation_to_image(depth_obs, "depth").show()
 
         elif key == pressed.SPACE:
             if not self.sim.config.sim_cfg.enable_physics:
@@ -1349,11 +1359,62 @@ class HabitatSimInteractiveViewer(Application):
                 logger.info(f"Command: physics simulating set to {self.simulating}")
 
         elif key == pressed.PERIOD:
-            if self.simulating:
-                logger.warn("Warning: physics simulation already running")
+            if shift_pressed:
+                # Save agent pose to JSON
+                agent_transform = self.default_agent.scene_node.transformation
+                camera_transform = self.render_camera.node.transformation
+                json_state = {
+                    "agent_transform": np.array(agent_transform).tolist(),
+                    "camera_transform": np.array(camera_transform).tolist(),
+                }
+                json_state["objects"] = []
+                for obj in self.clutter_object_instances:
+                    obj_state = {
+                        "handle": obj.handle,
+                        "transform": np.array(obj.transformation).tolist(),
+                    }
+                    json_state["objects"].append(obj_state)
+                with open("sim_state.json", "w") as f:
+                    json.dump(json_state, f, indent=2)
+                print("Saved agent pose to sim_state.json")
             else:
-                self.simulate_single_step = True
-                logger.info("Command: physics step taken")
+                # Load agent pose from JSON
+                try:
+                    with open("sim_state.json", "r") as f:
+                        state_json = json.load(f)
+                    self.default_agent.scene_node.transformation = mn.Matrix4(
+                        np.array(state_json["agent_transform"])
+                    )
+                    self.render_camera.node.transformation = mn.Matrix4(
+                        np.array(state_json["camera_transform"])
+                    )
+                    depth_camera = self.default_agent.scene_node.node_sensor_suite.get(
+                        "depth_sensor"
+                    )
+                    depth_camera.node.transformation = mn.Matrix4(
+                        np.array(state_json["camera_transform"])
+                    )
+                    print("Loaded agent pose from sim_state.json")
+                    if "objects" in state_json:
+                        rom = self.sim.get_rigid_object_manager()
+                        for obj_state in state_json["objects"]:
+                            obj_name = obj_state["handle"].split("_:")[0]
+                            matching_handles = self.sim.metadata_mediator.object_template_manager.get_template_handles(
+                                obj_name
+                            )
+                            obj = rom.add_object_by_template_handle(matching_handles[0])
+                            self.clutter_object_instances.append(obj)
+                            obj.transformation = mn.Matrix4(
+                                np.array(obj_state["transform"])
+                            )
+                except Exception as e:
+                    print(f"Failed to load agent pose: {e}")
+
+            # if self.simulating:
+            #     logger.warn("Warning: physics simulation already running")
+            # else:
+            #     self.simulate_single_step = True
+            #     logger.info("Command: physics step taken")
 
         elif key == pressed.COMMA:
             self.debug_bullet_draw = not self.debug_bullet_draw
@@ -1656,6 +1717,8 @@ class HabitatSimInteractiveViewer(Application):
             mouse_cast_results is not None and mouse_cast_results.has_hits()
         )
         self.mouse_cast_results = mouse_cast_results
+        if self.mouse_cast_has_hits:
+            print(self.mouse_cast_results.hits[0].point)
 
     def mouse_look_handler(
         self, is_right_btn: bool, shift_pressed: bool, alt_pressed: bool
@@ -2494,6 +2557,7 @@ if __name__ == "__main__":
     sim_settings["rec_filter_file"] = args.rec_filter_file
     sim_settings["enable_hbao"] = args.hbao
     sim_settings["viewer_ignore_navmesh"] = args.no_navmesh
+    sim_settings["depth_sensor"] = True
 
     # don't need auto-navmesh
     sim_settings["default_agent_navmesh"] = False
