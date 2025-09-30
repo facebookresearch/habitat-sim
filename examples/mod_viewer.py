@@ -325,6 +325,15 @@ class HabitatSimInteractiveViewer(Application):
             "025_mug",
             "029_plate",
         ]
+
+        self.clutter_object_set = [
+            obj
+            for obj in self.clutter_object_set
+            if self.sim_settings["object"] in obj or self.sim_settings["object"] == ""
+        ]
+
+        self.export_index = 0
+
         self.clutter_object_handles = []
         self.clutter_object_instances = []
         # cache initial states for classification of unstable objects
@@ -1291,7 +1300,7 @@ class HabitatSimInteractiveViewer(Application):
                     self.clutter_object_handles,
                     ["rec set"],
                     orientation_sample="up",
-                    num_objects=(1, 10),
+                    num_objects=(1, 1),
                 )
                 obj_samp.receptacle_instances = self.receptacles
                 rec_set_obj = hab_receptacle.ReceptacleSet(
@@ -1310,6 +1319,45 @@ class HabitatSimInteractiveViewer(Application):
                     print(f"Sampled '{obj.handle}' in '{rec.unique_name}'")
             else:
                 print("No object selected, cannot sample clutter.")
+
+    def save_scene_state(self, prefix: str = "") -> None:
+        # Save agent pose to JSON
+        agent_transform = self.default_agent.scene_node.transformation
+        camera_transform = self.render_camera.node.transformation
+
+        # NOTE: for reference, the following converts a 3D screen point to a 2D point on the screen
+        # projected_point_3d = render_camera.projection_matrix.transform_point(render_camera.camera_matrix.transform_point(point))
+        # point_2d = mn.Vector2(projected_point_3d[0], -projected_point_3d[1])
+        # point_2d = point_2d / render_camera.projection_size()[0]
+        # point_2d += mn.Vector2(0.5)
+        # point_2d *= render_camera.viewport
+
+        json_state = {
+            "scene": self.sim.curr_scene_name,
+            "agent_transform": np.array(agent_transform).tolist(),
+            "camera_transform": np.array(camera_transform).tolist(),
+            "camera_absolute_transformation": np.array(
+                self.render_camera.node.absolute_transformation()
+            ).tolist(),
+            "project_matrix": np.array(
+                self.render_camera.render_camera.projection_matrix
+            ).tolist(),
+            "camera_matrix": np.array(
+                self.render_camera.render_camera.camera_matrix
+            ).tolist(),
+            "viewport": np.array(self.render_camera.render_camera.viewport).tolist(),
+        }
+
+        json_state["objects"] = []
+        for obj in self.clutter_object_instances:
+            obj_state = {
+                "handle": obj.handle,
+                "transform": np.array(obj.transformation).tolist(),
+            }
+            json_state["objects"].append(obj_state)
+        with open(f"{prefix}_sim_state.json", "w") as f:
+            json.dump(json_state, f, indent=2)
+        print(f"Saved agent pose to {prefix}_sim_state.json")
 
     def key_press_event(self, event: Application.KeyEvent) -> None:
         """
@@ -1351,9 +1399,17 @@ class HabitatSimInteractiveViewer(Application):
             self._framebuffer_video.show_frame(0)
             multi_observations = self.sim.get_sensor_observations(0)
             rgb_obs = multi_observations["color_sensor"]
-            observation_to_image(rgb_obs, "color").save("rgb.png")
+            observation_to_image(rgb_obs, "color").save(
+                f"{self.sim_settings['object']}_{self.export_index:03d}_rgb.png"
+            )
             depth_obs = multi_observations["depth_sensor"]
-            observation_to_image(depth_obs, "depth").save("depth.png")
+            observation_to_image(depth_obs, "depth").save(
+                f"{self.sim_settings['object']}_{self.export_index:03d}_depth.png"
+            )
+            self.save_scene_state(
+                prefix=self.sim_settings["object"] + f"_{self.export_index:03d}"
+            )
+            self.export_index += 1
 
         elif key == pressed.SPACE:
             if not self.sim.config.sim_cfg.enable_physics:
@@ -2491,6 +2547,12 @@ if __name__ == "__main__":
         help='scene/stage file to load (default: "./data/test_assets/scenes/simple_room.glb")',
     )
     parser.add_argument(
+        "--object",
+        type=str,
+        default="",
+        help='An object name to place in the scene and for prefixing saved images and state data from the app.")',
+    )
+    parser.add_argument(
         "--dataset",
         default="default",
         type=str,
@@ -2583,6 +2645,7 @@ if __name__ == "__main__":
     sim_settings["enable_hbao"] = args.hbao
     sim_settings["viewer_ignore_navmesh"] = args.no_navmesh
     sim_settings["depth_sensor"] = True
+    sim_settings["object"] = args.object
 
     # don't need auto-navmesh
     sim_settings["default_agent_navmesh"] = False
