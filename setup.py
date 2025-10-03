@@ -276,7 +276,8 @@ class CMakeBuild(build_ext):
         # Init & update all submodules if not already (the user might be pinned
         # on some particular commit or have working tree changes, don't destroy
         # those)
-        if in_git() and not args.no_update_submodules:
+        skip_submodule_update_env = os.environ.get("HSIM_NO_SUBMODULE_UPDATE", "").lower() in {"1", "true", "yes"}
+        if in_git() and not args.no_update_submodules and not skip_submodule_update_env:
             subprocess.check_call(
                 ["git", "submodule", "update", "--init", "--recursive"]
             )
@@ -288,6 +289,7 @@ class CMakeBuild(build_ext):
             "-DCMAKE_EXPORT_COMPILE_COMMANDS={}".format("OFF" if is_pip() else "ON"),
             "-DREL_BUILD_RPATH={}".format("OFF" if self.inplace else "ON"),
         ]
+        skip_cmake_build_env = os.environ.get("HSIM_SKIP_CMAKE_BUILD", "").lower() in {"1", "true", "yes"}
         if args.lto is not None:
             cmake_args += [
                 "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION={}".format(
@@ -355,39 +357,44 @@ class CMakeBuild(build_ext):
             env.get("CXXFLAGS", ""), self.distribution.get_version()
         )
 
-        if is_pip() or self.run_cmake(cmake_args):
-            os.makedirs(self.build_temp, exist_ok=True)
-            # Remove invalid cmakefiles if is is_pip()
-            for cmake_cache_f in [
-                "CMakeFiles",
-                "CMakeCache.txt",
-                "cmake_install.cmake",
-            ]:
-                cmake_cache_f = osp.join(self.build_temp, cmake_cache_f)
-                if is_pip() and osp.exists(cmake_cache_f):
-                    if osp.isdir(cmake_cache_f):
-                        shutil.rmtree(cmake_cache_f)
-                    else:
-                        os.remove(cmake_cache_f)
+        if skip_cmake_build_env:
+            print("HSIM_SKIP_CMAKE_BUILD is set; reusing existing build artifacts in", self.build_temp)
+            if is_pip():
+                return
+        else:
+            if is_pip() or self.run_cmake(cmake_args):
+                os.makedirs(self.build_temp, exist_ok=True)
+                # Remove invalid cmakefiles if is is_pip()
+                for cmake_cache_f in [
+                    "CMakeFiles",
+                    "CMakeCache.txt",
+                    "cmake_install.cmake",
+                ]:
+                    cmake_cache_f = osp.join(self.build_temp, cmake_cache_f)
+                    if is_pip() and osp.exists(cmake_cache_f):
+                        if osp.isdir(cmake_cache_f):
+                            shutil.rmtree(cmake_cache_f)
+                        else:
+                            os.remove(cmake_cache_f)
+                subprocess.check_call(
+                    [osp.join(CMAKE_BIN_DIR, "cmake")]
+                    + cmake_args
+                    + [osp.realpath(ext.sourcedir)],
+                    env=env,
+                    cwd=self.build_temp,
+                )
+
+            if not is_pip():
+                self.create_compile_commands()
+
             subprocess.check_call(
-                [osp.join(CMAKE_BIN_DIR, "cmake")]
-                + cmake_args
-                + [osp.realpath(ext.sourcedir)],
-                env=env,
-                cwd=self.build_temp,
+                [osp.join(CMAKE_BIN_DIR, "cmake"), "--build", self.build_temp] + build_args
             )
+            print()  # Add an empty line for cleaner output
 
-        if not is_pip():
-            self.create_compile_commands()
-
-        subprocess.check_call(
-            [osp.join(CMAKE_BIN_DIR, "cmake"), "--build", self.build_temp] + build_args
-        )
-        print()  # Add an empty line for cleaner output
-
-        # The things following this don't work with pip
-        if is_pip():
-            return
+            # The things following this don't work with pip
+            if is_pip():
+                return
 
         if not args.headless:
             link_dst = osp.join(self.build_temp, "viewer")
