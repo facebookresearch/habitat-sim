@@ -1,3 +1,4 @@
 graft src_python/habitat_sim/sensors/noise_models/data
+graft src_python/habitat_sim/_ext
 include README_PYPI.md
 include README_TBP_USERS.md

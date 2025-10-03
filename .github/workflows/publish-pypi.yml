@@ -72,13 +72,17 @@ jobs:
         run: |
           python setup.py build_ext --inplace
 
-      - name: Build wheel
-        env:
-          HSIM_NO_SUBMODULE_UPDATE: "1"
-          # Always skip CMake build for wheel - it was already built in previous step
-          HSIM_SKIP_CMAKE_BUILD: "1"
+      - name: Copy compiled bindings to source tree
         run: |
-          uv build --wheel
+          # Copy .so files from build dir to source tree for packaging
+          mkdir -p src_python/habitat_sim/_ext
+          cp -v build/RelWithDebInfo/lib/habitat_sim_bindings*.so src_python/habitat_sim/_ext/ || echo "Bindings already in place"
+          ls -lh src_python/habitat_sim/_ext/
+
+      - name: Build wheel
+        run: |
+          # Build wheel with bindings already in source tree
+          python setup.py bdist_wheel
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
