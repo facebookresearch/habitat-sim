@@ -46,6 +46,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+build-headless/
 develop-eggs/
 dist/
 downloads/
