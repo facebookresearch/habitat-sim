@@ -359,6 +359,23 @@ class CMakeBuild(build_ext):
 
         if skip_cmake_build_env:
             print("HSIM_SKIP_CMAKE_BUILD is set; reusing existing build artifacts in", self.build_temp)
+            # When skipping build, we still need to copy compiled bindings to extdir
+            # Copy compiled .so from build directory to extension directory
+            build_lib = osp.join(self.build_temp, build_type, "lib")
+            binding_pattern = "habitat_sim_bindings*.so"
+            binding_files = glob.glob(osp.join(build_lib, binding_pattern))
+
+            if binding_files:
+                # extdir already points to habitat_sim/_ext, so copy directly there
+                os.makedirs(extdir, exist_ok=True)
+
+                for binding_file in binding_files:
+                    dest_file = osp.join(extdir, osp.basename(binding_file))
+                    print(f"Copying compiled binding: {osp.basename(binding_file)} ({os.path.getsize(binding_file) / 1024 / 1024:.1f} MB)")
+                    shutil.copy2(binding_file, dest_file)
+            else:
+                print(f"WARNING: No compiled bindings found in {build_lib}")
+
             if is_pip():
                 return
         else:
@@ -472,12 +489,20 @@ if __name__ == "__main__":
     builtins.__HSIM_SETUP__ = True
     import habitat_sim
 
+    # Read README for PyPI
+    readme_path = osp.join(osp.dirname(__file__), "README_PYPI.md")
+    long_description = ""
+    if osp.exists(readme_path):
+        with open(readme_path, "r", encoding="utf-8") as f:
+            long_description = f.read()
+
     setup(
         name="habitat-sim-uv-wheels-experimental",
         version=habitat_sim.__version__,
         author="killerapp (UV/WSL2 build) - Original: FAIR A-STAR",
         description="Experimental UV/pip-compatible wheel for habitat-sim (WSL2/Linux) - For TBP Monty",
-        long_description="Unofficial experimental wheel build of habitat-sim for UV/pip workflows. Built with WSL2/D3D12 support. See https://github.com/killerapp/habitat-sim for build details.",
+        long_description=long_description,
+        long_description_content_type="text/markdown",
         packages=find_packages(where="src_python"),
         package_dir={"": "src_python"},
         install_requires=requirements,
