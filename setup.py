@@ -473,11 +473,11 @@ if __name__ == "__main__":
     import habitat_sim
 
     setup(
-        name="habitat_sim",
+        name="habitat-sim-uv-wheels-experimental",
         version=habitat_sim.__version__,
-        author="FAIR A-STAR",
-        description="A high performance simulator for training embodied agents",
-        long_description="",
+        author="killerapp (UV/WSL2 build) - Original: FAIR A-STAR",
+        description="Experimental UV/pip-compatible wheel for habitat-sim (WSL2/Linux) - For TBP Monty",
+        long_description="Unofficial experimental wheel build of habitat-sim for UV/pip workflows. Built with WSL2/D3D12 support. See https://github.com/killerapp/habitat-sim for build details.",
         packages=find_packages(where="src_python"),
         package_dir={"": "src_python"},
         install_requires=requirements,
@@ -489,6 +489,12 @@ if __name__ == "__main__":
         cmdclass=dict(build_ext=CMakeBuild),
         zip_safe=False,
         include_package_data=True,
+        license="MIT",  # Explicit license for PyPI compatibility
+        url="https://github.com/killerapp/habitat-sim",
+        project_urls={
+            "Original Repository": "https://github.com/facebookresearch/habitat-sim",
+            "TBP Monty": "https://github.com/thousandbrainsproject/tbp.monty",
+        },
     )
     pymagnum_build_dir = osp.join(
         _cmake_build_dir, "deps", "magnum-bindings", "src", "python"
