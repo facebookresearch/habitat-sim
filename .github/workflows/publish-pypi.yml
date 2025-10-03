@@ -75,7 +75,8 @@ jobs:
       - name: Build wheel
         env:
           HSIM_NO_SUBMODULE_UPDATE: "1"
-          HSIM_SKIP_CMAKE_BUILD: ${{ github.event.inputs.build_type == 'quick' && '1' || '0' }}
+          # Always skip CMake build for wheel - it was already built in previous step
+          HSIM_SKIP_CMAKE_BUILD: "1"
         run: |
           uv build --wheel
 
