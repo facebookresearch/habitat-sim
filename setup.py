@@ -26,6 +26,12 @@ from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
 try:
+    from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
+    has_wheel = True
+except ImportError:
+    has_wheel = False
+
+try:
     import cmake
 
     # If the cmake python package is installed, use that exe
@@ -479,6 +485,22 @@ class CMakeBuild(build_ext):
                 f.write(new_contents)
 
 
+class bdist_wheel_manylinux(_bdist_wheel if has_wheel else object):
+    """Custom bdist_wheel to generate manylinux platform tag for PyPI compatibility"""
+
+    def finalize_options(self):
+        if has_wheel:
+            _bdist_wheel.finalize_options(self)
+            self.root_is_pure = False
+
+    def get_tag(self):
+        if has_wheel:
+            python, abi, plat = _bdist_wheel.get_tag(self)
+            # Use manylinux_2_31 (glibc 2.31+, Ubuntu 20.04+)
+            return python, abi, "manylinux_2_31_x86_64"
+        return super().get_tag()
+
+
 if __name__ == "__main__":
     assert StrictVersion(
         "{}.{}".format(sys.version_info[0], sys.version_info[1])
@@ -511,7 +533,10 @@ if __name__ == "__main__":
         # add extension module
         ext_modules=[CMakeExtension("habitat_sim._ext.habitat_sim_bindings", "src")],
         # add custom build_ext command
-        cmdclass=dict(build_ext=CMakeBuild),
+        cmdclass={
+            "build_ext": CMakeBuild,
+            **({} if not has_wheel else {"bdist_wheel": bdist_wheel_manylinux}),
+        },
         zip_safe=False,
         include_package_data=True,
         license="MIT",  # Explicit license for PyPI compatibility
