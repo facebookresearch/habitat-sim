@@ -27,6 +27,11 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Apply OpenEXR patches
+        run: |
+          chmod +x .github/scripts/patch-openexr.sh
+          ./.github/scripts/patch-openexr.sh
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
