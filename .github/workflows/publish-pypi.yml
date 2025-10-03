@@ -40,7 +40,11 @@ jobs:
             ninja-build \
             libegl1-mesa-dev \
             libgles2-mesa-dev \
-            libbullet-dev
+            libbullet-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxcursor-dev \
+            libxi-dev
 
       - name: Install uv
         run: |
