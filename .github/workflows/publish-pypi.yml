@@ -81,6 +81,8 @@ jobs:
 
       - name: Build wheel
         run: |
+          # Install wheel package for bdist_wheel command
+          pip install wheel
           # Build wheel with bindings already in source tree
           python setup.py bdist_wheel
 
