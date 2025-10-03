@@ -42,7 +42,11 @@ struct WindowlessContext::Impl {
 
 #if defined(CORRADE_TARGET_UNIX) && !defined(CORRADE_TARGET_APPLE)
 #ifdef ESP_BUILD_EGL_SUPPORT
-    config.setCudaDevice(device);
+    const bool disableCudaDevice =
+        std::getenv("HSIM_DISABLE_CUDA_DEVICE") != nullptr;
+    if (!disableCudaDevice) {
+      config.setCudaDevice(device);
+    }
 #else  // NO ESP_BUILD_EGL_SUPPORT
     if (device != 0)
       Mn::Fatal{} << "GLX context does not support multiple GPUs. Please "
