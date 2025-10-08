@@ -14,7 +14,7 @@ from PIL import Image, ImageChops, ImageDraw, ImageFont
 from PIL.Image import Image as ImageClass
 import cv2
 
-from habitat_sim import Simulator, SimulatorConfiguration
+from habitat_sim import Simulator, SimulatorConfiguration, nav
 from habitat_sim.metadata import MetadataMediator
 from habitat_sim.physics import ManagedRigidObject, ManagedBulletRigidObject
 
@@ -23,15 +23,13 @@ from habitat_sim.utils.settings import default_sim_settings, make_cfg
 # Declarations
 
 START_ITEM = 0
-MAX_ITEMS = 500
 CHUNK_SIZE = 25
 IMAGE_SIZE = 256
 COLOR_WARNING = "\033[93m"
+COLOR_OK = "\033[32m"
 COLOR_RESET = "\033[0m"
 DECOMP_DATA_PATH = "/home/jseagull/dev/fphab/decomp_replacements.csv"
-SCENE_PATH_ROOT = "/home/jseagull/dev/fphab/scenes"
-IMAGE_OUTPUT_PATH_ROOT = "/home/jseagull/dev/fphab/diag/"
-FAIL_THRESHOLD = 1
+FAIL_THRESHOLD = 5
 cfg = SimulatorConfiguration()
 
 
@@ -54,13 +52,12 @@ def initialize_habitat() -> tuple[MetadataMediator, SimulatorConfiguration, list
     # configure simulator
     sim_settings = default_sim_settings.copy()
     sim_settings["width"] = sim_settings["height"] = IMAGE_SIZE
-    #debugObservation only does RGB, skipping for now
-    #sim_settings["depth_sensor"] = True
-    #sim_settings["color_sensor"] = False
-    #sim_settings["requires_textures"] = True
     sim_settings["enable_hbao"] = True  # Ambient Occlusion
-    sim_settings["default_agent_navmesh"] = False
+    sim_settings["default_agent_navmesh"] = True
     sim_settings["scene_dataset_config_file"] = dataset_old
+    sim_settings["force_separate_semantic_scene_graph"] = False
+    sim_settings["load_semantic_mesh"] = False
+    sim_settings["use_semantic_textures"] = False
     cfg = make_cfg(sim_settings)
 
     # init metadataMediator
@@ -108,7 +105,7 @@ def scan_scene_for_objects(scene_id: str) -> list:
     Given a scene instance name, look at the objects and check against the set of replaceable UUIDs
     Returns a list of replaceable object UUIDs found in the scene
     """
-    scene_path = os.path.join(SCENE_PATH_ROOT, (scene_id + ".scene_instance.json"))
+    scene_path = os.path.join(scene_path_root, (scene_id + ".scene_instance.json"))
     objects_to_replace = set()
     num_replacements = 0
     with open(scene_path, "r") as file:
@@ -136,6 +133,9 @@ def switch_datasets(target: str) -> bool:
     sim_settings["scene_dataset_config_file"] = target_dataset
     mm.active_dataset = target_dataset
     cfg = make_cfg(sim_settings)
+    print(type(cfg))
+    cfg.sim_cfg.navmesh_settings = None
+    #cfg.PathFinder = None
     return cfg
 
 
@@ -180,11 +180,6 @@ def analyze_observations(observation:dict
         output_arr = np.zeros(np.shape(np_arr), dtype=np.uint8)
         output_arr = cv2.cvtColor(np_arr, cv2.COLOR_RGB2BGR)
         return output_arr
-
-    def cv2_to_PIL(input_arr: np.array) -> ImageClass:
-        """Converts a BGR numpy array to an 8bpc RGB PIL Image"""
-        input_arr = cv2.cvtColor(input_arr, cv2.COLOR_BGR2RGB)
-        return Image.fromarray(input_arr)
 
     # prepare PIL and OpenCV versions of the observations for analysis
     ref_img = observation["ref_img"]
@@ -232,8 +227,6 @@ def analyze_observations(observation:dict
 
     return (diag_img, nz_pct)
 
-
-
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
     argparser.add_argument(
@@ -267,17 +260,34 @@ if __name__ == "__main__":
         help="output folder for images and CSV",
         action="store",
     )
+    argparser.add_argument(
+        "-m",
+        "--max_items",
+        type=int,
+        default=500,
+        help="max number of scenes to process (for testing)",
+        action="store",
+)   
     args = argparser.parse_args()
     dataset_old = args.dataset
     dataset_new = dataset_old.split(".")[0] + "_v2.scene_dataset_config.json"
+    dataset_basename = os.path.basename(dataset_old.split(".")[0])
+    #get the /scenes path from the dataset config
+    with open(args.dataset, "r") as file:
+        dataset_params = json.load(file)
+    scene_path_root = os.path.join(
+        "data/fphab", (dataset_params["scene_instances"]["paths"][".json"][0])
+    )
+    print(f"scene folder: {scene_path_root}")
 
     # start logging
     os.environ["MAGNUM_LOG"] = "quiet"
-    os.environ['HABITAT_SIM_LOG']='quiet'
+    os.environ['HABITAT_SIM_LOG']="quiet"
 
     assert os.path.exists(args.output_path)
     log_data = []
-    log_path = f"{args.output_path}/decomp_scene_check.csv"
+    logfile_name = "decomp_check_" + dataset_basename + ".csv"
+    log_path = os.path.join(args.output_path, logfile_name)
     with open(log_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(["scene", "base_uuid", "instance","variance"])
@@ -285,12 +295,9 @@ if __name__ == "__main__":
     if not args.batch:
         scene_list = [args.scene]
     else:
-        scene_list = [
-            (os.path.basename(scene)).split(".")[0]
-            for scene in glob.glob(
-                "/home/jseagull/dev/fphab/scenes/*.scene_instance.json"
-            )
-        ]
+        scene_glob = glob.glob(os.path.join(scene_path_root, "*.scene_instance.json"))
+        print(f"scene glob:\n{scene_glob}")
+        scene_list = [(os.path.basename(scene)).split(".")[0] for scene in scene_glob][0:args.max_items]
 
     sim_settings = default_sim_settings.copy()
     mm, cfg, object_handle_list = initialize_habitat()
@@ -329,11 +336,6 @@ if __name__ == "__main__":
                             "ref_img": ref_img,
                         }
                     )
-                    # out_path = make_friendly_image_name(scene_id,handle,"old")
-                    # ref_img.save(out_path)
-                    # dbug
-                    # print(f"output path: {out_path}")
-                    # ref_img.show()
                 else:
                     print(f"ERROR - couldn't get object for handle {handle}")
             sim.close()
@@ -349,10 +351,6 @@ if __name__ == "__main__":
                 )
                 decomp_img = decomp_obs.get_image().convert("RGB")
                 decomp["decomp_img"] = decomp_img
-                #out_path = make_friendly_image_name(scene_id,decomp["handle"],"")
-                #decomp_img.save(out_path)
-                # dbug
-                #ref_img.show()
             sim.close()
             gc.collect()
         #now we do image processing on the list of dicts and log results to CSV
@@ -363,15 +361,18 @@ if __name__ == "__main__":
                 log_handle = observation["handle"].split("_")[0]
                 log_instance = observation["handle"].split(":")[1]
                 writer.writerow([observation["scene_id"], log_handle, log_instance, diff_pct])
+            out_str = f"{observation['handle']} - "
             if diff_pct < FAIL_THRESHOLD:
-                print(f"OK")
+                out_str += "OK"
+                print(f"{COLOR_OK}{out_str}{COLOR_RESET}")
                 destination_subfolder = "pass"
             else:
-                print(f"{COLOR_WARNING}CHECK ({diff_pct}% variance){COLOR_RESET}")
+                out_str += f"FAIL ({diff_pct}% variance)"
+                print(f"{COLOR_WARNING}{out_str}{COLOR_RESET}")
                 destination_subfolder = "fail"
             try:
                 destination_file = make_friendly_image_name(observation)
-                destination_path = os.path.join(IMAGE_OUTPUT_PATH_ROOT, destination_subfolder,(destination_file + ".png"))
+                destination_path = os.path.join(args.output_path, destination_subfolder,(destination_file + ".png"))
                 composite_image.save(destination_path)
             except IOError:
                 print(f"{COLOR_WARNING}Can't save image for{COLOR_RESET} {object_uuid}!")

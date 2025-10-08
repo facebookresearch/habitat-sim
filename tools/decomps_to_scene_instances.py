@@ -10,12 +10,15 @@ from typing import Tuple
 from copy import deepcopy
 import magnum as mn
 
-DECOMP_DATA_PATH = "/home/jseagull/dev/fphab/objects/decomposed/decomp_replacements.csv"
-COM_CORRECTION_PATH = "/home/jseagull/dev/fphab/objects/com_correction.csv"
+
+# Change to /scenes-[articulated | uncluttered | test] and re-run
+SCENE_DIR = "/home/jseagull/dev/fphab/scenes-articulated"
+
+DECOMP_DATA_PATH = "/home/jseagull/dev/fphab/decomp_replacements.csv"
+COM_CORRECTION_PATH = "/home/jseagull/dev/fphab/com_correction.csv"
+OBJECT_OFFSET_PATH = "/home/jseagull/dev/fphab/object_offsets.csv"
 DECOMP_METADATA_PATH = "/home/jseagull/dev/fp-models/objects/decomposed/"
 MAX_FILES_TO_PROCESS = 9999
-SCENE_DIR = "/home/jseagull/dev/fphab/scenes-uncluttered"
-
 
 def collect_scenes(dir: str) -> list:
     file_list = []
@@ -40,9 +43,9 @@ def load_decomp_data(csv_filepath: str) -> Tuple[list, set]:
     return data, replaceable_uuids
 
 
-def load_com_correction_data() -> list:
+def load_correction_data(path: str) -> list:
     data = []
-    with open(COM_CORRECTION_PATH, mode="r", encoding="utf-8") as file:
+    with open(path, mode="r", encoding="utf-8") as file:
         reader = csv.DictReader(file)
         for row in reader:
             data.append(row)
@@ -81,7 +84,7 @@ def scan_scene_for_objects(scene: str) -> Tuple[list, dict]:
     return objects_to_replace, stripped_scene
 
 
-def replace_scene_object(original_template: dict, scene: dict) -> dict:
+def replace_scene_object(parent_template: dict, scene: dict) -> dict:
     """
     Append decomposed parts to the scene instance, matched to the corrected transform matrix of the original
     """
@@ -97,31 +100,37 @@ def replace_scene_object(original_template: dict, scene: dict) -> dict:
         return metadata
 
     def get_object_tm(template: dict) -> mn.Matrix4:
-        # print(template)
+        print(f"getting TM for object {template['template_name']}...")
         # not all object instance in a scene instance have all transforms
         try:
             pos = template["translation"]
+            # print(f"Translation: {pos}")
             pos_vec = mn.Vector3(pos[0], pos[1], pos[2])
             pos_matrix = mn.Matrix4.translation(pos_vec)
         except KeyError:
+            # print("no translation")
             pos_matrix = mn.Matrix4.identity_init()
 
         try:
             rot = template["rotation"]
+            # print(f"Rotation: {rot}")
             rot_quat = mn.Quaternion(
-                (float(rot[0]), float(rot[1]), float(rot[2])), float(rot[3])
+                (float(rot[1]), float(rot[2]), float(rot[3])), float(rot[0]) #WXYZ to magnum 
             )
             rot_matrix = mn.Matrix4.from_(
                 (rot_quat.to_matrix()), mn.Vector3(0.0, 0.0, 0.0)
             )
         except KeyError:
+            # print("no rotation")
             rot_matrix = mn.Matrix4.identity_init()
 
         try:
             nus = template["non_uniform_scale"]
+            # print(f"Scale: {nus}")
             nus_vec = mn.Vector3(nus[0], nus[1], nus[2])
             nus_matrix = mn.Matrix4.scaling(nus_vec)
         except KeyError:
+            # print("no scale")
             nus_matrix = mn.Matrix4.identity_init()
 
         object_tm = pos_matrix @ rot_matrix @ nus_matrix
@@ -166,7 +175,8 @@ def replace_scene_object(original_template: dict, scene: dict) -> dict:
             rotation_matrix_normalized[0] = -rotation_matrix_normalized[0]
 
         rotation = mn.Quaternion.from_matrix(rotation_matrix_normalized)
-        rotation_vector4 = rotation.wxyz  # Quat to vector4
+        rotation_vector4 = rotation.wxyz  # -> vector4
+        print(f"Vector4 rotation is {rotation_vector4}")
 
         # make dict entries
         new_template["translation"] = [
@@ -186,29 +196,29 @@ def replace_scene_object(original_template: dict, scene: dict) -> dict:
             new_template["non_uniform_scale"] = [scaling[0], scaling[1], scaling[2]]
         return new_template
 
-    def get_com_correction(uuid: str) -> mn.Matrix4:
-        """Get the COM correction to use for this object."""
-        com_dict = [entry for entry in com_correction_data if entry["uuid"] == uuid][0]
-        assert com_dict is not None
+    def get_correction(data:list, uuid: str) -> mn.Matrix4:
+        """Get the correction (COM or object offset) to use for this object."""
+        com_iter = [entry for entry in data if entry["uuid"] == uuid]
+        try:
+            com_dict = com_iter[0]
+        except:
+            return mn.Matrix4.identity_init()
         com_vector = mn.Vector3(
             float(com_dict["x"]), float(com_dict["y"]), float(com_dict["z"])
         )
         return mn.Matrix4.translation(com_vector)
 
+   
     def make_intermediate_object(
         part_metadata: dict, is_instance: bool = False
     ) -> dict:
         """translates the transform data and GLB reference from the part metadata into
-        the same nomenclature used in the scene instance files"""
+        the same nomenclature used in the scene instance files. Note that rotation axis order 
+        is different between parts metadata and scene instances"""
         new_obj = {}
-        new_obj["translation"] = part_metadata["transform"]["position"]
-        new_obj["rotation"] = part_metadata["transform"]["quaternion"]
-        new_obj["non_uniform_scale"] = part_metadata["transform"]["scale"]
-        new_obj["motion_type"] = "static"
         template_handle = base_uuid + "_part_"
         old_part_id = part_metadata["partId"]
         log_str = f"Replacing part {old_part_id} "
-
         if is_instance:
             ref_part_id = part_metadata["refPartId"]
             template_handle += ref_part_id
@@ -216,8 +226,15 @@ def replace_scene_object(original_template: dict, scene: dict) -> dict:
         else:
             template_handle += old_part_id
             log_str += "original..."
-
         new_obj["template_name"] = template_handle
+        new_obj["translation"] = part_metadata["transform"]["position"]
+        # swizzle part metadata XYZW to WXYZ
+        swizzle = [3,0,1,2]
+        quat_xyzw = part_metadata["transform"]["quaternion"]
+        quat_wxyz = [float(quat_xyzw[axis]) for axis in swizzle]
+        new_obj["rotation"] = quat_wxyz
+        new_obj["non_uniform_scale"] = part_metadata["transform"]["scale"]
+        new_obj["motion_type"] = "static"
         # print(log_str)
         return new_obj
 
@@ -254,40 +271,51 @@ def replace_scene_object(original_template: dict, scene: dict) -> dict:
         # print(f"parts list: {parts_list}")
         return parts_list
 
-    base_uuid = original_template["template_name"]
+    def get_printable_tm(template:dict) -> dict:
+        keys = ["translation", "rotation", "non_uniform_scale"]
+        return_dict = {}
+        for key, value in template.items():
+            if key in keys:
+                return_dict[key] = value
+        return return_dict
+
+    def print_dict(raw_dict:dict) -> None:
+        for k,v in raw_dict.items():
+            print(f"{k}, {v}")
+
+    base_uuid = parent_template["template_name"]
     decomp_metadata = get_metadata()
-    scene_instance_transform = get_object_tm(original_template)
+    #old object (parent) tm and com correction
+    tm_P = get_object_tm(parent_template)
+    cc_P = get_correction(com_correction_data, base_uuid)
+    tm_O = get_correction(object_offset_data, base_uuid)
+    cci_P = cc_P.inverted()
 
-    keys = ["translation", "rotation", "non_uniform_scale"]
-    printable_source_dict = {}
-    for key, value in original_template.items():
-        if key in keys:
-            print(f"found {key}!")
-            printable_source_dict[key] = value
+    parts_to_add = filter_parts()
 
-    objects_to_add = filter_parts()
+    for part_template in parts_to_add:
+        print(f"Adding {part_template['template_name']}...")
+        tm_L = get_object_tm(part_template)
+        cc_L = get_correction(com_correction_data, part_template["template_name"])
+        cci_L = cc_L.inverted()
 
-    for new_part in objects_to_add:
-        print(f"Adding {new_part['template_name']}...")
-        part_transform = get_object_tm(new_part)
-        part_com_correction = get_com_correction(new_part["template_name"])
         # print(f"original part transform: {part_transform}")
-        final_decomp_transform = (
-            part_com_correction.inverted()
-            @ scene_instance_transform
-            @ part_transform
-            @ part_com_correction
-        )
+        mx_L = (cci_L @ tm_O @ tm_L @ cc_L) #local to parent
+        mx_P = (cci_P @ tm_P @ cc_P @ mx_L ) #parent to world
         # print(f"Adjusted part transform: {part_transform}")
-        part_transform_dict = get_prs_from_tm(final_decomp_transform)
-        print(f"Original Transform: {printable_source_dict}")
-        print(f"Part Transform: {part_transform_dict}")
+        part_transform_dict = get_prs_from_tm(mx_P)
+        print("Parent transform (from template):")
+        print_dict(get_printable_tm(parent_template))
+        print("Part local transform (from template):")
+        print_dict(get_printable_tm(part_template))
+        print("Final JSON Transform:")
+        print_dict(get_printable_tm(part_transform_dict))
 
         for key, value in part_transform_dict.items():
             # print(f"key: {key}\nvalue: {value}")
-            new_part[key] = value
+            part_template[key] = value
 
-        scene["object_instances"].append(new_part)
+        scene["object_instances"].append(part_template)
 
     return scene
 
@@ -300,9 +328,14 @@ scene_list = collect_scenes(SCENE_DIR)
 
 # load CSV data and enrich with parts metadata instances/transforms
 decomp_list, replaceable_uuids = load_decomp_data(DECOMP_DATA_PATH)
-com_correction_data = load_com_correction_data()
+com_correction_data = load_correction_data(COM_CORRECTION_PATH)
+# not implemented
+object_offset_data = load_correction_data(OBJECT_OFFSET_PATH)
+scene_replacements = {}
 for scene in scene_list:
     objects_to_replace, new_scene = scan_scene_for_objects(scene)
+    #get number of replacements for tally
+    scene_replacements[scene.split(".")[0].split("/")[-1]] = len(objects_to_replace)
     for obj in objects_to_replace:
         print(f"replacing {obj['template_name']}...")
         new_scene = replace_scene_object(obj, new_scene)
@@ -314,3 +347,8 @@ for scene in scene_list:
 print(
     f"\nReplaced {total_replacements} out of {total_objects} objects across {len(scene_list)} scenes."
 )
+most_replaced_scenes = dict(sorted(scene_replacements.items(), key=lambda item: item[1], reverse=True))
+output = list(most_replaced_scenes.keys())[:10]
+print("Most replacements:")
+for item in output:
+    print(item)
