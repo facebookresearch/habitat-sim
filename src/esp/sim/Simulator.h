@@ -508,6 +508,21 @@ class Simulator {
                         const nav::NavMeshSettings& navMeshSettings);
 
   /**
+   * @brief Get the joined mesh vertex data for all objects in the scene
+   * @param includeStaticObjects flag to include static objects
+   * @return A list of vertex positions for the joined mesh
+   */
+  std::vector<Magnum::Vector3> getJoinedMeshVerts(
+      bool includeStaticObjects = false);
+
+  /**
+   * @brief Get the joined mesh index buffer data for all objects in the scene
+   * @param includeStaticObjects flag to include static objects
+   * @return A list of triangle vertex indices for the joined mesh faces
+   */
+  std::vector<uint32_t> getJoinedMeshIndices(bool includeStaticObjects = false);
+
+  /**
    * @brief Get the joined mesh data for all objects in the scene
    * @param includeStaticObjects flag to include static objects
    * @return A shared ptr assets::MeshData with required mesh

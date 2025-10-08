@@ -847,6 +847,18 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
   return true;
 }
 
+std::vector<Magnum::Vector3> Simulator::getJoinedMeshVerts(
+    const bool includeStaticObjects) {
+  assets::MeshData::ptr joinedMesh = getJoinedMesh(includeStaticObjects);
+  return joinedMesh->vbo;
+}
+
+std::vector<uint32_t> Simulator::getJoinedMeshIndices(
+    const bool includeStaticObjects) {
+  assets::MeshData::ptr joinedMesh = getJoinedMesh(includeStaticObjects);
+  return joinedMesh->ibo;
+}
+
 assets::MeshData::ptr Simulator::getJoinedMesh(
     const bool includeStaticObjects) {
   assets::MeshData::ptr joinedMesh = assets::MeshData::create();

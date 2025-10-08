@@ -238,6 +238,14 @@ void initSimBindings(py::module& m) {
       .def("get_active_scene_graph", &Simulator::getActiveSceneGraph,
            R"(PYTHON DOES NOT GET OWNERSHIP)",
            py::return_value_policy::reference)
+      .def(
+          "get_joined_mesh_verts", &Simulator::getJoinedMeshVerts,
+          "include_static_objects"_a,
+          R"(Get a list of vertex positions for the joined mesh of all objects in the scene.)")
+      .def(
+          "get_joined_mesh_indices", &Simulator::getJoinedMeshIndices,
+          "include_static_objects"_a,
+          R"(Get a list of triangle vertex indices for the joined mesh faces of all objects in the scene.)")
       .def("get_active_semantic_scene_graph",
            &Simulator::getActiveSemanticSceneGraph,
            R"(PYTHON DOES NOT GET OWNERSHIP)",
