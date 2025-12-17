@@ -49,9 +49,11 @@ runs:
   - name: Install conda and dependencies
     run: |-
       echo "Install conda and dependencies"
+      # Install NumPy 1.x first to ensure PyTorch links against correct version
+      conda install -y numpy=1.26.4
       conda install -y pytorch==1.12.1 torchvision==0.13.1 -c pytorch -c nvidia
-      conda install -y -c conda-forge ninja numpy=1.26.4 pytest pytest-cov ccache hypothesis pytest-mock
-      pip install "numpy<2.0" pytest-sugar pytest-xdist pytest-benchmark opencv-python cython mock
+      conda install -y -c conda-forge ninja pytest pytest-cov ccache hypothesis pytest-mock
+      pip install pytest-sugar pytest-xdist pytest-benchmark opencv-python cython mock
     shell: bash -el {0}
   - name: Validate Pytorch Installation
     run: |-

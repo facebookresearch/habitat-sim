@@ -13,6 +13,7 @@ chmod +x  Miniconda3-latest-Linux-x86_64.sh
 rm Miniconda3-latest-Linux-x86_64.sh
 export PATH=/opt/conda/bin:$PATH
 # Configure conda to use conda-forge channel to avoid ToS requirement
+conda config --remove channels defaults || true
 conda config --add channels conda-forge
 conda config --set channel_priority flexible
 conda install -y anaconda-client git gitpython ninja conda-build # conda-build=3.18.9 # last version that works with our setup
