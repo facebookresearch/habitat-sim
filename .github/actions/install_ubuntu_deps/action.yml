@@ -53,7 +53,8 @@ runs:
       # PyTorch 1.12.1 has ABI compatibility issues with NumPy 2.x (missing iJIT_NotifyEvent symbol)
       conda install -y -c conda-forge numpy=1.26.4
       # PyTorch 1.12.1 is pinned for CUDA 11.3 compatibility with habitat-sim
-      conda install -y pytorch==1.12.1 torchvision==0.13.1 -c pytorch -c nvidia
+      # Force reinstall to ensure it links against the correct NumPy we just installed
+      conda install -y --force-reinstall pytorch==1.12.1 torchvision==0.13.1 -c pytorch -c nvidia
       conda install -y -c conda-forge ninja pytest pytest-cov ccache hypothesis pytest-mock
       # Pin opencv-python to version compatible with NumPy 1.x (opencv 4.10.0.84 is last before NumPy 2.x requirement)
       # PyTorch 1.12.1 requires NumPy 1.x for proper symbol resolution (iJIT_NotifyEvent)
