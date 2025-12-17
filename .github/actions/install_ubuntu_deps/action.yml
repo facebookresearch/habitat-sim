@@ -51,7 +51,7 @@ runs:
       echo "Install conda and dependencies"
       conda install -y pytorch==1.12.1 torchvision==0.13.1 -c pytorch -c nvidia
       conda install -y -c conda-forge ninja numpy=1.26.4 pytest pytest-cov ccache hypothesis pytest-mock
-      pip install pytest-sugar pytest-xdist pytest-benchmark opencv-python cython mock
+      pip install "numpy<2.0" pytest-sugar pytest-xdist pytest-benchmark opencv-python cython mock
     shell: bash -el {0}
   - name: Validate Pytorch Installation
     run: |-
