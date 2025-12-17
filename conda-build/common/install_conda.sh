@@ -12,7 +12,9 @@ chmod +x  Miniconda3-latest-Linux-x86_64.sh
 ./Miniconda3-latest-Linux-x86_64.sh -b -p /opt/conda
 rm Miniconda3-latest-Linux-x86_64.sh
 export PATH=/opt/conda/bin:$PATH
-# Configure conda to use conda-forge channel to avoid ToS requirement
+# Configure conda to use conda-forge channel to avoid Anaconda ToS requirement
+# Anaconda now requires explicit Terms of Service acceptance for default channels
+# (pkgs/main, pkgs/r) in non-interactive CI environments. Use conda-forge instead.
 conda config --remove channels defaults || true
 conda config --add channels conda-forge
 conda config --set channel_priority flexible
