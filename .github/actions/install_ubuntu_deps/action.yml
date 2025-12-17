@@ -55,7 +55,9 @@ runs:
       # PyTorch 1.12.1 is pinned for CUDA 11.3 compatibility with habitat-sim
       conda install -y pytorch==1.12.1 torchvision==0.13.1 -c pytorch -c nvidia
       conda install -y -c conda-forge ninja pytest pytest-cov ccache hypothesis pytest-mock
-      pip install pytest-sugar pytest-xdist pytest-benchmark opencv-python cython mock
+      # Pin numpy<2 to prevent opencv-python from upgrading to NumPy 2.x
+      # PyTorch 1.12.1 requires NumPy 1.x for proper symbol resolution (iJIT_NotifyEvent)
+      pip install "numpy<2" pytest-sugar pytest-xdist pytest-benchmark opencv-python cython mock
     shell: bash -el {0}
   - name: Validate Pytorch Installation
     run: |-
