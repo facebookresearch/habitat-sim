@@ -21,4 +21,5 @@ conda config --add channels conda-forge
 conda config --set channel_priority flexible
 # Use --override-channels to prevent conda from checking default channels for dependencies
 conda install -y --override-channels -c conda-forge anaconda-client git gitpython ninja conda-build # conda-build=3.18.9 # last version that works with our setup
-conda remove -y --force patchelf
+# Also use --override-channels for conda remove to avoid ToS check
+conda remove -y --force --override-channels -c conda-forge patchelf
