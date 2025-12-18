@@ -49,12 +49,11 @@ runs:
   - name: Install conda and dependencies
     run: |-
       echo "Install conda and dependencies"
-      # Install NumPy 1.x and MKL libraries to provide iJIT_NotifyEvent symbol
-      # PyTorch 1.12.1 requires Intel MKL/ITT API for iJIT_NotifyEvent symbol
-      conda install -y -c conda-forge "numpy<2.0" mkl mkl-service
       # PyTorch 1.12.1 is pinned for CUDA 11.3 compatibility with habitat-sim
-      # Use --freeze-installed to prevent conda from modifying installed packages
-      conda install -y --freeze-installed pytorch==1.12.1 torchvision==0.13.1 -c pytorch -c nvidia
+      # Install PyTorch FIRST with all its dependencies (including MKL with ITT API)
+      # This ensures PyTorch gets the correct MKL version it was built against
+      conda install -y pytorch==1.12.1 torchvision==0.13.1 "numpy<2.0" -c pytorch -c nvidia
+      # Install remaining conda packages, avoid touching PyTorch/NumPy
       conda install -y -c conda-forge ninja pytest pytest-cov ccache hypothesis pytest-mock
       # Pin opencv-python to version compatible with NumPy 1.x (opencv 4.10.0.84 is last before NumPy 2.x requirement)
       # PyTorch 1.12.1 requires NumPy 1.x for proper symbol resolution (iJIT_NotifyEvent)
