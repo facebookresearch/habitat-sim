@@ -49,12 +49,12 @@ runs:
   - name: Install conda and dependencies
     run: |-
       echo "Install conda and dependencies"
-      # Pin NumPy 1.x globally to prevent any package from upgrading to 2.x
+      # Install NumPy 1.x FIRST to establish correct version before PyTorch
       # PyTorch 1.12.1 has ABI compatibility issues with NumPy 2.x (missing iJIT_NotifyEvent symbol)
-      echo "numpy<2.0" >> $CONDA_PREFIX/conda-meta/pinned
+      conda install -y -c conda-forge "numpy<2.0"
       # PyTorch 1.12.1 is pinned for CUDA 11.3 compatibility with habitat-sim
-      # Install with NumPy<2 constraint to ensure correct version
-      conda install -y pytorch==1.12.1 torchvision==0.13.1 "numpy<2.0" -c pytorch -c nvidia
+      # Use --no-update-deps to prevent PyTorch from upgrading NumPy
+      conda install -y --no-update-deps pytorch==1.12.1 torchvision==0.13.1 -c pytorch -c nvidia
       conda install -y -c conda-forge ninja pytest pytest-cov ccache hypothesis pytest-mock
       # Pin opencv-python to version compatible with NumPy 1.x (opencv 4.10.0.84 is last before NumPy 2.x requirement)
       # PyTorch 1.12.1 requires NumPy 1.x for proper symbol resolution (iJIT_NotifyEvent)
