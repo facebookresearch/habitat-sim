@@ -12,5 +12,14 @@ chmod +x  Miniconda3-latest-Linux-x86_64.sh
 ./Miniconda3-latest-Linux-x86_64.sh -b -p /opt/conda
 rm Miniconda3-latest-Linux-x86_64.sh
 export PATH=/opt/conda/bin:$PATH
-conda install -y anaconda-client git gitpython ninja conda-build # conda-build=3.18.9 # last version that works with our setup
-conda remove -y --force patchelf
+# Configure conda to use conda-forge channel to avoid Anaconda ToS requirement
+# Anaconda now requires explicit Terms of Service acceptance for default channels
+# (pkgs/main, pkgs/r) in non-interactive CI environments. Use conda-forge instead.
+# Remove all default channels and explicitly use only conda-forge with --override-channels
+conda config --remove channels defaults || true
+conda config --add channels conda-forge
+conda config --set channel_priority flexible
+# Use --override-channels to prevent conda from checking default channels for dependencies
+conda install -y --override-channels -c conda-forge anaconda-client git gitpython ninja conda-build # conda-build=3.18.9 # last version that works with our setup
+# Also use --override-channels for conda remove to avoid ToS check
+conda remove -y --force --override-channels -c conda-forge patchelf

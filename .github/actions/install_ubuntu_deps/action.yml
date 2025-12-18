@@ -49,9 +49,16 @@ runs:
   - name: Install conda and dependencies
     run: |-
       echo "Install conda and dependencies"
+      # PyTorch 1.12.1 is pinned for CUDA 11.3 compatibility with habitat-sim
+      # Install PyTorch FIRST without numpy constraint to get all its dependencies (including MKL with ITT API)
       conda install -y pytorch==1.12.1 torchvision==0.13.1 -c pytorch -c nvidia
-      conda install -y -c conda-forge ninja numpy=1.26.4 pytest pytest-cov ccache hypothesis pytest-mock
-      pip install pytest-sugar pytest-xdist pytest-benchmark opencv-python cython mock
+      # Downgrade numpy if needed to ensure NumPy 1.x (PyTorch 1.12.1 requires NumPy 1.x)
+      conda install -y --force-reinstall "numpy<2.0" -c conda-forge
+      # Install remaining conda packages
+      conda install -y -c conda-forge ninja pytest pytest-cov ccache hypothesis pytest-mock
+      # Pin opencv-python to version compatible with NumPy 1.x (opencv 4.10.0.84 is last before NumPy 2.x requirement)
+      # PyTorch 1.12.1 requires NumPy 1.x for proper symbol resolution (iJIT_NotifyEvent)
+      pip install pytest-sugar pytest-xdist pytest-benchmark "opencv-python<4.11" cython mock
     shell: bash -el {0}
   - name: Validate Pytorch Installation
     run: |-

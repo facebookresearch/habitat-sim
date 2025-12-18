@@ -32,6 +32,8 @@ ENV PATH /opt/conda/bin:$PATH
 ADD ./common/install_conda.sh install_conda.sh
 RUN bash ./install_conda.sh && rm install_conda.sh
 
-RUN conda init bash && conda create --name py39 python=3.9 -y
-RUN source ~/.bashrc && conda activate py39 && conda install -y anaconda-client git gitpython ninja conda-build
+RUN conda init bash && conda create --name py39 python=3.9 -y --override-channels -c conda-forge
+# Note: anaconda-client, git, gitpython, ninja, conda-build already installed in install_conda.sh
+# Use -c conda-forge to avoid ToS issues
+RUN source ~/.bashrc && conda activate py39 && conda install -y --override-channels -c conda-forge anaconda-client git gitpython ninja conda-build
 RUN conda config --set anaconda_upload yes
