@@ -81,7 +81,22 @@ if(BUILD_ASSIMP_SUPPORT AND NOT USE_SYSTEM_ASSIMP)
   # linker without any link directories would work. It won't. (The variable
   # is not an option() so no need to CACHE it.)
   set(ASSIMP_BUILD_MINIZIP ON)
+  # Disable warnings-as-errors for assimp to allow building with modern GCC (15+)
+  # which has stricter warnings that assimp hasn't been updated to handle.
+  set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE BOOL "" FORCE)
+
+  # Suppress warnings from assimp that fail with modern GCC (15+).
+  # These include:
+  # - memcpy on non-trivially-copyable types (-Wclass-memaccess)
+  # - deprecated declarations (-Wdeprecated-declarations)
+  # - array bounds false positives on .back() calls (-Warray-bounds)
+  set(_PREV_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+  set(
+    CMAKE_CXX_FLAGS
+    "${CMAKE_CXX_FLAGS} -Wno-class-memaccess -Wno-deprecated-declarations -Wno-array-bounds"
+  )
   add_subdirectory("${DEPS_DIR}/assimp")
+  set(CMAKE_CXX_FLAGS ${_PREV_CMAKE_CXX_FLAGS})
 endif()
 
 # audio
