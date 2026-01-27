@@ -920,7 +920,7 @@ class HabitatSimInteractiveViewer(Application):
         self.window_text.clear()  # replace all previous text
         self.window_text.render(
             self.display_font.create_shaper(),
-            self.display_font.size(),
+            self.display_font.size,
             f"""
 {self.fps} FPS
 Sensor Type: {sensor_type_string}
