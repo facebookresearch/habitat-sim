@@ -246,7 +246,7 @@ def _noisy_action_impl(
     # Same deal with rotation about + EPS and why we multiply by the sign
     rot_noise *= np.sign(rotate_amount + 1e-8)
 
-    scene_node.rotate_y_local(mn.Deg(rotate_amount) + mn.Rad(rot_noise))
+    scene_node.rotate_y_local(mn.Deg(rotate_amount) + mn.Rad(float(rot_noise)))
     scene_node.rotation = scene_node.rotation.normalized()
 
 
