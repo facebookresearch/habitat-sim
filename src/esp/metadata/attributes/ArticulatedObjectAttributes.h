@@ -8,6 +8,8 @@
 #include "AbstractAttributes.h"
 #include "MarkerSets.h"
 
+#include <Corrade/Utility/String.h>
+
 namespace esp {
 namespace metadata {
 namespace attributes {
@@ -120,7 +122,8 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
    */
   void setBaseType(const std::string& baseType) {
     // force to lowercase to check if present
-    const std::string baseTypeLC = Cr::Utility::String::lowercase(baseType);
+    const std::string baseTypeLC =
+        Cr::Utility::String::lowercase(Cr::Containers::StringView{baseType});
     auto mapIter = AOBaseTypeMap.find(baseTypeLC);
     if ((mapIter == AOBaseTypeMap.end()) ||
         (mapIter->second == ArticulatedObjectBaseType::Unspecified)) {
@@ -139,8 +142,8 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
    * Object to the world.
    */
   ArticulatedObjectBaseType getBaseType() const {
-    const std::string val =
-        Cr::Utility::String::lowercase(get<std::string>("base_type"));
+    const std::string val = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{get<std::string>("base_type")});
     auto mapIter = AOBaseTypeMap.find(val);
     if (mapIter != AOBaseTypeMap.end()) {
       return mapIter->second;
@@ -156,7 +159,8 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
    */
   void setInertiaSource(const std::string& inertiaSrc) {
     // force to lowercase before setting
-    const std::string inertiaSrcLC = Cr::Utility::String::lowercase(inertiaSrc);
+    const std::string inertiaSrcLC =
+        Cr::Utility::String::lowercase(Cr::Containers::StringView{inertiaSrc});
     auto mapIter = AOInertiaSourceMap.find(inertiaSrcLC);
     if ((mapIter == AOInertiaSourceMap.end()) ||
         (mapIter->second == ArticulatedObjectInertiaSource::Unspecified)) {
@@ -175,8 +179,8 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
    * Object.
    */
   ArticulatedObjectInertiaSource getInertiaSource() const {
-    const std::string val =
-        Cr::Utility::String::lowercase(get<std::string>("inertia_source"));
+    const std::string val = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{get<std::string>("inertia_source")});
     auto mapIter = AOInertiaSourceMap.find(val);
     if (mapIter != AOInertiaSourceMap.end()) {
       return mapIter->second;
@@ -192,7 +196,8 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
    */
   void setLinkOrder(const std::string& linkOrder) {
     // force to lowercase before setting
-    const std::string linkOrderLC = Cr::Utility::String::lowercase(linkOrder);
+    const std::string linkOrderLC =
+        Cr::Utility::String::lowercase(Cr::Containers::StringView{linkOrder});
     auto mapIter = AOLinkOrderMap.find(linkOrderLC);
     if ((mapIter == AOLinkOrderMap.end()) ||
         (mapIter->second == ArticulatedObjectLinkOrder::Unspecified)) {
@@ -211,8 +216,8 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
    * Object
    */
   ArticulatedObjectLinkOrder getLinkOrder() const {
-    const std::string val =
-        Cr::Utility::String::lowercase(get<std::string>("link_order"));
+    const std::string val = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{get<std::string>("link_order")});
     auto mapIter = AOLinkOrderMap.find(val);
     if (mapIter != AOLinkOrderMap.end()) {
       return mapIter->second;
@@ -227,7 +232,8 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
    */
   void setRenderMode(const std::string& renderMode) {
     // force to lowercase before setting
-    const std::string renderModeLC = Cr::Utility::String::lowercase(renderMode);
+    const std::string renderModeLC =
+        Cr::Utility::String::lowercase(Cr::Containers::StringView{renderMode});
     auto mapIter = AORenderModesMap.find(renderModeLC);
     ESP_CHECK(mapIter != AORenderModesMap.end(),
               "Illegal render mode value"
@@ -241,8 +247,8 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
    * @brief Get the render mode to use to render this Articulated Object
    */
   ArticulatedObjectRenderMode getRenderMode() const {
-    const std::string val =
-        Cr::Utility::String::lowercase(get<std::string>("render_mode"));
+    const std::string val = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{get<std::string>("render_mode")});
     auto mapIter = AORenderModesMap.find(val);
     if (mapIter != AORenderModesMap.end()) {
       return mapIter->second;
@@ -259,7 +265,7 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
   void setShaderType(const std::string& shader_type) {
     // force to lowercase before setting
     const std::string shaderTypeLC =
-        Cr::Utility::String::lowercase(shader_type);
+        Cr::Utility::String::lowercase(Cr::Containers::StringView{shader_type});
     auto mapIter = ShaderTypeNamesMap.find(shaderTypeLC);
     ESP_CHECK(mapIter != ShaderTypeNamesMap.end(),
               "Illegal shader_type value"
@@ -274,8 +280,8 @@ class ArticulatedObjectAttributes : public AbstractAttributes {
    * be overridden by a scene instance specification.
    */
   ObjectInstanceShaderType getShaderType() const {
-    const std::string val =
-        Cr::Utility::String::lowercase(get<std::string>("shader_type"));
+    const std::string val = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{get<std::string>("shader_type")});
     auto mapIter = ShaderTypeNamesMap.find(val);
     if (mapIter != ShaderTypeNamesMap.end()) {
       return mapIter->second;

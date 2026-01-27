@@ -8,6 +8,8 @@
 #include "AbstractAttributes.h"
 #include "MarkerSets.h"
 
+#include <Corrade/Utility/String.h>
+
 namespace esp {
 namespace metadata {
 namespace attributes {
@@ -161,8 +163,8 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * accurate and thorough mechanisms have been implemented in its place.
    */
   void setRenderAssetType(const std::string& renderAssetType) {
-    const std::string rAssetTypeLC =
-        Cr::Utility::String::lowercase(renderAssetType);
+    const std::string rAssetTypeLC = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{renderAssetType});
 
     auto mapIter = AssetTypeNamesMap.find(rAssetTypeLC);
     ESP_CHECK(mapIter != AssetTypeNamesMap.end(),
@@ -182,8 +184,8 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * accurate and thorough mechanisms have been implemented in its place.
    */
   void initRenderAssetType(const std::string& renderAssetType) {
-    const std::string rAssetTypeLC =
-        Cr::Utility::String::lowercase(renderAssetType);
+    const std::string rAssetTypeLC = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{renderAssetType});
 
     auto mapIter = AssetTypeNamesMap.find(rAssetTypeLC);
     ESP_CHECK(mapIter != AssetTypeNamesMap.end(),
@@ -242,8 +244,8 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * accurate and thorough mechanisms have been implemented in its place.
    */
   AssetType getRenderAssetType() {
-    const std::string val =
-        Cr::Utility::String::lowercase(get<std::string>("render_asset_type"));
+    const std::string val = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{get<std::string>("render_asset_type")});
     auto mapIter = AssetTypeNamesMap.find(val);
     if (mapIter != AssetTypeNamesMap.end()) {
       return mapIter->second;
@@ -318,8 +320,8 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * accurate and thorough mechanisms have been implemented in its place.
    */
   void setCollisionAssetType(const std::string& collisionAssetType) {
-    const std::string cAssetTypeLC =
-        Cr::Utility::String::lowercase(collisionAssetType);
+    const std::string cAssetTypeLC = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{collisionAssetType});
 
     auto mapIter = AssetTypeNamesMap.find(cAssetTypeLC);
     ESP_CHECK(mapIter != AssetTypeNamesMap.end(),
@@ -339,8 +341,8 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * accurate and thorough mechanisms have been implemented in its place.
    */
   void initCollisionAssetType(const std::string& collisionAssetType) {
-    const std::string cAssetTypeLC =
-        Cr::Utility::String::lowercase(collisionAssetType);
+    const std::string cAssetTypeLC = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{collisionAssetType});
 
     auto mapIter = AssetTypeNamesMap.find(cAssetTypeLC);
     ESP_CHECK(mapIter != AssetTypeNamesMap.end(),
@@ -403,7 +405,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   AssetType getCollisionAssetType() const {
     const std::string val = Cr::Utility::String::lowercase(
-        get<std::string>("collision_asset_type"));
+        Cr::Containers::StringView{get<std::string>("collision_asset_type")});
     auto mapIter = AssetTypeNamesMap.find(val);
     if (mapIter != AssetTypeNamesMap.end()) {
       return mapIter->second;
@@ -470,7 +472,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
   void setShaderType(const std::string& shader_type) {
     // force to lowercase before setting
     const std::string shaderTypeLC =
-        Cr::Utility::String::lowercase(shader_type);
+        Cr::Utility::String::lowercase(Cr::Containers::StringView{shader_type});
     auto mapIter = ShaderTypeNamesMap.find(shaderTypeLC);
     ESP_CHECK(mapIter != ShaderTypeNamesMap.end(),
               "Illegal shader_type value"
@@ -485,8 +487,8 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * overridden by a scene instance specification.
    */
   ObjectInstanceShaderType getShaderType() const {
-    const std::string val =
-        Cr::Utility::String::lowercase(get<std::string>("shader_type"));
+    const std::string val = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{get<std::string>("shader_type")});
     auto mapIter = ShaderTypeNamesMap.find(val);
     if (mapIter != ShaderTypeNamesMap.end()) {
       return mapIter->second;

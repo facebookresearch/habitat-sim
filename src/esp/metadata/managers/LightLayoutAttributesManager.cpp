@@ -157,7 +157,8 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
   std::string tmpPosMdleVal = "";
   if (io::readMember<std::string>(jsonConfig, "position_model",
                                   tmpPosMdleVal)) {
-    std::string strToLookFor = Cr::Utility::String::lowercase(tmpPosMdleVal);
+    std::string strToLookFor = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{tmpPosMdleVal});
     if (attributes::LightPositionNamesMap.count(strToLookFor) != 0u) {
       posMdleVal = std::move(tmpPosMdleVal);
     } else {
@@ -175,7 +176,8 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
   std::string specifiedTypeVal = "point";
   std::string tmpTypeVal = "";
   if (io::readMember<std::string>(jsonConfig, "type", tmpTypeVal)) {
-    std::string strToLookFor = Cr::Utility::String::lowercase(tmpTypeVal);
+    std::string strToLookFor =
+        Cr::Utility::String::lowercase(Cr::Containers::StringView{tmpTypeVal});
     if (strToLookFor == "spot") {
       // TODO remove this if block to support spot lights
       ESP_WARNING()

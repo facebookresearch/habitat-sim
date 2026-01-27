@@ -123,7 +123,8 @@ AbstractSensorAttributes::ptr SensorAttributesManager::buildObjectFromJSONDoc(
     // sensor to create
     return nullptr;
   }
-  std::string strToLookFor = Cr::Utility::String::lowercase(tmpStrVal);
+  std::string strToLookFor =
+      Cr::Utility::String::lowercase(Cr::Containers::StringView{tmpStrVal});
   if (strToLookFor == "unspecified") {
     // cannot instantiate unspecified sensor; error
     ESP_ERROR(Mn::Debug::Flag::NoSpace)

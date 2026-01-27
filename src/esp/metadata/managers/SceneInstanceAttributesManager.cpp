@@ -404,7 +404,8 @@ void SceneInstanceAttributesManager::setAbstractObjectAttributesFromJson(
   std::string tmpVal = "";
   if (io::readMember<std::string>(jCell, "motion_type", tmpVal)) {
     // motion type tag was found, perform check - first convert to lowercase
-    std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
+    std::string strToLookFor =
+        Cr::Utility::String::lowercase(Cr::Containers::StringView{tmpVal});
     auto found = attributes::MotionTypeNamesMap.find(strToLookFor);
     if (found != attributes::MotionTypeNamesMap.end()) {
       // only set value if specified in json
@@ -478,8 +479,8 @@ std::string SceneInstanceAttributesManager::getTranslationOriginVal(
                                   tmpTransOriginVal)) {
     // translation_origin tag was found, perform check - first convert to
     // lowercase
-    std::string strToLookFor =
-        Cr::Utility::String::lowercase(tmpTransOriginVal);
+    std::string strToLookFor = Cr::Utility::String::lowercase(
+        Cr::Containers::StringView{tmpTransOriginVal});
     auto found = attributes::InstanceTranslationOriginMap.find(strToLookFor);
     if (found != attributes::InstanceTranslationOriginMap.end()) {
       transOrigin = std::move(tmpTransOriginVal);

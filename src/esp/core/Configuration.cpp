@@ -5,6 +5,7 @@
 #include "Configuration.h"
 #include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/FormatStl.h>
+#include <Corrade/Utility/String.h>
 #include <Magnum/Math/ConfigurationValue.h>
 #include "esp/core/Check.h"
 #include "esp/io/Json.h"
@@ -500,7 +501,8 @@ int Configuration::loadOneConfigFromJson(int numConfigSettings,
           // Check if label contains substrings inferring expected type,
           // otherwise assume this field is a mn::Vector4
 
-          auto lcaseKey = Cr::Utility::String::lowercase(key);
+          std::string lcaseKey =
+              Cr::Utility::String::lowercase(Cr::Containers::StringView{key});
           // labels denoting quaternions
           if ((lcaseKey.find("quat") != std::string::npos) ||
               (lcaseKey.find("rotat") != std::string::npos) ||

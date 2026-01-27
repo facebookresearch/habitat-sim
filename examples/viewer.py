@@ -29,11 +29,6 @@ from habitat_sim.utils.settings import default_sim_settings, make_cfg
 
 
 class HabitatSimInteractiveViewer(Application):
-    # the maximum number of chars displayable in the app window
-    # using the magnum text module. These chars are used to
-    # display the CPU/GPU usage data
-    MAX_DISPLAY_TEXT_CHARS = 256
-
     # how much to displace window text relative to the center of the
     # app window (e.g if you want the display text in the top left of
     # the app window, you will displace the text
@@ -60,10 +55,12 @@ class HabitatSimInteractiveViewer(Application):
             self.sim_settings["window_height"],
         )
 
-        configuration = self.Configuration()
-        configuration.title = "Habitat Sim Interactive Viewer"
-        configuration.size = window_size
-        Application.__init__(self, configuration)
+        Application.__init__(
+            self,
+            self.Configuration(
+                title="Habitat Sim Interactive Viewer", size=window_size
+            ),
+        )
         self.fps: float = 60.0
 
         # Compute environment camera resolution based on the number of environments to render in the window.
@@ -84,23 +81,8 @@ class HabitatSimInteractiveViewer(Application):
         # cache most recently loaded URDF file for quick-reload
         self.cached_urdf = ""
 
-        # set up our movement map
-
-        key = Application.Key
-        self.pressed = {
-            key.UP: False,
-            key.DOWN: False,
-            key.LEFT: False,
-            key.RIGHT: False,
-            key.A: False,
-            key.D: False,
-            key.S: False,
-            key.W: False,
-            key.X: False,
-            key.Z: False,
-        }
-
         # set up our movement key bindings map
+        key = Application.Key
         self.key_to_action = {
             key.UP: "look_up",
             key.DOWN: "look_down",
@@ -119,13 +101,11 @@ class HabitatSimInteractiveViewer(Application):
         relative_path_to_font = "../data/fonts/ProggyClean.ttf"
         self.display_font.open_file(
             os.path.join(os.path.dirname(__file__), relative_path_to_font),
-            13,
+            HabitatSimInteractiveViewer.DISPLAY_FONT_SIZE,
         )
 
         # Glyphs we need to render everything
-        self.glyph_cache = text.GlyphCacheGL(
-            mn.PixelFormat.R8_UNORM, mn.Vector2i(256), mn.Vector2i(1)
-        )
+        self.glyph_cache = text.GlyphCacheGL(mn.PixelFormat.R8_UNORM, mn.Vector2i(256))
         self.display_font.fill_glyph_cache(
             self.glyph_cache,
             string.ascii_lowercase
@@ -135,13 +115,8 @@ class HabitatSimInteractiveViewer(Application):
         )
 
         # magnum text object that displays CPU/GPU usage data in the app window
-        self.window_text = text.Renderer2D(
-            self.display_font,
-            self.glyph_cache,
-            HabitatSimInteractiveViewer.DISPLAY_FONT_SIZE,
-            text.Alignment.TOP_LEFT,
-        )
-        self.window_text.reserve(HabitatSimInteractiveViewer.MAX_DISPLAY_TEXT_CHARS)
+        self.window_text = text.RendererGL(self.glyph_cache)
+        self.window_text.alignment = text.Alignment.TOP_LEFT
 
         # text object transform in window space is Projection matrix times Translation Matrix
         # put text in top left of window
@@ -462,10 +437,9 @@ class HabitatSimInteractiveViewer(Application):
             return
 
         agent = self.sim.agents[self.agent_id]
-        press: Dict[Application.Key.key, bool] = self.pressed
-        act: Dict[Application.Key.key, str] = self.key_to_action
+        act: Dict[Application.Key, str] = self.key_to_action
 
-        action_queue: List[str] = [act[k] for k, v in press.items() if v]
+        action_queue: List[str] = [v for k, v in act.items() if self.is_key_pressed(k)]
 
         for _ in range(int(repetitions)):
             [agent.act(x) for x in action_queue]
@@ -657,9 +631,6 @@ class HabitatSimInteractiveViewer(Application):
                 else:
                     logger.warn("Warning: recompute navmesh first")
 
-        # update map of moving/looking keys which are currently pressed
-        if key in self.pressed:
-            self.pressed[key] = True
         event.accepted = True
         self.redraw()
 
@@ -669,11 +640,7 @@ class HabitatSimInteractiveViewer(Application):
         is part of the movement keys map `Dict[KeyEvent.key, Bool]`, then the key will
         be set to False for the next `self.move_and_look()` to update the current actions.
         """
-        key = event.key
 
-        # update map of moving/looking keys which are currently pressed
-        if key in self.pressed:
-            self.pressed[key] = False
         event.accepted = True
         self.redraw()
 
@@ -950,13 +917,16 @@ class HabitatSimInteractiveViewer(Application):
             mouse_mode_string = "LOOK"
         elif self.mouse_interaction == MouseMode.GRAB:
             mouse_mode_string = "GRAB"
+        self.window_text.clear()  # replace all previous text
         self.window_text.render(
+            self.display_font.create_shaper(),
+            self.display_font.size,
             f"""
 {self.fps} FPS
 Sensor Type: {sensor_type_string}
 Sensor Subtype: {sensor_subtype_string}
 Mouse Interaction Mode: {mouse_mode_string}
-            """
+            """,
         )
         self.shader.draw(self.window_text.mesh)
 

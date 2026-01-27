@@ -16,8 +16,6 @@
 #include <set>
 #include <unordered_map>
 
-#include <Corrade/Utility/String.h>
-
 #include "esp/core/managedContainers/AbstractManagedObject.h"
 
 namespace Cr = Corrade;
