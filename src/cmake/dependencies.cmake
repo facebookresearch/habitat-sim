@@ -86,7 +86,22 @@ if(BUILD_ASSIMP_SUPPORT AND NOT USE_SYSTEM_ASSIMP)
   # Unconditionally setting -Werror is just playing with fire with every new OS
   # or compiler release. Don't.
   set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE BOOL "" FORCE)
+  # Disable MMD importer - not needed by habitat-sim and has GCC 15 compatibility
+  # issues (missing #include <cstdint> in MMDPmxParser.h)
+  set(ASSIMP_BUILD_MMD_IMPORTER OFF CACHE BOOL "" FORCE)
+
+  # Suppress warnings from assimp that fail with modern GCC (15+).
+  # These include:
+  # - memcpy on non-trivially-copyable types (-Wclass-memaccess)
+  # - deprecated declarations (-Wdeprecated-declarations)
+  # - array bounds false positives on .back() calls (-Warray-bounds)
+  set(_PREV_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+  set(
+    CMAKE_CXX_FLAGS
+    "${CMAKE_CXX_FLAGS} -Wno-class-memaccess -Wno-deprecated-declarations -Wno-array-bounds"
+  )
   add_subdirectory("${DEPS_DIR}/assimp")
+  set(CMAKE_CXX_FLAGS ${_PREV_CMAKE_CXX_FLAGS})
 endif()
 
 # audio
