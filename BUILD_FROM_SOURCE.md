@@ -40,8 +40,8 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
     Common
 
    ```bash
-   # We require python>=3.9 and cmake>=3.10
-   conda create -n habitat python=3.9 cmake=3.14.0
+   # We require python>=3.12 and cmake>=3.22
+   conda create -n habitat python=3.12 cmake=3.27
    conda activate habitat
    pip install -r requirements.txt
    ```
