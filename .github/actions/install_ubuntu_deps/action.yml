@@ -3,17 +3,15 @@ runs:
   using: composite
   steps:
   - name: install cmake
-    # OpenEXR requires CMake 3.12. We also download CMake 3.20, which
-    # we'll use later for the JS build only.
     run: |
       echo $(date +%F) > ./date
       echo $(git ls-remote https://github.com/facebookresearch/habitat-lab.git HEAD | awk '{ print $1}') > ./hablab_sha
       cat ./hablab_sha
-      wget https://cmake.org/files/v3.12/cmake-3.12.4-Linux-x86_64.sh
-      sudo mkdir /opt/cmake312
-      sudo sh ./cmake-3.12.4-Linux-x86_64.sh --prefix=/opt/cmake312 --skip-license
-      sudo ln -s /opt/cmake312/bin/cmake /usr/local/bin/cmake
-      sudo ln -s /opt/cmake312/bin/ctest /usr/local/bin/ctest
+      wget https://cmake.org/files/v3.28/cmake-3.28.3-linux-x86_64.sh
+      sudo mkdir /opt/cmake328
+      sudo sh ./cmake-3.28.3-linux-x86_64.sh --prefix=/opt/cmake328 --skip-license
+      sudo ln -sf /opt/cmake328/bin/cmake /usr/local/bin/cmake
+      sudo ln -sf /opt/cmake328/bin/ctest /usr/local/bin/ctest
     shell: bash
   - name: Install dependencies
     run: |-
@@ -44,12 +42,12 @@ runs:
     uses: conda-incubator/setup-miniconda@v3.0.1
     with:
       miniconda-version: "latest"
-      python-version: "3.9"
+      python-version: "3.12"
       activate-environment: "habitat"
   - name: Install conda and dependencies
     run: |-
       echo "Install conda and dependencies"
-      conda install -y pytorch==1.12.1 torchvision==0.13.1 -c pytorch -c nvidia
+      conda install -y pytorch torchvision pytorch-cuda=12.4 -c pytorch -c nvidia
       conda install -y -c conda-forge ninja numpy=1.26.4 pytest pytest-cov ccache hypothesis pytest-mock
       pip install pytest-sugar pytest-xdist pytest-benchmark opencv-python cython mock
     shell: bash -el {0}
