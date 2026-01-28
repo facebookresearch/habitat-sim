@@ -295,6 +295,7 @@ jobs:
         fi
 
   build_conda_binaries:
+    if: false  # Temporarily disabled - conda builds need updates
     runs-on: 4-core-ubuntu-gpu-t4
     env:
       AIHABITAT_CONDA_USERNAME: aihabitat
@@ -372,6 +373,7 @@ jobs:
           fi
 
   build_conda_osx:
+    if: false  # Temporarily disabled - conda builds need updates
     runs-on: macos-14
     env:
       AIHABITAT_CONDA_USERNAME: aihabitat
