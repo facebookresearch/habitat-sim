@@ -18,9 +18,28 @@ runs:
       # Install all nvidia packages together so apt can resolve dependencies correctly.
       # Use the major driver version without pinning to a specific patch version,
       # allowing apt to select compatible versions across all packages.
+      # Include EGL packages required for headless rendering with CUDA device matching.
       sudo apt-get install -y --allow-downgrades \
         libnvidia-common-${MAJOR_DRIVER_VERSION} \
         libnvidia-gl-${MAJOR_DRIVER_VERSION} \
         libnvidia-compute-${MAJOR_DRIVER_VERSION} \
         libnvidia-decode-${MAJOR_DRIVER_VERSION} \
-        libnvidia-encode-${MAJOR_DRIVER_VERSION}
+        libnvidia-encode-${MAJOR_DRIVER_VERSION} \
+        libnvidia-egl-wayland1 \
+        libnvidia-cfg1-${MAJOR_DRIVER_VERSION}
+  - name: Configure EGL for NVIDIA
+    shell: bash
+    run: |
+      # Ensure NVIDIA EGL ICD is properly configured for headless rendering
+      # This creates the vendor configuration if it doesn't exist
+      sudo mkdir -p /usr/share/glvnd/egl_vendor.d
+      echo '{"file_format_version" : "1.0.0", "ICD" : {"library_path" : "libEGL_nvidia.so.0"}}' | sudo tee /usr/share/glvnd/egl_vendor.d/10_nvidia.json
+      
+      # Debug: List available EGL devices
+      echo "=== EGL Debug Info ==="
+      ls -la /usr/share/glvnd/egl_vendor.d/ || true
+      cat /usr/share/glvnd/egl_vendor.d/*.json 2>/dev/null || true
+      
+      # Check for nvidia EGL libraries
+      ldconfig -p | grep -i egl || true
+      ldconfig -p | grep -i nvidia || true
