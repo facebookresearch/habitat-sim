@@ -89,7 +89,7 @@ jobs:
     - name: Build, install habitat-sim
       run: |-
         #give cmake ownership to the runner for installation
-        sudo chown runner -R /opt/cmake312/
+        #sudo chown runner -R /opt/cmake312/
         #activate conda env
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
         conda activate habitat
@@ -108,7 +108,7 @@ jobs:
     - name: Run sim tests
       run: |-
         #give cmake ownership to the runner for installation
-        sudo chown runner -R /opt/cmake312/
+        #sudo chown runner -R /opt/cmake312/
         #activate conda env
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
         conda activate habitat
@@ -156,7 +156,7 @@ jobs:
     - name: install habitat-sim with audio and run audio_agent script
       run: |-
         #give cmake ownership to the runner for installation
-        sudo chown runner -R /opt/cmake312/
+        #sudo chown runner -R /opt/cmake312/
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
         conda activate habitat
         cd habitat-sim
@@ -183,7 +183,7 @@ jobs:
     - name: Build, install habitat-sim
       run: |-
         #give cmake ownership to the runner for installation
-        sudo chown runner -R /opt/cmake312/
+        #sudo chown runner -R /opt/cmake312/
         #activate conda env
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
         conda activate habitat
@@ -418,8 +418,9 @@ jobs:
           export PATH=$HOME/miniconda/bin:$PATH
           conda init
           conda activate habitat
-          conda install -y anaconda-client ccache cmake git ninja conda-build pip
+          conda install -y anaconda-client ccache cmake=3.31.2 git ninja conda-build pip
           echo $(which -a python)
+          echo $(cmake --version)
           pip install gitpython
           cd habitat-sim
           git submodule update --init --recursive --jobs 8
