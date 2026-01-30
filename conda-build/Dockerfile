@@ -41,6 +41,10 @@ ENV PATH=/opt/conda/bin:$PATH
 ADD ./common/install_conda.sh install_conda.sh
 RUN bash ./install_conda.sh && rm install_conda.sh
 
-RUN conda init bash && conda create --name py312 python=3.12 -y
-RUN source ~/.bashrc && conda activate py312 && conda install -y anaconda-client git gitpython ninja conda-build
+RUN conda create --name py312 python=3.12 -y
+RUN conda run -n py312 conda install -y anaconda-client git gitpython ninja conda-build
 RUN conda config --set anaconda_upload yes
+
+# Set py312 as the default environment when bash is started
+RUN echo "conda activate py312" >> ~/.bashrc
+RUN conda init bash
