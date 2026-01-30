@@ -145,7 +145,9 @@ jobs:
         ./codecov -f coverage.xml -cF Python
 
         #Uploading test coverage for C++ code
-        lcov --directory . --capture --output-file coverage.info
+        # Use --ignore-errors mismatch to handle gcov/source line mismatches that can occur
+        # with pybind11 and other template-heavy code
+        lcov --directory . --capture --output-file coverage.info --ignore-errors mismatch
         # Replaces -1 linecount with zero to prevent lcov from crashing:
         # https://github.com/psycofdj/coverxygen/issues/6
         sed -i -e 's/,-1$/,0/g' coverage.info
