@@ -89,7 +89,7 @@ jobs:
     - name: Build, install habitat-sim
       run: |-
         #give cmake ownership to the runner for installation
-        sudo chown runner -R /opt/cmake312/
+        sudo chown runner -R /opt/cmake328/
         #activate conda env
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
         conda activate habitat
@@ -108,7 +108,7 @@ jobs:
     - name: Run sim tests
       run: |-
         #give cmake ownership to the runner for installation
-        sudo chown runner -R /opt/cmake312/
+        sudo chown runner -R /opt/cmake328/
         #activate conda env
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
         conda activate habitat
@@ -145,7 +145,9 @@ jobs:
         ./codecov -f coverage.xml -cF Python
 
         #Uploading test coverage for C++ code
-        lcov --directory . --capture --output-file coverage.info
+        # Use --ignore-errors mismatch to handle gcov/source line mismatches that can occur
+        # with pybind11 and other template-heavy code
+        lcov --directory . --capture --output-file coverage.info --ignore-errors mismatch
         # Replaces -1 linecount with zero to prevent lcov from crashing:
         # https://github.com/psycofdj/coverxygen/issues/6
         sed -i -e 's/,-1$/,0/g' coverage.info
@@ -156,7 +158,7 @@ jobs:
     - name: install habitat-sim with audio and run audio_agent script
       run: |-
         #give cmake ownership to the runner for installation
-        sudo chown runner -R /opt/cmake312/
+        sudo chown runner -R /opt/cmake328/
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
         conda activate habitat
         cd habitat-sim
@@ -183,7 +185,7 @@ jobs:
     - name: Build, install habitat-sim
       run: |-
         #give cmake ownership to the runner for installation
-        sudo chown runner -R /opt/cmake312/
+        sudo chown runner -R /opt/cmake328/
         #activate conda env
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
         conda activate habitat
@@ -295,6 +297,7 @@ jobs:
         fi
 
   build_conda_binaries:
+    if: false  # Temporarily disabled - conda builds need updates
     runs-on: 4-core-ubuntu-gpu-t4
     env:
       AIHABITAT_CONDA_USERNAME: aihabitat
@@ -372,6 +375,7 @@ jobs:
           fi
 
   build_conda_osx:
+    if: false  # Temporarily disabled - conda builds need updates
     runs-on: macos-14
     env:
       AIHABITAT_CONDA_USERNAME: aihabitat

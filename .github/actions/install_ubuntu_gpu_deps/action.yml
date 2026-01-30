@@ -1,24 +1,200 @@
 # This action installs required Ubuntu NVIDIA dependencies.
-# It assumes that `nvidia-smi` is available on the system.
+# It assumes that the VM image has pre-installed NVIDIA drivers.
+# We only install CUDA toolkit on top to avoid driver/library version mismatches.
 name: "Install GPU Dependencies"
 runs:
   using: composite
   steps:
-  - name: Install GPU Dependencies
+  - name: Diagnose GPU Environment (Pre-Install)
     shell: bash
     run: |
-      NVIDIA_SMI_OUTPUT=$(nvidia-smi)
-      # Extract CUDA version (e.g., 11.7)
-      CUDA_VERSION=$(echo "$NVIDIA_SMI_OUTPUT" | grep -oP 'CUDA Version:\s+\K[\d.]+')
+      echo "=============================================="
+      echo "=== GPU Environment Diagnostics (Pre-Install) ==="
+      echo "=============================================="
 
-      FULL_DRIVER_VERSION=$(echo "$NVIDIA_SMI_OUTPUT" | grep -oP 'Driver Version:\s+\K[\d.]+')
-      MAJOR_DRIVER_VERSION=$(echo "$NVIDIA_SMI_OUTPUT" | grep -oP 'Driver Version:\s+\K\d+')
-      UBUNTU_PACKAGE_SUFFIX="${MAJOR_DRIVER_VERSION}=${FULL_DRIVER_VERSION}-0ubuntu1"
+      echo ""
+      echo "=== Kernel Driver Version ==="
+      if [ -f /sys/module/nvidia/version ]; then
+        KERNEL_DRIVER_VERSION=$(cat /sys/module/nvidia/version)
+        echo "Kernel nvidia module version: $KERNEL_DRIVER_VERSION"
+      else
+        echo "WARNING: /sys/module/nvidia/version not found - nvidia kernel module may not be loaded"
+        lsmod | grep nvidia || echo "No nvidia kernel modules found"
+      fi
+
+      echo ""
+      echo "=== nvidia-smi Output ==="
+      if command -v nvidia-smi &> /dev/null; then
+        nvidia-smi || echo "nvidia-smi failed to run"
+      else
+        echo "nvidia-smi command not found"
+      fi
+
+      echo ""
+      echo "=== NVML Library Version ==="
+      ldconfig -p | grep -i nvml || echo "No NVML libraries found in ldconfig"
+
+      echo ""
+      echo "=== Installed NVIDIA Packages ==="
+      dpkg -l | grep -i nvidia | head -30 || echo "No nvidia packages found"
+
+      echo ""
+      echo "=== CUDA Paths ==="
+      ls -la /usr/local/ | grep cuda || echo "No /usr/local/cuda* directories found"
+
+      echo ""
+      echo "=== EGL Vendor Configuration ==="
+      ls -la /usr/share/glvnd/egl_vendor.d/ 2>/dev/null || echo "EGL vendor directory not found"
+      cat /usr/share/glvnd/egl_vendor.d/*.json 2>/dev/null || echo "No EGL vendor JSON files found"
+
+      echo ""
+      echo "=== EGL Libraries ==="
+      ldconfig -p | grep -i egl || echo "No EGL libraries found"
+
+      echo ""
+      echo "=== GPU Device Files ==="
+      ls -la /dev/nvidia* 2>/dev/null || echo "No /dev/nvidia* device files found"
+      ls -la /dev/dri/ 2>/dev/null || echo "No /dev/dri/ directory found"
+
+      echo "=============================================="
+
+  - name: Install CUDA Toolkit Only
+    shell: bash
+    run: |
+      # Strategy: Use the pre-installed NVIDIA drivers from the VM image.
+      # Only install CUDA toolkit to avoid driver/library version mismatches.
+
+      echo "=== Extracting CUDA version from nvidia-smi ==="
+      NVIDIA_SMI_OUTPUT=$(nvidia-smi 2>&1) || true
+
+      if echo "$NVIDIA_SMI_OUTPUT" | grep -q "CUDA Version"; then
+        CUDA_VERSION=$(echo "$NVIDIA_SMI_OUTPUT" | grep -oP 'CUDA Version:\s+\K[\d.]+')
+        echo "Detected CUDA Version from nvidia-smi: $CUDA_VERSION"
+      else
+        echo "WARNING: Could not detect CUDA version from nvidia-smi"
+        echo "nvidia-smi output: $NVIDIA_SMI_OUTPUT"
+        # Try to detect from existing cuda installation
+        if [ -d /usr/local/cuda ]; then
+          CUDA_VERSION=$(cat /usr/local/cuda/version.txt 2>/dev/null | grep -oP '\d+\.\d+' | head -1) || true
+          echo "Detected CUDA Version from /usr/local/cuda: $CUDA_VERSION"
+        fi
+        # Default fallback
+        if [ -z "$CUDA_VERSION" ]; then
+          CUDA_VERSION="12.8"
+          echo "Using default CUDA version: $CUDA_VERSION"
+        fi
+      fi
+
+      echo ""
+      echo "=== Installing CUDA Toolkit ${CUDA_VERSION} ==="
       sudo apt-get update
-      sudo apt-get install -y cuda-toolkit-${CUDA_VERSION}
-      sudo apt-get install -y nvidia-gds-${CUDA_VERSION}
-      sudo apt-get install -y libnvidia-common-${UBUNTU_PACKAGE_SUFFIX}
-      sudo apt-get install -y libnvidia-gl-${UBUNTU_PACKAGE_SUFFIX}
-      sudo apt-get install -y libnvidia-compute-${UBUNTU_PACKAGE_SUFFIX} --allow-downgrades
-      sudo apt-get install -y libnvidia-decode-${UBUNTU_PACKAGE_SUFFIX}
-      sudo apt-get install -y libnvidia-encode-${UBUNTU_PACKAGE_SUFFIX}
+      # Only install cuda-toolkit, NOT the driver packages
+      sudo apt-get install -y cuda-toolkit-${CUDA_VERSION} || {
+        echo "Failed to install cuda-toolkit-${CUDA_VERSION}, trying without version specifier"
+        sudo apt-get install -y cuda-toolkit
+      }
+
+      # Install GDS if available (optional, don't fail if not available)
+      sudo apt-get install -y nvidia-gds-${CUDA_VERSION} || echo "nvidia-gds not available, skipping"
+
+  - name: Configure EGL for NVIDIA
+    shell: bash
+    run: |
+      echo "=== Configuring EGL for headless NVIDIA rendering ==="
+
+      # Remove Mesa EGL vendor configuration to ensure NVIDIA EGL is used
+      # Mesa's software renderer doesn't support CUDA device matching
+      if [ -f /usr/share/glvnd/egl_vendor.d/50_mesa.json ]; then
+        echo "Removing Mesa EGL vendor config"
+        sudo rm -f /usr/share/glvnd/egl_vendor.d/50_mesa.json
+      fi
+
+      # Ensure NVIDIA EGL ICD is properly configured for headless rendering
+      sudo mkdir -p /usr/share/glvnd/egl_vendor.d
+      echo '{"file_format_version" : "1.0.0", "ICD" : {"library_path" : "libEGL_nvidia.so.0"}}' | sudo tee /usr/share/glvnd/egl_vendor.d/10_nvidia.json
+
+  - name: Diagnose GPU Environment (Post-Install)
+    shell: bash
+    run: |
+      echo "=============================================="
+      echo "=== GPU Environment Diagnostics (Post-Install) ==="
+      echo "=============================================="
+
+      echo ""
+      echo "=== Kernel Driver Version ==="
+      if [ -f /sys/module/nvidia/version ]; then
+        KERNEL_DRIVER_VERSION=$(cat /sys/module/nvidia/version)
+        echo "Kernel nvidia module version: $KERNEL_DRIVER_VERSION"
+      else
+        echo "WARNING: /sys/module/nvidia/version not found"
+      fi
+
+      echo ""
+      echo "=== nvidia-smi Output ==="
+      nvidia-smi || echo "nvidia-smi FAILED - this is critical for EGL device enumeration"
+
+      echo ""
+      echo "=== nvidia-smi GPU List ==="
+      nvidia-smi -L || echo "nvidia-smi -L FAILED"
+
+      echo ""
+      echo "=== NVML Library Check ==="
+      ldconfig -p | grep -i nvml || echo "No NVML libraries found"
+      # Check if NVML can be loaded
+      python3 -c "import ctypes; ctypes.CDLL('libnvidia-ml.so.1'); print('NVML library loaded successfully')" 2>/dev/null || echo "Could not load NVML library via ctypes"
+
+      echo ""
+      echo "=== EGL Configuration ==="
+      echo "EGL vendor files:"
+      ls -la /usr/share/glvnd/egl_vendor.d/ || true
+      echo ""
+      echo "EGL vendor contents:"
+      cat /usr/share/glvnd/egl_vendor.d/*.json 2>/dev/null || true
+
+      echo ""
+      echo "=== EGL Libraries ==="
+      ldconfig -p | grep -i egl || true
+
+      echo ""
+      echo "=== NVIDIA EGL Libraries ==="
+      ldconfig -p | grep -i 'nvidia.*egl\|egl.*nvidia' || echo "No NVIDIA EGL libraries found"
+
+      echo ""
+      echo "=== libEGL_nvidia.so.0 Location ==="
+      ldconfig -p | grep libEGL_nvidia || echo "libEGL_nvidia.so.0 not found in ldconfig"
+      find /usr -name "libEGL_nvidia.so*" 2>/dev/null || echo "libEGL_nvidia.so not found in /usr"
+
+      echo ""
+      echo "=== Driver/Library Version Comparison ==="
+      KERNEL_VERSION=""
+      NVML_VERSION=""
+      if [ -f /sys/module/nvidia/version ]; then
+        KERNEL_VERSION=$(cat /sys/module/nvidia/version)
+        echo "Kernel driver version: $KERNEL_VERSION"
+      fi
+      # Try to get NVML version from library
+      NVML_LIB=$(ldconfig -p | grep 'libnvidia-ml.so.1 ' | awk '{print $NF}' | head -1)
+      if [ -n "$NVML_LIB" ]; then
+        NVML_VERSION=$(strings "$NVML_LIB" 2>/dev/null | grep -oP '^\d+\.\d+\.\d+$' | head -1) || true
+        echo "NVML library version (from strings): $NVML_VERSION"
+      fi
+      if [ -n "$KERNEL_VERSION" ] && [ -n "$NVML_VERSION" ]; then
+        if [ "$KERNEL_VERSION" = "$NVML_VERSION" ]; then
+          echo "✓ Versions MATCH"
+        else
+          echo "✗ WARNING: Version MISMATCH detected!"
+        fi
+      fi
+
+      echo ""
+      echo "=== CUDA Installation ==="
+      ls -la /usr/local/cuda*/bin/nvcc 2>/dev/null || echo "nvcc not found"
+      /usr/local/cuda/bin/nvcc --version 2>/dev/null || echo "Could not run nvcc --version"
+
+      echo ""
+      echo "=== GPU Device Files ==="
+      ls -la /dev/nvidia* 2>/dev/null || echo "No /dev/nvidia* device files"
+
+      echo "=============================================="
+      echo "=== End of GPU Diagnostics ==="
+      echo "=============================================="
