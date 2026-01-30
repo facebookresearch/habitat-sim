@@ -30,16 +30,23 @@ runs:
   - name: Configure EGL for NVIDIA
     shell: bash
     run: |
+      # Remove Mesa EGL vendor configuration to ensure NVIDIA EGL is used
+      # Mesa's software renderer doesn't support CUDA device matching
+      sudo rm -f /usr/share/glvnd/egl_vendor.d/50_mesa.json
+
       # Ensure NVIDIA EGL ICD is properly configured for headless rendering
-      # This creates the vendor configuration if it doesn't exist
       sudo mkdir -p /usr/share/glvnd/egl_vendor.d
       echo '{"file_format_version" : "1.0.0", "ICD" : {"library_path" : "libEGL_nvidia.so.0"}}' | sudo tee /usr/share/glvnd/egl_vendor.d/10_nvidia.json
-      
+
       # Debug: List available EGL devices
       echo "=== EGL Debug Info ==="
       ls -la /usr/share/glvnd/egl_vendor.d/ || true
       cat /usr/share/glvnd/egl_vendor.d/*.json 2>/dev/null || true
-      
+
       # Check for nvidia EGL libraries
       ldconfig -p | grep -i egl || true
       ldconfig -p | grep -i nvidia || true
+
+      # Verify nvidia-smi can see the GPU
+      echo "=== GPU Info ==="
+      nvidia-smi -L || true
