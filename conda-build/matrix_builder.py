@@ -37,7 +37,7 @@ def call(cmd, env=None):
 
 
 def get_default_modes_and_vers():
-    py_vers = ["3.9"]
+    py_vers = ["3.10", "3.11", "3.12"]
     bullet_modes = [False, True]
     if platform.system() == "Darwin":
         return py_vers, bullet_modes, [False], [None]
@@ -92,7 +92,7 @@ def main():
     if args.ci_test:
         bullet_modes = [True]
         headless_modes = [get_headless_mode_for_test()]
-        py_vers = ["3.9"]
+        py_vers = ["3.12"]
 
     for py_ver, use_bullet, headless, cuda_ver in itertools.product(
         py_vers, bullet_modes, headless_modes, cuda_vers
