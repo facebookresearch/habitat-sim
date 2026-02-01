@@ -331,13 +331,6 @@ jobs:
             echo "CONDA_PWD=$AIHABITAT_NIGHTLY_CONDA_PWD" >> $GITHUB_ENV
           elif [[ ${{ github.event_name }} == 'pull_request' ]]; then
             echo "trigger: a pull request"
-            # TODO: Remove this block after validating nightly upload works
-            # Temporarily treat PR as nightly build to test upload functionality
-            echo "TESTING NIGHTLY BUILD FROM PR"
-            echo "CI_TEST=false" >> $GITHUB_ENV
-            echo "NIGHTLY=--nightly" >> $GITHUB_ENV
-            echo "CONDA_USERNAME=$AIHABITAT_NIGHTLY_CONDA_USERNAME" >> $GITHUB_ENV
-            echo "CONDA_PWD=$AIHABITAT_NIGHTLY_CONDA_PWD" >> $GITHUB_ENV
           fi
       - name: Build conda Linux packages
         run: |-
