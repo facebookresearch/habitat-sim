@@ -157,6 +157,13 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
     setMaterialValuesInternal(material, true);
   }
 
+  /**
+   * @brief Whether this drawable has a specified material or was assigned the
+   * default fallback material, meaning the material for the object was either
+   * not loaded or is otherwise missing.
+   */
+  bool getUsesFallbackMaterial() const { return usingFallbackMaterial_; }
+
  private:
   /**
    * Set or change this drawable's @ref Magnum::Trade::MaterialData values from passed material.
@@ -171,6 +178,15 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
       CORRADE_UNUSED bool reset) {}
 
  protected:
+  /**
+   * @brief Whether this drawable has a specified material or was assigned the
+   * default fallback material, meaning the material for the object was either
+   * not loaded or is otherwise missing.
+   */
+  void setUsesFallbackMaterial(bool _usingFallbackMaterial) {
+    usingFallbackMaterial_ = _usingFallbackMaterial;
+  }
+
   /**
    * @brief resize the jointTransformArray_
    */
@@ -252,6 +268,13 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
   std::shared_ptr<InstanceSkinData> skinData_{nullptr};
 
   Corrade::Containers::Array<Magnum::Matrix4> jointTransformations_;
+
+  /**
+   * @brief Whether or not this drawable is being rendered using the default
+   * fallback material, which implies either that materials were not loaded, or
+   * else no material existed for the source asset to load.
+   */
+  bool usingFallbackMaterial_ = false;
 
   bool glMeshExists() const { return mesh_ != nullptr; }
 

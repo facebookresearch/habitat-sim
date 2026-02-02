@@ -120,6 +120,12 @@ void GenericDrawable::setMaterialValuesInternal(
   if (meshAttributeFlags_ & Drawable::Flag::HasVertexColor) {
     flags_ |= Mn::Shaders::PhongGL::Flag::VertexColor;
   }
+
+  // Set whether this drawable is being rendered using a fallback material; This
+  // would infer that either materials were not loaded or no materials were
+  // found for the source asset
+  setUsesFallbackMaterial(materialData->attribute<bool>("isFallbackMaterial"));
+
   // If not reset then make sure the same shader is used
   if (!reset) {
     flags_ = oldFlags;
