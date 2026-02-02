@@ -4,7 +4,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# Work around CMake 4.x removing support for cmake_minimum_required < 3.5
+# Some bundled dependencies (e.g., zlib in openexr) have old CMakeLists.txt
+# Set as environment variable so it applies to all CMake invocations including ExternalProjects
+export CMAKE_POLICY_VERSION_MINIMUM=3.5
+
 build_args=(--skip-install-magnum)
+
 if [ "${LTO}" == "1" ]; then
   build_args+=("--lto")
 fi
