@@ -374,7 +374,6 @@ jobs:
           fi
 
   build_conda_osx:
-    if: false  # Temporarily disabled - conda builds need updates
     runs-on: macos-14
     env:
       AIHABITAT_CONDA_USERNAME: aihabitat
@@ -392,7 +391,7 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           miniconda-version: "latest"
-          python-version: "3.9"
+          python-version: "3.12"
           activate-environment: "habitat"
       - name: Set CI_TEST variable based on "main merge" vs. "pull_request" workflow
         run: |-
@@ -429,16 +428,20 @@ jobs:
           pip install .
           pip uninstall -y habitat-sim
           rm -rf build
-          (yes || true) | anaconda login --username ${{ env.CONDA_USERNAME }} --password ${{ env.CONDA_PWD }} --hostname "aihabitat-conda-ci-builder-macos"
-          #pivot on the build type
+
           if [[ ${{ env.CI_TEST }} == true ]]; then
             echo "This is a CI test."
             cd conda-build
             export PYTHONIOENCODING="utf-8"
             python matrix_builder.py --ci_test
           else
-            conda config --set anaconda_upload yes
+            echo "This is a full conda build with deployment."
+            echo "Delete old nightly builds"
             cd conda-build
             export PYTHONIOENCODING="utf-8"
+            python common/delete_old_night_packages.py --username ${{ env.CONDA_USERNAME }} --password ${{ env.CONDA_PWD }} ${{ env.NIGHTLY }}
+
+            conda config --set anaconda_upload yes
+            (yes || true) | anaconda login --username ${{ env.CONDA_USERNAME }} --password ${{ env.CONDA_PWD }} --hostname "aihabitat-conda-ci-builder-macos"
             python matrix_builder.py --conda_upload ${{ env.NIGHTLY }}
           fi
