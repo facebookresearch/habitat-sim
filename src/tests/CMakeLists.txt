@@ -136,6 +136,9 @@ if(MagnumPlugins_KtxImageConverter_FOUND)
   target_link_libraries(GfxBatchRendererTest PRIVATE MagnumPlugins::KtxImageConverter)
 endif()
 
+corrade_add_test(GfxPbrIblTest GfxPbrIblTest.cpp LIBRARIES habitat_sim)
+target_include_directories(GfxPbrIblTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 corrade_add_test(
   GfxReplayTest
   GfxReplayTest.cpp
