@@ -78,10 +78,12 @@ for _i in range(1):
     )
     print(" ============================================================== ")
 
-    # assert perf["fps"] > args.test_fps_regression, (
-    #    "FPS is below regression threshold: %0.1f < %0.1f"
-    #    % (perf["fps"], args.test_fps_regression)
-    # )
+    assert (
+        perf["fps"] > args.test_fps_regression
+    ), "SPS is below regression threshold: %0.1f < %0.1f" % (
+        perf["fps"],
+        args.test_fps_regression,
+    )
 if len(perfs) > 1:
     avg_fps = 0
     avg_frame_time = 0
