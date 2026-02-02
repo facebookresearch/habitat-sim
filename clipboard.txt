@@ -1,0 +1,18 @@
+
+BASE_URL=https://us.download.nvidia.com/tesla
+DRIVER_VERSION=460.106.00
+curl -fSsl -O $BASE_URL/$DRIVER_VERSION/NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
+sudo sh NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
+
+
+python -m habitat_sim.utils.datasets_download --uids replica_cad_dataset
+
+/mnt/users/siro/habitat-sim/build/utils/viewer/viewer \
+--dataset /mnt/users/siro/habitat-lab/data/replica_cad/replicaCAD.scene_dataset_config.json \
+v3_sc0_staging_00
+
+./build/utils/viewer/viewer \
+--dataset /Users/eundersander/projects/habitat-lab4/data/replica_cad/replicaCAD.scene_dataset_config.json \
+v3_sc0_staging_00
+
+habitat-viewer --enable-physics --dataset /path/to/data/fpss/fphab/fphab.scene_dataset_config.json -- 108294897_176710602.scene_instance.json 
