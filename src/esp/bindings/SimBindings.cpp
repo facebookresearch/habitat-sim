@@ -24,6 +24,8 @@
 #include "esp/sim/Simulator.h"
 #include "esp/sim/SimulatorConfiguration.h"
 
+#include <stdexcept>
+
 namespace py = pybind11;
 using py::literals::operator""_a;
 
@@ -43,14 +45,14 @@ bool is_contiguous(const py::array_t<float>& array) {
   const auto& strides = info.strides;
 
   // Check if array is C-contiguous
-  size_t ndim = shape.size();
+  size_t ndim = info.ndim;
   size_t expected_stride = sizeof(float);
 
   for (size_t i = ndim; i > 0; --i) {
-    if (strides[i - 1] != expected_stride) {
+    if (static_cast<size_t>(strides[i - 1]) != expected_stride) {
       return false;
     }
-    expected_stride *= shape[i - 1];
+    expected_stride *= static_cast<size_t>(shape[i - 1]);
   }
   return true;
 }
@@ -194,40 +196,48 @@ void initRenderInstanceHelperBindings(py::module& m) {
           [](RenderInstanceHelper& self, py::array_t<float> positions,
              py::array_t<float> orientations) {
             // Get the number of instances from the helper
-            size_t num_instances = self.GetNumInstances();
+            const size_t num_instances = self.GetNumInstances();
+
+            // Request buffer info to validate shapes/strides
+            py::buffer_info pos_info = positions.request();
+            py::buffer_info ori_info = orientations.request();
+
+            // Validate the dtypes and itemsize
+            if (pos_info.itemsize != sizeof(float) || ori_info.itemsize != sizeof(float)) {
+              throw std::runtime_error("positions and orientations must be float32 arrays");
+            }
 
             // Validate the shape of positions
-            if (positions.ndim() != 2 || positions.shape(0) != num_instances ||
-                positions.shape(1) != 3) {
+            if (pos_info.ndim != 2 || static_cast<size_t>(pos_info.shape[0]) != num_instances || static_cast<size_t>(pos_info.shape[1]) != 3) {
               throw std::runtime_error(
                   "positions must be a 2D array of shape (num_instances, 3).");
             }
 
             // Validate the shape of orientations
-            if (orientations.ndim() != 2 ||
-                orientations.shape(0) != num_instances ||
-                orientations.shape(1) != 4) {
+            if (ori_info.ndim != 2 || static_cast<size_t>(ori_info.shape[0]) != num_instances || static_cast<size_t>(ori_info.shape[1]) != 4) {
               throw std::runtime_error(
-                  "orientations must be a 2D array of shape (num_instances, "
-                  "4).");
+                  "orientations must be a 2D array of shape (num_instances, 4).");
             }
 
+            // Ensure contiguous memory for efficient access
             if (!is_contiguous(positions) || !is_contiguous(orientations)) {
               throw std::runtime_error(
-                  "positions and orientations must be contiguous. See "
-                  "np.ascontiguousarray.");
+                  "positions and orientations must be contiguous. Use numpy.ascontiguousarray().");
             }
 
-            // Pass raw pointers to the C++ function
-            self.SetWorldPoses(static_cast<float*>(positions.request().ptr),
-                               positions.size(),
-                               static_cast<float*>(orientations.request().ptr),
-                               orientations.size());
+            // Cast to raw pointers
+            float* pos_ptr = static_cast<float*>(pos_info.ptr);
+            float* ori_ptr = static_cast<float*>(ori_info.ptr);
+
+            // Release the GIL for potentially long-running native operation
+            py::gil_scoped_release release;
+            // Pass the number of instances (rows) rather than total element count
+            self.SetWorldPoses(pos_ptr, static_cast<int>(num_instances), ori_ptr, static_cast<int>(num_instances));
           },
           py::arg("positions"), py::arg("orientations"),
           "R(Set the world poses of all your instances. See the index returned "
-          "by AddInstance. See also use_xyzw_orientations in the "
-          "RenderAssetInstance constructor.)");
+          "by AddInstance. Expects positions shaped (N,3) and orientations shaped (N,4). ")
+          );
 }
 
 void initSimBindings(py::module& m) {
@@ -414,7 +424,7 @@ void initSimBindings(py::module& m) {
               smooth : (Bool) whether or not to smooth trajectory using a Catmull-Rom spline interpolating spline.
               num_interpolations : (Integer) the number of interpolation points to find between successive key points.)")
       .def("add_gradient_trajectory_object",
-           static_cast<int (Simulator::*)(
+           static_cast<int (Simulator::*) (
                const std::string&, const std::vector<Mn::Vector3>&,
                const std::vector<Mn::Color3>&, int, float, bool, int)>(
                &Simulator::addTrajectoryObject),
@@ -518,7 +528,7 @@ void initSimBindings(py::module& m) {
       .def("clear_environment", &AbstractReplayRenderer::clearEnvironment,
            "Clear all instances and resets memory of an environment.")
       .def("render",
-           static_cast<void (AbstractReplayRenderer::*)(
+           static_cast<void (AbstractReplayRenderer::*) (
                Magnum::GL::AbstractFramebuffer&)>(
                &AbstractReplayRenderer::render),
            R"(Render all sensors onto the specified framebuffer.)")
