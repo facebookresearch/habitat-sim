@@ -69,8 +69,8 @@ Mn::Matrix4 CameraSensorSpec::projectionMatrix() const {
 CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
                            const CameraSensorSpec::ptr& spec)
     : VisualSensor(cameraNode, spec),
-      baseProjMatrix_(Magnum::Math::IdentityInit),
-      zoomMatrix_(Magnum::Math::IdentityInit),
+      baseProjMatrix_(Mn::Math::IdentityInit),
+      zoomMatrix_(Mn::Math::IdentityInit),
       renderCamera_(new gfx::RenderCamera(cameraNode,
                                           visualSensorSpec_->semanticTarget)) {
   // Sanity check
@@ -177,8 +177,7 @@ bool CameraSensor::drawObservation(sim::Simulator& sim) {
   return true;
 }
 
-Corrade::Containers::Optional<Magnum::Vector2> CameraSensor::depthUnprojection()
-    const {
+Cr::Containers::Optional<Mn::Vector2> CameraSensor::depthUnprojection() const {
   // projectionMatrix_ is managed by implementation class and is set whenever
   // quantities change.
   return {gfx_batch::calculateDepthUnprojection(projectionMatrix_)};

@@ -15,9 +15,6 @@
 #include "esp/gfx/RenderCamera.h"
 #include "esp/sensor/Sensor.h"
 
-namespace Mn = Magnum;
-namespace Cr = Corrade;
-
 namespace esp {
 namespace gfx {
 class RenderTarget;
@@ -81,7 +78,7 @@ class VisualSensor : public Sensor {
    * @brief Return the size of the framebuffer corresponding to the sensor's
    * resolution as a [W, H] Vector2i
    */
-  Magnum::Vector2i framebufferSize() const {
+  Mn::Vector2i framebufferSize() const {
     // NB: The sensor's resolution is in H x W format as that more cleanly
     // corresponds to the practice of treating images as arrays that is used in
     // modern CV and DL. However, graphics frameworks expect W x H format for
@@ -103,8 +100,7 @@ class VisualSensor : public Sensor {
   /**
    * @brief Returns the parameters needed to unproject depth for the sensor.
    */
-  virtual Corrade::Containers::Optional<Magnum::Vector2> depthUnprojection()
-      const;
+  virtual Cr::Containers::Optional<Mn::Vector2> depthUnprojection() const;
 
   /**
    * @brief Checks to see if this sensor has a RenderTarget bound or not
@@ -173,7 +169,7 @@ class VisualSensor : public Sensor {
     visualSensorSpec_->resolution = {height, width};
   }
 
-  void setResolution(const Magnum::Vector2i& resolution) {
+  void setResolution(const Mn::Vector2i& resolution) {
     CORRADE_ASSERT(resolution[0] > 0 && resolution[1] > 0,
                    "VisualSensor::setResolution(): resolution height and "
                    "width must be greater than 0", );
@@ -250,8 +246,8 @@ class VisualSensor : public Sensor {
    protected:
     VisualSensor& visualSensor_;
     sim::Simulator& sim_;
-    Corrade::Containers::Optional<Magnum::Matrix4> relativeTransformBackup_ =
-        Corrade::Containers::NullOpt;
+    Cr::Containers::Optional<Mn::Matrix4> relativeTransformBackup_ =
+        Cr::Containers::NullOpt;
     scene::SceneNode* semanticSensorParentNodeBackup_ = nullptr;
   };
 

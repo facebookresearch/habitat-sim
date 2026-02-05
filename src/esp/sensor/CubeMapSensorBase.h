@@ -26,7 +26,7 @@ struct CubeMapSensorBaseSpec : public VisualSensorSpec {
   /**
    * @brief the size of the cubemap
    */
-  Corrade::Containers::Optional<int> cubemapSize = Corrade::Containers::NullOpt;
+  Cr::Containers::Optional<int> cubemapSize = Cr::Containers::NullOpt;
 
   /**
    * @brief Constructor
@@ -75,22 +75,22 @@ class CubeMapSensorBase : public VisualSensor {
   // raw pointer only, we can create it but let magnum to handle the memory
   // recycling when releasing it.
   gfx::CubeMapCamera* cubeMapCamera_;
-  Corrade::Containers::Optional<esp::gfx::CubeMap> cubeMap_;
+  Cr::Containers::Optional<esp::gfx::CubeMap> cubeMap_;
 
   // a big triangles that covers the whole screen
-  Magnum::GL::Mesh mesh_;
+  Mn::GL::Mesh mesh_;
 
   // cubemap shader resource manager, which manages different shaders such as
   // DoubleSphereCameraShader, FieldOfViewCameraShader (TODO),
   // EquiRectangularShader ...
-  Magnum::ResourceManager<gfx::CubeMapShaderBase> cubeMapShaderBaseManager_;
+  Mn::ResourceManager<gfx::CubeMapShaderBase> cubeMapShaderBaseManager_;
 
   gfx::CubeMapShaderBase::Flags cubeMapShaderBaseFlags_{};
 
-  virtual Magnum::ResourceKey getShaderKey() = 0;
+  virtual Mn::ResourceKey getShaderKey() = 0;
 
   template <typename T>
-  Magnum::Resource<gfx::CubeMapShaderBase, T> getShader();
+  Mn::Resource<gfx::CubeMapShaderBase, T> getShader();
 
   /**
    * @brief render the sense into cubemap textures
@@ -108,8 +108,8 @@ class CubeMapSensorBase : public VisualSensor {
 };
 
 template <typename T>
-Magnum::Resource<gfx::CubeMapShaderBase, T> CubeMapSensorBase::getShader() {
-  Magnum::Resource<gfx::CubeMapShaderBase, T> shader =
+Mn::Resource<gfx::CubeMapShaderBase, T> CubeMapSensorBase::getShader() {
+  Mn::Resource<gfx::CubeMapShaderBase, T> shader =
       cubeMapShaderBaseManager_.get<gfx::CubeMapShaderBase, T>(getShaderKey());
   if (!shader) {
     cubeMapShaderBaseManager_.set<gfx::CubeMapShaderBase>(

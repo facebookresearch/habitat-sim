@@ -21,8 +21,8 @@ class ManagedArticulatedObject
  public:
   explicit ManagedArticulatedObject(
       const std::string& classKey = "ManagedArticulatedObject")
-      : AbstractManagedPhysicsObject<esp::physics::ArticulatedObject>(
-            classKey) {}
+      : AbstractManagedPhysicsObject<esp::physics::ArticulatedObject>::
+            AbstractManagedPhysicsObject(classKey) {}
 
   /**
    * @brief Get a copy of the template attributes describing the initial state

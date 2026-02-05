@@ -73,7 +73,7 @@ class EquirectangularSensor : public CubeMapSensorBase {
  protected:
   EquirectangularSensorSpec::ptr equirectangularSensorSpec_ =
       std::dynamic_pointer_cast<EquirectangularSensorSpec>(spec_);
-  Magnum::ResourceKey getShaderKey() override;
+  Mn::ResourceKey getShaderKey() override;
   ESP_SMART_POINTERS(EquirectangularSensor)
 };
 
