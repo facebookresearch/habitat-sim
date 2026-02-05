@@ -29,7 +29,7 @@ PbrShaderAttributes::ptr PbrShaderAttributesManager::createObject(
   return attrs;
 }  // PbrShaderAttributesManager::createObject
 
-void PbrShaderAttributesManager::setValsFromJSONDoc(
+void PbrShaderAttributesManager::setValsFromJSONDocInternal(
     PbrShaderAttributes::ptr pbrShaderAttribs,
     const io::JsonGenericValue& jsonConfig) {
   ////////////////////////////
