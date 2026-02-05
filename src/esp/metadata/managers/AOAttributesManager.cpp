@@ -61,10 +61,10 @@ void AOAttributesManager::setValsFromJSONDoc(
     aoAttr->setSemanticId(semantic_id);
   });
 
-  // load the uniform scaling
-  io::jsonIntoSetter<double>(
-      jsonConfig, "uniform_scale",
-      [aoAttr](double scale) { aoAttr->setUniformScale(scale); });
+  // scale
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonConfig, "scale",
+      [aoAttr](const Magnum::Vector3& scale) { aoAttr->setScale(scale); });
 
   // load the mass scaling
   io::jsonIntoSetter<double>(jsonConfig, "mass_scale", [aoAttr](double scale) {

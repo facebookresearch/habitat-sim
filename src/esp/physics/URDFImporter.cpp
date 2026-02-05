@@ -249,7 +249,7 @@ void URDFImporter::importURDFAssets(
     return;
   }
   // re-scale the cached model
-  activeModel_->setGlobalScaling(artObjAttributes->getUniformScale());
+  activeModel_->setGlobalScaling(artObjAttributes->getScale());
   activeModel_->setMassScaling(artObjAttributes->getMassScale());
 
   for (size_t linkIx = 0; linkIx < activeModel_->m_links.size(); ++linkIx) {
