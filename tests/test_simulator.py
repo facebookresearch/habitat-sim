@@ -40,7 +40,8 @@ def test_no_navmesh_smoke():
 
             random.seed(0)
             for _ in range(50):
-                obs = sim.step(random.choice(list(agent_config.action_space.keys())))
+                sim.step(random.choice(list(agent_config.action_space.keys())))
+                obs = sim.get_sensor_observations()
                 # Can't collide with no navmesh
                 assert not obs["collided"]
 
@@ -181,7 +182,8 @@ def test_sim_multiagent_move_and_reset(make_cfg_settings, num_agents=10):
             agent_config = sim.config.agents[i]
             action = random.choice(list(agent_config.action_space.keys()))
             agent_actions[i] = action
-        observations = sim.step(agent_actions)
+        sim.step(agent_actions)
+        observations = sim.get_sensor_observations(list(agent_actions.keys()))
         # Check all agents either moved or ran into something.
         for initial_state, (agent_id, agent_obs) in zip(
             agent_initial_states, observations.items()
@@ -196,7 +198,8 @@ def test_sim_multiagent_move_and_reset(make_cfg_settings, num_agents=10):
             assert is_same_state(initial_state, sim.get_agent(agent_id).state)
         del agent_actions[2]
         # Test with one agent being a NOOP. No Sensor Observation will be returned
-        observations = sim.step(agent_actions)
+        sim.step(agent_actions)
+        observations = sim.get_sensor_observations(list(agent_actions.keys()))
         assert is_same_state(
             agent_initial_states[2], sim.get_agent(2).state
         ), "Agent 2 did not move"
