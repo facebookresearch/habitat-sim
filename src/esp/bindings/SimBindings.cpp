@@ -182,6 +182,8 @@ void initRenderInstanceHelperBindings(py::module& m) {
       .def("add_instance", &RenderInstanceHelper::AddInstance,
            py::arg("asset_filepath"), py::arg("semantic_id"),
            py::arg("scale") = Mn::Vector3(1.0, 1.0, 1.0),
+           py::arg("translation") = Mn::Vector3(0.0, 0.0, 0.0),
+           py::arg("rotation") = Mn::Quaternion(),
            "R(Add an instance of a render asset to the scene. The asset can be "
            "for example a .glb or .obj 3D model file. The instance gets an "
            "identity pose; change it later using set_world_poses.)")
@@ -256,6 +258,9 @@ void initSimBindings(py::module& m) {
           R"(Use gfx_replay_manager for replay recording and playback.)")
       .def("seed", &Simulator::seed, "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, "configuration"_a)
+      .def("load_semantic_scene_descriptor",
+           &Simulator::loadSemanticSceneDescriptor,
+           "semantic_scene_descriptor_file"_a)
       .def("reset", [](Simulator& self) { self.reset(false); })
       .def(
           "close", &Simulator::close, "destroy"_a = true,

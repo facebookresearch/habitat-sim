@@ -20,7 +20,9 @@ RenderInstanceHelper::RenderInstanceHelper(Simulator& sim,
 
 int RenderInstanceHelper::AddInstance(const std::string& assetFilepath,
                                       int semanticId,
-                                      const Magnum::Vector3& scale) {
+                                      const Magnum::Vector3& scale,
+                                      const Magnum::Vector3& translation,
+                                      const Magnum::Quaternion& rotation) {
   esp::assets::AssetInfo assetInfo;
   assetInfo.filepath = assetFilepath;
   assetInfo.forceFlatShading = false;
@@ -32,6 +34,8 @@ int RenderInstanceHelper::AddInstance(const std::string& assetFilepath,
 
   assets::RenderAssetInstanceCreationInfo creation(assetFilepath, scale, flags,
                                                    DEFAULT_LIGHTING_KEY);
+  creation.translation = translation;
+  creation.rotation = rotation;
 
   auto* node = sim_->loadAndCreateRenderAssetInstance(assetInfo, creation);
   instances_.push_back(node);
