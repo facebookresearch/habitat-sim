@@ -3,22 +3,33 @@
 # LICENSE file in the root directory of this source tree.
 
 import argparse
-import builtins
 import itertools
 import os
 import os.path as osp
 import platform
 import shlex
 import subprocess
-import sys
 import time
 
 import git
 
-builtins.__HSIM_SETUP__ = True
-sys.path.insert(0, osp.join(osp.dirname(__file__), "..", "src_python"))
+# Read version from pyproject.toml (the single source of truth since the
+# scikit-build-core migration).  We avoid importing habitat_sim directly
+# because the C++ bindings may not be built yet at this point.
+_REPO_ROOT = osp.abspath(osp.join(osp.dirname(__file__), ".."))
 
-import habitat_sim
+
+def _get_version() -> str:
+    """Extract the project version from pyproject.toml."""
+    pyproject_path = osp.join(_REPO_ROOT, "pyproject.toml")
+    with open(pyproject_path) as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith("version") and "=" in line:
+                # Handles: version = "0.3.3"
+                return line.split("=", 1)[1].strip().strip('"').strip("'")
+    raise RuntimeError(f"Could not find version in {pyproject_path}")
+
 
 build_cmd_template = """
 conda build \
@@ -88,6 +99,8 @@ def main():
     args = build_parser().parse_args()
     py_vers, bullet_modes, headless_modes, cuda_vers = get_default_modes_and_vers()
 
+    version = _get_version()
+
     # For CI test only one package build for test speed interest
     if args.ci_test:
         bullet_modes = [True]
@@ -99,7 +112,7 @@ def main():
     ):
         env = os.environ.copy()
 
-        env["VERSION"] = habitat_sim.__version__
+        env["VERSION"] = version
         # including a timestamp in anticipation of nightly builds
         if args.nightly:
             env["VERSION"] = env["VERSION"] + time.strftime(".%Y.%m.%d")
@@ -107,7 +120,7 @@ def main():
         env["WITH_CUDA"] = "0"
         env["HEADLESS"] = "0"
         env["LTO"] = "0" if args.ci_test else "1"
-        env["HSIM_SOURCE_PATH"] = osp.abspath(osp.join(osp.dirname(__file__), ".."))
+        env["HSIM_SOURCE_PATH"] = _REPO_ROOT
 
         build_string = f"py{py_ver}_"
         if headless:

@@ -22,7 +22,7 @@ source:
 
 requirements:
   build:
-    - cmake
+    - cmake >=3.15
     - ninja
     - pkg-config # [unix]
     - {{ cdt('libpng-devel') }} # [linux]
@@ -32,7 +32,8 @@ requirements:
   host:
     - python x.x
     - pip
-    - setuptools
+    - scikit-build-core >=0.10
+    - pybind11 >=2.10
     - attrs>=19.1.0
     - smmap<4.0,>=3.0.1
     - numba
@@ -89,12 +90,17 @@ build:
   number: {{ build_number }}
   binary_relocation: True
   detect_binary_files_with_prefix: False
-  preserve_egg_dir: True
   script_env:
     - HEADLESS
     - WITH_CUDA
     - WITH_BULLET
     - CUDA_VER
+    - LTO
+    - HABITAT_BUILD_GUI_VIEWERS
+    - HABITAT_WITH_BULLET
+    - HABITAT_WITH_CUDA
+    - HABITAT_WITH_AUDIO
+    - HABITAT_LTO
 
 about:
   home: https://aihabitat.org

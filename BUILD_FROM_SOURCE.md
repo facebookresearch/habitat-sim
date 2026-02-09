@@ -1,21 +1,23 @@
-## [Experimental] PIP install
-
-- This is an automated way for building the necessary habitat binaries. For better support please skip to the Build from Source section.
-- The build files are not cached and therefore this build method is slow and not recommended for active development.
+## PIP install
 
 ```bash
-   git clone --branch stable https://github.com/facebookresearch/habitat-sim.git
-   cd habitat-sim
-   pip install . -v
+git clone --branch stable https://github.com/facebookresearch/habitat-sim.git
+cd habitat-sim
+pip install . --no-build-isolation
 ```
 
-- You can also allow pip to compile a specific version of Habitat. First clone the repo, then `pip install .` in the current git root directory
+- You can also allow pip to compile a specific version of Habitat. First clone the repo, then `pip install . --no-build-isolation` in the current git root directory
   to start the compilation process. To quickly compile the latest main, run `pip install git+https://github.com/facebookresearch/habitat-sim`.
 
-- Since pip out of tree by default, this process will copy quite a lot of data to your TMPDIR. You can change this location by modifying the TMPDIR env variable.
-  It will also not cache previous builds effectively and therefore will be slow. For active development, building using `python setup.py install...` is recommended.
+- Since pip builds out of tree by default, this process will copy quite a lot of data to your TMPDIR. You can change this location by modifying the TMPDIR env variable.
+  For active development, use an editable install: `pip install -e . --no-build-isolation`.
 
-- Most compilation options can be accessed by either modifying the relevant ENV\_VARS (WITH\_BULLET, WITH\_CUDA, HEADLESS) etc or by passing the args through pip's `--global-option` and `--build-option` arguments.
+- Build options are controlled via environment variables. For example:
+  ```bash
+  HABITAT_BUILD_GUI_VIEWERS=OFF pip install . --no-build-isolation   # headless build
+  HABITAT_WITH_BULLET=ON pip install . --no-build-isolation          # enable Bullet physics
+  HABITAT_WITH_CUDA=ON pip install . --no-build-isolation            # enable CUDA
+  ```
 
 - By default, we build a headless version with bullet enabled.
 
@@ -64,55 +66,69 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
 
    ```bash
    # Assuming we're still within habitat conda environment
-   python setup.py install
+   pip install . --no-build-isolation
    ```
 
     For headless systems (i.e. without an attached display, e.g. in a cluster) and multiple GPU systems
 
    ```bash
-   python setup.py install --headless
+   HABITAT_BUILD_GUI_VIEWERS=OFF pip install . --no-build-isolation
    ```
 
     For systems with CUDA (to build CUDA features)
 
    ```bash
-   python setup.py install --with-cuda
+   HABITAT_WITH_CUDA=ON pip install . --no-build-isolation
    ```
 
    With physics simulation via [Bullet Physics SDK](https://github.com/bulletphysics/bullet3/):
    To use Bullet, enable bullet physics build via:
 
    ```bash
-   python setup.py install --bullet    # build habitat with bullet physics
+   HABITAT_WITH_BULLET=ON pip install . --no-build-isolation
    ```
 
    With audio sensor via [rlr-audio-propagation](https://github.com/facebookresearch/rlr-audio-propagation/):
    To use Audio sensors (Linux only), enable the audio flag via:
 
    ```bash
-   python setup.py install --audio    # build habitat with audio sensor
+   HABITAT_WITH_AUDIO=ON pip install . --no-build-isolation
    ```
 
-   Note1: Build flags stack, *e.g.* to build in headless mode, with CUDA, and bullet, one would use `--headless --with-cuda --bullet`.
+   Note1: Build options stack via environment variables, *e.g.* to build in headless mode, with CUDA, and bullet:
+   ```bash
+   HABITAT_BUILD_GUI_VIEWERS=OFF HABITAT_WITH_CUDA=ON HABITAT_WITH_BULLET=ON pip install . --no-build-isolation
+   ```
 
    Note2: some Linux distributions might require an additional `--user` flag to deal with permission issues.
 
-   Note3: for active development in Habitat, you might find `./build.sh` instead of `python setup.py install` more useful.
+   Note3: for active development in Habitat, use an editable install (`pip install -e . --no-build-isolation`) or `./build.sh` which wraps the editable install with convenience flags.
 
    Note4: Audio sensor is only available on Linux.
 
-1. [Only if using `build.sh`] For use with [Habitat Lab](https://github.com/facebookresearch/habitat-lab) and your own python code, add habitat-sim to your `PYTHONPATH`. For example modify your `.bashrc` (or `.bash_profile` in Mac OS X) file by adding the line:
+   ### Build Configuration Reference
+
+   | Environment Variable | Default | Description |
+   |---|---|---|
+   | `HABITAT_BUILD_GUI_VIEWERS` | `ON` | Build GUI viewer applications (set `OFF` for headless) |
+   | `HABITAT_WITH_BULLET` | `OFF` | Enable Bullet physics simulation |
+   | `HABITAT_WITH_CUDA` | `OFF` | Enable CUDA support |
+   | `HABITAT_WITH_AUDIO` | `OFF` | Enable audio sensor (Linux only) |
+   | `HABITAT_LTO` | `OFF` | Enable link-time optimization |
+   | `HABITAT_BUILD_TESTS` | `OFF` | Build C++ tests |
+
+   You can also pass CMake arguments directly via pip's `--config-settings`:
    ```bash
-   export PYTHONPATH=$PYTHONPATH:/path/to/habitat-sim/
+   pip install . --no-build-isolation --config-settings=cmake.build-type=Release
    ```
 
 ## Common build issues
 
-- If your machine has a custom installation location for the nvidia OpenGL and EGL drivers, you may need to manually provide the `EGL_LIBRARY` path to cmake as follows.  Add `-DEGL_LIBRARY=/usr/lib/x86_64-linux-gnu/nvidia-opengl/libEGL.so` to the `build.sh` command line invoking cmake. When running any executable adjust the environment as follows: `LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/nvidia-opengl:${LD_LIBRARY_PATH} examples/example.py`.
+- If your machine has a custom installation location for the nvidia OpenGL and EGL drivers, you may need to manually provide the `EGL_LIBRARY` path to cmake as follows.  Add `-DEGL_LIBRARY=/usr/lib/x86_64-linux-gnu/nvidia-opengl/libEGL.so` via `--config-settings=cmake.define.EGL_LIBRARY=/usr/lib/x86_64-linux-gnu/nvidia-opengl/libEGL.so`. When running any executable adjust the environment as follows: `LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/nvidia-opengl:${LD_LIBRARY_PATH} examples/example.py`.
 
-- By default, the build process uses all cores available on the system to parallelize. On some virtual machines, this might result in running out of memory. You can serialize the build process via:
+- By default, the build process uses all cores available on the system to parallelize. On some virtual machines, this might result in running out of memory. You can limit parallelism via:
    ```bash
-   python setup.py build_ext --parallel 1 install
+   pip install . --no-build-isolation --config-settings=cmake.define.CMAKE_BUILD_PARALLEL_LEVEL=1
    ```
 
 - Build is tested on Tested with Ubuntu 18.04 with gcc 7.4.0 and MacOS 10.13.6 with Xcode 10 and clang-1000.10.25.5. If you experience compilation issues, please open an issue with the details of your OS and compiler versions.

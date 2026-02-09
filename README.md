@@ -4,7 +4,7 @@
 [![Conda Platforms support Badge](https://img.shields.io/conda/pn/aihabitat/habitat-sim?color=orange&label=platforms)](https://anaconda.org/aihabitat/habitat-sim)
 [![Documentation](https://img.shields.io/badge/docs-automated-green.svg)](https://aihabitat.org/docs/habitat-sim/)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
-[![Python 3.9](https://img.shields.io/badge/python-3.9.svg)](https://www.python.org/downloads/release/)
+[![Python 3.12](https://img.shields.io/badge/python-3.12.svg)](https://www.python.org/downloads/release/)
 [![Supports Bullet](https://img.shields.io/static/v1?label=supports&message=Bullet%20Physics&color=informational&link=https://opensource.google/projects/bullet3)](https://opensource.google/projects/bullet3)
 [![Twitter Follow](https://img.shields.io/twitter/follow/ai_habitat?style=social)](https://twitter.com/ai_habitat)
 
@@ -75,7 +75,7 @@ for a list of what was externally contributed and the corresponding work/citatio
 
 Habitat-Sim can be installed in 3 ways:
 1. Via Conda - Recommended method for most users. Stable release and nightly builds.
-1. [Experimental] Via PIP - `pip install .` to compile the latest headless build with Bullet. Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
+1. Via PIP - `pip install . --no-build-isolation` to compile from source. Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
 1. Via Docker - Updated approximately once per year for the [Habitat Challenge](https://aihabitat.org/challenge/). Read [habitat-docker-setup](https://github.com/facebookresearch/habitat-lab#docker-setup).
 1. Via Source - For active development. Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
 
@@ -87,8 +87,8 @@ Habitat is under active development, and we advise users to restrict themselves 
 
    Assuming you have [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) installed, let's prepare a conda env:
    ```bash
-   # We require python>=3.9 and cmake>=3.10
-   conda create -n habitat python=3.9 cmake=3.14.0
+   # We require python>=3.9 and cmake>=3.22
+   conda create -n habitat python=3.12 cmake=3.27
    conda activate habitat
    ```
 

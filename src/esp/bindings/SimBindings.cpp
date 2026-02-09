@@ -29,32 +29,10 @@ using py::literals::operator""_a;
 
 namespace {
 
-#if PYBIND11_VERSION_MAJOR > 2 || \
-    (PYBIND11_VERSION_MAJOR == 2 && PYBIND11_VERSION_MINOR >= 12)
-// Use is_contiguous() for pybind11 >= 2.12.0
+// Check C-contiguity via NumPy flags — works across all pybind11 versions
 bool is_contiguous(const py::array_t<float>& array) {
-  return array.is_contiguous();
+  return py::detail::check_flags(array.ptr(), py::array::c_style);
 }
-#else
-// Manual stride check for pybind11 < 2.12.0
-bool is_contiguous(const py::array_t<float>& array) {
-  py::buffer_info info = array.request();
-  const auto& shape = info.shape;
-  const auto& strides = info.strides;
-
-  // Check if array is C-contiguous
-  size_t ndim = shape.size();
-  size_t expected_stride = sizeof(float);
-
-  for (size_t i = ndim; i > 0; --i) {
-    if (strides[i - 1] != expected_stride) {
-      return false;
-    }
-    expected_stride *= shape[i - 1];
-  }
-  return true;
-}
-#endif
 
 }  // namespace
 

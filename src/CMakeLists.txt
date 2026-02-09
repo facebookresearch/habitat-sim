@@ -2,11 +2,25 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.15)
+
+# Detect if being built via scikit-build-core
+if(DEFINED SKBUILD_PROJECT_NAME)
+  message(STATUS "Building via scikit-build-core (${SKBUILD_PROJECT_NAME})")
+  set(HABITAT_SKBUILD ON)
+else()
+  set(HABITAT_SKBUILD OFF)
+endif()
 
 option(BUILD_WITH_CUDA "Build Habitat-Sim with CUDA features enabled -- Requires CUDA"
        OFF
 )
+
+# When built via scikit-build-core, use modern Python discovery
+if(HABITAT_SKBUILD)
+  find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
+  set(PYBIND11_NEWPYTHON ON)
+endif()
 
 if(BUILD_WITH_CUDA)
   project(esp LANGUAGES C CXX CUDA)
@@ -165,4 +179,64 @@ if(BUILD_GUI_VIEWERS)
   message("Building GUI viewer")
   add_subdirectory(utils/viewer)
   add_subdirectory(utils/replayer)
+endif()
+
+# ---- scikit-build-core install rules ----
+# These install() targets tell scikit-build-core which files to include in the
+# Python wheel. They are harmless when building via setup.py (which doesn't
+# invoke cmake --install), but are required for scikit-build-core's wheel
+# builder.
+if(BUILD_PYTHON_BINDINGS)
+  # Install the main habitat_sim_bindings extension module
+  install(
+    TARGETS habitat_sim_bindings
+    LIBRARY DESTINATION habitat_sim/_ext
+    RUNTIME DESTINATION habitat_sim/_ext
+  )
+
+  # Install Magnum/Corrade Python bindings (.so files + __init__.py)
+  # These are built by the magnum-bindings subdirectory and placed in the
+  # build tree under deps/magnum-bindings/src/python/
+  set(_magnum_py_dir
+      "${CMAKE_CURRENT_BINARY_DIR}/deps/magnum-bindings/src/python"
+  )
+
+  # Install the top-level _corrade and _magnum extension modules
+  install(
+    TARGETS corrade magnum
+    LIBRARY DESTINATION .
+    RUNTIME DESTINATION .
+  )
+
+  # Install corrade Python package (pure Python + sub-module .so files)
+  install(
+    DIRECTORY "${_magnum_py_dir}/corrade"
+    DESTINATION .
+    FILES_MATCHING
+    PATTERN "*.py"
+    PATTERN "*.so"
+    PATTERN "__pycache__" EXCLUDE
+    PATTERN "CMakeFiles" EXCLUDE
+    PATTERN "test" EXCLUDE
+  )
+
+  # Install magnum Python package (pure Python + sub-module .so files)
+  install(
+    DIRECTORY "${_magnum_py_dir}/magnum"
+    DESTINATION .
+    FILES_MATCHING
+    PATTERN "*.py"
+    PATTERN "*.so"
+    PATTERN "__pycache__" EXCLUDE
+    PATTERN "CMakeFiles" EXCLUDE
+    PATTERN "test" EXCLUDE
+  )
+endif()
+
+# Install audio propagation library if enabled
+if(BUILD_WITH_AUDIO)
+  install(
+    FILES ${RLRAudioPropagation_LIBRARY}
+    DESTINATION habitat_sim/_ext
+  )
 endif()

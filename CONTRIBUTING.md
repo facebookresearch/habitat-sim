@@ -59,5 +59,5 @@ We also use pre-commit hooks to ensure linting and style enforcement. Install th
 
 1. Install `ninja` (`sudo apt install ninja-build` on Linux, or `brew install ninja` on macOS) for significantly faster incremental builds
 1. Install `ccache` (`sudo apt install ccache` on Linux, or `brew install ccache` on macOS) for significantly faster clean re-builds and builds with slightly different settings
-1. You can skip reinstalling magnum every time by adding the argument of `--skip-install-magnum` to either `build.sh` or `setup.py`.  Note that you will still need to install magnum bindings once.
-1. Arguments to `build.sh` and `setup.py` can be cached between subsequent invocations with the flag `--cache-args` on the _first_ invocation.
+1. Use editable installs (`pip install -e . --no-build-isolation`) for active development — scikit-build-core will automatically rebuild when you re-import after C++ changes
+1. Build options are set via environment variables (e.g. `HABITAT_WITH_BULLET=ON`, `HABITAT_BUILD_GUI_VIEWERS=OFF`). See [BUILD_FROM_SOURCE.md](BUILD_FROM_SOURCE.md) for the full reference table.

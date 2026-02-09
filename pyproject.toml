@@ -1,13 +1,115 @@
+# ---- Build System ----
 [build-system]
-build-backend = "setuptools.build_meta"
 requires = [
-            "cmake",
-            "ninja",
-            "pip",
-            "setuptools",
-            "wheel",
-           ]
+    "scikit-build-core>=0.10",
+    "pybind11>=2.10",
+    "cmake>=3.15",
+    "ninja",
+]
+build-backend = "scikit_build_core.build"
 
+# ---- Project Metadata (PEP 621) ----
+[project]
+name = "habitat-sim"
+version = "0.3.3"
+description = "A high performance simulator for training embodied agents"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [
+    {name = "Meta AI Research"},
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: C++",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "attrs>=19.1.0",
+    "gitpython",
+    "imageio",
+    "imageio-ffmpeg",
+    "matplotlib",
+    "numba",
+    "numpy==1.26.4",
+    "numpy-quaternion",
+    "pillow==10.4.0",
+    "scipy>=1.10.1",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+dev = [
+    "hypothesis",
+    "pytest",
+    "pytest-benchmark",
+    "pytest-cov",
+    "mypy",
+    "ruff",
+]
+
+[project.urls]
+Homepage = "https://aihabitat.org/"
+Documentation = "https://aihabitat.org/docs/habitat-sim/"
+Repository = "https://github.com/facebookresearch/habitat-sim"
+
+# ---- scikit-build-core Configuration ----
+[tool.scikit-build]
+cmake.source-dir = "src"
+cmake.build-type = "RelWithDebInfo"
+cmake.verbose = true
+cmake.minimum-version = "3.15"
+build-dir = "build/{wheel_tag}"
+# Install target (scikit-build-core runs `cmake --install`)
+install.strip = false
+
+# Editable installs: use "redirect" mode (default). scikit-build-core installs
+# a meta-path finder that resolves compiled extensions from the build directory
+# while pure-Python code is served from the source tree.
+editable.mode = "redirect"
+editable.rebuild = true
+editable.verbose = false
+
+# Python package sources — scikit-build-core copies these into the wheel
+# alongside the CMake-installed files
+wheel.packages = ["src_python/habitat_sim"]
+
+# CMake build options — controllable via environment variables or
+# --config-settings=cmake.define.OPTION=VALUE
+[tool.scikit-build.cmake.define]
+BUILD_PYTHON_BINDINGS = "ON"
+BUILD_GUI_VIEWERS = {env = "HABITAT_BUILD_GUI_VIEWERS", default = "OFF"}
+BUILD_WITH_BULLET = {env = "HABITAT_WITH_BULLET", default = "OFF"}
+BUILD_WITH_CUDA = {env = "HABITAT_WITH_CUDA", default = "OFF"}
+BUILD_WITH_AUDIO = {env = "HABITAT_WITH_AUDIO", default = "OFF"}
+BUILD_TEST = {env = "HABITAT_BUILD_TEST", default = "OFF"}
+BUILD_BASIS_COMPRESSOR = {env = "HABITAT_BUILD_BASIS_COMPRESSOR", default = "OFF"}
+BUILD_ASSIMP_SUPPORT = {env = "HABITAT_BUILD_ASSIMP", default = "ON"}
+USE_SYSTEM_ASSIMP = {env = "HABITAT_USE_SYSTEM_ASSIMP", default = "OFF"}
+USE_SYSTEM_BULLET = {env = "HABITAT_USE_SYSTEM_BULLET", default = "OFF"}
+USE_SYSTEM_EIGEN = {env = "HABITAT_USE_SYSTEM_EIGEN", default = "OFF"}
+USE_SYSTEM_MAGNUM = {env = "HABITAT_USE_SYSTEM_MAGNUM", default = "OFF"}
+USE_SYSTEM_PYBIND11 = {env = "HABITAT_USE_SYSTEM_PYBIND11", default = "OFF"}
+
+# ---- Pytest Configuration ----
+[tool.pytest.ini_options]
+addopts = "--verbose -rsxX -q"
+testpaths = ["tests"]
+markers = [
+    "gfxtest: marks a test as needing to render",
+]
+norecursedirs = ["tests/helpers"]
+
+# ---- Code Formatting & Linting ----
 [tool.black]
 exclude = '''
 (

@@ -1,7 +1,7 @@
 extraction:
   cpp:
     index: # Builds the project
-      build_command: "python3 setup.py build_ext --inplace --headless --bullet"
+      build_command: "HABITAT_BUILD_GUI_VIEWERS=OFF HABITAT_WITH_BULLET=ON pip install -e . --no-build-isolation"
     prepare:
       packages: # required apt-get packages
         - libbullet-dev
