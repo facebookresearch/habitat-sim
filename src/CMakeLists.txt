@@ -185,7 +185,8 @@ if(BUILD_GUI_VIEWERS)
   set(_repo_build_dir "${PROJECT_SOURCE_DIR}/../build")
   foreach(_app viewer replayer)
     add_custom_command(
-      TARGET ${_app} POST_BUILD
+      TARGET ${_app}
+      POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E create_symlink $<TARGET_FILE:${_app}>
               "${_repo_build_dir}/${_app}"
       COMMENT "Symlinked: build/${_app}"
