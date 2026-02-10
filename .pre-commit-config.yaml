@@ -39,6 +39,7 @@ repos:
         args: [--autofix]
     -   id: pretty-format-toml
         args: [--autofix]
+        exclude: "^pyproject\\.toml$"
         additional_dependencies:
          - toml-sort==0.21.0
 

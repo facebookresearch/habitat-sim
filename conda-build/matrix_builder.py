@@ -140,13 +140,13 @@ def main():
             env["WITH_CUDA"] = "1"
             env["CUDA_VER"] = cuda_ver
             if cuda_ver == "10.0":
-                env["CONDA_CUDATOOLKIT_CONSTRAINT"] = (
-                    "- cudatoolkit >=10.0,<10.1 # [not osx]"
-                )
+                env[
+                    "CONDA_CUDATOOLKIT_CONSTRAINT"
+                ] = "- cudatoolkit >=10.0,<10.1 # [not osx]"
             elif cuda_ver == "9.2":
-                env["CONDA_CUDATOOLKIT_CONSTRAINT"] = (
-                    "- cudatoolkit >=9.2,<9.3 # [not osx]"
-                )
+                env[
+                    "CONDA_CUDATOOLKIT_CONSTRAINT"
+                ] = "- cudatoolkit >=9.2,<9.3 # [not osx]"
 
         build_string += f"{get_platform_string()}"
 
@@ -161,9 +161,9 @@ def main():
             build_cmd_template.format(
                 PY_VER=py_ver,
                 OUTPUT_FOLDER=f"hsim-{get_platform_string()}",
-                ANACONDA_UPLOAD_MODE=(
-                    "" if args.conda_upload else "--no-anaconda-upload"
-                ),
+                ANACONDA_UPLOAD_MODE=""
+                if args.conda_upload
+                else "--no-anaconda-upload",
             ),
             env=env,
         )

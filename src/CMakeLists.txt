@@ -188,25 +188,17 @@ endif()
 # builder.
 if(BUILD_PYTHON_BINDINGS)
   # Install the main habitat_sim_bindings extension module
-  install(
-    TARGETS habitat_sim_bindings
-    LIBRARY DESTINATION habitat_sim/_ext
-    RUNTIME DESTINATION habitat_sim/_ext
+  install(TARGETS habitat_sim_bindings LIBRARY DESTINATION habitat_sim/_ext
+          RUNTIME DESTINATION habitat_sim/_ext
   )
 
   # Install Magnum/Corrade Python bindings (.so files + __init__.py)
   # These are built by the magnum-bindings subdirectory and placed in the
   # build tree under deps/magnum-bindings/src/python/
-  set(_magnum_py_dir
-      "${CMAKE_CURRENT_BINARY_DIR}/deps/magnum-bindings/src/python"
-  )
+  set(_magnum_py_dir "${CMAKE_CURRENT_BINARY_DIR}/deps/magnum-bindings/src/python")
 
   # Install the top-level _corrade and _magnum extension modules
-  install(
-    TARGETS corrade magnum
-    LIBRARY DESTINATION .
-    RUNTIME DESTINATION .
-  )
+  install(TARGETS corrade magnum LIBRARY DESTINATION . RUNTIME DESTINATION .)
 
   # Install corrade Python package (pure Python + sub-module .so files)
   install(
@@ -235,8 +227,5 @@ endif()
 
 # Install audio propagation library if enabled
 if(BUILD_WITH_AUDIO)
-  install(
-    FILES ${RLRAudioPropagation_LIBRARY}
-    DESTINATION habitat_sim/_ext
-  )
+  install(FILES ${RLRAudioPropagation_LIBRARY} DESTINATION habitat_sim/_ext)
 endif()
