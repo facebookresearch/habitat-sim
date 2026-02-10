@@ -38,3 +38,15 @@ target_link_libraries(
           MagnumPlugins::StbTrueTypeFont
           MagnumPlugins::UfbxImporter
 )
+
+# Create convenience symlink at the repo root's build/ directory so
+# developers don't have to hunt through build/<wheel_tag>/... paths.
+if(DEFINED HSIM_REPO_BUILD_DIR)
+  add_custom_command(
+    TARGET viewer
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E create_symlink $<TARGET_FILE:viewer>
+            "${HSIM_REPO_BUILD_DIR}/viewer"
+    COMMENT "Symlinked: build/viewer"
+  )
+endif()
