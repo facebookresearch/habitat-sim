@@ -425,12 +425,12 @@ jobs:
           export PATH=$HOME/miniconda/bin:$PATH
           conda init
           conda activate habitat
-          conda install -y anaconda-client ccache cmake git ninja conda-build pip
+          conda install -y anaconda-client ccache cmake git ninja conda-build pip scikit-build-core pybind11
           echo $(which -a python)
           pip install gitpython
           cd habitat-sim
           git submodule update --init --recursive --jobs 8
-          pip install .
+          pip install . --no-build-isolation
           pip uninstall -y habitat-sim
           rm -rf build
 
