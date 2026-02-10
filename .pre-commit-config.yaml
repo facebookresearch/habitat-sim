@@ -27,7 +27,7 @@ repos:
 
     # Changes tabs to spaces
 -   repo: https://github.com/Lucas-C/pre-commit-hooks
-    rev: v1.1.13
+    rev: v1.5.5
     hooks:
     -   id: remove-tabs
         exclude: "(^(.git|setup.cfg))|(.(json|scn|tsv)$)"
@@ -96,7 +96,7 @@ repos:
         - attrs
 
 -   repo: https://github.com/seddonym/import-linter
-    rev: v1.2.6
+    rev: v2.1
     hooks:
     -   id: import-linter
         entry: env PYTHONPATH=src_python lint-imports
