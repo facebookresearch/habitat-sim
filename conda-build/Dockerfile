@@ -7,7 +7,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ARG AIHABITAT_CONDA_CHN
 ARG AIHABITAT_CONDA_CHN_PWD
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --fix-missing \
     wget \
     curl \
     perl \
