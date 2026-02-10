@@ -57,6 +57,14 @@ if(BUILD_ASSIMP_SUPPORT)
   target_link_libraries(habitat_sim_bindings PUBLIC MagnumPlugins::AssimpImporter)
 endif()
 
+# Ensure the installed bindings can find co-located shared libraries
+# (e.g. libRLRAudioPropagation.so) via $ORIGIN RPATH in the wheel.
+if(APPLE)
+  set_target_properties(habitat_sim_bindings PROPERTIES INSTALL_RPATH "@loader_path")
+else()
+  set_target_properties(habitat_sim_bindings PROPERTIES INSTALL_RPATH "$ORIGIN")
+endif()
+
 if(BUILD_WITH_AUDIO)
   add_custom_command(
     TARGET habitat_sim_bindings POST_BUILD
