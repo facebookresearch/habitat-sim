@@ -179,6 +179,24 @@ if(BUILD_GUI_VIEWERS)
   message("Building GUI viewer")
   add_subdirectory(utils/viewer)
   add_subdirectory(utils/replayer)
+
+  # Create convenience symlinks at the repo root's build/ directory so
+  # developers don't have to hunt through build/<wheel_tag>/... paths.
+  set(_repo_build_dir "${PROJECT_SOURCE_DIR}/../build")
+  foreach(_app viewer replayer)
+    add_custom_command(
+      TARGET ${_app} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E create_symlink $<TARGET_FILE:${_app}>
+              "${_repo_build_dir}/${_app}"
+      COMMENT "Symlinked: build/${_app}"
+    )
+  endforeach()
+
+  # When building via scikit-build-core, install executables into the wheel's
+  # scripts directory so they land on PATH after `pip install .`
+  if(DEFINED SKBUILD_SCRIPTS_DIR)
+    install(TARGETS viewer replayer RUNTIME DESTINATION "${SKBUILD_SCRIPTS_DIR}")
+  endif()
 endif()
 
 # ---- scikit-build-core install rules ----

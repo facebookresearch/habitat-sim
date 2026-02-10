@@ -53,16 +53,6 @@ fi
 
 ${PYTHON} -m pip install . -v --no-build-isolation
 
-# ---- Copy viewer binary if built ----
-
-# scikit-build-core places the build in build/{wheel_tag}/
-BUILD_DIR=$(find build -maxdepth 1 -name "cp*" -type d | head -1)
-if [ -n "${BUILD_DIR}" ] && [ -f "${BUILD_DIR}/RelWithDebInfo/bin/viewer" ]; then
-  cp -v "${BUILD_DIR}/RelWithDebInfo/bin/viewer" "${PREFIX}"/bin/habitat-viewer
-elif [ -n "${BUILD_DIR}" ] && [ -f "${BUILD_DIR}/Release/bin/viewer" ]; then
-  cp -v "${BUILD_DIR}/Release/bin/viewer" "${PREFIX}"/bin/habitat-viewer
-fi
-
 # ---- RPATH fixups for conda relocatability ----
 # Conda packages must be relocatable, so we set RPATHs to be relative
 # ($ORIGIN on Linux, @loader_path on macOS).
@@ -94,8 +84,8 @@ if [ "$(uname)" == "Darwin" ]; then
     install_name_tool -add_rpath @loader_path/habitat_sim/_ext "${magnum_bindings}"
   fi
 
-  if [ -f bin/habitat-viewer ]; then
-    install_name_tool -add_rpath @loader_path/../"${ext_folder}" bin/habitat-viewer
+  if [ -f bin/viewer ]; then
+    install_name_tool -add_rpath @loader_path/../"${ext_folder}" bin/viewer
   fi
 
   corrade_pkg_dir=$(dirname "${corrade_bindings}")/corrade
@@ -116,8 +106,8 @@ elif [ "$(uname)" == "Linux" ]; then
 
   patchelf --set-rpath "\$ORIGIN:\$ORIGIN/../../../.." --force-rpath "${hsim_bindings}"
 
-  if [ -f 'bin/habitat-viewer' ]; then
-    patchelf --set-rpath "\$ORIGIN/../${ext_folder}:\$ORIGIN/../lib" --force-rpath bin/habitat-viewer
+  if [ -f 'bin/viewer' ]; then
+    patchelf --set-rpath "\$ORIGIN/../${ext_folder}:\$ORIGIN/../lib" --force-rpath bin/viewer
   fi
 
   find "$(dirname "${hsim_bindings}")" -name "*Corrade*so" -print0 | xargs -I {} patchelf --set-rpath "\$ORIGIN:\$ORIGIN/../../../.." --force-rpath {}
