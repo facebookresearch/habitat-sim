@@ -122,6 +122,26 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
    pip install . --no-build-isolation --config-settings=cmake.build-type=Release
    ```
 
+   ### C++ Viewer and Replayer Applications
+
+   When `HABITAT_BUILD_GUI_VIEWERS` is `ON` (the default for non-headless builds),
+   the C++ `viewer` and `replayer` applications are compiled alongside the Python
+   bindings.
+
+   - **After `pip install .`**: the executables are installed on `PATH` as `viewer`
+     and `replayer`.
+   - **After `pip install -e .`** (editable/development builds): convenience symlinks
+     are created at `build/viewer` and `build/replayer` in the repo root.
+   - **Standalone CMake** (no Python): you can build the C++ apps directly:
+     ```bash
+     cmake -B build -S src \
+       -DBUILD_GUI_VIEWERS=ON \
+       -DBUILD_PYTHON_BINDINGS=OFF \
+       -DCMAKE_BUILD_TYPE=RelWithDebInfo
+     cmake --build build -j$(nproc)
+     # Binaries at: build/utils/viewer/viewer and build/utils/replayer/replayer
+     ```
+
 ## Common build issues
 
 - If your machine has a custom installation location for the nvidia OpenGL and EGL drivers, you may need to manually provide the `EGL_LIBRARY` path to cmake as follows.  Add `-DEGL_LIBRARY=/usr/lib/x86_64-linux-gnu/nvidia-opengl/libEGL.so` via `--config-settings=cmake.define.EGL_LIBRARY=/usr/lib/x86_64-linux-gnu/nvidia-opengl/libEGL.so`. When running any executable adjust the environment as follows: `LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/nvidia-opengl:${LD_LIBRARY_PATH} examples/example.py`.

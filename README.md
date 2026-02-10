@@ -136,12 +136,12 @@ We also provide a [nightly conda build for the main branch](https://anaconda.org
 1. **Interactive testing**: Use the interactive viewer included with Habitat-Sim in either C++ or python:
    ```bash
    #C++
-   # ./build/viewer if compiling locally
-   habitat-viewer /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb
+   # After 'pip install .', the viewer is on PATH:
+   viewer /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb
+   # For editable/development builds, a convenience symlink is created:
+   ./build/viewer /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb
 
    #Python
-   #NOTE: depending on your choice of installation, you may need to add '/path/to/habitat-sim' to your PYTHONPATH.
-   #e.g. from 'habitat-sim/' directory run 'export PYTHONPATH=$(pwd)'
    python examples/viewer.py --scene /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb
    ```
    You should be able to control an agent in this test scene.
@@ -168,11 +168,9 @@ We also provide a [nightly conda build for the main branch](https://anaconda.org
 
    ```bash
    #C++
-   # ./build/viewer if compiling locally
-   habitat-viewer --enable-physics --dataset data/replica_cad/replicaCAD.scene_dataset_config.json -- apt_1
+   viewer --enable-physics --dataset data/replica_cad/replicaCAD.scene_dataset_config.json -- apt_1
 
    #python
-   #NOTE: habitat-sim/ directory must be on your `PYTHONPATH`
    python examples/viewer.py --dataset data/replica_cad/replicaCAD.scene_dataset_config.json --scene apt_1
    ```
    - Using scenes with pre-baked lighting instead? Use `--dataset data/replica_cad_baked_lighting/replicaCAD_baked.scene_dataset_config.json --scene Baked_sc1_staging_00`
