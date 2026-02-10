@@ -98,9 +98,12 @@ if [ "$(uname)" == "Darwin" ]; then
     install_name_tool -add_rpath @loader_path/../"${ext_folder}" bin/habitat-viewer
   fi
 
-  pushd "$(find . -name "corrade" -type d)" || exit
-    find . -name "*so" -print0 | xargs -I {} install_name_tool -add_rpath @loader_path/../habitat_sim/_ext {}
-  popd || exit
+  corrade_pkg_dir=$(dirname "${corrade_bindings}")/corrade
+  if [ -d "${corrade_pkg_dir}" ]; then
+    pushd "${corrade_pkg_dir}" || exit
+      find . -name "*so" -print0 | xargs -I {} install_name_tool -add_rpath @loader_path/../habitat_sim/_ext {}
+    popd || exit
+  fi
 
 elif [ "$(uname)" == "Linux" ]; then
   # Set RPATHs relative to each .so's location for relocatability
