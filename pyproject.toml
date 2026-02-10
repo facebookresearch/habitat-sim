@@ -3,8 +3,6 @@
 requires = [
     "scikit-build-core>=0.10",
     "pybind11>=2.10",
-    "cmake>=3.15",
-    "ninja",
 ]
 build-backend = "scikit_build_core.build"
 
@@ -66,8 +64,8 @@ Repository = "https://github.com/facebookresearch/habitat-sim"
 [tool.scikit-build]
 cmake.source-dir = "src"
 cmake.build-type = "RelWithDebInfo"
-cmake.verbose = true
-cmake.minimum-version = "3.15"
+build.verbose = true
+cmake.version = ">=3.15"
 build-dir = "build/{wheel_tag}"
 # Install target (scikit-build-core runs `cmake --install`)
 install.strip = false
