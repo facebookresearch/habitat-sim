@@ -114,8 +114,6 @@ endif()
 
 find_package(MagnumPlugins REQUIRED PrimitiveImporter)
 
-find_package(MagnumIntegration REQUIRED Eigen)
-
 find_package(Corrade REQUIRED Utility)
 
 # Link appropriate windowless library - gfx and gfx_batch
@@ -575,7 +573,6 @@ target_link_libraries(
          Magnum::Trade
          Magnum::Primitives
          MagnumPlugins::PrimitiveImporter
-         MagnumIntegration::Eigen
          Corrade::Utility
          Magnum::AnyImageConverter
   PRIVATE tinyxml2 Detour Recast

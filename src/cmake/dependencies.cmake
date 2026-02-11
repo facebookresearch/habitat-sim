@@ -25,16 +25,6 @@ find_package(OpenMP)
 
 include_directories(SYSTEM "deps")
 
-# Eigen. Use a system package, if preferred.
-if(USE_SYSTEM_EIGEN)
-  find_package(Eigen3 REQUIRED)
-  include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
-else()
-  include_directories(SYSTEM "${DEPS_DIR}/eigen")
-  set(EIGEN3_INCLUDE_DIR "${DEPS_DIR}/eigen")
-  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${DEPS_DIR}/eigen/cmake")
-endif()
-
 # Zstd, needed by BasisImporter. Let it find a system package on its own, if
 # preferred.
 if(NOT USE_SYSTEM_ZSTD)
@@ -251,7 +241,6 @@ if(NOT USE_SYSTEM_MAGNUM)
   set(MAGNUM_WITH_STBIMAGECONVERTER ON CACHE BOOL "" FORCE)
   set(MAGNUM_WITH_EMSCRIPTENAPPLICATION OFF CACHE BOOL "" FORCE)
   set(MAGNUM_WITH_GLFWAPPLICATION OFF CACHE BOOL "" FORCE)
-  set(MAGNUM_WITH_EIGEN ON CACHE BOOL "" FORCE) # Eigen integration
   # GltfSceneConverter and KtxImageConverter are needed only by
   # BatchRendererTest and are optional
   #set(MAGNUM_WITH_GLTFSCENECONVERTER ON CACHE BOOL "" FORCE)
