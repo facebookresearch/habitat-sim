@@ -4,6 +4,8 @@
 
 #include "esp/bindings/Bindings.h"
 
+#include <pybind11/numpy.h>
+
 #include <Corrade/Containers/OptionalPythonBindings.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/SceneGraph/SceneGraph.h>
@@ -11,6 +13,7 @@
 #include <Magnum/PythonBindings.h>
 #include <Magnum/SceneGraph/PythonBindings.h>
 
+#include <cstring>
 #include <utility>
 
 #include "esp/sensor/CameraSensor.h"
@@ -289,9 +292,32 @@ void initSensorBindings(py::module& m) {
 #ifdef ESP_BUILD_WITH_CUDA
   py::class_<RedwoodNoiseModelGPUImpl, RedwoodNoiseModelGPUImpl::uptr>(
       m, "RedwoodNoiseModelGPUImpl")
-      .def(py::init(&RedwoodNoiseModelGPUImpl::create_unique<
-                    const Eigen::Ref<const Eigen::RowMatrixXf>&, int, float>))
-      .def("simulate_from_cpu", &RedwoodNoiseModelGPUImpl::simulateFromCPU)
+      .def(py::init([](py::array_t<float, py::array::c_style |
+                                              py::array::forcecast> model,
+                       int gpuDeviceId, float noiseMultiplier) {
+        py::buffer_info buf = model.request();
+        if (buf.ndim != 2)
+          throw std::runtime_error("model must be a 2D array");
+        return RedwoodNoiseModelGPUImpl::create_unique(
+            static_cast<const float*>(buf.ptr), static_cast<int>(buf.shape[0]),
+            static_cast<int>(buf.shape[1]), gpuDeviceId, noiseMultiplier);
+      }))
+      .def("simulate_from_cpu",
+           [](RedwoodNoiseModelGPUImpl& self,
+              py::array_t<float, py::array::c_style | py::array::forcecast>
+                  depth) {
+             py::buffer_info buf = depth.request();
+             if (buf.ndim != 2)
+               throw std::runtime_error("depth must be a 2D array");
+             const int rows = static_cast<int>(buf.shape[0]);
+             const int cols = static_cast<int>(buf.shape[1]);
+             auto grid = self.simulateFromCPU(
+                 static_cast<const float*>(buf.ptr), rows, cols);
+             py::array_t<float> arr({rows, cols});
+             std::memcpy(arr.mutable_data(), grid.data(),
+                         rows * cols * sizeof(float));
+             return arr;
+           })
       .def("simulate_from_gpu", [](RedwoodNoiseModelGPUImpl& self,
                                    std::size_t devDepth, const int rows,
                                    const int cols, std::size_t devNoisyDepth) {

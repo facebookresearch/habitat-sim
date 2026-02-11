@@ -5,7 +5,6 @@
 #ifndef ESP_BINDINGS_OPAQUETYPES_H_
 #define ESP_BINDINGS_OPAQUETYPES_H_
 
-#include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/stl_bind.h>

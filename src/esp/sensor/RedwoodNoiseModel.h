@@ -7,13 +7,15 @@
 #define ESP_SENSOR_REDWOODNOISEMODEL_H_
 
 #include "esp/core/Esp.h"
-#include "esp/core/EspEigen.h"
+#include "esp/core/Grid2D.h"
 #include "esp/core/Random.h"
 
 #include "RedwoodNoiseModel.cuh"
 
 namespace esp {
 namespace sensor {
+
+using Grid2Df = esp::core::Grid2D<float>;
 
 /**
  * Provides a CUDA/GPU implementation of the Redwood Noise Model for PrimSense
@@ -33,29 +35,35 @@ namespace sensor {
 struct RedwoodNoiseModelGPUImpl {
   /**
    * @brief Constructor
-   * @param model             The distortion model from
+   * @param model             The distortion model data as a contiguous
+   *                          row-major float array from
    *                          http://redwood-data.org/indoor/data/dist-model.txt
    *                          The 3rd dimension is assumed to have been
    *                          flattened into the second
+   * @param modelRows         Number of rows in the model array
+   * @param modelCols         Number of columns in the model array
    * @param gpuDeviceId       The CUDA device ID to use
    * @param noiseMultiplier   Multiplier for the Gaussian random-variables. This
    *                          can be used to increase or decrease the noise
    *                          level
    */
-  RedwoodNoiseModelGPUImpl(const Eigen::Ref<const Eigen::RowMatrixXf> model,
-                           const int gpuDeviceId,
-                           const float noiseMultiplier);
+  RedwoodNoiseModelGPUImpl(const float* model,
+                           int modelRows,
+                           int modelCols,
+                           int gpuDeviceId,
+                           float noiseMultiplier);
 
   /**
    * @brief Simulates noisy depth from clean depth.  The input is assumed to be
    * on the CPU and the output will be on the CPU.  If the input isn't on the
    * CPU, bad things happen, segfaults happen.
    *
-   * @param[in] depth  Clean depth, i.e. depth from habitat's depth shader
-   * @return Simulated noisy depth
+   * @param[in] depth  Clean depth as a contiguous row-major float array
+   * @param[in] rows   Number of rows in the depth image
+   * @param[in] cols   Number of columns in the depth image
+   * @return Simulated noisy depth as a Grid2D<float>
    */
-  Eigen::RowMatrixXf simulateFromCPU(
-      const Eigen::Ref<const Eigen::RowMatrixXf> depth);
+  Grid2Df simulateFromCPU(const float* depth, int rows, int cols);
 
   /**
    * @brief Similar to @ref simulateFromCPU() but the input and output are
@@ -71,8 +79,8 @@ struct RedwoodNoiseModelGPUImpl {
    *                            depth
    */
   void simulateFromGPU(const float* devDepth,
-                       const int rows,
-                       const int cols,
+                       int rows,
+                       int cols,
                        float* devNoisyDepth);
 
   ~RedwoodNoiseModelGPUImpl();

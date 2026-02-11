@@ -4,6 +4,8 @@
 
 #include <cuda_runtime.h>
 
+#include <cstring>
+
 #include "RedwoodNoiseModel.h"
 
 namespace esp {
@@ -32,10 +34,11 @@ struct CudaDeviceContext {
 
 }  // namespace
 
-RedwoodNoiseModelGPUImpl::RedwoodNoiseModelGPUImpl(
-    const Eigen::Ref<const Eigen::RowMatrixXf> model,
-    const int gpuDeviceId,
-    const float noiseMultiplier)
+RedwoodNoiseModelGPUImpl::RedwoodNoiseModelGPUImpl(const float* model,
+                                                   const int modelRows,
+                                                   const int modelCols,
+                                                   const int gpuDeviceId,
+                                                   const float noiseMultiplier)
     : gpuDeviceId_{gpuDeviceId},
       maxThreadsPerBlock_{[gpuDeviceId]() -> int {
         int maxThreadsPerBlock;
@@ -55,10 +58,9 @@ RedwoodNoiseModelGPUImpl::RedwoodNoiseModelGPUImpl(
       noiseMultiplier_{noiseMultiplier} {
   CudaDeviceContext ctx{gpuDeviceId_};
 
-  cudaMalloc(&devModel_, model.rows() * model.cols() * sizeof(float));
-  cudaMemcpy(devModel_, model.data(),
-             model.rows() * model.cols() * sizeof(float),
-             cudaMemcpyHostToDevice);
+  const std::size_t modelSize = modelRows * modelCols * sizeof(float);
+  cudaMalloc(&devModel_, modelSize);
+  cudaMemcpy(devModel_, model, modelSize, cudaMemcpyHostToDevice);
   curandStates_ = impl::getCurandStates();
 }
 
@@ -70,15 +72,14 @@ RedwoodNoiseModelGPUImpl::~RedwoodNoiseModelGPUImpl() {
   impl::freeCurandStates(curandStates_);
 }
 
-Eigen::RowMatrixXf RedwoodNoiseModelGPUImpl::simulateFromCPU(
-    const Eigen::Ref<const Eigen::RowMatrixXf> depth) {
+Grid2Df RedwoodNoiseModelGPUImpl::simulateFromCPU(const float* depth,
+                                                  const int rows,
+                                                  const int cols) {
   CudaDeviceContext ctx{gpuDeviceId_};
-  const auto numRows = depth.rows();
-  const auto numCols = depth.cols();
-  Eigen::RowMatrixXf noisyDepth(numRows, numCols);
+  Grid2Df noisyDepth(rows, cols);
 
-  impl::simulateFromCPU(maxThreadsPerBlock_, warpSize_, depth.data(), numRows,
-                        numCols, devModel_, curandStates_, noiseMultiplier_,
+  impl::simulateFromCPU(maxThreadsPerBlock_, warpSize_, depth, rows, cols,
+                        devModel_, curandStates_, noiseMultiplier_,
                         noisyDepth.data());
   return noisyDepth;
 }
