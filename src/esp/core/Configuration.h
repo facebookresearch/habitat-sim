@@ -9,6 +9,7 @@
 #include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/FormatStl.h>
 #include <Magnum/Magnum.h>
+#include <algorithm>
 #include <string>
 #include <unordered_map>
 
