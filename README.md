@@ -4,17 +4,17 @@
 [![Conda Platforms support Badge](https://img.shields.io/conda/pn/aihabitat/habitat-sim?color=orange&label=platforms)](https://anaconda.org/aihabitat/habitat-sim)
 [![Documentation](https://img.shields.io/badge/docs-automated-green.svg)](https://aihabitat.org/docs/habitat-sim/)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
-[![Python 3.12](https://img.shields.io/badge/python-3.12.svg)](https://www.python.org/downloads/release/)
-[![Supports Bullet](https://img.shields.io/static/v1?label=supports&message=Bullet%20Physics&color=informational&link=https://opensource.google/projects/bullet3)](https://opensource.google/projects/bullet3)
-[![Twitter Follow](https://img.shields.io/twitter/follow/ai_habitat?style=social)](https://twitter.com/ai_habitat)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
+[![Supports Bullet](https://img.shields.io/badge/supports-Bullet%20Physics-informational)](https://github.com/bulletphysics/bullet3)
+[![Follow @ai_habitat](https://img.shields.io/twitter/follow/ai_habitat?style=social)](https://x.com/ai_habitat)
 
 # Habitat-Sim
 
 A high-performance physics-enabled 3D simulator with support for:
-- 3D scans of indoor/outdoor spaces (with built-in support for [HM3D](https://aihabitat.org/datasets/hm3d/), [MatterPort3D](https://niessner.github.io/Matterport/), [Gibson](http://gibsonenv.stanford.edu/database/), [Replica](https://github.com/facebookresearch/Replica-Dataset), and other datasets)
-- CAD models of spaces and piecewise-rigid objects (e.g. [ReplicaCAD](https://aihabitat.org/datasets/replica_cad/), [YCB](https://www.ycbbenchmarks.com/), [Google Scanned Objects](https://app.ignitionrobotics.org/GoogleResearch/fuel/collections/Google%20Scanned%20Objects)),
+- 3D scans of indoor/outdoor spaces (with built-in support for [HM3D](https://aihabitat.org/datasets/hm3d/), [HSSD](https://huggingface.co/datasets/hssd/hssd-hab), [MatterPort3D](https://niessner.github.io/Matterport/), [Gibson](http://gibsonenv.stanford.edu/database/), [Replica](https://github.com/facebookresearch/Replica-Dataset), and other datasets)
+- CAD models of spaces and piecewise-rigid objects (e.g. [ReplicaCAD](https://aihabitat.org/datasets/replica_cad/), [YCB](https://www.ycbbenchmarks.com/), [Google Scanned Objects](https://arxiv.org/abs/2204.11918)),
 - Configurable sensors (RGB-D cameras, egomotion sensing)
-- Robots described via URDF (mobile manipulators like [Fetch](http://docs.fetchrobotics.com/), fixed-base arms like [Franka](https://www.franka.de/), quadrupeds like [AlienGo](https://www.unitree.com/products/aliengo/)),
+- Robots described via URDF (mobile manipulators like [Fetch](https://github.com/fetchrobotics), fixed-base arms like [Franka](https://www.franka.de/), quadrupeds like [AlienGo](https://www.unitree.com/products/aliengo/)),
 - Rigid-body mechanics (via [Bullet](https://github.com/bulletphysics/bullet3)).
 
 The design philosophy of Habitat is to prioritize simulation speed over the breadth of simulation capabilities. When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves several thousand frames per second (FPS) running single-threaded and reaches over 10,000 FPS multi-process on a single GPU. Habitat-Sim simulates a Fetch robot interacting in ReplicaCAD scenes at over 8,000 steps per second (SPS), where each ‘step’ involves rendering 1 RGBD observation (128×128 pixels) and rigid-body dynamics for 1/30sec.
@@ -73,7 +73,7 @@ for a list of what was externally contributed and the corresponding work/citatio
 
 ## Installation
 
-Habitat-Sim can be installed in 3 ways:
+Habitat-Sim can be installed in 4 ways:
 1. Via Conda - Recommended method for most users. Stable release and nightly builds.
 1. Via PIP - `pip install . --no-build-isolation` to compile from source. Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
 1. Via Docker - Updated approximately once per year for the [Habitat Challenge](https://aihabitat.org/challenge/). Read [habitat-docker-setup](https://github.com/facebookresearch/habitat-lab#docker-setup).

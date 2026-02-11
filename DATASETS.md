@@ -115,7 +115,7 @@ sim = habitat_sim.Simulator(sim_cfg)
 To view the semantic annotations in the C++ viewer, install the latest `main` branch of Habitat-Sim and run the following command:
 ```
 # ./build/viewer if compiled locally
-habitat-viewer --dataset '<PATH TO HM3D>/hm3d_annotated_basis.scene_dataset_config.json' TEEsavR23oF
+viewer --dataset '<PATH TO HM3D>/hm3d_annotated_basis.scene_dataset_config.json' TEEsavR23oF
 ```
 
 
@@ -172,10 +172,9 @@ python -m habitat_sim.utils.datasets_download --uids mp3d_example_scene --data-p
 
 
 The full MP3D dataset for use with Habitat can be downloaded using the official [Matterport3D](https://niessner.github.io/Matterport/) download script as follows: `python download_mp.py --task habitat -o path/to/download/`. Note that this download script requires python 2.7 to run.
-
 You only need the habitat zip archive and not the entire Matterport3D dataset.
 
-Once you have the habitat zip archive, you should download [this SceneDatasetConfig file](http://dl.fbaipublicfiles.com/habitat/mp3d/config_v1/mp3d.scene_dataset_config.json) and place it in the root directory for the Matterport3D dataset (e.g. Habitat-Sim/data/scene_datasets/mp3d/). This file should then be specified as [the scene dataset config in the SimulatorConfiguration structure](/examples/tutorials/nb_python/ReplicaCAD_quickstart.py#L145) like this example for the ReplicaCAD dataset.
+Once you have the habitat zip archive, you should download [this SceneDatasetConfig file](http://dl.fbaipublicfiles.com/habitat/mp3d/config_v1/mp3d.scene_dataset_config.json) and place it in the root directory for the Matterport3D dataset (e.g. Habitat-Sim/data/scene_datasets/mp3d/). This file should then be specified as [the scene dataset config in the SimulatorConfiguration structure](/examples/tutorials/nb_python/ReplicaCAD_quickstart.py#L91) like this example for the ReplicaCAD dataset.
 
 ___
 
@@ -183,13 +182,9 @@ ___
 
 The Gibson dataset for use with Habitat can be downloaded by agreeing to the terms of use in the [Gibson](https://github.com/StanfordVL/GibsonEnv#database) repository.
 
-Semantic information for Gibson is available from the [3DSceneGraph](https://3dscenegraph.stanford.edu/) dataset. The semantic data will need to be converted before it can be used within Habitat:
-   ```bash
-   tools/gen_gibson_semantics.sh /path/to/3DSceneGraph_medium/automated_graph /path/to/GibsonDataset /path/to/output
-   ```
-   To use semantics, you will need to enable the semantic sensor.
+Semantic information for Gibson is available from the [3DSceneGraph](https://3dscenegraph.stanford.edu/) dataset. To use semantics, you will need to enable the semantic sensor.
 
-   Once you have downloaded the Gibson dataset and converted the semantic data, you should download [this SceneDatasetConfig file](http://dl.fbaipublicfiles.com/habitat/gibson/config_v1/gibson_semantic.scene_dataset_config.json) and place it in the root directory for the Gibson dataset (e.g. Habitat-Sim/data/scene_datasets/gibson/). This file should then be specified as [the scene dataset config in the SimulatorConfiguration structure](/examples/tutorials/nb_python/ReplicaCAD_quickstart.py#L145) like this example for the ReplicaCAD dataset.
+   Once you have downloaded the Gibson dataset, you should download [this SceneDatasetConfig file](http://dl.fbaipublicfiles.com/habitat/gibson/config_v1/gibson_semantic.scene_dataset_config.json) and place it in the root directory for the Gibson dataset (e.g. Habitat-Sim/data/scene_datasets/gibson/). This file should then be specified as [the scene dataset config in the SimulatorConfiguration structure](/examples/tutorials/nb_python/ReplicaCAD_quickstart.py#L91) like this example for the ReplicaCAD dataset.
 
 ___
 
@@ -253,7 +248,7 @@ To quickly test in the viewer application:
 #from the habitat-sim directory
 # C++
 # ./build/viewer if compiling locally
-habitat-viewer --use-default-lighting --enable-physics --object-dir ""  --dataset data/objects/ycb/ycb.scene_dataset_config.json -- data/test_assets/scenes/simple_room.glb
+viewer --use-default-lighting --enable-physics --object-dir ""  --dataset data/objects/ycb/ycb.scene_dataset_config.json -- data/test_assets/scenes/simple_room.glb
 ```
 Then press `'o'` key to add random objects from the dataset.
 
@@ -273,7 +268,7 @@ If you are using the c++ [viewer](/src/utils/viewer/viewer.cpp), the command lin
 
 ```
 # ./build/viewer if compiled locally
-habitat-viewer --dataset '<path to desired dataset config>/<desired dataset>.scene_dataset_config.json' '<scene to show>'
+viewer --dataset '<path to desired dataset config>/<desired dataset>.scene_dataset_config.json' '<scene to show>'
 ```
 
 To preview other scenes in the same scene dataset in either viewer, use `TAB`/`SHIFT-TAB` to cycle forward/backward through the list of scenes referenced by the loaded scene dataset config.

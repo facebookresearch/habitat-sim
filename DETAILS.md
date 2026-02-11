@@ -84,7 +84,7 @@ Previous simulation platforms that have operated on similar datasets typically p
 ## Rendering to GPU Tensors
 
 We support transferring rendering results directly to a [PyTorch](https://pytorch.org/) tensor via CUDA-GL Interop.
-This feature is built by when Habitat-Sim is compiled with CUDA, i.e. built with `--with-cuda`.  To enable it, set the
+This feature is available when Habitat-Sim is compiled with CUDA support, i.e. built with `HABITAT_WITH_CUDA=ON` (see [build instructions](BUILD_FROM_SOURCE.md)).  To enable it, set the
 `gpu2gpu_transfer` flag of the sensor specification(s) to `True`
 
 This is implemented in a way that is reasonably agnostic to the exact GPU-Tensor library being used, but we currently have only implemented support for PyTorch.

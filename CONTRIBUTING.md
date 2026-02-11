@@ -13,11 +13,11 @@ possible.
 - While working on a PR, try to religiously keep your fork up-to-date with main by rebasing as necessary.  Note that the above recommendation for smaller and more frequent PRs reduces the burden of rebasing.
 - We expect PR ready for final review only if Continuous Integration tests are passing.
 - Recommended: after getting a PR through reviews/feedback and is merged into main, delete the branch to de-clutter noise.
-- Reach out to us with questions or suggestions on our Slack channel.
+- Reach out to us with questions or suggestions on our [Discussions forum](https://github.com/facebookresearch/habitat-lab/discussions).
 
 ## Contributor License Agreement ("CLA")
 In order to accept your pull request, we need you to submit a CLA. You only need
-to do this once to work on any of Facebook's open source projects. Complete your CLA [here](https://code.facebook.com/cla).
+to do this once to work on any of Meta's open source projects. Complete your CLA [here](https://code.facebook.com/cla).
 
 By contributing to habitat-sim, you agree that your contributions will be licensed
 under [the LICENSE file](https://github.com/facebookresearch/habitat-sim/blob/main/LICENSE).
@@ -40,13 +40,13 @@ clear and has sufficient instructions to be able to reproduce the issue.
 
 - C++
   - In general, we follow [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) and [Google C++ guidelines](https://google.github.io/styleguide/cppguide.html)
-  - Use `clang-format-12` for style enforcement and linting.
-  Install `clang-format-12` through `brew install clang-format` on macOS. For other systems, `clang-format-12` can be installed via `conda install clangdev -c conda-forge` or by downloading binaries or sources from [releases.llvm.org/download](http://releases.llvm.org/download.html).
-  For vim integration add to your .vimrc file `map <C-K> :%!clang-format<cr>` and use Ctrl+K to format entire file. Integration plugin for [vscode](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format)..
+  - Use `clang-format-13` for style enforcement and linting.
+  Install `clang-format` through `brew install clang-format` on macOS. For other systems, `clang-format` can be installed via `conda install clangdev -c conda-forge` or by downloading binaries or sources from [releases.llvm.org/download](http://releases.llvm.org/download.html).
+  For vim integration add to your .vimrc file `map <C-K> :%!clang-format<cr>` and use Ctrl+K to format entire file. Integration plugin for [vscode](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format).
 - Python
   - We follow PEP8 and use [typing](https://docs.python.org/3/library/typing.html).
-  - We use `black` and `isort` for linting and code style of python code.
-  Install `black` and `isort` through `pip install -U black isort`. They can then be ran via `black .` and `isort`.
+  - We use `black`, `isort`, and `ruff` for linting and code style of python code.
+  Install them through `pip install -U black isort ruff`. They can then be run via `black .`, `isort .`, and `ruff check .`.
 
 We also use pre-commit hooks to ensure linting and style enforcement. Install the pre-commit hooks with `pip install pre-commit && pre-commit install`.
 
