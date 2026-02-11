@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 // Code adapted from Bullet3/examples/Importers/ImportURDFDemo ...
+#include <algorithm>
 #include <iostream>
 
 #include <Corrade/Utility/DebugStl.h>

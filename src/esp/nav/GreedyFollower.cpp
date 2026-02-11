@@ -5,6 +5,8 @@
 
 #include "esp/nav/GreedyFollower.h"
 
+#include <limits>
+
 #include "esp/core/Esp.h"
 #include "esp/geo/Geo.h"
 

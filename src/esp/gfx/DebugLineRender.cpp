@@ -4,6 +4,8 @@
 
 #include "DebugLineRender.h"
 
+#include <cmath>
+
 #include <Corrade/Containers/GrowableArray.h>
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/Math/Color.h>

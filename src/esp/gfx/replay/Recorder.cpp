@@ -4,6 +4,8 @@
 
 #include "Recorder.h"
 
+#include <algorithm>
+
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/core/Check.h"
 #include "esp/gfx/Drawable.h"

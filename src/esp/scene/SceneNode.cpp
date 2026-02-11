@@ -4,6 +4,8 @@
 
 #include <Corrade/Utility/Assert.h>
 
+#include <algorithm>
+
 #include "SceneGraph.h"
 #include "SceneNode.h"
 #include "esp/core/Check.h"

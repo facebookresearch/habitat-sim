@@ -10,6 +10,7 @@
 #include <Corrade/Containers/Pair.h>
 #include <Corrade/Utility/FormatStl.h>
 
+#include <algorithm>
 #include <fstream>
 #include <map>
 #include <sstream>

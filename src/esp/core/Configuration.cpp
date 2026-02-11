@@ -7,6 +7,7 @@
 #include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/Math/ConfigurationValue.h>
+#include <cstring>
 #include "esp/core/Check.h"
 #include "esp/io/Json.h"
 

@@ -4,6 +4,8 @@
 
 #include "ResourceManager.h"
 
+#include <algorithm>
+
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Containers/BitArray.h>
 #include <Corrade/Containers/GrowableArray.h>

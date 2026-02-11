@@ -7,6 +7,7 @@
 
 #include "BulletPhysicsManager.h"
 
+#include <algorithm>
 #include <utility>
 #include "BulletArticulatedObject.h"
 #include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
