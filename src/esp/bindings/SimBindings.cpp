@@ -4,6 +4,8 @@
 
 #include "esp/bindings/Bindings.h"
 
+#include <pybind11/numpy.h>
+
 #include <Magnum/ImageView.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/SceneGraph/SceneGraph.h>
