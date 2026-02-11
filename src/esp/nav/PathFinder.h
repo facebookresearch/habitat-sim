@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "esp/core/Esp.h"
-#include "esp/core/EspEigen.h"
+#include "esp/core/Grid2D.h"
 
 namespace esp {
 // forward declaration
@@ -22,9 +22,8 @@ struct MeshData;
 //! NavMesh namespace
 namespace nav {
 
-typedef Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> MatrixXi;
-
-typedef Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> MatrixXb;
+using Grid2Di = esp::core::Grid2D<int>;
+using Grid2Db = esp::core::Grid2D<bool>;
 
 class PathFinder;
 
@@ -633,7 +632,7 @@ class PathFinder {
    *
    * @return The 2D grid marking cells as navigable or not.
    */
-  MatrixXb getTopDownView(float metersPerPixel, float height, float eps = 0.5);
+  Grid2Db getTopDownView(float metersPerPixel, float height, float eps = 0.5);
 
   /**
    * @brief Get a 2D grid marking island index for navigable cells and -1 for
@@ -649,9 +648,9 @@ class PathFinder {
    *
    * @return The 2D grid marking cell islands or -1 for not navigable.
    */
-  MatrixXi getTopDownIslandView(float metersPerPixel,
-                                float height,
-                                float eps = 0.5);
+  Grid2Di getTopDownIslandView(float metersPerPixel,
+                               float height,
+                               float eps = 0.5);
 
   /**
    * @brief Returns a MeshData object containing triangulated NavMesh polys.

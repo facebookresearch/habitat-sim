@@ -26,7 +26,6 @@
 
 #include "esp/assets/MeshData.h"
 #include "esp/core/Esp.h"
-#include "esp/core/EspEigen.h"
 
 #include "DetourCommon.h"
 #include "DetourNavMesh.h"
@@ -526,11 +525,11 @@ struct PathFinder::Impl {
 
   std::pair<Mn::Vector3, Mn::Vector3> bounds() const { return bounds_; };
 
-  MatrixXb getTopDownView(float metersPerPixel, float height, float eps) const;
+  Grid2Db getTopDownView(float metersPerPixel, float height, float eps) const;
 
-  MatrixXi getTopDownIslandView(float metersPerPixel,
-                                float height,
-                                float eps) const;
+  Grid2Di getTopDownIslandView(float metersPerPixel,
+                               float height,
+                               float eps) const;
 
   assets::MeshData::ptr getNavMeshData(int islandIndex /*= ID_UNDEFINED*/);
 
@@ -1758,9 +1757,9 @@ bool PathFinder::Impl::isNavigable(const Mn::Vector3& pt,
   return true;
 }
 
-MatrixXb PathFinder::Impl::getTopDownView(const float metersPerPixel,
-                                          const float height,
-                                          const float eps) const {
+Grid2Db PathFinder::Impl::getTopDownView(const float metersPerPixel,
+                                         const float height,
+                                         const float eps) const {
   std::pair<Mn::Vector3, Mn::Vector3> mapBounds = bounds();
   Mn::Vector3 bound1 = mapBounds.first;
   Mn::Vector3 bound2 = mapBounds.second;
@@ -1771,7 +1770,7 @@ MatrixXb PathFinder::Impl::getTopDownView(const float metersPerPixel,
   int zResolution = zspan / metersPerPixel;
   float startx = fmin(bound1[0], bound2[0]);
   float startz = fmin(bound1[2], bound2[2]);
-  MatrixXb topdownMap(zResolution, xResolution);
+  Grid2Db topdownMap(zResolution, xResolution);
 
   float curz = startz;
   float curx = startx;
@@ -1788,9 +1787,9 @@ MatrixXb PathFinder::Impl::getTopDownView(const float metersPerPixel,
   return topdownMap;
 }
 
-MatrixXi PathFinder::Impl::getTopDownIslandView(const float metersPerPixel,
-                                                const float height,
-                                                const float eps) const {
+Grid2Di PathFinder::Impl::getTopDownIslandView(const float metersPerPixel,
+                                               const float height,
+                                               const float eps) const {
   std::pair<Mn::Vector3, Mn::Vector3> mapBounds = bounds();
   Mn::Vector3 bound1 = mapBounds.first;
   Mn::Vector3 bound2 = mapBounds.second;
@@ -1801,7 +1800,7 @@ MatrixXi PathFinder::Impl::getTopDownIslandView(const float metersPerPixel,
   int zResolution = zspan / metersPerPixel;
   float startx = fmin(bound1[0], bound2[0]);
   float startz = fmin(bound1[2], bound2[2]);
-  MatrixXi topdownMap(zResolution, xResolution);
+  Grid2Di topdownMap(zResolution, xResolution);
 
   float curz = startz;
   float curx = startx;
@@ -1997,15 +1996,15 @@ std::pair<Mn::Vector3, Mn::Vector3> PathFinder::bounds() const {
   return pimpl_->bounds();
 }
 
-MatrixXb PathFinder::getTopDownView(const float metersPerPixel,
-                                    const float height,
-                                    const float eps) {
+Grid2Db PathFinder::getTopDownView(const float metersPerPixel,
+                                   const float height,
+                                   const float eps) {
   return pimpl_->getTopDownView(metersPerPixel, height, eps);
 }
 
-MatrixXi PathFinder::getTopDownIslandView(const float metersPerPixel,
-                                          const float height,
-                                          const float eps) {
+Grid2Di PathFinder::getTopDownIslandView(const float metersPerPixel,
+                                         const float height,
+                                         const float eps) {
   return pimpl_->getTopDownIslandView(metersPerPixel, height, eps);
 }
 

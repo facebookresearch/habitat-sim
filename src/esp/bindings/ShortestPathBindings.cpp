@@ -4,9 +4,11 @@
 
 #include "esp/bindings/Bindings.h"
 
-#include <pybind11/eigen.h>
 #include <pybind11/functional.h>
+#include <pybind11/numpy.h>
 #include <pybind11/stl.h>
+
+#include <cstring>
 
 #include <Corrade/Containers/OptionalPythonBindings.h>
 #include <Magnum/Math/Vector3.h>
@@ -148,11 +150,27 @@ void initShortestPathBindings(py::module& m) {
           "seed", &PathFinder::seed,
           R"(Seed the pathfinder.  Useful for get_random_navigable_point(). Seeds the global c rand function.)")
       .def(
-          "get_topdown_view", &PathFinder::getTopDownView,
+          "get_topdown_view",
+          [](PathFinder& self, float metersPerPixel, float height, float eps) {
+            auto grid = self.getTopDownView(metersPerPixel, height, eps);
+            py::array_t<bool> arr({grid.rows(), grid.cols()});
+            auto* dst = static_cast<bool*>(arr.mutable_data());
+            const auto* src = grid.data();
+            for (int i = 0; i < grid.rows() * grid.cols(); ++i)
+              dst[i] = src[i];
+            return arr;
+          },
           R"(Returns the topdown view of the PathFinder's navmesh at a given vertical slice with eps slack.)",
           "meters_per_pixel"_a, "height"_a, "eps"_a = 0.5)
       .def(
-          "get_topdown_island_view", &PathFinder::getTopDownIslandView,
+          "get_topdown_island_view",
+          [](PathFinder& self, float metersPerPixel, float height, float eps) {
+            auto grid = self.getTopDownIslandView(metersPerPixel, height, eps);
+            py::array_t<int> arr({grid.rows(), grid.cols()});
+            std::memcpy(arr.mutable_data(), grid.data(),
+                        grid.rows() * grid.cols() * sizeof(int));
+            return arr;
+          },
           R"(Returns the topdown view of the PathFinder's navmesh with island indices at each point or -1 for non-navigable cells for a given vertical slice with eps slack.)",
           "meters_per_pixel"_a, "height"_a, "eps"_a = 0.5)
       // detailed docs in docs/docs.rst
