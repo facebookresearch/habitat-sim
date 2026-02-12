@@ -1596,11 +1596,84 @@ T PathFinder::Impl::tryStep(const T& start, const T& end, bool allowSliding) {
   int numPolys = 0;
   navQuery_->moveAlongSurface(startRef, pathStart.data(), end.data(),
                               filter_.get(), endPoint.data(), polys, &numPolys,
-                              MAX_POLYS, allowSliding);
+                              MAX_POLYS);
   // If there isn't any possible path between start and end, just return
   // start, that is cleanest
   if (numPolys == 0) {
     return start;
+  }
+
+  // When sliding is not allowed, we need to find where the movement ray
+  // (start -> end) first intersects a wall edge of the navmesh and stop
+  // there, rather than sliding along the wall as moveAlongSurface does by
+  // default.
+  if (!allowSliding) {
+    // Walk each visited polygon and find the closest ray-wall intersection
+    float bestDist = std::numeric_limits<float>::max();
+    bool hitWall = false;
+    Mn::Vector3 bestPos;
+
+    for (int iPoly = 0; iPoly < numPolys; ++iPoly) {
+      const dtMeshTile* tile = nullptr;
+      const dtPoly* poly = nullptr;
+      navMesh_->getTileAndPolyByRefUnsafe(polys[iPoly], &tile, &poly);
+
+      for (int j = 0, nv = poly->vertCount; j < nv; ++j) {
+        // Check if this edge is a wall (no neighbor)
+        bool isWall = false;
+        if (poly->neis[j] == 0) {
+          // No neighbor at all — solid wall
+          isWall = true;
+        } else if (poly->neis[j] & DT_EXT_LINK) {
+          // External link — check if any passable neighbor exists
+          bool hasPassableNeighbor = false;
+          for (unsigned int k = poly->firstLink; k != DT_NULL_LINK;
+               k = tile->links[k].next) {
+            if (tile->links[k].edge == j && tile->links[k].ref != 0) {
+              const dtMeshTile* neiTile = nullptr;
+              const dtPoly* neiPoly = nullptr;
+              navMesh_->getTileAndPolyByRefUnsafe(tile->links[k].ref, &neiTile,
+                                                  &neiPoly);
+              if (filter_->passFilter(tile->links[k].ref, neiTile, neiPoly)) {
+                hasPassableNeighbor = true;
+                break;
+              }
+            }
+          }
+          isWall = !hasPassableNeighbor;
+        }
+        // Internal passable edges are not walls
+
+        if (!isWall)
+          continue;
+
+        // Get the wall edge vertices
+        const float* vj = &tile->verts[static_cast<size_t>(poly->verts[j]) * 3];
+        const int nextIdx = (j + 1 < nv) ? (j + 1) : 0;
+        const float* vi =
+            &tile->verts[static_cast<size_t>(poly->verts[nextIdx]) * 3];
+
+        // Find where startPos -> endPos intersects wall edge vj -> vi
+        float s, t;
+        if (dtIntersectSegSeg2D(vj, vi, pathStart.data(), end.data(), s, t) &&
+            t >= 0.0f && t <= 1.0f && s >= 0.0f && s <= 1.0f) {
+          // The intersection point on the wall edge
+          float newPos[3];
+          dtVlerp(newPos, vj, vi, s);
+          const float distSqr = dtVdist2DSqr(newPos, end.data());
+
+          if (distSqr < bestDist) {
+            bestPos = Mn::Vector3::from(newPos);
+            bestDist = distSqr;
+            hitWall = true;
+          }
+        }
+      }
+    }
+
+    if (hitWall) {
+      endPoint = bestPos;
+    }
   }
 
   // According to recast's code
