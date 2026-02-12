@@ -151,6 +151,7 @@ jobs:
         files: ./habitat-sim/coverage.xml
         flags: Python
         token: ${{ secrets.CODECOV_TOKEN }}
+        disable_search: true
         fail_ci_if_error: false
     - name: Upload C++ coverage to Codecov
       uses: codecov/codecov-action@v5
@@ -158,6 +159,7 @@ jobs:
         files: ./habitat-sim/coverage.info
         flags: CPP
         token: ${{ secrets.CODECOV_TOKEN }}
+        disable_search: true
         fail_ci_if_error: false
     - name: install habitat-sim with audio and run audio_agent script
       run: |-
