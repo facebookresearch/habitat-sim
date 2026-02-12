@@ -146,9 +146,9 @@ jobs:
         # https://github.com/psycofdj/coverxygen/issues/6
         sed -i -e 's/,-1$/,0/g' coverage.info
         # Strip vendored dependencies and test code from the C++ coverage report
-        lcov --remove coverage.info "*/deps/*" --output-file coverage.info > /dev/null
-        lcov --remove coverage.info "*/test/*" --output-file coverage.info > /dev/null
-        lcov --remove coverage.info "*/tests/*" --output-file coverage.info > /dev/null
+        lcov --remove coverage.info "*/deps/*" --output-file coverage.info --ignore-errors unused > /dev/null
+        lcov --remove coverage.info "*/test/*" --output-file coverage.info --ignore-errors unused > /dev/null
+        lcov --remove coverage.info "*/tests/*" --output-file coverage.info --ignore-errors unused > /dev/null
     - name: Upload Python coverage to Codecov
       uses: codecov/codecov-action@v5
       with:
