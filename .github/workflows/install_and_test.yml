@@ -134,28 +134,31 @@ jobs:
           pip install -e . --no-build-isolation \
           --config-settings=cmake.define.CMAKE_CXX_FLAGS="--coverage"
         pytest -n 4 --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
-    - name: upload test coverage
+    - name: Generate C++ coverage report
       run: |-
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
         conda activate habitat
         cd habitat-sim
-
-        curl -Os https://uploader.codecov.io/latest/linux/codecov
-        chmod +x codecov
-        #Uploading test coverage for Python code
-        ./codecov -f coverage.xml -cF Python
-
-        #Uploading test coverage for C++ code
         # Use --ignore-errors mismatch to handle gcov/source line mismatches that can occur
         # with pybind11 and other template-heavy code
         lcov --directory . --capture --output-file coverage.info --ignore-errors mismatch
         # Replaces -1 linecount with zero to prevent lcov from crashing:
         # https://github.com/psycofdj/coverxygen/issues/6
         sed -i -e 's/,-1$/,0/g' coverage.info
-        #lcov --remove coverage.info "*/deps/*" --output-file coverage.info > /dev/null
-        #lcov --remove coverage.info "*/test/*" --output-file coverage.info > /dev/null
-        #lcov --remove coverage.info "*/tests/*" --output-file coverage.info > /dev/null
-        ./codecov -f coverage.info -cF CPP
+    - name: Upload Python coverage to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        files: ./habitat-sim/coverage.xml
+        flags: Python
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
+    - name: Upload C++ coverage to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        files: ./habitat-sim/coverage.info
+        flags: CPP
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
     - name: install habitat-sim with audio and run audio_agent script
       run: |-
         #give cmake ownership to the runner for installation
