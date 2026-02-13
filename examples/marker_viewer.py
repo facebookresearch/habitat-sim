@@ -4,6 +4,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# NOTE: This example requires building habitat-sim with GUI viewer support:
+#   HABITAT_BUILD_GUI_VIEWERS=ON pip install . --no-build-isolation
+# or:
+#   ./build.sh --gui
+
 import ctypes
 import math
 import os
@@ -1061,7 +1066,7 @@ class HabitatSimInteractiveViewer(Application):
         self.window_text.clear()  # replace all previous text
         self.window_text.render(
             self.display_font.create_shaper(),
-            self.display_font.size(),
+            self.display_font.size,
             f"""
 {self.fps} FPS
 Sensor Type: {sensor_type_string}

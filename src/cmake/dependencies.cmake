@@ -316,9 +316,12 @@ if(NOT USE_SYSTEM_MAGNUM)
     set(MAGNUM_WITH_STBTRUETYPEFONT ON CACHE BOOL "" FORCE)
     if(NOT USE_SYSTEM_GLFW)
       set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-      # These two will be off-by-default when GLFW 3.4 gets released
       set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
       set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+      # Disable Wayland support to avoid requiring wayland-scanner at build
+      # time. habitat-sim uses EGL for windowless rendering; the GLFW
+      # application only needs X11.
+      set(GLFW_BUILD_WAYLAND OFF CACHE BOOL "" FORCE)
       add_subdirectory("${DEPS_DIR}/glfw")
     endif()
     set(MAGNUM_WITH_GLFWAPPLICATION ON CACHE BOOL "" FORCE)

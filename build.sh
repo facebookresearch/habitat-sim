@@ -35,8 +35,11 @@ PIP_ARGS=()
 # Parse arguments
 for arg in "$@"; do
     case $arg in
-        --headless)
+          --headless)
             export HABITAT_BUILD_GUI_VIEWERS=OFF
+            ;;
+        --gui|--with-gui)
+            export HABITAT_BUILD_GUI_VIEWERS=ON
             ;;
         --with-bullet|--bullet)
             export HABITAT_WITH_BULLET=ON
@@ -62,7 +65,7 @@ for arg in "$@"; do
             ;;
         *)
             echo "Unknown argument: $arg"
-            echo "Usage: ./build.sh [--headless] [--with-bullet] [--with-cuda] [--with-audio] [--run-tests] [--debug] [--lto] [-v]"
+            echo "Usage: ./build.sh [--headless] [--gui] [--with-bullet] [--with-cuda] [--with-audio] [--run-tests] [--debug] [--lto] [-v]"
             exit 1
             ;;
     esac

@@ -4,6 +4,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# NOTE: This example requires building habitat-sim with GUI viewer support:
+#   HABITAT_BUILD_GUI_VIEWERS=ON pip install . --no-build-isolation
+# or:
+#   ./build.sh --gui
+# It also depends on habitat-lab for the Spot robot integration.
+
 import ctypes
 import math
 import os
@@ -17,6 +23,7 @@ sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
 import magnum as mn
 import numpy as np
+#NOTE: this example imports habitat-lab for Spot integration
 from habitat.articulated_agents.robots.spot_robot import SpotRobot
 from habitat.datasets.rearrange.navmesh_utils import get_largest_island_index
 from magnum import shaders, text
@@ -1391,7 +1398,7 @@ class HabitatSimInteractiveViewer(Application):
         self.window_text.clear()  # replace all previous text
         self.window_text.render(
             self.display_font.create_shaper(),
-            self.display_font.size(),
+            self.display_font.size,
             f"""
 {self.fps} FPS
 Scene ID : {os.path.split(self.cfg.sim_cfg.scene_id)[1].split('.scene_instance')[0]}
