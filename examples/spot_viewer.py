@@ -23,7 +23,8 @@ sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
 import magnum as mn
 import numpy as np
-#NOTE: this example imports habitat-lab for Spot integration
+
+# NOTE: this example imports habitat-lab for Spot integration
 from habitat.articulated_agents.robots.spot_robot import SpotRobot
 from habitat.datasets.rearrange.navmesh_utils import get_largest_island_index
 from magnum import shaders, text
@@ -31,7 +32,8 @@ from magnum.platform.glfw import Application
 from omegaconf import DictConfig
 
 import habitat_sim
-from habitat_sim import ReplayRenderer, ReplayRendererConfiguration, physics as HSim_Phys
+from habitat_sim import ReplayRenderer, ReplayRendererConfiguration
+from habitat_sim import physics as HSim_Phys
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.classes import ObjectEditor, SemanticDisplay
 from habitat_sim.utils.namespace import hsim_physics
