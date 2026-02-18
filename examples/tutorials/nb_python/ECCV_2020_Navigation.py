@@ -245,7 +245,8 @@ print("Discrete action space: ", action_names)
 
 def navigateAndSee(action=""):
     if action in action_names:
-        observations = sim.step(action)
+        sim.step(action)
+        observations = sim.get_sensor_observations()
         print("action: ", action)
         if display:
             display_sample(observations["color_sensor"])
@@ -427,7 +428,8 @@ max_frames = 5
 while total_frames < max_frames:
     action = random.choice(action_names)
     print("action", action)
-    observations = sim.step(action)
+    sim.step(action)
+    observations = sim.get_sensor_observations()
     rgb = observations["color_sensor"]
     semantic = observations["semantic_sensor"]
     depth = observations["depth_sensor"]

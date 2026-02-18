@@ -80,19 +80,22 @@ class Simulator(SimulatorBackend):
         default=0.0, init=False
     )  # track the compute time of each step
     _async_draw_agent_ids: Optional[Union[int, List[int]]] = None
-    __last_state: Dict[int, AgentState] = attr.ib(factory=dict, init=False)
+    # TODO: temporary solution to cache discrete action collisions in a sensor-like format for observations
+    _last_step_agent_collisions: Dict[int, bool] = {}
 
     @staticmethod
     def _sanitize_config(config: Configuration) -> None:
         if len(config.agents) == 0:
             raise RuntimeError(
-                "Config has not agents specified.  Must specify at least 1 agent"
+                "Config has no agents specified.  Must specify at least 1 agent"
             )
 
-        config.sim_cfg.create_renderer = not config.enable_batch_renderer and any(
-            len(cfg.sensor_specifications) > 0 for cfg in config.agents
-        )
-        config.sim_cfg.load_semantic_mesh |= any(
+        # explicitly turn off the rendering when batched renderer is configured
+        if config.enable_batch_renderer:
+            config.sim_cfg.create_renderer = False
+
+        # semantics can be either requested manually or detected based on pre-defined semantic sensors
+        config.sim_cfg.load_semantic_mesh = config.sim_cfg.load_semantic_mesh or any(
             (
                 any(
                     sens_spec.sensor_type == SensorType.SEMANTIC
@@ -102,7 +105,8 @@ class Simulator(SimulatorBackend):
             )
         )
 
-        config.sim_cfg.requires_textures = any(
+        # textures can be manually requested or automatically included if any COLOR sensors are pre-defined
+        config.sim_cfg.requires_textures = config.sim_cfg.requires_textures or any(
             (
                 any(
                     sens_spec.sensor_type == SensorType.COLOR
@@ -146,8 +150,7 @@ class Simulator(SimulatorBackend):
             del agent
 
         self.agents = []
-
-        self.__last_state.clear()
+        self._last_step_agent_collisions: Dict[int, bool] = {}
 
         super().close(destroy)
 
@@ -161,42 +164,18 @@ class Simulator(SimulatorBackend):
         super().seed(new_seed)
         self.pathfinder.seed(new_seed)
 
-    @overload
-    def reset(self, agent_ids: List[int]) -> Dict[int, ObservationDict]:
-        ...
-
-    @overload
-    def reset(self, agent_ids: Optional[int] = None) -> ObservationDict:
-        ...
-
-    def reset(
-        self, agent_ids: Union[Optional[int], List[int]] = None
-    ) -> Union[ObservationDict, Dict[int, ObservationDict],]:
+    def reset(self) -> None:
         """
         Reset the simulation state including the state of all physics objects, agents, and the default light setup.
         Sets the world time to 0.0, changes the physical state of all objects back to their initial states.
         Does not invalidate existing ManagedObject wrappers.
         Does not add or remove object instances.
         Only changes motion_type when scene_instance specified a motion type.
-
-        :param agent_ids: An optional list of agent ids for which to return the sensor observations. If none is provide, default agent is used.
-
-        :return: Sensor observations in the reset state.
         """
         super().reset()
+        self._last_step_agent_collisions: Dict[int, bool] = {}
         for i in range(len(self.agents)):
             self.reset_agent(i)
-
-        if agent_ids is None:
-            agent_ids = [self._default_agent_id]
-            return_single = True
-        else:
-            agent_ids = cast(List[int], agent_ids)
-            return_single = False
-        obs = self.get_sensor_observations(agent_ids=agent_ids)
-        if return_single:
-            return obs[agent_ids[0]]
-        return obs
 
     def reset_agent(self, agent_id: int) -> None:
         agent = self.get_agent(agent_id)
@@ -207,6 +186,7 @@ class Simulator(SimulatorBackend):
         self.initialize_agent(agent_id, initial_agent_state)
 
     def _config_backend(self, config: Configuration) -> None:
+        """Calls the backend Simulator constructor or C++ reconfigure() method if Simulator is already previously initialized."""
         if not self._initialized:
             super().__init__(config.sim_cfg, config.metadata_mediator)
             self._initialized = True
@@ -214,12 +194,14 @@ class Simulator(SimulatorBackend):
             super().reconfigure(config.sim_cfg)
 
     def _config_agents(self, config: Configuration) -> None:
+        """Sets up the internal base Agents list by creating their SceneNodes and constructing them."""
         self.agents = [
             Agent(self.get_active_scene_graph().get_root_node().create_child(), cfg)
             for cfg in config.agents
         ]
 
     def _config_pathfinder(self, config: Configuration) -> None:
+        """Seeds the PathFinder and produces a warning if navmesh is not valid."""
         self.pathfinder.seed(config.sim_cfg.random_seed)
 
         if self.pathfinder is None or not self.pathfinder.is_loaded:
@@ -228,6 +210,7 @@ class Simulator(SimulatorBackend):
             )
 
     def reconfigure(self, config: Configuration) -> None:
+        """Validates and adjusts the config and then reconfigures the backend and constructs the python layer wrappers for Agents, Sensors, and Pathfinder."""
         self._sanitize_config(config)
 
         if self.config != config:
@@ -235,26 +218,34 @@ class Simulator(SimulatorBackend):
             self.config = config
 
     def __set_from_config(self, config: Configuration) -> None:
+        """Reconfigures the backend simulator and constructs python layer wrappers for Agents, Sensors, and PathFinder."""
+        # initialize or reconfigure the backend Simulator
         self._config_backend(config)
+        # reconstruct Agents
         self._config_agents(config)
+        # seed and validate the PathFinder
         self._config_pathfinder(config)
+
         self.frustum_culling = config.sim_cfg.frustum_culling
 
+        # setup Agent controls
+        self._last_step_agent_collisions: Dict[int, bool] = {}
         for i in range(len(self.agents)):
             self.agents[i].controls.move_filter_fn = self.step_filter
 
         self._default_agent_id = config.sim_cfg.default_agent_id
 
+        # setup Sensor wrappers
         self.__sensors: List[Dict[str, Sensor]] = [
             dict() for i in range(len(config.agents))
         ]
-        self.__last_state = dict()
         for agent_id, agent_cfg in enumerate(config.agents):
             for spec in agent_cfg.sensor_specifications:
                 self._update_simulator_sensors(spec.uuid, agent_id=agent_id)
             self.initialize_agent(agent_id)
 
     def _update_simulator_sensors(self, uuid: str, agent_id: int) -> None:
+        """Constructs the wrappers for the python Sensor objects from Sensor objects constructed in the backend."""
         self.__sensors[agent_id][uuid] = Sensor(
             sim=self, agent=self.get_agent(agent_id), sensor_id=uuid
         )
@@ -262,6 +253,7 @@ class Simulator(SimulatorBackend):
     def add_sensor(
         self, sensor_spec: SensorSpec, agent_id: Optional[int] = None
     ) -> None:
+        """Adds a new Sensor to an Agent constructed from the sensor_spec."""
         if (
             (
                 not self.config.sim_cfg.load_semantic_mesh
@@ -294,6 +286,7 @@ class Simulator(SimulatorBackend):
     def initialize_agent(
         self, agent_id: int, initial_state: Optional[AgentState] = None
     ) -> Agent:
+        """Sets the initial position and orientation of an Agent with navmesh sampling if not provided."""
         agent = self.get_agent(agent_id=agent_id)
         if initial_state is None:
             initial_state = AgentState()
@@ -304,7 +297,6 @@ class Simulator(SimulatorBackend):
                 )
 
         agent.set_state(initial_state, is_initial=True)
-        self.__last_state[agent_id] = agent.state
         return agent
 
     def start_async_render_and_step_physics(
@@ -402,6 +394,9 @@ class Simulator(SimulatorBackend):
         if isinstance(agent_ids, int):
             agent_ids = [agent_ids]
             return_single = True
+        elif agent_ids is None:
+            agent_ids = [self._default_agent_id]
+            return_single = True
         else:
             return_single = False
 
@@ -424,6 +419,11 @@ class Simulator(SimulatorBackend):
             agent_observations: ObservationDict = {}
             for sensor_uuid, sensor in self.__sensors[agent_id].items():
                 agent_observations[sensor_uuid] = sensor.get_observation()
+            # append last step collision observations TODO: This should be encapsulated in agent/sensor classes
+            if agent_id in self._last_step_agent_collisions:
+                agent_observations["collided"] = self._last_step_agent_collisions[
+                    agent_id
+                ]
             observations[agent_id] = agent_observations
 
         if return_single:
@@ -436,63 +436,28 @@ class Simulator(SimulatorBackend):
         return self.get_agent(agent_id=self._default_agent_id)
 
     @property
-    def _last_state(self) -> AgentState:
-        # TODO Deprecate and remove
-        return self.__last_state[self._default_agent_id]
-
-    @_last_state.setter
-    def _last_state(self, state: AgentState) -> None:
-        # TODO Deprecate and remove
-        self.__last_state[self._default_agent_id] = state
-
-    @property
     def _sensors(self) -> Dict[str, "Sensor"]:
         # TODO Deprecate and remove
         return self.__sensors[self._default_agent_id]
-
-    def last_state(self, agent_id: Optional[int] = None) -> AgentState:
-        if agent_id is None:
-            agent_id = self._default_agent_id
-        return self.__last_state[agent_id]
-
-    @overload
-    def step(self, action: Union[str, int], dt: float = 1.0 / 60.0) -> ObservationDict:
-        ...
-
-    @overload
-    def step(
-        self, action: MutableMapping_T[int, Union[str, int]], dt: float = 1.0 / 60.0
-    ) -> Dict[int, ObservationDict]:
-        ...
 
     def step(
         self,
         action: Union[str, int, MutableMapping_T[int, Union[str, int]]],
         dt: float = 1.0 / 60.0,
-    ) -> Union[ObservationDict, Dict[int, ObservationDict],]:
+    ) -> None:
+        """Step the Simulated world by dt seconds given actions to be excecuted by the Agents."""
         self._num_total_frames += 1
-        if isinstance(action, MutableMapping):
-            return_single = False
-        else:
+        if not isinstance(action, MutableMapping):
             action = cast(Dict[int, Union[str, int]], {self._default_agent_id: action})
-            return_single = True
-        collided_dict: Dict[int, bool] = {}
         for agent_id, agent_act in action.items():
             agent = self.get_agent(agent_id)
-            collided_dict[agent_id] = agent.act(agent_act)
-            self.__last_state[agent_id] = agent.get_state()
+            # TODO: This should be a real Sensor not faked here in step
+            self._last_step_agent_collisions[agent_id] = agent.act(agent_act)
 
         # step physics by dt
         step_start_Time = time.time()
         super().step_world(dt)
         self._previous_step_time = time.time() - step_start_Time
-
-        multi_observations = self.get_sensor_observations(agent_ids=list(action.keys()))
-        for agent_id, agent_observation in multi_observations.items():
-            agent_observation["collided"] = collided_dict[agent_id]
-        if return_single:
-            return multi_observations[self._default_agent_id]
-        return multi_observations
 
     def make_greedy_follower(
         self,
@@ -539,13 +504,15 @@ class Simulator(SimulatorBackend):
         self.close(destroy=True)
 
     def step_physics(self, dt: float) -> None:
+        """Step only the physics of the world by dt seconds. Used to bypass Agent actions or other simulation stepping side effects."""
         self.step_world(dt)
 
 
 class Sensor:
-    r"""Wrapper around habitat_sim.Sensor
-
-    TODO(MS) define entire Sensor class in python, reducing complexity
+    r"""
+    Wrapper around habitat_sim.Sensor
+    TODO: currently forces coupling with an Agent, should remove
+    TODO: Shouldn't be necessary after ManagedSensor refactor and exposure from bindings
     """
     buffer = Union[np.ndarray, "Tensor"]
 
@@ -778,6 +745,7 @@ class Sensor:
         return obs
 
     def close(self) -> None:
+        """Releases and held references to member objects."""
         self._sim = None
         self._agent = None
         self._sensor_object = None
