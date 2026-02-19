@@ -12,27 +12,25 @@ from typing import MutableMapping as MutableMapping_T
 from typing import Optional, Union, cast, overload
 
 import attr
-import magnum as mn
 import numpy as np
 from magnum import Vector3
 from numpy import ndarray
 
 try:
-    import torch
+    import torch  # noqa: F401
     from torch import Tensor
 
     _HAS_TORCH = True
 except ImportError:
     _HAS_TORCH = False
 
-import habitat_sim.errors
+from habitat_sim import bindings as hsim
 from habitat_sim.agent.agent import Agent, AgentConfiguration, AgentState
-from habitat_sim.bindings import cuda_enabled
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.metadata import MetadataMediator
 from habitat_sim.nav import GreedyGeodesicFollower
-from habitat_sim.sensor import SensorSpec, SensorType
-from habitat_sim.sensors.noise_models import make_sensor_noise_model
+from habitat_sim.sensor import SensorFactory, SensorSpec, SensorType
+from habitat_sim.sensors.sensor_wrapper import Sensor
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
 from habitat_sim.utils.common import quat_from_angle_axis
 
@@ -74,7 +72,7 @@ class Simulator(SimulatorBackend):
     agents: List[Agent] = attr.ib(factory=list, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent_id: int = attr.ib(default=0, init=False)
-    __sensors: List[Dict[str, "Sensor"]] = attr.ib(factory=list, init=False)
+    _sensor_registry: Dict[str, Sensor] = attr.ib(factory=dict, init=False)
     _initialized: bool = attr.ib(default=False, init=False)
     _previous_step_time: float = attr.ib(
         default=0.0, init=False
@@ -124,29 +122,21 @@ class Simulator(SimulatorBackend):
             destroyed if async rendering was used.  If async rendering wasn't used,
             this has no effect.
         """
-        # NB: Python still calls __del__ (and thus)
-        # closes even if __init__ fails. We don't
-        # have anything to close if we aren't initialized so
-        # we can just return.
         if not self._initialized:
             return
 
         if self.renderer is not None:
             self.renderer.acquire_gl_context()
 
-        for agent_sensorsuite in self.__sensors:
-            for sensor in agent_sensorsuite.values():
-                sensor.close()
-                del sensor
-
-        self.__sensors = []
+        for sensor in self._sensor_registry.values():
+            sensor.close()
+        self._sensor_registry.clear()
 
         for agent in self.agents:
             agent.close()
             del agent
 
         self.agents = []
-
         self.__last_state.clear()
 
         super().close(destroy)
@@ -245,23 +235,156 @@ class Simulator(SimulatorBackend):
 
         self._default_agent_id = config.sim_cfg.default_agent_id
 
-        self.__sensors: List[Dict[str, Sensor]] = [
-            dict() for i in range(len(config.agents))
-        ]
+        # Build the flat sensor registry from all agents' sensors.
+        self._sensor_registry = {}
         self.__last_state = dict()
         for agent_id, agent_cfg in enumerate(config.agents):
+            agent = self.get_agent(agent_id)
+            # Agent.reconfigure() already called SensorFactory.create_sensors()
+            # during __init__, so the C++ sensors exist on the agent's subtree.
+            # We just need to wrap them in Python Sensor objects.
             for spec in agent_cfg.sensor_specifications:
-                self._update_simulator_sensors(spec.uuid, agent_id=agent_id)
+                cpp_sensor = agent.scene_node.subtree_sensors[spec.uuid]
+                self._sensor_registry[spec.uuid] = Sensor(
+                    sim=self, sensor_object=cpp_sensor
+                )
             self.initialize_agent(agent_id)
 
-    def _update_simulator_sensors(self, uuid: str, agent_id: int) -> None:
-        self.__sensors[agent_id][uuid] = Sensor(
-            sim=self, agent=self.get_agent(agent_id), sensor_id=uuid
-        )
+    # ------------------------------------------------------------------
+    # Sensor lifecycle — public API
+    # ------------------------------------------------------------------
+
+    @property
+    def sensors(self) -> Dict[str, Sensor]:
+        """All sensors registered with this simulator."""
+        return self._sensor_registry
+
+    def create_sensor(
+        self,
+        spec: SensorSpec,
+        scene_node: "hsim.SceneNode",
+    ) -> Sensor:
+        """Create a sensor on the given SceneNode and register it.
+
+        Uses the C++ SensorFactory to create a leaf child node on
+        *scene_node* and attach the sensor.  Returns the Python
+        :class:`Sensor` wrapper.
+
+        :param spec: The SensorSpec describing the sensor to create.
+        :param scene_node: The SceneNode to attach the sensor to.
+            A leaf child will be created automatically.
+        :return: The newly created :class:`Sensor`.
+        """
+        if spec.uuid in self._sensor_registry:
+            raise ValueError(
+                f"Sensor '{spec.uuid}' already exists in the registry. "
+                "Remove it first with remove_sensor()."
+            )
+
+        # Validate that the required backend resources are loaded.
+        if (
+            not self.config.sim_cfg.load_semantic_mesh
+            and spec.sensor_type == SensorType.SEMANTIC
+        ):
+            raise ValueError(
+                "Cannot create a SEMANTIC sensor — semantic mesh was not loaded "
+                "during Simulator init."
+            )
+        if (
+            not self.config.sim_cfg.requires_textures
+            and spec.sensor_type == SensorType.COLOR
+        ):
+            raise ValueError(
+                "Cannot create a COLOR sensor — textures were not loaded "
+                "during Simulator init."
+            )
+        if (
+            not self.config.sim_cfg.create_renderer
+            and spec.sensor_type == SensorType.DEPTH
+        ):
+            raise ValueError(
+                "Cannot create a DEPTH sensor — renderer was not created "
+                "during Simulator init."
+            )
+
+        cpp_sensor_suite = SensorFactory.create_sensors(scene_node, [spec])
+        cpp_sensor = cpp_sensor_suite[spec.uuid]
+        wrapper = Sensor(sim=self, sensor_object=cpp_sensor)
+        self._sensor_registry[spec.uuid] = wrapper
+        return wrapper
+
+    def remove_sensor(self, uuid: str) -> None:
+        """Remove and destroy a sensor by its UUID.
+
+        Pops the sensor from the registry, deletes the underlying C++
+        Sensor (and its leaf SceneNode), and closes the Python wrapper.
+
+        :param uuid: The UUID of the sensor to remove.
+        """
+        if uuid not in self._sensor_registry:
+            raise KeyError(f"Sensor '{uuid}' not found in the registry.")
+
+        wrapper = self._sensor_registry.pop(uuid)
+        SensorFactory.delete_sensor(wrapper.sensor_object)
+        wrapper.close()
+
+    def get_sensor(self, uuid: str) -> Sensor:
+        """Look up a sensor by its UUID.
+
+        :param uuid: The UUID of the sensor.
+        :return: The :class:`Sensor` wrapper.
+        """
+        return self._sensor_registry[uuid]
+
+    def render_sensors(
+        self,
+        sensors: Optional[List[Sensor]] = None,
+    ) -> Dict[str, Union[ndarray, "Tensor"]]:
+        """Render a batch of sensors and return observations.
+
+        Draws all sensors first, then reads back all observations.
+        This is the primary observation API.
+
+        :param sensors: An explicit list of sensors to render.
+            If ``None``, renders all registered sensors.
+        :return: A dict mapping sensor UUID → observation array/tensor.
+        """
+        if sensors is None:
+            sensors = list(self._sensor_registry.values())
+
+        if not self.config.enable_batch_renderer:
+            for sensor in sensors:
+                sensor.draw_observation()
+
+        observations: Dict[str, Union[ndarray, "Tensor"]] = {}
+        for sensor in sensors:
+            observations[sensor.uuid] = sensor.get_observation()
+
+        return observations
+
+    # ------------------------------------------------------------------
+    # Backward-compatible sensor API
+    # ------------------------------------------------------------------
+
+    @property
+    def _sensors(self) -> Dict[str, Sensor]:
+        """Deprecated. Use ``sim.sensors`` instead."""
+        return self._sensor_registry
 
     def add_sensor(
         self, sensor_spec: SensorSpec, agent_id: Optional[int] = None
     ) -> None:
+        """Add a sensor to an agent's scene node and register it.
+
+        This is a convenience wrapper around :meth:`create_sensor` that
+        attaches the sensor to the given agent's scene node and updates
+        the agent's config.
+        """
+        if agent_id is None:
+            agent_id = self._default_agent_id
+        agent = self.get_agent(agent_id=agent_id)
+
+        # Validate backend resources (same checks as create_sensor).
         if (
             (
                 not self.config.sim_cfg.load_semantic_mesh
@@ -282,11 +405,13 @@ class Simulator(SimulatorBackend):
                     Cannot dynamically add a {sensor_type} sensor unless one already exists.
                     """
             )
-        if agent_id is None:
-            agent_id = self._default_agent_id
-        agent = self.get_agent(agent_id=agent_id)
-        agent._add_sensor(sensor_spec)
-        self._update_simulator_sensors(sensor_spec.uuid, agent_id=agent_id)
+
+        # Create via factory on agent's scene node.
+        self.create_sensor(sensor_spec, agent.scene_node)
+
+        # Keep agent config in sync.
+        if sensor_spec not in agent.agent_config.sensor_specifications:
+            agent.agent_config.sensor_specifications.append(sensor_spec)
 
     def get_agent(self, agent_id: int) -> Agent:
         return self.agents[agent_id]
@@ -307,6 +432,10 @@ class Simulator(SimulatorBackend):
         self.__last_state[agent_id] = agent.state
         return agent
 
+    # ------------------------------------------------------------------
+    # Async rendering
+    # ------------------------------------------------------------------
+
     def start_async_render_and_step_physics(
         self, dt: float, agent_ids: Union[int, List[int]] = 0
     ):
@@ -324,9 +453,10 @@ class Simulator(SimulatorBackend):
             agent_ids = [agent_ids]
 
         for agent_id in agent_ids:
-            agent_sensorsuite = self.__sensors[agent_id]
-            for sensor in agent_sensorsuite.values():
-                sensor._draw_observation_async()
+            agent = self.get_agent(agent_id)
+            for sensor_uuid in agent.scene_node.subtree_sensors:
+                if sensor_uuid in self._sensor_registry:
+                    self._sensor_registry[sensor_uuid].render_async()
 
         self.renderer.start_draw_jobs()
         self.step_physics(dt)
@@ -346,9 +476,10 @@ class Simulator(SimulatorBackend):
             agent_ids = [agent_ids]
 
         for agent_id in agent_ids:
-            agent_sensorsuite = self.__sensors[agent_id]
-            for sensor in agent_sensorsuite.values():
-                sensor._draw_observation_async()
+            agent = self.get_agent(agent_id)
+            for sensor_uuid in agent.scene_node.subtree_sensors:
+                if sensor_uuid in self._sensor_registry:
+                    self._sensor_registry[sensor_uuid].render_async()
 
         self.renderer.start_draw_jobs()
 
@@ -374,17 +505,24 @@ class Simulator(SimulatorBackend):
             return_single = False
 
         self.renderer.wait_draw_jobs()
-        # As backport. All Dicts are ordered in Python >= 3.7
         observations: Dict[int, Dict[str, Union[ndarray, "Tensor"]]] = OrderedDict()
         for agent_id in agent_ids:
+            agent = self.get_agent(agent_id)
             agent_observations: Dict[str, Union[ndarray, "Tensor"]] = {}
-            for sensor_uuid, sensor in self.__sensors[agent_id].items():
-                agent_observations[sensor_uuid] = sensor._get_observation_async()
-
+            for sensor_uuid in agent.scene_node.subtree_sensors:
+                if sensor_uuid in self._sensor_registry:
+                    agent_observations[sensor_uuid] = self._sensor_registry[
+                        sensor_uuid
+                    ].get_observation_async()
             observations[agent_id] = agent_observations
+
         if return_single:
             return next(iter(observations.values()))
         return observations
+
+    # ------------------------------------------------------------------
+    # Synchronous observation (backward-compatible)
+    # ------------------------------------------------------------------
 
     @overload
     def get_sensor_observations(self, agent_ids: int = 0) -> ObservationDict:
@@ -405,25 +543,29 @@ class Simulator(SimulatorBackend):
         else:
             return_single = False
 
-        # As backport. All Dicts are ordered in Python >= 3.7.
         observations: Dict[int, ObservationDict] = OrderedDict()
 
-        # Draw observations (for classic non-batched renderer).
-        if not self.config.enable_batch_renderer:
-            for agent_id in agent_ids:
-                agent_sensorsuite = self.__sensors[agent_id]
-                for _sensor_uuid, sensor in agent_sensorsuite.items():
-                    sensor.draw_observation()
-        else:
-            # The batch renderer draws observations from external code.
-            # Sensors are only used as data containers.
-            pass
-
-        # Get observations.
+        # Collect sensors per agent from their subtrees.
+        agent_sensor_map: Dict[int, List[Sensor]] = {}
         for agent_id in agent_ids:
+            agent = self.get_agent(agent_id)
+            agent_sensors = []
+            for sensor_uuid in agent.scene_node.subtree_sensors:
+                if sensor_uuid in self._sensor_registry:
+                    agent_sensors.append(self._sensor_registry[sensor_uuid])
+            agent_sensor_map[agent_id] = agent_sensors
+
+        # Draw all sensors.
+        if not self.config.enable_batch_renderer:
+            for agent_sensors in agent_sensor_map.values():
+                for sensor in agent_sensors:
+                    sensor.draw_observation()
+
+        # Read observations per agent.
+        for agent_id, agent_sensors in agent_sensor_map.items():
             agent_observations: ObservationDict = {}
-            for sensor_uuid, sensor in self.__sensors[agent_id].items():
-                agent_observations[sensor_uuid] = sensor.get_observation()
+            for sensor in agent_sensors:
+                agent_observations[sensor.uuid] = sensor.get_observation()
             observations[agent_id] = agent_observations
 
         if return_single:
@@ -444,11 +586,6 @@ class Simulator(SimulatorBackend):
     def _last_state(self, state: AgentState) -> None:
         # TODO Deprecate and remove
         self.__last_state[self._default_agent_id] = state
-
-    @property
-    def _sensors(self) -> Dict[str, "Sensor"]:
-        # TODO Deprecate and remove
-        return self.__sensors[self._default_agent_id]
 
     def last_state(self, agent_id: Optional[int] = None) -> AgentState:
         if agent_id is None:
@@ -540,244 +677,3 @@ class Simulator(SimulatorBackend):
 
     def step_physics(self, dt: float) -> None:
         self.step_world(dt)
-
-
-class Sensor:
-    r"""Wrapper around habitat_sim.Sensor
-
-    TODO(MS) define entire Sensor class in python, reducing complexity
-    """
-    buffer = Union[np.ndarray, "Tensor"]
-
-    def __init__(self, sim: Simulator, agent: Agent, sensor_id: str) -> None:
-        self._sim = sim
-        self._agent = agent
-
-        # sensor is an attached object to the scene node
-        # store such "attached object" in _sensor_object
-        self._sensor_object = self._agent._sensors[sensor_id]
-
-        self._spec = self._sensor_object.specification()
-
-        # When using the batch renderer, no memory is allocated here.
-        if not self._sim.config.enable_batch_renderer:
-            self._initialize_sensor()
-
-    def _initialize_sensor(self):
-        r"""
-        Allocate buffers and initialize noise model in preparation for rendering.
-        """
-        if self._spec.sensor_type == SensorType.AUDIO:
-            return
-
-        if self._sim.renderer is not None:
-            self._sim.renderer.bind_render_target(self._sensor_object)
-
-        if self._spec.gpu2gpu_transfer:
-            assert cuda_enabled, "Must build habitat sim with cuda for gpu2gpu-transfer"
-            assert _HAS_TORCH
-            device = torch.device("cuda", self._sim.gpu_device)  # type: ignore[attr-defined]
-            torch.cuda.set_device(device)
-
-            resolution = self._spec.resolution
-            if self._spec.sensor_type == SensorType.SEMANTIC:
-                self._buffer: Union[np.ndarray, "Tensor"] = torch.empty(
-                    resolution[0], resolution[1], dtype=torch.int32, device=device
-                )
-            elif self._spec.sensor_type == SensorType.DEPTH:
-                self._buffer = torch.empty(
-                    resolution[0], resolution[1], dtype=torch.float32, device=device
-                )
-            else:
-                self._buffer = torch.empty(
-                    resolution[0], resolution[1], 4, dtype=torch.uint8, device=device
-                )
-        else:
-            size = self._sensor_object.framebuffer_size
-            if self._spec.sensor_type == SensorType.SEMANTIC:
-                self._buffer = np.empty(
-                    (self._spec.resolution[0], self._spec.resolution[1]),
-                    dtype=np.uint32,
-                )
-                self.view = mn.MutableImageView2D(
-                    mn.PixelFormat.R32UI, size, self._buffer
-                )
-            elif self._spec.sensor_type == SensorType.DEPTH:
-                self._buffer = np.empty(
-                    (self._spec.resolution[0], self._spec.resolution[1]),
-                    dtype=np.float32,
-                )
-                self.view = mn.MutableImageView2D(
-                    mn.PixelFormat.R32F, size, self._buffer
-                )
-            else:
-                self._buffer = np.empty(
-                    (
-                        self._spec.resolution[0],
-                        self._spec.resolution[1],
-                        self._spec.channels,
-                    ),
-                    dtype=np.uint8,
-                )
-                self.view = mn.MutableImageView2D(
-                    mn.PixelFormat.RGBA8_UNORM,
-                    size,
-                    self._buffer.reshape(self._spec.resolution[0], -1),
-                )
-
-        noise_model_kwargs = self._spec.noise_model_kwargs
-        self._noise_model = make_sensor_noise_model(
-            self._spec.noise_model,
-            {"gpu_device_id": self._sim.gpu_device, **noise_model_kwargs},
-        )
-        assert self._noise_model.is_valid_sensor_type(
-            self._spec.sensor_type
-        ), "Noise model '{}' is not valid for sensor '{}'".format(
-            self._spec.noise_model, self._spec.uuid
-        )
-
-    def draw_observation(self) -> None:
-        # Batch rendering happens elsewhere.
-        assert not self._sim.config.enable_batch_renderer
-
-        if self._spec.sensor_type == SensorType.AUDIO:
-            # do nothing in draw observation, get_observation will be called after this
-            # run the simulation there
-            return
-
-        assert self._sim.renderer is not None
-        # see if the sensor is attached to a scene graph, otherwise it is invalid,
-        # and cannot make any observation
-        if not self._sensor_object.object:
-            raise habitat_sim.errors.InvalidAttachedObject(
-                "Sensor observation requested but sensor is invalid.\
-                    (has it been detached from a scene node?)"
-            )
-        self._sim.renderer.draw(self._sensor_object, self._sim)
-
-    def _draw_observation_async(self) -> None:
-        # Batch rendering happens elsewhere.
-        assert not self._sim.config.enable_batch_renderer
-
-        if self._spec.sensor_type == SensorType.AUDIO:
-            # do nothing in draw observation, get_observation will be called after this
-            # run the simulation there
-            return
-
-        assert self._sim.renderer is not None
-        if (
-            self._spec.sensor_type == SensorType.SEMANTIC
-            and self._sim.get_active_scene_graph()
-            is not self._sim.get_active_semantic_scene_graph()
-        ):
-            raise RuntimeError(
-                "Async drawing doesn't support semantic rendering when there are multiple scene graphs"
-            )
-        # TODO: sync this path with renderer changes as above (render from sensor object)
-
-        # see if the sensor is attached to a scene graph, otherwise it is invalid,
-        # and cannot make any observation
-        if not self._sensor_object.object:
-            raise habitat_sim.errors.InvalidAttachedObject(
-                "Sensor observation requested but sensor is invalid.\
-                (has it been detached from a scene node?)"
-            )
-
-        # get the correct scene graph based on application
-        if self._spec.sensor_type == SensorType.SEMANTIC:
-            if self._sim.semantic_scene is None:
-                raise RuntimeError(
-                    "SemanticSensor observation requested but no SemanticScene is loaded"
-                )
-            scene = self._sim.get_active_semantic_scene_graph()
-        else:  # SensorType is DEPTH or any other type
-            scene = self._sim.get_active_scene_graph()
-
-        # now, connect the agent to the root node of the current scene graph
-
-        # sanity check is not needed on agent:
-        # because if a sensor is attached to a scene graph,
-        # it implies the agent is attached to the same scene graph
-        # (it assumes backend simulator will guarantee it.)
-
-        agent_node = self._agent.scene_node
-        agent_node.parent = scene.get_root_node()
-
-        # get the correct scene graph based on application
-        if self._spec.sensor_type == SensorType.SEMANTIC:
-            scene = self._sim.get_active_semantic_scene_graph()
-        else:  # SensorType is DEPTH or any other type
-            scene = self._sim.get_active_scene_graph()
-
-        render_flags = habitat_sim.gfx.Camera.Flags.NONE
-
-        if self._sim.frustum_culling:
-            render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
-
-        self._sim.renderer.enqueue_async_draw_job(
-            self._sensor_object, scene, self.view, render_flags
-        )
-
-    def get_observation(self) -> Union[ndarray, "Tensor"]:
-        if self._spec.sensor_type == SensorType.AUDIO:
-            return self._get_audio_observation()
-
-        # Placeholder until batch renderer emplaces the final value.
-        if self._sim.config.enable_batch_renderer:
-            return None
-
-        assert self._sim.renderer is not None
-        tgt = self._sensor_object.render_target
-
-        if self._spec.gpu2gpu_transfer:
-            with torch.cuda.device(self._buffer.device):  # type: ignore[attr-defined, union-attr]
-                if self._spec.sensor_type == SensorType.SEMANTIC:
-                    tgt.read_frame_object_id_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined, union-attr]
-                elif self._spec.sensor_type == SensorType.DEPTH:
-                    tgt.read_frame_depth_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined, union-attr]
-                else:
-                    tgt.read_frame_rgba_gpu(self._buffer.data_ptr())  # type: ignore[attr-defined, union-attr]
-
-                obs = self._buffer.flip(0)  # type: ignore[union-attr]
-        else:
-            if self._spec.sensor_type == SensorType.SEMANTIC:
-                tgt.read_frame_object_id(self.view)
-            elif self._spec.sensor_type == SensorType.DEPTH:
-                tgt.read_frame_depth(self.view)
-            else:
-                tgt.read_frame_rgba(self.view)
-
-            obs = np.flip(self._buffer, axis=0)
-
-        return self._noise_model(obs)
-
-    def _get_observation_async(self) -> Union[ndarray, "Tensor"]:
-        if self._spec.sensor_type == SensorType.AUDIO:
-            return self._get_audio_observation()
-        if self._spec.gpu2gpu_transfer:
-            obs = self._buffer.flip(0)  # type: ignore[union-attr]
-        else:
-            obs = np.flip(self._buffer, axis=0)
-
-        return self._noise_model(obs)
-
-    def _get_audio_observation(self) -> Union[ndarray, "Tensor"]:
-        assert self._spec.sensor_type == SensorType.AUDIO
-        audio_sensor = self._agent._sensors["audio_sensor"]
-        # tell the audio sensor about the agent location
-        rot = self._agent.state.rotation
-
-        audio_sensor.setAudioListenerTransform(
-            audio_sensor.node.absolute_translation,  # set the listener position
-            np.array([rot.w, rot.x, rot.y, rot.z]),  # set the listener orientation
-        )
-
-        # run the simulation
-        audio_sensor.runSimulation(self._sim)
-        obs = audio_sensor.getIR()
-        return obs
-
-    def close(self) -> None:
-        self._sim = None
-        self._agent = None
-        self._sensor_object = None

@@ -4,10 +4,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# NOTE: This example requires building habitat-sim with GUI viewer support:
-#   HABITAT_BUILD_GUI_VIEWERS=ON pip install . --no-build-isolation
-# or:
-#   ./build.sh --gui
+# NOTE: This example requires the GUI viewer, which is built by default.
+# If you built in headless mode (HABITAT_BUILD_GUI_VIEWERS=OFF), rebuild with:
+#   pip install . --no-build-isolation
 
 import ctypes
 import math
@@ -502,7 +501,7 @@ class HabitatSimInteractiveViewer(Application):
         if self.enable_batch_renderer:
             self.render_batch()
         else:
-            self.sim._Simulator__sensors[keys[0]][keys[1]].draw_observation()
+            self.sim.sensors[keys[1]].draw_observation()
             agent = self.sim.get_agent(keys[0])
             self.render_camera = agent.scene_node.node_sensor_suite.get(keys[1])
             self.debug_draw()
@@ -660,9 +659,9 @@ class HabitatSimInteractiveViewer(Application):
             keyframe = self.tiled_sims[i].gfx_replay_manager.extract_keyframe()
             self.replay_renderer.set_environment_keyframe(i, keyframe)
             # Copy sensor transforms
-            sensor_suite = self.tiled_sims[i]._sensors
+            sensor_suite = self.tiled_sims[i].sensors
             for sensor_uuid, sensor in sensor_suite.items():
-                transform = sensor._sensor_object.node.absolute_transformation()
+                transform = sensor.node.absolute_transformation()
                 self.replay_renderer.set_sensor_transform(i, sensor_uuid, transform)
             # Render
             self.replay_renderer.render(mn.gl.default_framebuffer)

@@ -85,8 +85,8 @@ wheel.packages = ["src_python/habitat_sim"]
 # --config-settings=cmake.define.OPTION=VALUE
 [tool.scikit-build.cmake.define]
 BUILD_PYTHON_BINDINGS = "ON"
-BUILD_GUI_VIEWERS = {env = "HABITAT_BUILD_GUI_VIEWERS", default = "OFF"}
-BUILD_WITH_BULLET = {env = "HABITAT_WITH_BULLET", default = "OFF"}
+BUILD_GUI_VIEWERS = {env = "HABITAT_BUILD_GUI_VIEWERS", default = "ON"}
+BUILD_WITH_BULLET = {env = "HABITAT_WITH_BULLET", default = "ON"}
 BUILD_WITH_CUDA = {env = "HABITAT_WITH_CUDA", default = "OFF"}
 BUILD_WITH_AUDIO = {env = "HABITAT_WITH_AUDIO", default = "OFF"}
 BUILD_TEST = {env = "HABITAT_BUILD_TEST", default = "OFF"}

@@ -12,14 +12,13 @@ pip install . --no-build-isolation
 - Since pip builds out of tree by default, this process will copy quite a lot of data to your TMPDIR. You can change this location by modifying the TMPDIR env variable.
   For active development, use an editable install: `pip install -e . --no-build-isolation`.
 
-- Build options are controlled via environment variables. For example:
+- By default, we build with **GUI viewer support** and **Bullet physics** enabled.
+  Override any option via environment variables:
   ```bash
-  HABITAT_BUILD_GUI_VIEWERS=OFF pip install . --no-build-isolation   # headless build
-  HABITAT_WITH_BULLET=ON pip install . --no-build-isolation          # enable Bullet physics
+  HABITAT_BUILD_GUI_VIEWERS=OFF pip install . --no-build-isolation   # headless build (no GUI)
+  HABITAT_WITH_BULLET=OFF pip install . --no-build-isolation         # disable Bullet physics
   HABITAT_WITH_CUDA=ON pip install . --no-build-isolation            # enable CUDA
   ```
-
-- By default, we build a headless version with bullet enabled.
 
 
 ## Build from Source
@@ -62,14 +61,14 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
 
 1. Build Habitat-Sim
 
-    Default build (for machines with a display attached)
+    Default build (includes GUI viewers and Bullet physics)
 
    ```bash
    # Assuming we're still within habitat conda environment
    pip install . --no-build-isolation
    ```
 
-    For headless systems (i.e. without an attached display, e.g. in a cluster) and multiple GPU systems
+    For headless systems (i.e. without an attached display, e.g. in a cluster)
 
    ```bash
    HABITAT_BUILD_GUI_VIEWERS=OFF pip install . --no-build-isolation
@@ -81,13 +80,6 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
    HABITAT_WITH_CUDA=ON pip install . --no-build-isolation
    ```
 
-   With physics simulation via [Bullet Physics SDK](https://github.com/bulletphysics/bullet3/):
-   To use Bullet, enable bullet physics build via:
-
-   ```bash
-   HABITAT_WITH_BULLET=ON pip install . --no-build-isolation
-   ```
-
    With audio sensor via [rlr-audio-propagation](https://github.com/facebookresearch/rlr-audio-propagation/):
    To use Audio sensors (Linux only), enable the audio flag via:
 
@@ -95,9 +87,9 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
    HABITAT_WITH_AUDIO=ON pip install . --no-build-isolation
    ```
 
-   Note1: Build options stack via environment variables, *e.g.* to build in headless mode, with CUDA, and bullet:
+   Note1: Build options stack via environment variables, *e.g.* to build in headless mode with CUDA:
    ```bash
-   HABITAT_BUILD_GUI_VIEWERS=OFF HABITAT_WITH_CUDA=ON HABITAT_WITH_BULLET=ON pip install . --no-build-isolation
+   HABITAT_BUILD_GUI_VIEWERS=OFF HABITAT_WITH_CUDA=ON pip install . --no-build-isolation
    ```
 
    Note2: some Linux distributions might require an additional `--user` flag to deal with permission issues.
@@ -111,7 +103,7 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
    | Environment Variable | Default | Description |
    |---|---|---|
    | `HABITAT_BUILD_GUI_VIEWERS` | `ON` | Build GUI viewer applications (set `OFF` for headless) |
-   | `HABITAT_WITH_BULLET` | `OFF` | Enable Bullet physics simulation |
+   | `HABITAT_WITH_BULLET` | `ON` | Enable Bullet physics simulation |
    | `HABITAT_WITH_CUDA` | `OFF` | Enable CUDA support |
    | `HABITAT_WITH_AUDIO` | `OFF` | Enable audio sensor (Linux only) |
    | `HABITAT_LTO` | `OFF` | Enable link-time optimization |
@@ -119,14 +111,14 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
 
    You can also pass CMake arguments directly via pip's `--config-settings`:
    ```bash
-   pip install . --no-build-isolation --config-settings=cmake.build-type=Release
+   pip install . --no-build-isolation --config-settings=cmake.define.OPTION=VALUE
    ```
 
    ### C++ Viewer and Replayer Applications
 
-   When `HABITAT_BUILD_GUI_VIEWERS` is `ON` (the default for non-headless builds),
-   the C++ `viewer` and `replayer` applications are compiled alongside the Python
-   bindings.
+   Since `HABITAT_BUILD_GUI_VIEWERS` is `ON` by default, the C++ `viewer` and
+   `replayer` applications are compiled alongside the Python bindings in a
+   standard build.
 
    - **After `pip install .`**: the executables are installed on `PATH` as `viewer`
      and `replayer`.

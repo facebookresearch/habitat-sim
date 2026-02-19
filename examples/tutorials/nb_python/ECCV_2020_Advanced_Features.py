@@ -572,15 +572,15 @@ def simulate(sim, dt=1.0, get_frames=True):
 # Used at beginning of cell that directly modifies camera (i.e. tracking an object)
 def init_camera_track_config(sim, sensor_name="color_sensor_1st_person", agent_ID=0):
     init_state = {}
-    visual_sensor = sim._sensors[sensor_name]
+    visual_sensor = sim.sensors[sensor_name]
     # save ref to sensor being used
     init_state["visual_sensor"] = visual_sensor
-    init_state["position"] = np.array(visual_sensor._spec.position)
-    init_state["orientation"] = np.array(visual_sensor._spec.orientation)
+    init_state["position"] = np.array(visual_sensor.spec.position)
+    init_state["orientation"] = np.array(visual_sensor.spec.orientation)
     # set the color sensor transform to be the agent transform
-    visual_sensor._spec.position = mn.Vector3(0.0, 0.0, 0.0)
-    visual_sensor._spec.orientation = mn.Vector3(0.0, 0.0, 0.0)
-    visual_sensor._sensor_object.set_transformation_from_spec()
+    visual_sensor.spec.position = mn.Vector3(0.0, 0.0, 0.0)
+    visual_sensor.spec.orientation = mn.Vector3(0.0, 0.0, 0.0)
+    visual_sensor.sensor_object.set_transformation_from_spec()
     # save ID of agent being modified
     init_state["agent_ID"] = agent_ID
     # save agent initial state
@@ -596,9 +596,9 @@ def restore_camera_track_config(sim, init_state):
     visual_sensor = init_state["visual_sensor"]
     agent_ID = init_state["agent_ID"]
     # reset the sensor state for other examples
-    visual_sensor._spec.position = init_state["position"]
-    visual_sensor._spec.orientation = init_state["orientation"]
-    visual_sensor._sensor_object.set_transformation_from_spec()
+    visual_sensor.spec.position = init_state["position"]
+    visual_sensor.spec.orientation = init_state["orientation"]
+    visual_sensor.sensor_object.set_transformation_from_spec()
     # restore the agent's state to what was savedd in init_camera_track_config
     sim.get_agent(agent_ID).set_state(init_state["agent_state"])
 
@@ -870,13 +870,13 @@ build_widget_ui(obj_attr_mgr, prim_attr_mgr)
 # @markdown This example demonstrates updating the agent state to follow the motion of an object during simulation.
 
 rigid_obj_mgr.remove_all_objects()
-visual_sensor = sim._sensors["color_sensor_1st_person"]
-initial_sensor_position = np.array(visual_sensor._spec.position)
-initial_sensor_orientation = np.array(visual_sensor._spec.orientation)
+visual_sensor = sim.sensors["color_sensor_1st_person"]
+initial_sensor_position = np.array(visual_sensor.spec.position)
+initial_sensor_orientation = np.array(visual_sensor.spec.orientation)
 # set the color sensor transform to be the agent transform
-visual_sensor._spec.position = mn.Vector3(0.0, 0.0, 0.0)
-visual_sensor._spec.orientation = mn.Vector3(0.0, 0.0, 0.0)
-visual_sensor._sensor_object.set_transformation_from_spec()
+visual_sensor.spec.position = mn.Vector3(0.0, 0.0, 0.0)
+visual_sensor.spec.orientation = mn.Vector3(0.0, 0.0, 0.0)
+visual_sensor.sensor_object.set_transformation_from_spec()
 
 # boost the agent off the floor
 sim.get_agent(0).scene_node.translation += np.array([0, 1.5, 0])
@@ -922,9 +922,9 @@ if make_video:
     )
 
 # reset the sensor state for other examples
-visual_sensor._spec.position = initial_sensor_position
-visual_sensor._spec.orientation = initial_sensor_orientation
-visual_sensor._sensor_object.set_transformation_from_spec()
+visual_sensor.spec.position = initial_sensor_position
+visual_sensor.spec.orientation = initial_sensor_orientation
+visual_sensor.sensor_object.set_transformation_from_spec()
 # put the agent back
 sim.reset()
 rigid_obj_mgr.remove_all_objects()
@@ -944,7 +944,7 @@ rigid_obj_mgr.remove_all_objects()
 # project a 3D point into 2D image space for a particular sensor
 def get_2d_point(sim, sensor_name, point_3d):
     # get the scene render camera and sensor object
-    render_camera = sim._sensors[sensor_name]._sensor_object.render_camera
+    render_camera = sim.sensors[sensor_name].sensor_object.render_camera
 
     # use the camera and projection matrices to transform the point onto the near plane
     projected_point_3d = render_camera.projection_matrix.transform_point(

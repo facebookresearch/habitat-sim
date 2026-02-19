@@ -45,9 +45,9 @@ set(TEST_ASSETS ${CMAKE_CURRENT_SOURCE_DIR}/../data/test_assets)
 # build options
 option(BUILD_ASSIMP_SUPPORT "Whether to build assimp import library support" ON)
 option(BUILD_PYTHON_BINDINGS "Whether to build python bindings" ON)
-option(BUILD_GUI_VIEWERS "Whether to build GUI viewer utility binary" OFF)
+option(BUILD_GUI_VIEWERS "Whether to build GUI viewer utility binary" ON)
 option(BUILD_WITH_BULLET
-       "Build Habitat-Sim with Bullet physics enabled -- Requires Bullet" OFF
+       "Build Habitat-Sim with Bullet physics enabled -- Requires Bullet" ON
 )
 option(BUILD_WITH_BACKGROUND_RENDERER "Build Habitat-Sim with async rendering support."
        ON

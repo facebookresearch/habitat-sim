@@ -14,7 +14,7 @@ import quaternion as qt
 import habitat_sim.errors
 from habitat_sim import bindings as hsim
 from habitat_sim._ext.habitat_sim_bindings import SceneNode
-from habitat_sim.sensors.sensor_suite import SensorSuite
+from habitat_sim.sensor import SensorFactory
 from habitat_sim.utils.common import (
     quat_from_coeffs,
     quat_from_magnum,
@@ -41,6 +41,7 @@ class ActionSpec:
         `registry`
     :property actuation: Arguments that will be passed to the function
     """
+
     name: str
     actuation: Optional[ActuationSpec] = None
 
@@ -121,7 +122,6 @@ class Agent:
     """
 
     agent_config: AgentConfiguration
-    _sensors: SensorSuite
     controls: ObjectControls
     body: mn.scenegraph.AbstractFeature3D
 
@@ -129,16 +129,37 @@ class Agent:
         self,
         scene_node: hsim.SceneNode,
         agent_config: Optional[AgentConfiguration] = None,
-        _sensors: Optional[SensorSuite] = None,
         controls: Optional[ObjectControls] = None,
     ) -> None:
         self.agent_config = agent_config if agent_config else AgentConfiguration()
-        self._sensors = _sensors if _sensors else SensorSuite()
         self.controls = controls if controls else ObjectControls()
         self.body = mn.scenegraph.AbstractFeature3D(scene_node)
         scene_node.type = hsim.SceneNodeType.AGENT
         self.reconfigure(self.agent_config)
         self.initial_state: Optional[AgentState] = None
+
+    # ------------------------------------------------------------------
+    # Sensor discovery — live views into the SceneGraph
+    # ------------------------------------------------------------------
+
+    @property
+    def sensors(self) -> Dict[str, "hsim.Sensor"]:
+        """Live view of C++ sensors in this agent's subtree.
+
+        This dict is backed by the C++ ``subtreeSensorSuite`` so it
+        always reflects the current state of the SceneGraph.
+        """
+        habitat_sim.errors.assert_obj_valid(self.body)
+        return self.scene_node.subtree_sensors
+
+    @property
+    def _sensors(self) -> Dict[str, "hsim.Sensor"]:
+        """Deprecated. Use ``agent.sensors`` instead."""
+        return self.sensors
+
+    # ------------------------------------------------------------------
+    # Configuration
+    # ------------------------------------------------------------------
 
     def reconfigure(
         self, agent_config: AgentConfiguration, reconfigure_sensors: bool = True
@@ -154,21 +175,13 @@ class Agent:
         self.agent_config = agent_config
 
         if reconfigure_sensors:
-            self._sensors.clear()
-            for spec in self.agent_config.sensor_specifications:
-                self._add_sensor(spec, modify_agent_config=False)
+            # Delete all existing sensors in this agent's subtree.
+            for uuid in list(self.scene_node.subtree_sensors.keys()):
+                SensorFactory.delete_subtree_sensor(self.scene_node, uuid)
 
-    def _add_sensor(
-        self, spec: hsim.SensorSpec, modify_agent_config: bool = True
-    ) -> None:
-        assert (
-            spec.uuid not in self._sensors
-        ), f"Error, {spec.uuid} already exists in the sensor suite"
-        if modify_agent_config:
-            assert spec not in self.agent_config.sensor_specifications
-            self.agent_config.sensor_specifications.append(spec)
-        sensor_suite = hsim.SensorFactory.create_sensors(self.scene_node, [spec])
-        self._sensors.add(sensor_suite[spec.uuid])
+            # Recreate sensors from config.
+            for spec in self.agent_config.sensor_specifications:
+                SensorFactory.create_sensors(self.scene_node, [spec])
 
     def act(self, action_id: Any) -> bool:
         r"""Take the action specified by action_id
@@ -190,7 +203,7 @@ class Agent:
                 self.scene_node, action.name, action.actuation, apply_filter=True
             )
         else:
-            for v in self._sensors.values():
+            for v in self.sensors.values():
                 habitat_sim.errors.assert_obj_valid(v)
                 self.controls.action(
                     v.object, action.name, action.actuation, apply_filter=False
@@ -205,7 +218,7 @@ class Agent:
             np.array(self.body.object.absolute_translation), self.body.object.rotation
         )
 
-        for k, v in self._sensors.items():
+        for k, v in self.sensors.items():
             habitat_sim.errors.assert_obj_valid(v)
             state.sensor_states[k] = SixDOFPose(
                 np.array(v.node.absolute_translation),
@@ -255,16 +268,16 @@ class Agent:
         self.body.object.rotation = quat_to_magnum(state.rotation)
 
         if reset_sensors:
-            for v in self._sensors.values():
+            for v in self.sensors.values():
                 v.set_transformation_from_spec()
 
         if not infer_sensor_states:
             for k, v in state.sensor_states.items():
-                assert k in self._sensors
+                assert k in self.sensors
                 if not isinstance(v.rotation, qt.quaternion):
                     v.rotation = quat_from_coeffs(v.rotation)
 
-                s = self._sensors[k]
+                s = self.sensors[k]
 
                 s.node.reset_transformation()
                 s.node.translate(
@@ -300,4 +313,4 @@ class Agent:
         )
 
     def close(self) -> None:
-        self._sensors = None
+        pass

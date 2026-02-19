@@ -10,20 +10,16 @@ Legacy setup.py shim for backward compatibility.
 The build system has been migrated to scikit-build-core and is configured
 entirely in pyproject.toml. Use pip to build and install:
 
-    pip install .                    # Standard install
+    pip install .                    # Standard install (GUI + Bullet enabled)
     pip install -e .                 # Editable/development install
     pip install . -v                 # Verbose build output
 
-Build options are controlled via environment variables:
+Build options are controlled via environment variables (showing non-default overrides):
 
-    HABITAT_WITH_BULLET=ON pip install .
-    HABITAT_WITH_CUDA=ON pip install .
-    HABITAT_BUILD_GUI_VIEWERS=ON pip install .
-    HABITAT_WITH_AUDIO=ON pip install .
-
-Or via pip's --config-settings:
-
-    pip install . --config-settings=cmake.define.BUILD_WITH_BULLET=ON
+    HABITAT_BUILD_GUI_VIEWERS=OFF pip install .   # headless (no GUI)
+    HABITAT_WITH_BULLET=OFF pip install .         # disable Bullet physics
+    HABITAT_WITH_CUDA=ON pip install .            # enable CUDA
+    HABITAT_WITH_AUDIO=ON pip install .           # enable audio sensor
 """
 
 import sys
@@ -43,16 +39,16 @@ if __name__ == "__main__":
         "This project now uses scikit-build-core (configured in pyproject.toml).\n"
         "Please use one of the following commands instead:\n"
         "\n"
-        "  pip install .              # Standard install\n"
+        "  pip install .              # Standard install (GUI + Bullet enabled)\n"
         "  pip install -e .           # Editable/development install\n"
         "  pip install . -v           # Verbose output\n"
         "\n"
-        "Build options (environment variables):\n"
+        "Build options (environment variables, showing non-default overrides):\n"
         "\n"
-        "  HABITAT_WITH_BULLET=ON pip install .\n"
-        "  HABITAT_WITH_CUDA=ON pip install .\n"
-        "  HABITAT_BUILD_GUI_VIEWERS=ON pip install .\n"
-        "  HABITAT_WITH_AUDIO=ON pip install .\n",
+        "  HABITAT_BUILD_GUI_VIEWERS=OFF pip install .   # headless (no GUI)\n"
+        "  HABITAT_WITH_BULLET=OFF pip install .         # disable Bullet physics\n"
+        "  HABITAT_WITH_CUDA=ON pip install .            # enable CUDA\n"
+        "  HABITAT_WITH_AUDIO=ON pip install .           # enable audio sensor\n",
         file=sys.stderr,
     )
     sys.exit(1)

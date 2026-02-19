@@ -136,7 +136,7 @@ def create_sim_helper(scene_id):
     agent_node = sim.get_agent(0).body.object
     agent_node.translation = [0.0, 0.0, 0.0]
     agent_node.rotation = mn.Quaternion()
-    sensor_node = sim._sensors["color_sensor"]._sensor_object.object
+    sensor_node = sim.sensors["color_sensor"].node
 
     lr = sim.get_debug_line_render()
     lr.set_line_width(3)

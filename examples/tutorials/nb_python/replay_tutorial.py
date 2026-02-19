@@ -110,7 +110,7 @@ def simulate_with_moving_agent(
     look_rotation_vel=0.0,
     get_frames=True,
 ):
-    sensor_node = sim._sensors["rgba_camera"]._sensor_object.object
+    sensor_node = sim.sensors["rgba_camera"].node
     agent_node = sim.get_agent(0).body.object
 
     # simulate dt seconds at 60Hz to the nearest fixed timestep
@@ -209,7 +209,7 @@ agent = sim.initialize_agent(0, agent_state)
 # %%
 
 agent_node = sim.get_agent(0).body.object
-sensor_node = sim._sensors["rgba_camera"]._sensor_object.object
+sensor_node = sim.sensors["rgba_camera"].node
 
 # initial agent transform
 agent_node.translation = [-0.15, -1.5, 1.0]
@@ -328,7 +328,7 @@ agent_state = habitat_sim.AgentState()
 sim.initialize_agent(0, agent_state)
 
 agent_node = sim.get_agent(0).body.object
-sensor_node = sim._sensors["rgba_camera"]._sensor_object.object
+sensor_node = sim.sensors["rgba_camera"].node
 
 # %% [markdown]
 # ## Place dummy agent with identity transform.

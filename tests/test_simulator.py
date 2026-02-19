@@ -323,6 +323,122 @@ def test_object_template_editing():
             assert obj_init_template.render_asset_handle.endswith("sphere.glb")
 
 
+def test_create_and_remove_sensor(make_cfg_settings):
+    """Test the Simulator.create_sensor() and Simulator.remove_sensor() API."""
+    hab_cfg = habitat_sim.utils.settings.make_cfg(make_cfg_settings)
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        agent = sim.get_agent(0)
+        initial_count = len(sim.sensors)
+
+        # Create a new sensor on a child of the agent's scene node.
+        spec = habitat_sim.CameraSensorSpec()
+        spec.uuid = "test_extra_rgb"
+        spec.sensor_type = habitat_sim.SensorType.COLOR
+        spec.resolution = [64, 64]
+
+        wrapper = sim.create_sensor(spec, agent.scene_node)
+        assert wrapper.uuid == "test_extra_rgb"
+        assert "test_extra_rgb" in sim.sensors
+        assert len(sim.sensors) == initial_count + 1
+
+        # Sensor is also visible via agent's subtree.
+        assert "test_extra_rgb" in agent.sensors
+
+        # Duplicate UUID should raise.
+        with pytest.raises(ValueError):
+            sim.create_sensor(spec, agent.scene_node)
+
+        # Remove the sensor.
+        sim.remove_sensor("test_extra_rgb")
+        assert "test_extra_rgb" not in sim.sensors
+        assert len(sim.sensors) == initial_count
+
+        # Removing again should raise.
+        with pytest.raises(KeyError):
+            sim.remove_sensor("test_extra_rgb")
+
+
+def test_create_sensor_on_static_node(make_cfg_settings):
+    """Test creating a sensor on a SceneNode not attached to any agent."""
+    hab_cfg = habitat_sim.utils.settings.make_cfg(make_cfg_settings)
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        # Create a standalone scene node.
+        root = sim.get_active_scene_graph().get_root_node()
+        wall_node = root.create_child()
+        wall_node.translation = [2.0, 1.5, 0.0]
+
+        spec = habitat_sim.CameraSensorSpec()
+        spec.uuid = "wall_cam"
+        spec.sensor_type = habitat_sim.SensorType.COLOR
+        spec.resolution = [64, 64]
+
+        wrapper = sim.create_sensor(spec, wall_node)
+        assert "wall_cam" in sim.sensors
+
+        # This sensor should NOT appear in agent 0's subtree.
+        agent = sim.get_agent(0)
+        assert "wall_cam" not in agent.sensors
+
+        # Render just this sensor.
+        obs = sim.render_sensors([wrapper])
+        assert "wall_cam" in obs
+        assert obs["wall_cam"] is not None
+
+        sim.remove_sensor("wall_cam")
+        assert "wall_cam" not in sim.sensors
+
+
+def test_render_sensors_explicit_list(make_cfg_settings):
+    """Test rendering an explicit subset of sensors."""
+    hab_cfg = habitat_sim.utils.settings.make_cfg(make_cfg_settings)
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        # Get all sensor wrappers.
+        all_sensors = list(sim.sensors.values())
+        assert len(all_sensors) > 0
+
+        # Render all — should return all sensor UUIDs.
+        obs_all = sim.render_sensors()
+        assert len(obs_all) == len(all_sensors)
+
+        # Render just the first sensor.
+        obs_one = sim.render_sensors([all_sensors[0]])
+        assert len(obs_one) == 1
+        assert all_sensors[0].uuid in obs_one
+
+
+def test_sensor_registry_consistency(make_cfg_settings):
+    """sim.sensors should be consistent with agent subtree sensors."""
+    hab_cfg = habitat_sim.utils.settings.make_cfg(make_cfg_settings)
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        agent = sim.get_agent(0)
+
+        # All agent subtree sensors should be in the global registry.
+        for uuid in agent.sensors:
+            assert (
+                uuid in sim.sensors
+            ), f"Agent subtree sensor '{uuid}' not in sim.sensors"
+
+        # sim._sensors backward-compat alias should work.
+        assert set(sim._sensors.keys()) == set(sim.sensors.keys())
+
+
+def test_backward_compat_get_sensor_observations(make_cfg_settings):
+    """get_sensor_observations should still work with agent_ids."""
+    hab_cfg = habitat_sim.utils.settings.make_cfg(make_cfg_settings)
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        sim.initialize_agent(0)
+
+        # Default (single agent) — returns ObservationDict directly.
+        obs = sim.get_sensor_observations()
+        assert isinstance(obs, dict)
+        assert len(obs) > 0
+
+        # Explicit agent_ids list — returns Dict[int, ObservationDict].
+        obs_multi = sim.get_sensor_observations(agent_ids=[0])
+        assert isinstance(obs_multi, dict)
+        assert 0 in obs_multi
+
+
 @pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
 def test_no_config():
     with pytest.raises(TypeError):
