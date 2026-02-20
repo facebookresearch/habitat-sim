@@ -119,17 +119,26 @@ jobs:
         export PYTHONUNBUFFERED=1
 
         # run tests with code coverage
+        # Build 1: WITH Bullet + CUDA + C++ tests + coverage instrumentation
         HABITAT_BUILD_GUI_VIEWERS=OFF HABITAT_WITH_BULLET=ON HABITAT_WITH_CUDA=ON \
           HABITAT_BUILD_TESTS=ON \
           pip install -e . --no-build-isolation \
           --config-settings=cmake.define.CMAKE_CXX_FLAGS="--coverage"
-        CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ctest --test-dir build --output-on-failure || true
+        CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ctest --test-dir build --output-on-failure; CTEST_EXIT=$?
+        if [ $CTEST_EXIT -ne 0 ]; then
+          echo "::warning::ctest exited with code $CTEST_EXIT"
+        fi
         pytest -n 4 --durations=10 --cov-report=xml --cov=./
 
         #run the marked pytest-benchmark tests and print the results
         pytest -m sim_benchmarks
 
-        #re-build without bullet and cuda and run physics tests again
+        # Capture C++ coverage from build 1 BEFORE rebuilding.
+        # The second build recompiles all C++ code which resets .gcda coverage
+        # counters, so we must save the data from ctest and the first pytest run.
+        lcov --directory . --capture --output-file coverage_build1.info --ignore-errors mismatch
+
+        # Build 2: WITHOUT Bullet/CUDA to validate physics fallback paths
         HABITAT_BUILD_GUI_VIEWERS=OFF HABITAT_WITH_BULLET=OFF HABITAT_WITH_CUDA=OFF \
           pip install -e . --no-build-isolation \
           --config-settings=cmake.define.CMAKE_CXX_FLAGS="--coverage"
@@ -139,9 +148,12 @@ jobs:
         export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
         conda activate habitat
         cd habitat-sim
-        # Use --ignore-errors mismatch to handle gcov/source line mismatches that can occur
-        # with pybind11 and other template-heavy code
-        lcov --directory . --capture --output-file coverage.info --ignore-errors mismatch
+        # Capture C++ coverage from build 2 (without Bullet/CUDA)
+        lcov --directory . --capture --output-file coverage_build2.info --ignore-errors mismatch
+        # Merge coverage from both builds. Build 1 includes ctest (all C++ tests
+        # including GPU) + pytest; build 2 includes the no-Bullet/no-CUDA pytest run.
+        # lcov -a takes the max hit count per line across both reports.
+        lcov -a coverage_build1.info -a coverage_build2.info --output-file coverage.info --ignore-errors mismatch
         # Replaces -1 linecount with zero to prevent lcov from crashing:
         # https://github.com/psycofdj/coverxygen/issues/6
         sed -i -e 's/,-1$/,0/g' coverage.info
