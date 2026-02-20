@@ -1,5 +1,6 @@
 ignore:
   - "build/**"
+  - "examples/**"
   - "src/deps/**"
   - "src/tests/**"
   - "test/**"
