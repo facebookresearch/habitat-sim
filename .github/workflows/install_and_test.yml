@@ -124,7 +124,11 @@ jobs:
           HABITAT_BUILD_TESTS=ON \
           pip install -e . --no-build-isolation \
           --config-settings=cmake.define.CMAKE_CXX_FLAGS="--coverage"
-        CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ctest --test-dir build --output-on-failure; CTEST_EXIT=$?
+        # scikit-build-core places the build under build/{wheel_tag}/ (e.g. build/cp312-cp312-linux_x86_64/)
+        # so we must locate the actual build directory for ctest to find CTestTestfile.cmake
+        CTEST_BUILD_DIR=$(find build -maxdepth 1 -name "cp*" -type d | head -1)
+        echo "Running ctest in: $CTEST_BUILD_DIR"
+        CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ctest --test-dir "$CTEST_BUILD_DIR" --output-on-failure; CTEST_EXIT=$?
         if [ $CTEST_EXIT -ne 0 ]; then
           echo "::warning::ctest exited with code $CTEST_EXIT"
         fi
