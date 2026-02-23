@@ -1,4 +1,4 @@
-r"""A simple Google-style logging wrapper.
+r"""A simple Google-style logging wrapper.  # noqa: A005
 
 Taken from https://github.com/benley/python-glog and adapted
 """
