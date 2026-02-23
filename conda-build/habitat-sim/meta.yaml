@@ -36,12 +36,12 @@ requirements:
     - pybind11 >=2.10
     - attrs>=19.1.0
     - smmap<4.0,>=3.0.1
-    - numba
-    - numpy>=1.13
+    - numba>=0.60.0
+    - numpy>=2.0.0,<2.4
     - gitpython
-    - quaternion
+    - quaternion>=2024.0.0
     - pillow
-    - scipy>=1.3.0
+    - scipy>=1.13.0
     - tqdm
     - imageio
     - imageio-ffmpeg
@@ -63,11 +63,11 @@ requirements:
     - smmap<4.0,>=3.0.1
     - gitpython
     - attrs>=19.1.0
-    - numba
-    - numpy>=1.13
-    - quaternion
+    - numba>=0.60.0
+    - numpy>=2.0.0,<2.4
+    - quaternion>=2024.0.0
     - pillow
-    - scipy>=1.3.0
+    - scipy>=1.13.0
     - tqdm
     - imageio
     - matplotlib
