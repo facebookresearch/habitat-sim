@@ -86,6 +86,11 @@ jobs:
       run: cat /proc/cpuinfo
     - uses: "./habitat-sim/.github/actions/install_ubuntu_deps"
     - uses: "./habitat-sim/.github/actions/install_ubuntu_gpu_deps"
+    - name: Validate Pytorch Installation
+      run: |-
+        echo "Validate Pytorch Installation"
+        # Check that pytorch is installed with CUDA.
+        python -c 'import torch; torch.cuda.set_device(0)'
     - name: Build, install habitat-sim
       run: |-
         #give cmake ownership to the runner for installation

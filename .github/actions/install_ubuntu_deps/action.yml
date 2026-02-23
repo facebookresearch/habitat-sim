@@ -49,11 +49,7 @@ runs:
       echo "Install conda and dependencies"
       conda install -y pytorch torchvision pytorch-cuda=12.4 -c pytorch -c nvidia
       conda install -y -c conda-forge ninja numpy=1.26.4 pytest pytest-cov ccache hypothesis pytest-mock scikit-build-core pybind11
-      pip install pytest-sugar pytest-xdist pytest-benchmark opencv-python cython mock
-    shell: bash -el {0}
-  - name: Validate Pytorch Installation
-    run: |-
-      echo "Validate Pytorch Installation"
-      # Check that pytorch is installed with CUDA.
-      python -c 'import torch; torch.cuda.set_device(0)'
+      pip install pytest-sugar pytest-xdist pytest-benchmark "opencv-python<4.12" cython mock
+      # Verify numpy was not upgraded by pip (opencv-python>=4.12 pulls numpy>=2)
+      python -c "import numpy; assert numpy.__version__.startswith('1.'), f'numpy {numpy.__version__} != 1.26.4; pip may have upgraded it'"
     shell: bash -el {0}
