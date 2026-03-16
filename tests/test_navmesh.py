@@ -3,6 +3,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import math
+import platform
 from os import path as osp
 from typing import Any, Dict
 
@@ -17,6 +18,17 @@ import habitat_sim
 import habitat_sim.utils.settings
 
 EPS = 1e-5
+
+# On non-x86 platforms (e.g. aarch64), the vendored Bullet physics library uses
+# scalar floating-point code paths instead of SSE SIMD intrinsics. The x86 SSE
+# path uses _mm_rsqrt_ss (a 12-bit precision reciprocal square root approximation
+# with one Newton-Raphson refinement step) for vector normalization, while the
+# scalar path uses full-precision sqrtf(). These different code paths produce
+# slightly different results in geometry operations like navmesh recomputation,
+# requiring a small tolerance for cross-platform comparisons.
+# See: src/deps/bullet3/src/LinearMath/btVector3.h (normalize()) and
+#      src/deps/bullet3/src/LinearMath/btScalar.h (SIMD path selection)
+IS_NON_X86 = platform.machine() not in ("x86_64", "AMD64", "i386", "i686")
 
 base_dir = osp.abspath(osp.join(osp.dirname(__file__), ".."))
 
@@ -176,10 +188,20 @@ def test_navmesh_area(test_scene):
 
         # get the re-computed navmesh area. This test assumes NavMeshSettings default values.
         recomputedNavMeshArea1 = sim.pathfinder.navigable_area
+        # On non-x86 platforms, navmesh recomputation produces slightly different
+        # areas due to scalar vs SSE floating-point code paths in the underlying
+        # geometry libraries (see IS_NON_X86 comment at module level).
+        # The x86 values are kept as the reference; rel_tol=1e-4 accommodates
+        # the ~1e-7 relative difference observed on aarch64.
+        navmesh_rel_tol = 1e-4 if IS_NON_X86 else 1e-9
         if test_scene.endswith("skokloster-castle.glb"):
-            assert math.isclose(recomputedNavMeshArea1, 565.177978515625)
+            assert math.isclose(
+                recomputedNavMeshArea1, 565.177978515625, rel_tol=navmesh_rel_tol
+            )
         elif test_scene.endswith("van-gogh-room.glb"):
-            assert math.isclose(recomputedNavMeshArea1, 9.17772102355957)
+            assert math.isclose(
+                recomputedNavMeshArea1, 9.17772102355957, rel_tol=navmesh_rel_tol
+            )
 
 
 @pytest.mark.parametrize("agent_radius_mul", [0.5, 1.0, 2.0])
