@@ -86,7 +86,7 @@ def make_cfg(settings: Dict[str, Any]):
     if "scene_light_setup" in settings:
         sim_cfg.scene_light_setup = settings["scene_light_setup"]
     sim_cfg.enable_hbao = settings.get("enable_hbao", False)
-    sim_cfg.gpu_device_id = 0
+    sim_cfg.gpu_device_id = settings.get("gpu_device_id", 0)
 
     if not hasattr(sim_cfg, "scene_id"):
         raise RuntimeError(

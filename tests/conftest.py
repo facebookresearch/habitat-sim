@@ -39,6 +39,8 @@ def make_cfg_settings():
     cfg["silent"] = True
     cfg["scene"] = _test_scene
     cfg["frustum_culling"] = True
+    if not habitat_sim.cuda_enabled:
+        cfg["gpu_device_id"] = -1
     return cfg
 
 

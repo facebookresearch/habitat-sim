@@ -5,6 +5,7 @@
 #include "WindowlessContext.h"
 
 #include <Corrade/configure.h>
+#include "esp/core/configure.h"
 
 #ifdef MAGNUM_TARGET_EGL
 #include <Magnum/Platform/WindowlessEglApplication.h>
@@ -40,10 +41,23 @@ struct WindowlessContext::Impl {
 
 #if defined(CORRADE_TARGET_UNIX) && !defined(CORRADE_TARGET_APPLE)
 #ifdef MAGNUM_TARGET_EGL
+#ifdef ESP_BUILD_WITH_CUDA
+    // With CUDA, map the gpu device ID to a CUDA EGL device so that EGL
+    // rendering and CUDA compute target the same GPU.  device == -1 means
+    // "use the default EGL device without CUDA mapping".
     if (device != -1) {
       config.setCudaDevice(device);
     }
-#else  // NO MAGNUM_TARGET_EGL
+#else   // NO ESP_BUILD_WITH_CUDA
+    // Without CUDA, select an EGL device directly by index.  This avoids
+    // Magnum's CUDA device search path which fails when no CUDA-capable GPU
+    // is present (e.g. Mesa software rendering on aarch64).  device == 0 is
+    // the default EGL device and requires no explicit selection.
+    if (device > 0) {
+      config.setDevice(device);
+    }
+#endif  // ESP_BUILD_WITH_CUDA
+#else   // NO MAGNUM_TARGET_EGL
     if (device != 0)
       Mn::Fatal{} << "GLX context does not support multiple GPUs. Please "
                      "compile with --headless for multi-gpu support via EGL";
