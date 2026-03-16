@@ -1,0 +1,50 @@
+# Dockerfile for building habitat-sim conda packages on linux-aarch64.
+#
+# Unlike the x86_64 Dockerfile (which uses nvidia/cudagl CentOS 8), this uses
+# Ubuntu 22.04 as the base image because:
+#   - There is no nvidia/cudagl image for aarch64
+#   - CUDA is not supported in the initial aarch64 build (headless + Mesa only)
+#   - Ubuntu provides well-maintained aarch64 packages for Mesa EGL/GL
+#
+# Usage:
+#   docker build -t hsim_condabuild_aarch64 -f Dockerfile.aarch64 .
+#   docker run -it --rm -v $(pwd)/../:/remote hsim_condabuild_aarch64 bash
+#   # Inside container:
+#   cd /remote/conda-build
+#   conda activate py39
+#   python matrix_builder.py
+
+FROM ubuntu:22.04
+
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+ENV LANGUAGE=C.UTF-8
+ENV DEBIAN_FRONTEND=noninteractive
+
+ARG AIHABITAT_CONDA_CHN
+ARG AIHABITAT_CONDA_CHN_PWD
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget curl git ca-certificates \
+    build-essential cmake ninja-build pkg-config \
+    autoconf automake \
+    libegl1-mesa-dev libgl1-mesa-dev libglu1-mesa-dev \
+    libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
+    python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install patchelf from source (needed for conda-build rpath fixups)
+ADD ./common/install_patchelf.sh install_patchelf.sh
+RUN bash ./install_patchelf.sh && rm install_patchelf.sh
+
+# switch shell sh (default in Linux) to bash
+SHELL ["/bin/bash", "-c"]
+
+# Install Anaconda (architecture-aware)
+ENV PATH=/opt/conda/bin:$PATH
+ADD ./common/install_conda.sh install_conda.sh
+RUN bash ./install_conda.sh && rm install_conda.sh
+
+RUN conda init bash && conda create --name py39 python=3.9 -y
+RUN source ~/.bashrc && conda activate py39 && conda install -y anaconda-client git gitpython ninja conda-build
+RUN conda config --set anaconda_upload yes

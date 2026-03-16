@@ -42,6 +42,9 @@ def get_default_modes_and_vers():
     if platform.system() == "Darwin":
         return py_vers, bullet_modes, [False], [None]
     elif platform.system() == "Linux":  # noqa: SIM106
+        if platform.machine() == "aarch64":
+            # On linux-aarch64, only headless builds are supported (no CUDA).
+            return py_vers, bullet_modes, [True], [None]
         return py_vers, bullet_modes, [True, False], [None]
     else:
         raise RuntimeError(f"Unknown system: {platform.system()}")
@@ -51,6 +54,8 @@ def get_platform_string() -> str:
     if platform.system() == "Darwin":
         return "macos"
     elif platform.system() == "Linux":  # noqa: SIM106
+        if platform.machine() == "aarch64":
+            return "linux-aarch64"
         return "linux"
     else:
         raise RuntimeError(f"Unknown system: {platform.system()}")

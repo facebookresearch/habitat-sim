@@ -26,6 +26,29 @@ Our linux conda builds currently only support ```{head / headless} x {with bulle
 
 
 
+### Building for Linux (aarch64)
+
+The aarch64 build uses a separate Dockerfile (`Dockerfile.aarch64`) based on Ubuntu 22.04 instead of `nvidia/cudagl` (which has no aarch64 image). CUDA is not supported on aarch64; only headless builds with Mesa software rendering are available.
+
+```docker build -t hsim_condabuild_aarch64 -f Dockerfile.aarch64 .```
+
+```docker run -it --rm -v $(pwd)/../:/remote hsim_condabuild_aarch64 bash```
+
+Inside the container, the process is the same as x86_64 Linux:
+
+```
+cd /remote/conda-build
+conda activate py39
+python matrix_builder.py
+```
+
+The matrix builder automatically detects aarch64 and restricts the build matrix to headless-only variants (no display builds). The output folder will be `hsim-linux-aarch64/`.
+
+To download: ```conda install -c aihabitat -c conda-forge habitat-sim headless```.
+
+The aarch64 build currently supports ```{headless} x {with bullet / without bullet}``` variants.
+
+
 ### Notes
 
 * If building from your normal development clone of the repo, make sure to remove your build folder, i.e. ```rm -r ../build```.  The builder will copy that folder and cmake will error out otherwise.
