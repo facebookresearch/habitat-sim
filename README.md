@@ -1,3 +1,6 @@
+> [!WARNING]
+> **Beyond v0.3.4 this project is no longer receiving official active development or maintenance by Meta internal teams. Please feel free to continue forking and developing the software independently.**
+
 [![codecov](https://codecov.io/gh/facebookresearch/habitat-sim/branch/main/graph/badge.svg)](https://codecov.io/gh/facebookresearch/habitat-sim)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebookresearch/habitat-sim/blob/main/LICENSE)
 [![Conda Version Badge](https://img.shields.io/conda/vn/aihabitat/habitat-sim?color=blue&label=conda%20version)](https://anaconda.org/aihabitat/habitat-sim)
