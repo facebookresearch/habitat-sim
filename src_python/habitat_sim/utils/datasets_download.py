@@ -18,12 +18,12 @@ import tarfile
 import traceback
 import zipfile
 from shutil import which
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from git import Repo
 
-data_sources = {}
-data_groups = {}
+data_sources: Dict[str, Dict[str, Any]] = {}
+data_groups: Dict[str, List[str]] = {}
 
 
 def hm3d_train_configs_post(extract_dir: str) -> List[str]:
@@ -253,9 +253,11 @@ def initialize_test_data_sources(data_path):
                     ext="",
                     split=split,
                     data_format=data_format,
-                    version_string="-v0.2"
-                    if (version == "0.2" and data_format != "configs")
-                    else "",
+                    version_string=(
+                        "-v0.2"
+                        if (version == "0.2" and data_format != "configs")
+                        else ""
+                    ),
                 ),
                 "download_pre_args": "--location",
                 "package_name": "hm3d-{split}-{data_format}.tar{ext}".format(
@@ -270,9 +272,11 @@ def initialize_test_data_sources(data_path):
                 "downloaded_file_list": f"hm3d-{{version}}/{split}-{data_format}-files.json.gz",
                 "requires_auth": True,
                 "use_curl": True,
-                "post_extract_fn": hm3d_train_configs_post
-                if split == "train" and data_format == "configs"
-                else None,
+                "post_extract_fn": (
+                    hm3d_train_configs_post
+                    if split == "train" and data_format == "configs"
+                    else None
+                ),
             }
             for split, data_format, version in itertools.product(
                 ["minival", "train", "val"],
@@ -330,9 +334,9 @@ def initialize_test_data_sources(data_path):
                 "downloaded_file_list": f"hm3d-{{version}}/{split}-semantic-{data_format}-files.json.gz",
                 "requires_auth": True,
                 "use_curl": True,
-                "post_extract_fn": hm3d_semantic_configs_post
-                if data_format == "configs"
-                else None,
+                "post_extract_fn": (
+                    hm3d_semantic_configs_post if data_format == "configs" else None
+                ),
             }
             for split, data_format, version in itertools.product(
                 ["minival", "train", "val"], ["annots", "configs"], ["0.1", "0.2"]
