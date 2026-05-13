@@ -187,6 +187,30 @@ enum class ObjectInstanceShaderType {
 };
 
 /**
+ * @brief This enum class describes the Material alphaMode specified in a
+ * MaterialAttributes.
+ */
+enum class MaterialAlphaMode {
+  /**
+   * The alpha value is ignored, and the rendered output is fully opaque.
+   */
+  Opaque,
+  /**
+   * The rendered output is either fully opaque or fully transparent depending
+   * on the alpha value and the specified alphaCutoff value; the exact
+   * appearance of the edges MAY be subject to implementation-specific
+   * techniques such as “Alpha-to-Coverage”.
+   */
+  Mask,
+  /**
+   * The alpha value is used to composite the source and destination areas. The
+   * rendered output is combined with the background using the normal painting
+   * operation (i.e. the Porter and Duff over operator).
+   */
+  Blend
+};
+
+/**
  * @brief This enum class describes whether an object instance position is
  * relative to its COM or the asset's local origin.  Depending on this value, we
  * may take certain actions when instantiating a scene described by a scene
@@ -300,10 +324,24 @@ std::string getAORenderModeName(ArticulatedObjectRenderMode aoRenderMode);
 const extern std::map<std::string, ObjectInstanceShaderType> ShaderTypeNamesMap;
 
 /**
+ * @brief Constant map to provide mappings from string tags to @ref
+ * MaterialAlphaMode values.  This will be used to map values set
+ * in json for alphaMode to @ref MaterialAlphaMode.  Keys
+ * must be UPPERCASE.
+ */
+const extern std::map<std::string, MaterialAlphaMode> AlphaModeNamesMap;
+
+/**
  * @brief This method will convert a @ref ObjectInstanceShaderType value to the
  * string key that maps to it in the ShaderTypeNamesMap
  */
 std::string getShaderTypeName(ObjectInstanceShaderType shaderTypeVal);
+
+/**
+ * @brief This method will convert a @ref MaterialAlphaMode value to the
+ * string key that maps to it in the AlphaModeNamesMap
+ */
+std::string getMaterialAlphaModeName(MaterialAlphaMode materialAlphaMode);
 
 /**
  * @brief Constant map to provide mappings from string tags to @ref
