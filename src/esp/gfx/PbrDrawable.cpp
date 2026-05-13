@@ -332,6 +332,10 @@ void PbrDrawable::setMaterialValuesInternal(
   if (meshAttributeFlags_ & Drawable::Flag::HasVertexColor) {
     flags_ |= PbrShader::Flag::VertexColor;
   }
+  // Set whether this drawable is being rendered using a fallback material; This
+  // would infer that either materials were not loaded or no materials were
+  // found for the source asset
+  setUsesFallbackMaterial(materialData->attribute<bool>("isFallbackMaterial"));
 
   // Skin support
   (skinData_ != nullptr) ? flags_ |= PbrShader::Flag::SkinnedMesh

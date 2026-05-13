@@ -751,6 +751,8 @@ class ResourceManager {
    * ids for semantics.
    * @param txtrIdx The absolute index in the @ref textures_ store for the semantic
    * annotation texture.
+   * @param isFallback This material is default fallback material for missing
+   * materials.
    * @return the updated material
    */
   Mn::Trade::MaterialData setMaterialDefaultUserAttributes(
@@ -758,7 +760,8 @@ class ResourceManager {
       ObjectInstanceShaderType shaderTypeToUse,
       bool hasVertObjID = false,
       bool hasTxtrObjID = false,
-      int txtrIdx = -1) const;
+      int txtrIdx = -1,
+      bool isFallback = false) const;
 
   /**
    * @brief Configure the importerManager_ GL Extensions appropriately based on
