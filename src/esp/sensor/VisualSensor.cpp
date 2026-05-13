@@ -110,16 +110,16 @@ void VisualSensor::readObservation(Observation& obs) {
   // TODO: have different classes for the different types of sensors
   // TODO: do we need to flip axis?
   if (visualSensorSpec_->sensorType == SensorType::Semantic) {
-    renderTarget().readFrameObjectId(Magnum::MutableImageView2D{
-        Magnum::PixelFormat::R32UI, renderTarget().framebufferSize(),
+    renderTarget().readFrameObjectId(Mn::MutableImageView2D{
+        Mn::PixelFormat::R32UI, renderTarget().framebufferSize(),
         obs.buffer->data});
   } else if (visualSensorSpec_->sensorType == SensorType::Depth) {
-    renderTarget().readFrameDepth(Magnum::MutableImageView2D{
-        Magnum::PixelFormat::R32F, renderTarget().framebufferSize(),
+    renderTarget().readFrameDepth(Mn::MutableImageView2D{
+        Mn::PixelFormat::R32F, renderTarget().framebufferSize(),
         obs.buffer->data});
   } else {
-    renderTarget().readFrameRgba(Magnum::MutableImageView2D{
-        Magnum::PixelFormat::RGBA8Unorm, renderTarget().framebufferSize(),
+    renderTarget().readFrameRgba(Mn::MutableImageView2D{
+        Mn::PixelFormat::RGBA8Unorm, renderTarget().framebufferSize(),
         obs.buffer->data});
   }
 }

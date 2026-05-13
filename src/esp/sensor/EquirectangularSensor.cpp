@@ -9,9 +9,6 @@
 #include "esp/gfx/EquirectangularShader.h"
 #include "esp/sim/Simulator.h"
 
-namespace Mn = Magnum;
-namespace Cr = Corrade;
-
 namespace esp {
 namespace sensor {
 
@@ -40,7 +37,7 @@ bool EquirectangularSensor::drawObservation(sim::Simulator& sim) {
     return false;
   }
   renderToCubemapTexture(sim);
-  Magnum::Resource<gfx::CubeMapShaderBase, gfx::EquirectangularShader> shader =
+  Mn::Resource<gfx::CubeMapShaderBase, gfx::EquirectangularShader> shader =
       getShader<gfx::EquirectangularShader>();
 
   (*shader).setViewportSize(equirectangularSensorSpec_->resolution);
