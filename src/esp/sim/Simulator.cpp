@@ -111,6 +111,11 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
             "'withbullet' conda build.)");
 #endif
 
+  ESP_CHECK(!cfg.multisample || !cfg.enableHBAO,
+            "Simulator: multisampling cannot be enabled together with HBAO");
+  ESP_CHECK(!cfg.multisample || cfg.createRenderer,
+            "Simulator: multisampling cannot be enabled with renderer off");
+
   // set metadata mediator's cfg  upon creation or reconfigure
   if (!metadataMediator_) {
     metadataMediator_ = metadata::MetadataMediator::create(cfg);
@@ -194,6 +199,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
       if (config_.enableHBAO) {
         flags |= gfx::Renderer::Flag::HorizonBasedAmbientOcclusion;
+      }
+
+      if (config_.multisample) {
+        flags |= gfx::Renderer::Flag::Multisample;
       }
 
       renderer_ = gfx::Renderer::create(context_.get(), flags);
