@@ -68,6 +68,13 @@ class Simulator {
   void reconfigure(const SimulatorConfiguration& cfg);
 
   /**
+   * @brief Allows side-loading semantic scene metadata from a semantic json
+   * without loading the connected scene instance.
+   *
+   */
+  void loadSemanticSceneDescriptor(const std::string& semSceneFilename);
+
+  /**
    * @brief Reset the simulation state including the state of all physics
    * objects and the default light setup.
    * Sets the @ref worldTime_ to 0.0, changes the physical state of all objects back to their initial states.
