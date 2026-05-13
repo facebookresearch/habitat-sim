@@ -1162,6 +1162,13 @@ class ResourceManager {
   Mn::Range3D computeMeshBB(BaseMesh* meshDataGL);
 
   /**
+   * @brief Compute the surface area and volume of the drawables in the general
+   * mesh (assumes each is a closed mesh).
+   */
+  void computeGeneralMeshAreaAndVolume(
+      const std::vector<StaticDrawableInfo>& staticDrawableInfo);
+
+  /**
    * @brief Compute the absolute AABBs for drawables in general mesh (e.g.,
    * MP3D) world space
    */

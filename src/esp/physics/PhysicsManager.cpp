@@ -388,7 +388,7 @@ int PhysicsManager::addObjectInternal(
   obj->setManagedObjectPtr(objWrapper);
 
   return newObjectID;
-}  // PhysicsManager::addObject
+}  // PhysicsManager::addObjectInternal
 
 /////////////////////////////////
 // Articulated Object Creation

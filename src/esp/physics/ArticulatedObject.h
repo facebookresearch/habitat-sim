@@ -429,6 +429,26 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     return res;
   }  // getMarkerPointsGlobal
 
+  /** @brief Return this object's mesh volume. */
+  double getVolume() const override {
+    double ttlVolume = baseLink_->getVolume();
+    // For all other nodes
+    for (const auto& link : links_) {
+      ttlVolume += link.second->getVolume();
+    }
+    return ttlVolume;
+  }
+
+  /** @brief Return this object's mesh surface area. */
+  double getSurfaceArea() const override {
+    double ttlSurfArea = baseLink_->getSurfaceArea();
+    // For all other nodes
+    for (const auto& link : links_) {
+      ttlSurfArea += link.second->getSurfaceArea();
+    }
+    return ttlSurfArea;
+  }
+
   /**
    * @brief Set forces/torques for all joints indexed by degrees of freedom.
    *
