@@ -24,8 +24,10 @@ class ArticulatedObjectManager
 
   /**
    * @brief Load, parse, and import a URDF file instantiating an @ref
-   * BulletArticulatedObject in the world.  This version does not require
-   * drawables to be specified.
+   * BulletArticulatedObject in the world. The values passed as arguments will
+   * override the specified values in any existing @ref ArticulatedObjectAttributes
+   * describing this URDF's construction.
+   *
    * @param filepath The fully-qualified filename for the URDF file describing
    * the model the articulated object is to be built from.
    * @param fixedBase Whether the base of the @ref ArticulatedObject should be
@@ -56,8 +58,10 @@ class ArticulatedObjectManager
 
   /**
    * @brief Cast to BulletArticulatedObject version.  Load, parse, and import a
-   * URDF file instantiating an @ref BulletArticulatedObject in the world.  This
-   * version does not require drawables to be specified.
+   * URDF file instantiating an @ref BulletArticulatedObject in the world. The
+   * values passed as arguments will override the specified values in any
+   * existing @ref ArticulatedObjectAttributes describing this URDF's construction.
+   *
    * @param filepath The fully-qualified filename for the URDF file describing
    * the model the articulated object is to be built from.
    * @param fixedBase Whether the base of the @ref ArticulatedObject should be

@@ -42,8 +42,9 @@ ArticulatedObjectManager::addArticulatedObjectFromURDF(
     const std::string& lightSetup) {
   if (auto physMgr = this->getPhysicsManager()) {
     int newAObjID = physMgr->addArticulatedObjectFromURDF(
-        filepath, nullptr, fixedBase, globalScale, massScale, forceReload,
-        maintainLinkOrder, intertiaFromURDF, lightSetup);
+        filepath, nullptr, fixedBase, {globalScale, globalScale, globalScale},
+        massScale, forceReload, maintainLinkOrder, intertiaFromURDF,
+        lightSetup);
     return this->getObjectCopyByID(newAObjID);
   }
   return nullptr;

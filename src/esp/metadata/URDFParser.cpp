@@ -30,18 +30,17 @@ namespace esp {
 namespace metadata {
 namespace URDF {
 
-void Model::scaleShape(Shape& shape, float scale) {
+void Model::scaleShape(Shape& shape, const Mn::Vector3& scale) {
   shape.m_linkLocalFrame.translation() *= scale;
   switch (shape.m_geometry.m_type) {
+    case GEOM_SPHERE:
     case GEOM_MESH: {
       shape.m_geometry.m_meshScale *= scale;
     } break;
     case GEOM_BOX: {
       shape.m_geometry.m_boxSize *= scale;
     } break;
-    case GEOM_SPHERE: {
-      shape.m_geometry.m_sphereRadius *= double(scale);
-    } break;
+
     case GEOM_CAPSULE:
     case GEOM_CYLINDER: {
       shape.m_geometry.m_capsuleRadius *= double(scale);
@@ -52,14 +51,14 @@ void Model::scaleShape(Shape& shape, float scale) {
   }
 }
 
-void Model::setGlobalScaling(float scaling) {
+void Model::setGlobalScaling(const Mn::Vector3& scaling) {
   if (scaling == m_globalScaling) {
     // do nothing
     return;
   }
 
   // Need to re-scale model, so use the ratio of new to current scale
-  float scaleCorrection = scaling / m_globalScaling;
+  auto scaleCorrection = scaling / m_globalScaling;
 
   // scale all transforms' translations
   for (const auto& link : m_links) {
@@ -454,7 +453,8 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
       ESP_VERY_VERBOSE() << link.m_name;
       return false;
     }
-    link.m_inertia.m_mass *= static_cast<double>(model->getGlobalScaling());
+    link.m_inertia.m_mass *=
+        static_cast<double>(model->getGlobalScaling().product());
   } else {
     if ((strlen(linkName) == 5) && (strncmp(linkName, "world", 5)) == 0) {
       link.m_inertia.m_mass = 0.0;

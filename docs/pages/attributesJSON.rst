@@ -370,9 +370,9 @@ Below are the handles and descriptors for the source URDF file and the render as
 Articulated Object Configuration And Rendering
 ----------------------------------------------
 
-"uniform_scale"
-    - double
-    - The uniform scaling to apply to this articulated object after load (defaults to 1.0). This is modifiable by the scene instance specification.
+"scale"
+    - 3-vector
+    - The scaling to apply to this articulated object after load (defaults to [1.0,1.0,1.0]). This is modifiable by the scene instance specification.
 "mass_scale"
     - double
     - The amount the mass of the articulated object should be scaled upon load (defaults to 1.0). This is modifiable by the scene instance specification.
