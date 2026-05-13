@@ -9,7 +9,7 @@ from collections import OrderedDict
 from collections.abc import MutableMapping
 from typing import Any, Dict, List
 from typing import MutableMapping as MutableMapping_T
-from typing import Optional, Union, cast, overload
+from typing import Optional, Set, Union, cast, overload
 
 import attr
 import numpy as np
@@ -79,6 +79,7 @@ class Simulator(SimulatorBackend):
     )  # track the compute time of each step
     _async_draw_agent_ids: Optional[Union[int, List[int]]] = None
     __last_state: Dict[int, AgentState] = attr.ib(factory=dict, init=False)
+    _current_agent_ids: Set[int] = set()
 
     @staticmethod
     def _sanitize_config(config: Configuration) -> None:
@@ -238,6 +239,7 @@ class Simulator(SimulatorBackend):
         # Build the flat sensor registry from all agents' sensors.
         self._sensor_registry = {}
         self.__last_state = dict()
+        self._current_agent_ids = set()
         for agent_id, agent_cfg in enumerate(config.agents):
             agent = self.get_agent(agent_id)
             # Agent.reconfigure() already called SensorFactory.create_sensors()
@@ -593,42 +595,60 @@ class Simulator(SimulatorBackend):
         return self.__last_state[agent_id]
 
     @overload
-    def step(self, action: Union[str, int], dt: float = 1.0 / 60.0) -> ObservationDict:
+    def step(
+        self,
+        action: Union[str, int],
+        dt: float = 1.0 / 60.0,
+        return_observations: bool = True,
+    ) -> ObservationDict:
         ...
 
     @overload
     def step(
-        self, action: MutableMapping_T[int, Union[str, int]], dt: float = 1.0 / 60.0
+        self,
+        action: MutableMapping_T[int, Union[str, int]],
+        dt: float = 1.0 / 60.0,
+        return_observations: bool = True,
     ) -> Dict[int, ObservationDict]:
         ...
 
     def step(
         self,
-        action: Union[str, int, MutableMapping_T[int, Union[str, int]]],
+        action: Optional[Union[str, int, MutableMapping_T[int, Union[str, int]]]],
         dt: float = 1.0 / 60.0,
-    ) -> Union[ObservationDict, Dict[int, ObservationDict],]:
-        self._num_total_frames += 1
-        if isinstance(action, MutableMapping):
-            return_single = False
-        else:
-            action = cast(Dict[int, Union[str, int]], {self._default_agent_id: action})
-            return_single = True
+        return_observations: bool = True,
+    ) -> Optional[Union[ObservationDict, Dict[int, ObservationDict],]]:
         collided_dict: Dict[int, bool] = {}
-        for agent_id, agent_act in action.items():
-            agent = self.get_agent(agent_id)
-            collided_dict[agent_id] = agent.act(agent_act)
-            self.__last_state[agent_id] = agent.get_state()
+        if action is not None:
+            if not isinstance(action, MutableMapping):
+                action = cast(
+                    Dict[int, Union[str, int]], {self._default_agent_id: action}
+                )
+            for agent_id, agent_act in action.items():
+                self._current_agent_ids.add(agent_id)
+                agent = self.get_agent(agent_id)
+                collided_dict[agent_id] = agent.act(agent_act)
+                self.__last_state[agent_id] = agent.get_state()
 
-        # step physics by dt
-        step_start_Time = time.time()
-        super().step_world(dt)
-        self._previous_step_time = time.time() - step_start_Time
+        if dt > 0.0:
+            # step physics by dt
+            step_start_Time = time.time()
+            super().step_world(dt)
+            self._previous_step_time = time.time() - step_start_Time
+            self._num_total_frames += 1
 
-        multi_observations = self.get_sensor_observations(agent_ids=list(action.keys()))
+        if not return_observations:
+            return None
+        if len(self._current_agent_ids) == 0:
+            self._current_agent_ids.add(self._default_agent_id)
+        multi_observations = self.get_sensor_observations(
+            agent_ids=list(self._current_agent_ids)
+        )
         for agent_id, agent_observation in multi_observations.items():
-            agent_observation["collided"] = collided_dict[agent_id]
-        if return_single:
-            return multi_observations[self._default_agent_id]
+            agent_observation["collided"] = collided_dict.get(agent_id, False)
+        if len(self._current_agent_ids) == 1:
+            return multi_observations[self._current_agent_ids.pop()]
+        self._current_agent_ids.clear()
         return multi_observations
 
     def make_greedy_follower(
