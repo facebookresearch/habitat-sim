@@ -17,6 +17,7 @@ find_package(
 )
 
 set(viewer_SOURCES viewer.cpp ObjectPickingHelper.cpp ObjectPickingHelper.h)
+# set(viewer_SOURCES minimal_magnum_app.cpp)
 
 corrade_add_resource(viewer_RESOURCES resources.conf)
 
