@@ -12,9 +12,9 @@
 /** @file
   @brief ESP_CHECK macro, for use with fatal runtime errors.
 
-  Below is an overview of asserts, ESP_CHECK, exception-throwing, and warnings
-  in Habitat-sim. These are new guidelines as of Feb 2021; not all Habitat code
-  follows these guidelines yet.
+  Below is an overview of asserts, ESP_CHECK vs. ESP_FATAL, exception-throwing,
+  and warnings in Habitat-sim. These are new guidelines as of Feb 2021, and
+  updated June 2023; not all Habitat code follows these guidelines yet.
 
   assert
   - see CORRADE_ASSERT and CORRADE_ASSERT_INTERNAL.
@@ -51,24 +51,19 @@
 namespace esp {
 namespace core {
 
-/**
- * @brief The throwInPython function pointer gets filled during Python bindings
- * startup. If it's nullptr, we're in plain C++ code.
- */
-extern void (*throwInPython)(const char*);
+/* The throwRuntimeInPython function pointer gets filled during Python bindings
+   startup. If it's nullptr, we're in plain C++ code. */
+extern void (*throwRuntimeInPython)(const char*);
 
-/**
- * @brief For use in ESP_CHECK
- */
-[[noreturn]] void throwIfInPythonOtherwiseAbort(const char* message);
+// For use in ESP_CHECK
+[[noreturn]] void throwIfInPythonOtherwiseExit(const char* message);
 
 }  // namespace core
 }  // namespace esp
 
-/**
- * @brief A runtime check that must pass, otherwise we consider this a fatal
- * runtime error. The program terminates with the supplied error message.
- */
+/* A runtime check that must pass, otherwise we consider this a fatal
+ * user-caused error (bad data). The program exist with the supplied error
+ * message but no core dump. */
 #define ESP_CHECK(condition, ...)                                 \
   do {                                                            \
     if (!(condition)) {                                           \
@@ -76,7 +71,7 @@ extern void (*throwInPython)(const char*);
       Corrade::Utility::Debug{                                    \
           &out, Corrade::Utility::Debug::Flag::NoNewlineAtTheEnd} \
           << "ESP_CHECK failed:" << __VA_ARGS__;                  \
-      esp::core::throwIfInPythonOtherwiseAbort(out.str().data()); \
+      esp::core::throwIfInPythonOtherwiseExit(out.str().data());  \
     }                                                             \
   } while (false)
 
