@@ -30,7 +30,7 @@ PhysicsManagerAttributes::ptr PhysicsAttributesManager::createObject(
   return attrs;
 }  // PhysicsAttributesManager::createObject
 
-void PhysicsAttributesManager::setValsFromJSONDoc(
+void PhysicsAttributesManager::setValsFromJSONDocInternal(
     PhysicsManagerAttributes::ptr physicsManagerAttributes,
     const io::JsonGenericValue& jsonConfig) {
   // load the simulator preference - default is "none"

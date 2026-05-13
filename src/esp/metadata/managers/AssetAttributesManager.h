@@ -138,15 +138,6 @@ class AssetAttributesManager
           attributes) const override {}
 
   /**
-   * @brief Method to take an existing attributes and set its values from passed
-   * json config file.
-   * @param attribs (out) an existing attributes to be modified.
-   * @param jsonConfig json document to parse
-   */
-  void setValsFromJSONDoc(AttribsPtr attribs,
-                          const io::JsonGenericValue& jsonConfig) override;
-
-  /**
    * @brief Creates a template based on the provided template handle. Since the
    * primitive asset attributes templates encode their structure in their
    * handles, and these handles are not user editable, a properly configured
@@ -455,6 +446,16 @@ class AssetAttributesManager
   }
 
  protected:
+  /**
+   * @brief Internally accessed from AbstractAttributesManager. Method to take
+   * an existing attributes and set its values from passed json config file.
+   * @param attribs (out) an existing attributes to be modified.
+   * @param jsonConfig json document to parse
+   */
+  void setValsFromJSONDocInternal(
+      AttribsPtr attribs,
+      const io::JsonGenericValue& jsonConfig) override;
+
   /**
    * @brief This method will perform any necessary updating that is
    * AbstractAttributesManager-specific upon template removal, such as removing

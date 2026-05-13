@@ -28,7 +28,7 @@ ArticulatedObjectAttributes::ptr AOAttributesManager::createObject(
   return attrs;
 }  // AOAttributesManager::createObject
 
-void AOAttributesManager::setValsFromJSONDoc(
+void AOAttributesManager::setValsFromJSONDocInternal(
     ArticulatedObjectAttributes::ptr aoAttr,
     const io::JsonGenericValue& jsonConfig) {
   std::string urdf_filepath = "";

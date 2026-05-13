@@ -99,15 +99,6 @@ class SensorAttributesManager
       const io::JsonGenericValue& jsonConfig) override;
 
   /**
-   * @brief Method to take an existing attributes and set its values from passed
-   * json config file.
-   * @param attribs (out) an existing attributes to be modified.
-   * @param jsonConfig json document to parse
-   */
-  void setValsFromJSONDoc(attributes::AbstractSensorAttributes::ptr attribs,
-                          const io::JsonGenericValue& jsonConfig) override;
-
-  /**
    * @brief This function will be called to finalize attributes' paths before
    * registration, moving fully qualified paths to the appropriate hidden
    * attribute fields. This can also be called without registration to make sure
@@ -119,6 +110,16 @@ class SensorAttributesManager
           attributes) const override {}
 
  protected:
+  /**
+   * @brief Internally accessed from AbstractAttributesManager. Method to take
+   * an existing attributes and set its values from passed json config file.
+   * @param attribs (out) an existing attributes to be modified.
+   * @param jsonConfig json document to parse
+   */
+  void setValsFromJSONDocInternal(
+      attributes::AbstractSensorAttributes::ptr attribs,
+      const io::JsonGenericValue& jsonConfig) override;
+
   /**
    * @brief Internal only. Create an attributes from a SensorSpec.
    *
