@@ -2217,3 +2217,67 @@ def test_bullet_collision_helper():
             sim.get_physics_step_collision_summary()
             == "(no active collision manifolds)\n"
         )
+
+
+@pytest.mark.skipif(
+    not habitat_sim.bindings.built_with_bullet,
+    reason="Articulated objects require Bullet physics.",
+)
+def test_skinned_articulated_object_removal():
+    # Regression test for a heap-use-after-free in RigManager::deleteRigInstance.
+    # Rigs were registered under an auto-incremented rig id but unregistered by
+    # articulated object id. The two id spaces desync as objects are added and
+    # removed, so a removal could delete the bone nodes of a stale rig (already
+    # destroyed with its object's scene graph subtree) or of another live
+    # skinned object.
+    cfg_settings = habitat_sim.utils.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = "NONE"
+    cfg_settings["enable_physics"] = True
+    hab_cfg = habitat_sim.utils.settings.make_cfg(cfg_settings)
+
+    urdf_file = "data/test_assets/urdf/skinned_prism.urdf"
+
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        ao_mgr = sim.get_articulated_object_manager()
+
+        # Two skinned objects, removed in reverse creation order. Before the
+        # fix, removing ao2 missed its rig (the lookup used object ids while
+        # rigs were registered under auto-incremented rig ids), leaving a
+        # stale rig whose bone nodes died with ao2. Removing ao1 then matched
+        # that stale rig by object id and deleted its dangling bone nodes - a
+        # use-after-free.
+        ao1 = ao_mgr.add_articulated_object_from_urdf(urdf_file)
+        ao2 = ao_mgr.add_articulated_object_from_urdf(urdf_file)
+        ao_mgr.remove_object_by_id(ao2.object_id)
+        ao_mgr.remove_object_by_id(ao1.object_id)
+        assert ao_mgr.get_num_objects() == 0
+
+        # A fresh skinned object must still render correctly.
+        ao = ao_mgr.add_articulated_object_from_urdf(urdf_file)
+        ao.translation = [1.0, -3.0, -6.0]
+        sim.get_sensor_observations()
+        ao_mgr.remove_object_by_id(ao.object_id)
+        assert ao_mgr.get_num_objects() == 0
+
+        # Interleave additions and removals so that object ids and rig ids
+        # cannot stay accidentally aligned.
+        live = [ao_mgr.add_articulated_object_from_urdf(urdf_file) for _ in range(3)]
+        for _ in range(6):
+            ao_mgr.remove_object_by_id(live.pop(0).object_id)
+            live.append(ao_mgr.add_articulated_object_from_urdf(urdf_file))
+            sim.get_sensor_observations()
+        for ao in live:
+            ao_mgr.remove_object_by_id(ao.object_id)
+        assert ao_mgr.get_num_objects() == 0
+
+        # Reconfigure replaces the physics manager without removing objects
+        # one by one. The rigs of any remaining skinned objects must be
+        # unregistered so that no stale rig instances survive in the
+        # ResourceManager, which outlives the physics manager.
+        ao_mgr.add_articulated_object_from_urdf(urdf_file)
+        cfg_settings["frustum_culling"] = not cfg_settings.get("frustum_culling", False)
+        sim.reconfigure(habitat_sim.utils.settings.make_cfg(cfg_settings))
+        ao_mgr = sim.get_articulated_object_manager()
+        ao = ao_mgr.add_articulated_object_from_urdf(urdf_file)
+        ao_mgr.remove_object_by_id(ao.object_id)
+        assert ao_mgr.get_num_objects() == 0

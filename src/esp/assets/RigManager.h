@@ -26,8 +26,9 @@ class RigManager {
 
   /**
    * @brief Registers a rig instance. This gives ownership of the rig to the rig manager. Use @ref deleteRigInstance to dispose of the rig.
-   * This variant assumes that the rig id comes from gfx-replay, so id
-   * management can be skipped.
+   * This variant is used when the rig id is managed externally (e.g. rig ids
+   * that come from gfx-replay, or articulated object ids), so id management
+   * can be skipped.
    *
    * @param rigId Unique id for the rig.
    * @param rig Instantiated rig to register.
@@ -35,7 +36,8 @@ class RigManager {
   void registerRigInstance(int rigId, gfx::Rig&& rig);
 
   /**
-   * @brief Unregisters a rig instance and deletes its bone nodes.
+   * @brief Unregisters a rig instance. The rig's bone nodes are deleted if
+   * the rig owns them (see @ref gfx::Rig::ownsBones).
    *
    * @param rigId ID of the rig.
    */

@@ -52,6 +52,11 @@ struct Rig {
   std::vector<scene::SceneNode*> bones;
   /** @brief Bone name to 'bones' index map. */
   std::unordered_map<std::string, int> boneNames;
+  /** @brief Whether the rig owns its bone nodes. If true, the bone nodes are
+   * deleted along with the rig instance. If false, the bone nodes are owned by
+   * the scene graph (e.g. parented to articulated object link nodes) and are
+   * deleted along with their parent nodes. */
+  bool ownsBones = false;
 };
 }  // namespace gfx
 }  // namespace esp

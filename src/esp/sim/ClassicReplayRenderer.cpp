@@ -59,6 +59,9 @@ ClassicReplayRenderer::ClassicReplayRenderer(
                 "A rig instance with the specified ID already exists.");
 
       gfx::Rig rig{};
+      // The bone nodes created below are parented to the scene root, so the
+      // rig owns them and they are deleted along with the rig instance.
+      rig.ownsBones = true;
       for (uint32_t i = 0; i < boneNames.size(); ++i) {
         const std::string& boneName = boneNames[i];
         rig.boneNames[boneName] = i;
