@@ -41,6 +41,15 @@ BulletPhysicsManager::BulletPhysicsManager(
 
 BulletPhysicsManager::~BulletPhysicsManager() {
   ESP_DEBUG() << "Deconstructing BulletPhysicsManager";
+  // Unregister the rigs of any remaining skinned articulated objects so that
+  // no stale rig instances survive in the rig manager, which outlives this
+  // physics manager (e.g. across Simulator::reconfigure()).
+  auto& rigManager = resourceManager_.getRigManager();
+  for (const auto& aoPair : existingArticulatedObjects_) {
+    if (rigManager.rigInstanceExists(aoPair.first)) {
+      rigManager.deleteRigInstance(aoPair.first);
+    }
+  }
   existingObjects_.clear();
   existingArticulatedObjects_.clear();
   staticStageObject_.reset();
@@ -963,7 +972,8 @@ void BulletPhysicsManager::instantiateSkinnedModel(
 
   // Instantiate rig articulation nodes.
   // The nodes are parented to the articulated object links to couple the pose
-  // to the articulated object.
+  // to the articulated object. The link nodes own the bones; the rig instance
+  // only references them.
   esp::gfx::Rig rig{};
   for (int linkId : ao->getLinkIdsWithBase()) {
     auto& link = ao->getLink(linkId);
@@ -971,8 +981,11 @@ void BulletPhysicsManager::instantiateSkinnedModel(
     auto* linkNode = &link.node().createChild();
     rig.bones.push_back(linkNode);
   }
-  creationInfo.rigId =
-      resourceManager_.getRigManager().registerRigInstance(std::move(rig));
+  // Key the rig by the articulated object's id so that
+  // removeArticulatedObject() can look it up to unregister it.
+  creationInfo.rigId = ao->getObjectID();
+  resourceManager_.getRigManager().registerRigInstance(creationInfo.rigId,
+                                                       std::move(rig));
 
   auto* gfxNode = resourceManager_.loadAndCreateRenderAssetInstance(
       assetInfo, creationInfo, parentNode, drawables);
