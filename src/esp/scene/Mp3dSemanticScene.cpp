@@ -281,6 +281,9 @@ bool SemanticScene::buildMp3dHouse(std::ifstream& ifs,
         if (object->parentIndex_ >= 0) {
           object->region_ = scene.regions_[object->parentIndex_];
           object->region_->objects_.push_back(object);
+          if (object->region_->level_) {
+            object->region_->level_->objects_.push_back(object);
+          }
         }
         break;
       }
