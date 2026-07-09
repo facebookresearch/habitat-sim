@@ -9,6 +9,7 @@
 #   pip install . --no-build-isolation
 
 import ctypes
+import ctypes.util
 import math
 import os
 import string
@@ -30,6 +31,93 @@ from habitat_sim import ReplayRenderer, ReplayRendererConfiguration, physics
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.utils.common import quat_from_angle_axis
 from habitat_sim.utils.settings import default_sim_settings, make_cfg
+
+
+# Raw OpenGL bindings for rendering converted depth/semantic images to screen.
+# The habitat_sim Python bindings do not expose visualizeObservation(), so we
+# perform the depth/semantic -> RGBA conversion in Python and use raw GL calls
+# to display the result as a fullscreen textured quad.
+
+_gl_lib = None
+
+def _gl():
+    global _gl_lib
+    if _gl_lib is None:
+        _gl_lib = ctypes.CDLL(ctypes.util.find_library("GL"))
+    return _gl_lib
+
+# GL constants
+_GL_TEXTURE_2D = 0x0DE1
+_GL_RGBA = 0x1908
+_GL_UNSIGNED_BYTE = 0x1401
+_GL_NEAREST = 0x2600
+_GL_TEXTURE_MIN_FILTER = 0x2801
+_GL_TEXTURE_MAG_FILTER = 0x2800
+_GL_TEXTURE0 = 0x84C0
+_GL_QUADS = 0x0007
+_GL_PROJECTION = 0x1701
+_GL_MODELVIEW = 0x1700
+_GL_ALL_ATTRIB_BITS = 0xFFFFFFFF
+_GL_DEPTH_TEST = 0x0B71
+_GL_BLEND = 0x0BE2
+
+def _gl_render_image_to_screen(rgba, fb_w, fb_h):
+    """Render an RGBA uint8 numpy array (H, W, 4) to the current framebuffer
+    as a fullscreen textured quad using legacy OpenGL.
+
+    Caller is responsible for the GL context being current.  State is saved
+    and restored so Magnum's rendering is not disrupted.
+    """
+    gl = _gl()
+    h, w = rgba.shape[0], rgba.shape[1]
+
+    # --- Save state -----------------------------------------------------------
+    gl.glPushAttrib(_GL_ALL_ATTRIB_BITS)
+    gl.glMatrixMode(_GL_PROJECTION)
+    gl.glPushMatrix()
+    gl.glLoadIdentity()
+    # Match Magnum's Y-down convention: top-left is (0, fb_h), bottom-right is (fb_w, 0)
+    gl.glOrtho(0, fb_w, fb_h, 0, -1, 1)
+    gl.glMatrixMode(_GL_MODELVIEW)
+    gl.glPushMatrix()
+    gl.glLoadIdentity()
+
+    gl.glDisable(_GL_DEPTH_TEST)
+
+    # --- Create texture and upload data ---------------------------------------
+    tex = ctypes.c_uint(0)
+    gl.glGenTextures(1, ctypes.byref(tex))
+    gl.glBindTexture(_GL_TEXTURE_2D, tex)
+    gl.glTexParameteri(_GL_TEXTURE_2D, _GL_TEXTURE_MIN_FILTER, _GL_NEAREST)
+    gl.glTexParameteri(_GL_TEXTURE_2D, _GL_TEXTURE_MAG_FILTER, _GL_NEAREST)
+
+    # Flip vertically: Magnum framebuffer Y=0 is bottom, numpy[0] is top
+    flipped = np.ascontiguousarray(rgba[::-1, :, :])
+    gl.glTexImage2D(
+        _GL_TEXTURE_2D, 0, _GL_RGBA, w, h, 0,
+        _GL_RGBA, _GL_UNSIGNED_BYTE,
+        flipped.ctypes.data_as(ctypes.c_void_p),
+    )
+
+    # --- Draw fullscreen quad ------------------------------------------------
+    gl.glEnable(_GL_TEXTURE_2D)
+    gl.glBegin(_GL_QUADS)
+    gl.glTexCoord2f(0.0, 0.0); gl.glVertex2f(0, 0)
+    gl.glTexCoord2f(1.0, 0.0); gl.glVertex2f(fb_w, 0)
+    gl.glTexCoord2f(1.0, 1.0); gl.glVertex2f(fb_w, fb_h)
+    gl.glTexCoord2f(0.0, 1.0); gl.glVertex2f(0, fb_h)
+    gl.glEnd()
+    gl.glDisable(_GL_TEXTURE_2D)
+
+    # --- Cleanup -------------------------------------------------------------
+    gl.glDeleteTextures(1, ctypes.byref(tex))
+
+    # --- Restore state -------------------------------------------------------
+    gl.glMatrixMode(_GL_PROJECTION)
+    gl.glPopMatrix()
+    gl.glMatrixMode(_GL_MODELVIEW)
+    gl.glPopMatrix()
+    gl.glPopAttrib()
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -81,6 +169,9 @@ class HabitatSimInteractiveViewer(Application):
         self.contact_debug_draw = False
         # draw semantic region debug visualizations if present
         self.semantic_region_debug_draw = False
+
+        # active sensor to display: "color_sensor", "depth_sensor", or "semantic_sensor"
+        self.active_display_sensor = "color_sensor"
 
         # cache most recently loaded URDF file for quick-reload
         self.cached_urdf = ""
@@ -224,6 +315,49 @@ class HabitatSimInteractiveViewer(Application):
                     color,
                 )
 
+    def _set_display_sensor(self, sensor_name: str) -> None:
+        """Switch the active display sensor."""
+        self.active_display_sensor = sensor_name
+        logger.info(f"Display sensor set to: {sensor_name}")
+
+    @staticmethod
+    def _convert_depth_to_rgba(depth: np.ndarray) -> np.ndarray:
+        """Convert a depth observation (H, W float32 in meters) to RGBA uint8."""
+        d = depth.astype(np.float32)
+        finite = np.isfinite(d)
+        vmin = d[finite].min() if finite.any() else 0.0
+        vmax = d[finite].max() if finite.any() else 1.0
+        if vmax - vmin < 1e-6:
+            vmax = vmin + 1.0
+        normalized = np.clip((d - vmin) / (vmax - vmin), 0.0, 1.0)
+        normalized[~finite] = 0.0
+        gray = (normalized * 255).astype(np.uint8)
+        rgba = np.zeros((depth.shape[0], depth.shape[1], 4), dtype=np.uint8)
+        rgba[:, :, 0] = gray
+        rgba[:, :, 1] = gray
+        rgba[:, :, 2] = gray
+        rgba[:, :, 3] = 255
+        return rgba
+
+    @staticmethod
+    def _convert_semantic_to_rgba(semantic: np.ndarray) -> np.ndarray:
+        """Convert a semantic observation (H, W uint32 object IDs) to RGBA uint8.
+
+        Each unique object ID is mapped to a deterministic color via a simple
+        multiplicative hash.
+        """
+        ids = semantic.astype(np.uint32)
+        rgba = np.zeros((semantic.shape[0], semantic.shape[1], 4), dtype=np.uint8)
+        # Hash object IDs to colors (same hash produces consistent colors across frames)
+        hashed = (ids.astype(np.uint64) * 2654435761) & 0xFFFFFFFF
+        rgba[:, :, 0] = ((hashed >> 16) & 0xFF).astype(np.uint8)
+        rgba[:, :, 1] = ((hashed >> 8) & 0xFF).astype(np.uint8)
+        rgba[:, :, 2] = (hashed & 0xFF).astype(np.uint8)
+        rgba[:, :, 3] = 255
+        # background (id 0) is black
+        rgba[ids == 0, 0:3] = 0
+        return rgba
+
     def debug_draw(self):
         """
         Additional draw commands to be called during draw_event.
@@ -286,11 +420,28 @@ class HabitatSimInteractiveViewer(Application):
         if self.enable_batch_renderer:
             self.render_batch()
         else:
-            self.sim.sensors[keys[1]].draw_observation()
+            sensor_name = self.active_display_sensor
+            if sensor_name not in self.sim.sensors:
+                sensor_name = "color_sensor"
+            sensor = self.sim.sensors[sensor_name]
+            sensor.draw_observation()
             agent = self.sim.get_agent(keys[0])
-            self.render_camera = agent.scene_node.node_sensor_suite.get(keys[1])
-            self.debug_draw()
-            self.render_camera.render_target.blit_rgba_to_default()
+            self.render_camera = agent.scene_node.node_sensor_suite.get(sensor_name)
+            sensor_type = sensor.spec.sensor_type
+            if sensor_type == habitat_sim.SensorType.COLOR:
+                self.debug_draw()
+                self.render_camera.render_target.blit_rgba_to_default()
+            else:
+                obs = sensor.get_observation()
+                if sensor_type == habitat_sim.SensorType.DEPTH:
+                    rgba = self._convert_depth_to_rgba(obs)
+                else:
+                    rgba = self._convert_semantic_to_rgba(obs)
+                fb_size = self.framebuffer_size
+                _gl_render_image_to_screen(rgba, fb_size[0], fb_size[1])
+                # rebind default framebuffer so debug_draw and text render correctly
+                mn.gl.default_framebuffer.bind()
+                self.debug_draw()
 
         # draw CPU/GPU usage data and other info to the app window
         mn.gl.default_framebuffer.bind()
@@ -479,6 +630,19 @@ class HabitatSimInteractiveViewer(Application):
             event.accepted = True
             self.exit_event(Application.ExitEvent)
             return
+
+        elif key == pressed.ONE:
+            self._set_display_sensor("color_sensor")
+        elif key == pressed.TWO:
+            if "depth_sensor" in self.sim.sensors:
+                self._set_display_sensor("depth_sensor")
+            else:
+                logger.warning("Depth sensor not enabled. Use --depth-sensor flag.")
+        elif key == pressed.THREE:
+            if "semantic_sensor" in self.sim.sensors:
+                self._set_display_sensor("semantic_sensor")
+            else:
+                logger.warning("Semantic sensor not enabled. Use --semantic-sensor flag.")
 
         elif key == pressed.H:
             self.print_help_text()
@@ -917,6 +1081,7 @@ class HabitatSimInteractiveViewer(Application):
 
         sensor_type_string = str(sensor_spec.sensor_type.name)
         sensor_subtype_string = str(sensor_spec.sensor_subtype.name)
+        display_sensor = getattr(self, "active_display_sensor", "color_sensor")
         if self.mouse_interaction == MouseMode.LOOK:
             mouse_mode_string = "LOOK"
         elif self.mouse_interaction == MouseMode.GRAB:
@@ -927,6 +1092,7 @@ class HabitatSimInteractiveViewer(Application):
             self.display_font.size,
             f"""
 {self.fps} FPS
+Display: {display_sensor}
 Sensor Type: {sensor_type_string}
 Sensor Subtype: {sensor_subtype_string}
 Mouse Interaction Mode: {mouse_mode_string}
@@ -972,6 +1138,9 @@ Key Commands:
     esc:        Exit the application.
     'h':        Display this help message.
     'm':        Cycle mouse interaction modes.
+    '1':        Display color sensor (RGB).
+    '2':        Display depth sensor (grayscale, requires --depth-sensor).
+    '3':        Display semantic sensor (object ID colors, requires --semantic-sensor).
 
     Agent Controls:
     'wasd':     Move the agent's body forward/backward and left/right.
@@ -1176,6 +1345,16 @@ if __name__ == "__main__":
         type=int,
         help="Vertical resolution of the window.",
     )
+    parser.add_argument(
+        "--semantic-sensor",
+        action="store_true",
+        help="Enable the semantic sensor to allow viewing semantic segmentation (press '3' to display).",
+    )
+    parser.add_argument(
+        "--depth-sensor",
+        action="store_true",
+        help="Enable the depth sensor to allow viewing depth images (press '2' to display).",
+    )
 
     args = parser.parse_args()
 
@@ -1199,6 +1378,8 @@ if __name__ == "__main__":
     sim_settings["window_height"] = args.height
     sim_settings["default_agent_navmesh"] = False
     sim_settings["enable_hbao"] = args.hbao
+    sim_settings["semantic_sensor"] = args.semantic_sensor
+    sim_settings["depth_sensor"] = args.depth_sensor
 
     # start the application
     HabitatSimInteractiveViewer(sim_settings).exec()
