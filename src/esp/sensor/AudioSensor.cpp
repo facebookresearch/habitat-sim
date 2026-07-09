@@ -145,7 +145,7 @@ void AudioSensor::runSimulation(sim::Simulator& sim) {
     ESP_DEBUG() << logHeader_
                 << "Adding source at position : " << lastSourcePos_;
     audioSimulator_->AddSource(RLRAudioPropagation::Vector3f{
-        lastSourcePos_[1], lastSourcePos_[2], lastSourcePos_[3]});
+        lastSourcePos_[0], lastSourcePos_[1], lastSourcePos_[2]});
   }
 
   // Run the audio simulation
