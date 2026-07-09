@@ -91,7 +91,7 @@ Habitat is under active development, and we advise users to restrict themselves 
    Assuming you have [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) installed, let's prepare a conda env:
    ```bash
    # We require python>=3.9 and cmake>=3.22
-   conda create -n habitat python=3.12 cmake=3.27
+   conda create -n habitat python=3.9 cmake=3.27
    conda activate habitat
    ```
 
