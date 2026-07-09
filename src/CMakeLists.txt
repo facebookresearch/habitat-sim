@@ -45,6 +45,16 @@ set(TEST_ASSETS ${CMAKE_CURRENT_SOURCE_DIR}/../data/test_assets)
 # build options
 option(BUILD_ASSIMP_SUPPORT "Whether to build assimp import library support" ON)
 option(BUILD_PYTHON_BINDINGS "Whether to build python bindings" ON)
+# Read HABITAT_BUILD_GUI_VIEWERS env var as a direct CMake fallback so that
+# the variable is picked up even when the scikit-build-core cmake.define
+# {env=...} resolution does not propagate it (e.g. --no-build-isolation).
+if(DEFINED ENV{HABITAT_BUILD_GUI_VIEWERS})
+  if("$ENV{HABITAT_BUILD_GUI_VIEWERS}")
+    set(BUILD_GUI_VIEWERS ON CACHE BOOL "Whether to build GUI viewer utility binary" FORCE)
+  else()
+    set(BUILD_GUI_VIEWERS OFF CACHE BOOL "Whether to build GUI viewer utility binary" FORCE)
+  endif()
+endif()
 option(BUILD_GUI_VIEWERS "Whether to build GUI viewer utility binary" ON)
 option(BUILD_WITH_BULLET
        "Build Habitat-Sim with Bullet physics enabled -- Requires Bullet" ON
