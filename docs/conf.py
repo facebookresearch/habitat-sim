@@ -54,6 +54,7 @@ INPUT_PAGES = [
     "pages/lighting-setups.rst",
     "pages/asset-viewer-tutorial.rst",
     "pages/managed-rigid-object-tutorial.rst",
+    "pages/urdf-loading-tutorial.rst",
     "pages/logging.rst",
     "pages/coordinate-frame-tutorial.rst",
 ]
@@ -96,6 +97,7 @@ LINKS_NAVBAR1 = [
             ("Lighting Setups", "lighting-setups"),
             ("View Assets in Habitat-sim", "asset-viewer-tutorial"),
             ("Managed Rigid Object Tutorial", "managed-rigid-object-tutorial"),
+            ("Load URDF Articulated Objects", "urdf-loading-tutorial"),
             ("Coordinate Frame Tutorial", "coordinate-frame-tutorial"),
         ],
     ),

@@ -37,6 +37,8 @@ View Assets in Habitat-Sim                          :ref:`Page <std:doc:asset-vi
 
 Interactive Rigid Objects 2.0                       :ref:`Page <std:doc:managed-rigid-object-tutorial>`                                                                                                            :gh:`Jupyter Notebook <facebookresearch/habitat-sim/blob/main/examples/tutorials/notebooks/managed_rigid_object_tutorial.ipynb>`
 
+Loading URDF articulated objects                    :ref:`Page <std:doc:urdf-loading-tutorial>`
+
 Gfx Replay                                                                                                                                                                                                         :gh:`Jupyter Notebook <facebookresearch/habitat-sim/blob/main/examples/tutorials/notebooks/replay_tutorial.ipynb>`
 
 Editing Scene Assets in Blender                     `Page <https://aihabitat.org/tutorial/editing_in_blender/>`_
