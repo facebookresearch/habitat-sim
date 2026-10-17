@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import attr
 import magnum as mn
@@ -135,6 +135,9 @@ class Agent:
         self.controls = controls if controls else ObjectControls()
         self.body = mn.scenegraph.AbstractFeature3D(scene_node)
         scene_node.type = hsim.SceneNodeType.AGENT
+        # Optional callback (e.g. installed by Simulator) invoked after this
+        # agent's sensors are recreated, so dependents can refresh caches.
+        self._on_reconfigured: Optional[Callable[[], None]] = None
         self.reconfigure(self.agent_config)
         self.initial_state: Optional[AgentState] = None
 
@@ -182,6 +185,11 @@ class Agent:
             # Recreate sensors from config.
             for spec in self.agent_config.sensor_specifications:
                 SensorFactory.create_sensors(self.scene_node, [spec])
+
+            # Let dependents (e.g. the owning Simulator) refresh caches that
+            # were derived from the previous sensor objects.
+            if self._on_reconfigured is not None:
+                self._on_reconfigured()
 
     def act(self, action_id: Any) -> bool:
         r"""Take the action specified by action_id

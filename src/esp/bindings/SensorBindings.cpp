@@ -104,13 +104,16 @@ void initSensorBindings(py::module& m) {
             py::setattr(self, "__noise_model_kwargs", std::move(v));
           })
       .def("is_visual_sensor_spec", &SensorSpec::isVisualSensorSpec)
-      .def("__eq__", &SensorSpec::operator==)
-      .def("__neq__", &SensorSpec::operator!=);
+      // NOTE : python derives __ne__ from __eq__ automatically; the derived
+      // types below must each bind their own __eq__ so that subclass fields
+      // (e.g. CameraSensorSpec::hfov) participate in comparisons.
+      .def("__eq__", &SensorSpec::operator==);
 
   // ==== VisualSensorSpec ====
   py::class_<VisualSensorSpec, VisualSensorSpec::ptr, SensorSpec>(
       m, "VisualSensorSpec", py::dynamic_attr())
       .def(py::init(&VisualSensorSpec::create<>))
+      .def("__eq__", &VisualSensorSpec::operator==)
       .def_readwrite("near", &VisualSensorSpec::near)
       .def_readwrite("far", &VisualSensorSpec::far)
       .def_readwrite("resolution", &VisualSensorSpec::resolution)
@@ -126,6 +129,7 @@ void initSensorBindings(py::module& m) {
   py::class_<CameraSensorSpec, CameraSensorSpec::ptr, VisualSensorSpec>(
       m, "CameraSensorSpec", py::dynamic_attr())
       .def(py::init(&CameraSensorSpec::create<>))
+      .def("__eq__", &CameraSensorSpec::operator==)
       .def_property(
           "hfov", [](CameraSensorSpec& self) { return Mn::Degd(self.hfov); },
           [](CameraSensorSpec& self, const py::object& angle) {
@@ -135,9 +139,9 @@ void initSensorBindings(py::module& m) {
       .def_readwrite("ortho_scale", &CameraSensorSpec::orthoScale);
 
   // === CubemapSensorBaseSpec ===
-  // NOLINTNEXTLINE (bugprone-unused-raii)
   py::class_<CubeMapSensorBaseSpec, CubeMapSensorBaseSpec::ptr,
-             VisualSensorSpec>(m, "CubeMapSensorBaseSpec");
+             VisualSensorSpec>(m, "CubeMapSensorBaseSpec")
+      .def("__eq__", &CubeMapSensorBaseSpec::operator==);
 
   // === EquirectangularSensorSpec ===
   py::class_<EquirectangularSensorSpec, EquirectangularSensorSpec::ptr,
@@ -148,6 +152,7 @@ void initSensorBindings(py::module& m) {
   py::class_<FisheyeSensorSpec, FisheyeSensorSpec::ptr, CubeMapSensorBaseSpec>(
       m, "FisheyeSensorSpec", py::dynamic_attr())
       .def(py::init(&FisheyeSensorSpec::create<>))
+      .def("__eq__", &FisheyeSensorSpec::operator==)
       .def_readwrite("focal_length", &FisheyeSensorSpec::focalLength)
       .def_readwrite("principal_point_offset",
                      &FisheyeSensorSpec::principalPointOffset)
