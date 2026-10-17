@@ -266,6 +266,103 @@ def test_reconfigure_render(
         ) < 9.0e-2 * np.linalg.norm(gt.astype(float)), f"Incorrect {sensor_type} output"
 
 
+# A committed, always-available scene used by the reconfigure regression tests
+# below (no dataset download required).
+_reconfigure_test_scene = osp.abspath(
+    osp.join(osp.dirname(__file__), "../data/test_assets/scenes/plane.glb")
+)
+
+
+def _make_reconfigure_cfg(hfov):
+    sim_cfg = habitat_sim.SimulatorConfiguration()
+    sim_cfg.scene_id = _reconfigure_test_scene
+
+    sensor_spec = habitat_sim.CameraSensorSpec()
+    sensor_spec.uuid = "color_sensor"
+    sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
+    sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+    sensor_spec.resolution = mn.Vector2i([64, 64])
+    sensor_spec.position = mn.Vector3(0, 1.5, 0)
+    sensor_spec.hfov = hfov
+
+    agent_cfg = habitat_sim.agent.AgentConfiguration()
+    agent_cfg.sensor_specifications = [sensor_spec]
+    return habitat_sim.Configuration(sim_cfg, [agent_cfg])
+
+
+def test_sensor_spec_equality_includes_subclass_fields():
+    """Spec equality must compare subclass fields (issue #2569).
+
+    The bound __eq__ used to dispatch to the base SensorSpec::operator==,
+    which ignores camera-specific fields like hfov and resolution, so specs
+    differing only in those fields compared equal.
+    """
+
+    def make_camera_spec(hfov):
+        spec = habitat_sim.CameraSensorSpec()
+        spec.uuid = "color_sensor"
+        spec.hfov = hfov
+        return spec
+
+    assert make_camera_spec(90.0) != make_camera_spec(
+        45.0
+    ), "CameraSensorSpecs differing only in hfov must not be equal"
+    assert make_camera_spec(90.0) == make_camera_spec(
+        90.0
+    ), "Identical CameraSensorSpecs must be equal"
+
+    vis_a = habitat_sim.VisualSensorSpec()
+    vis_a.uuid = "vis"
+    vis_a.resolution = mn.Vector2i([64, 64])
+    vis_b = habitat_sim.VisualSensorSpec()
+    vis_b.uuid = "vis"
+    vis_b.resolution = mn.Vector2i([32, 32])
+    assert (
+        vis_a != vis_b
+    ), "VisualSensorSpecs differing only in resolution must not be equal"
+    assert vis_a == vis_a, "Identical VisualSensorSpecs must be equal"
+
+
+def test_sim_reconfigure_applies_new_sensor_hfov():
+    """Simulator.reconfigure() must apply changed sensor specs (issue #2569)."""
+    if not osp.exists(_reconfigure_test_scene):
+        pytest.skip(f"{_reconfigure_test_scene} not found")
+
+    with habitat_sim.Simulator(_make_reconfigure_cfg(90.0)) as sim:
+        assert sim.sensors["color_sensor"].spec.hfov == mn.Deg(90.0)
+        sim.reconfigure(_make_reconfigure_cfg(45.0))
+        assert sim.sensors["color_sensor"].spec.hfov == mn.Deg(
+            45.0
+        ), "Simulator.reconfigure() did not apply the new sensor hfov"
+
+
+def test_agent_reconfigure_refreshes_simulator_sensor_registry():
+    """Agent.reconfigure() must refresh the Simulator sensor registry (issue #2569).
+
+    Agent.reconfigure() deletes and re-creates the C++ sensors; the
+    Simulator's sensor registry must be re-wrapped against the new objects,
+    else observations and specs keep serving the stale, deleted sensors.
+    """
+    if not osp.exists(_reconfigure_test_scene):
+        pytest.skip(f"{_reconfigure_test_scene} not found")
+
+    with habitat_sim.Simulator(_make_reconfigure_cfg(90.0)) as sim:
+        agent = sim.get_agent(0)
+        agent.reconfigure(_make_reconfigure_cfg(60.0).agents[0])
+
+        assert agent.scene_node.subtree_sensors[
+            "color_sensor"
+        ].specification().hfov == mn.Deg(
+            60.0
+        ), "Agent.reconfigure() did not apply the new sensor hfov"
+
+        sensor_wrapper = sim.sensors["color_sensor"]
+        habitat_sim.errors.assert_obj_valid(sensor_wrapper.sensor_object)
+        assert sensor_wrapper.spec.hfov == mn.Deg(
+            60.0
+        ), "Simulator sensor registry was not refreshed after Agent.reconfigure()"
+
+
 # Tests to make sure that no sensors is supported and doesn't crash
 # Also tests to make sure we can have multiple instances
 # of the simulator with no sensors

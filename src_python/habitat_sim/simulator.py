@@ -208,6 +208,10 @@ class Simulator(SimulatorBackend):
             Agent(self.get_active_scene_graph().get_root_node().create_child(), cfg)
             for cfg in config.agents
         ]
+        # Keep the simulator's sensor registry in sync when an agent is
+        # directly reconfigured, since that recreates its C++ sensors in place.
+        for agent in self.agents:
+            agent._on_reconfigured = self._refresh_sensor_registry
 
     def _config_pathfinder(self, config: Configuration) -> None:
         self.pathfinder.seed(config.sim_cfg.random_seed)
@@ -236,19 +240,29 @@ class Simulator(SimulatorBackend):
         self._default_agent_id = config.sim_cfg.default_agent_id
 
         # Build the flat sensor registry from all agents' sensors.
-        self._sensor_registry = {}
         self.__last_state = dict()
-        for agent_id, agent_cfg in enumerate(config.agents):
-            agent = self.get_agent(agent_id)
+        self._refresh_sensor_registry()
+        for agent_id in range(len(self.agents)):
+            self.initialize_agent(agent_id)
+
+    def _refresh_sensor_registry(self) -> None:
+        """(Re)build the flat sensor registry from all agents' subtree sensors.
+
+        The C++ sensors live on the agents' scene nodes (recreated by
+        Agent.reconfigure()); this re-wraps the live objects so the registry
+        never serves stale sensors or specs.
+        """
+        self._sensor_registry = {}
+        for agent in self.agents:
             # Agent.reconfigure() already called SensorFactory.create_sensors()
-            # during __init__, so the C++ sensors exist on the agent's subtree.
-            # We just need to wrap them in Python Sensor objects.
-            for spec in agent_cfg.sensor_specifications:
+            # during __init__ (or the last reconfigure), so the C++ sensors
+            # exist on the agent's subtree. We just need to wrap them in
+            # Python Sensor objects.
+            for spec in agent.agent_config.sensor_specifications:
                 cpp_sensor = agent.scene_node.subtree_sensors[spec.uuid]
                 self._sensor_registry[spec.uuid] = Sensor(
                     sim=self, sensor_object=cpp_sensor
                 )
-            self.initialize_agent(agent_id)
 
     # ------------------------------------------------------------------
     # Sensor lifecycle — public API
